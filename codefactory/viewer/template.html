@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>codefactory · __TITLE__</title>
+<style>/*CSS*/</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="floor" aria-label="Factory view of the codebase"></canvas>
+  <div id="hud">
+    <button data-mode="call" aria-pressed="true">Calls</button>
+    <button data-mode="import" aria-pressed="false">Imports</button>
+    <button id="fit" title="Fit (f)">Fit</button>
+    <input id="search" type="search" placeholder="Find a file…" aria-label="Find a file">
+  </div>
+  <div id="tip"></div>
+  <div id="legend">
+    <span><i style="background:var(--high)"></i>high</span>
+    <span><i style="background:var(--warn)"></i>warn</span>
+    <span><i style="background:var(--info)"></i>info</span>
+    <span><i style="background:var(--back);border-radius:0"></i>dashed belt = flows backwards</span>
+    <span><i style="background:var(--idle);border-radius:0"></i>grey = idle machine</span>
+  </div>
+</div>
+<aside>
+  <header><h1 id="title"></h1><div class="sub" id="meta"></div></header>
+  <div class="tabs" role="tablist">
+    <button data-tab="issues" role="tab">Issues</button>
+    <button data-tab="selected" role="tab">Selected</button>
+  </div>
+  <div class="pane" id="issues"></div>
+  <div class="pane" id="selected" hidden></div>
+</aside>
+<script>window.FACTORY = __DATA__;</script>
+<script>/*JS*/</script>
+</body>
+</html>

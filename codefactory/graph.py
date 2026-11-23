@@ -1,0 +1,69 @@
+"""The language-neutral graph every analyzer produces and every other part (flags, viewer) reads."""
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass, field
+
+SCHEMA_VERSION = 1
+
+
+@dataclass
+class Function:
+    id: str  # "<file path>::<qualname>"
+    file: str
+    name: str
+    qualname: str
+    line: int
+    end: int
+    loc: int
+    kind: str = "function"  # function | method | module (top-level code)
+    decorated: bool = False
+    exported: bool = False  # listed in __all__ or an entry point
+    shape: str = ""  # structural hash, for duplicate detection
+    dynamic: bool = False  # a method whose name is used as obj.name somewhere we couldn't resolve
+
+
+@dataclass
+class File:
+    id: str  # posix path relative to the analyzed root
+    module: str
+    loc: int
+    layer: str = ""
+
+
+@dataclass
+class Edge:
+    src: str
+    dst: str
+    kind: str  # call | ref | import
+    count: int = 1
+
+
+@dataclass
+class Flag:
+    kind: str
+    severity: str  # high | warn | info
+    target: str  # a file or function id
+    message: str
+    related: list[str] = field(default_factory=list)
+
+
+@dataclass
+class Graph:
+    root: str
+    language: str
+    files: list[File] = field(default_factory=list)
+    functions: list[Function] = field(default_factory=list)
+    edges: list[Edge] = field(default_factory=list)
+    flags: list[Flag] = field(default_factory=list)
+    layers: list[str] = field(default_factory=list)  # left-to-right order for the viewer
+    rules: list[str] = field(default_factory=list)  # "a -> b" pairs that are forbidden
+
+    def to_dict(self) -> dict:
+        return {"schema": SCHEMA_VERSION, **asdict(self)}
+
+    def merge(self, other: "Graph") -> None:
+        self.files += other.files
+        self.functions += other.functions
+        self.edges += other.edges
+        if other.language not in self.language.split("+"):
+            self.language = f"{self.language}+{other.language}" if self.language else other.language

@@ -1,0 +1,5 @@
+# codefactory's own settings when it maps itself.
+ignore = ["fixtures"]
+
+[rules]
+forbid = ["viewer -> analyzers"]
