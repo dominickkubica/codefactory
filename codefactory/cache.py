@@ -14,9 +14,20 @@ SOURCE = (".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts")
 SETTINGS = ("factory.toml", "tsconfig.json", "jsconfig.json", "pyproject.toml")
 
 
+def _tool_stamp() -> str:
+    """codefactory's own files: a new analyzer or check (even between releases) means the old graph is stale."""
+    here = Path(__file__).parent
+    parts = [__version__]
+    for p in sorted(here.rglob("*")):
+        if p.suffix in (".py", ".js") and "__pycache__" not in p.parts:
+            st = p.stat()
+            parts.append(f"{p.relative_to(here)}|{st.st_size}|{st.st_mtime_ns}")
+    return "\n".join(parts)
+
+
 def fingerprint(root: Path, ignore: list[str]) -> str:
     skip = set(ignore)
-    h = hashlib.sha1(__version__.encode())
+    h = hashlib.sha1(_tool_stamp().encode())
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = sorted(d for d in dirnames if d not in skip and not d.endswith(".egg-info"))
         for name in sorted(filenames):

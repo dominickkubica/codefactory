@@ -105,6 +105,10 @@ function shapeOf(n, sf) {
       const local = d && d.getSourceFile() === sf && d.pos >= n.pos && d.end <= n.end;
       if (!local) parts.push(x.text);
     } else if (ts.isBinaryExpression(x)) parts.push(x.operatorToken.kind);
+    // a string's words count: two functions differing only in their SQL or messages aren't copies
+    else if (ts.isStringLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x) || ts.isTemplateHead(x) ||
+             ts.isTemplateMiddle(x) || ts.isTemplateTail(x)) parts.push(...x.text.split(/\s+/).filter(Boolean).slice(0, 24).map((w) => "S:" + w));
+    else if (ts.isNumericLiteral(x)) parts.push("N:" + x.text);
     ts.forEachChild(x, visit);
   };
   visit(body);

@@ -22,6 +22,7 @@ class Config:
     similar_threshold: float = 0.75  # near-duplicates: share of structure in common (0-1)
     hub_callers: int = 12
     queries: list[dict] = field(default_factory=list)  # saved SQL checks that become flags
+    silence: list[dict] = field(default_factory=list)  # [[silence]] kind / where (glob) / reason
 
 
 def parse_rule(rule: str) -> tuple[str, str]:
@@ -53,4 +54,8 @@ def load_config(root: Path) -> Config:
         if q.get("severity", "warn") not in ("high", "warn", "info"):
             raise ValueError(f"Query {q['name']!r}: severity must be high, warn or info")
         cfg.queries.append({k: q[k] for k in ("name", "sql", "severity", "message") if k in q})
+    for rule in data.get("silence", []):
+        if not rule.get("where"):
+            raise ValueError("Each [[silence]] entry in factory.toml needs `where` (a file or file::function glob)")
+        cfg.silence.append({"kind": rule.get("kind", "*"), "where": rule["where"], "reason": rule.get("reason", "")})
     return cfg

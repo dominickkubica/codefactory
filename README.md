@@ -38,6 +38,10 @@ codefactory query path/to/repo "SELECT qualname, fan_in FROM function_stats ORDE
 codefactory brief path/to/repo                     # a Markdown map for an AI agent (or you)
 codefactory context path/to/repo useGuidedWorkout  # before changing it: callers, calls, impact, tests to run
 codefactory skill path/to/repo                     # teach Claude Code in that repo to use all of this
+codefactory plan path/to/repo                      # the work list: ranked tasks with steps and tests
+codefactory prompt path/to/repo 1                  # task #1 as a ready-to-paste Claude Code prompt
+codefactory baseline path/to/repo                  # save today's issues (commit codefactory-baseline.json)
+codefactory check path/to/repo                     # CI / pre-commit: fail only on issues new since the baseline
 ```
 
 Commands that take a name also work from inside the repo without the path: `codefactory context setDayMarks`.
@@ -68,6 +72,64 @@ Issues tab filters by kind; clicking an issue flies to its machine. Click a func
 floor lights up only the machines it reaches, and the panel lists every function it calls, by depth, with the total
 lines involved.
 
+## From issues to fixes
+
+**`codefactory plan`** turns issues into ranked tasks. Related issues become one job: a group of copies is one merge
+(it picks which copy to keep, from the layer the others can import, and lists every caller to repoint), a function's
+loop calls are one batching job (naming the function to give a batched variant), dead code is one cleanup. Each task
+has steps, the tests that exercise the code, and a check that it's done. Scores favour high severity, more lines
+saved and more callers; tests and one-off scripts count less.
+
+**`codefactory prompt <id or rank>`** prints a task as a self-contained prompt for Claude Code: what, where, why,
+steps, constraints (keep behaviour, update every caller) and when it's done. In the viewer, every issue has a
+**Copy fix prompt** button that copies the same thing.
+
+**Silence what's intended**, so the list stays worth reading. A comment on the function's line, the flagged line,
+or the line above either, in any comment style:
+
+```ts
+// codefactory: ignore io_in_loop — one query per table, there are 7
+// codefactory: ignore unused, test_only: called by the router by name
+// codefactory: ignore — every issue on this function
+// codefactory: ignore-file duplicate — generated code      (anywhere in a file: the whole file)
+```
+
+or in `factory.toml`:
+
+```toml
+[[silence]]
+kind = "io_in_loop"        # or "*"
+where = "src/db/backup.ts" # a file or file::function glob
+reason = "bounded by the number of tables"
+```
+
+Silenced issues leave the list but not the record: `codefactory flags --silenced` shows each with its reason.
+
+**The ratchet.** `codefactory baseline` saves today's issues to `codefactory-baseline.json`; commit it.
+`codefactory check` then fails only on issues that weren't there (by kind, file and function, so moving code around
+doesn't count), and reports what's been fixed since. Adopt it on a messy codebase today; the count can only go down.
+Run `codefactory baseline` again after a cleanup to lock the gains in.
+
+```yaml
+# .github/workflows/codefactory.yml
+on: pull_request
+jobs:
+  structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4        # TypeScript / JavaScript repos
+        with: { node-version: 22 }
+      - run: npm ci                        # the repo's own typescript
+      - run: pip install git+https://github.com/<you>/codefactory
+      - run: codefactory check
+```
+
+As a git pre-commit hook: put `codefactory check` in `.git/hooks/pre-commit` (fast after the first run: unchanged
+code comes from the cache).
+
 ## With Claude Code (or another AI coding agent)
 
 Run `codefactory skill` in a repo once. It writes `.claude/skills/codefactory/SKILL.md`, which tells Claude Code
@@ -76,8 +138,8 @@ deleting anything (callers, impact, the tests to run afterwards), `trace` and `p
 reaches another, `flags --json` for work lists, and how to read each issue (and which ones are only hints).
 Everything prints `file:line`, and `--json` is there for scripts.
 
-A typical restructure then goes: `brief` → pick a copied-code group or an N+1 loop → `context` on each function
-involved → change it → `flags --min warn` again to confirm it's gone and nothing new appeared → run the listed tests.
+A typical restructure then goes: `plan` → `prompt 1` (or click **Copy fix prompt** in the viewer) → Claude follows
+it, using `context` before each change → `check` confirms nothing new appeared → run the listed tests → next task.
 
 ## Ask it anything with SQL
 
@@ -188,6 +250,9 @@ codefactory/
   brief.py              brief and context: Markdown/JSON views for AI agents
   cache.py              .codefactory/graph.json, reused while no source file changed
   skill_template/       The Claude Code skill `codefactory skill` installs
+  plan.py               Issues -> ranked tasks with steps, tests and prompts
+  suppress.py           Silencing by comment or factory.toml
+  baseline.py           The baseline file and the comparison `check` uses
   sqlgraph.py           The graph as SQLite; saved queries -> flags
   trace.py              trace (EXPLAIN for a function) and shortest call path
   config.py             factory.toml

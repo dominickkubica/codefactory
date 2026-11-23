@@ -503,6 +503,33 @@
   addEventListener("resize", resize);
   addEventListener("keydown", (e) => { if (e.target.tagName !== "INPUT" && e.key === "f") fit(); if (e.key === "Escape") { traced = null; select(null); } });
 
+  // ---- fix prompts ---------------------------------------------------------------------------------------
+  // Every issue belongs to a task of `codefactory plan`; its prompt is ready to paste into Claude Code.
+  const taskOfFlag = new Map();
+  for (const t of D.tasks || []) for (const i of t.flags) taskOfFlag.set(i, t);
+  function copyText(text) {
+    const done = () => toast("Prompt copied. Paste it into Claude Code.");
+    if (navigator.clipboard && window.isSecureContext !== false) {
+      navigator.clipboard.writeText(text).then(done, () => fallback());
+    } else fallback();
+    function fallback() {
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); done(); } catch { toast("Couldn't copy: select the prompt text instead."); }
+      ta.remove();
+    }
+  }
+  let toastTimer = 0;
+  function toast(msg) {
+    const el = $("#toast"); el.textContent = msg; el.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, 2600);
+  }
+  const promptButton = (i) => taskOfFlag.has(i)
+    ? `<button class="fixbtn" data-fix="${i}" title="${esc(taskOfFlag.get(i).title)}">Copy fix prompt</button>` : "";
+  function wireFix(root) {
+    root.querySelectorAll("[data-fix]").forEach((b) => b.onclick = (e) => { e.stopPropagation(); copyText(taskOfFlag.get(+b.dataset.fix).prompt); });
+  }
+
   // ---- panels -------------------------------------------------------------------------------------------
   const KIND = { cycle: "Import loops", layer_violation: "Layer violations", io_in_loop: "Calls in loops",
     duplicate: "Duplicates", similar: "Near-duplicates", unused: "Unused", quadratic_scan: "Searches in loops",
@@ -517,8 +544,9 @@
     $("#issues").innerHTML = (kinds.length ? `<div class="chips">${kinds.map((k) =>
       `<button class="chip" data-kind="${k}" aria-pressed="${flagFilter === k}">${KIND[k] || k} ${counts[k]}</button>`).join("")}</div>` :
       `<p class="empty">No issues found.</p>`) +
-      list.map((fl, i) => `<div class="flag ${fl.severity}" tabindex="0" data-i="${D.flags.indexOf(fl)}"><b>${esc(KIND[fl.kind] || fl.kind)}</b> · ${esc(fl.message)}
-        <div class="where">${esc(shortTarget(fl.target))}</div></div>`).join("");
+      list.map((fl) => { const i = D.flags.indexOf(fl); return `<div class="flag ${fl.severity}" tabindex="0" data-i="${i}"><b>${esc(KIND[fl.kind] || fl.kind)}</b> · ${esc(fl.message)}
+        <div class="where">${esc(shortTarget(fl.target))}${fl.line ? ":" + fl.line : ""}</div>${promptButton(i)}</div>`; }).join("");
+    wireFix($("#issues"));
     $("#issues").querySelectorAll(".chip").forEach((b) => b.onclick = () => { flagFilter = flagFilter === b.dataset.kind ? null : b.dataset.kind; renderIssues(); });
     $("#issues").querySelectorAll(".flag").forEach((el) => {
       const go = () => {
@@ -549,11 +577,12 @@
     if (!f) { pane.innerHTML = `<p class="empty">Click a machine to see its functions, belts and issues.</p>`; return; }
     pane.innerHTML = `<h2>Machine</h2><div style="font:13px var(--mono);word-break:break-all">${esc(f.id)}</div>
       <div class="sub">layer ${esc(f.layer)} · ${f.loc} lines · ${f.fns.length} functions</div>` +
-      (f.flags.length ? `<h2>Issues</h2>` + f.flags.map((fl) => `<div class="flag ${fl.severity}"><b>${esc(KIND[fl.kind] || fl.kind)}</b> · ${esc(fl.message)}</div>`).join("") : "") +
+      (f.flags.length ? `<h2>Issues</h2>` + f.flags.map((fl) => `<div class="flag ${fl.severity}"><b>${esc(KIND[fl.kind] || fl.kind)}</b> · ${esc(fl.message)}${promptButton(D.flags.indexOf(fl))}</div>`).join("") : "") +
       `<h2>Functions</h2>` + (f.fns.length ? `<table><tr><th>Name</th><th class="n">Lines</th><th class="n">In</th><th class="n">Out</th></tr>${fnRows(f)}</table>` : `<p class="empty">None.</p>`) +
       neighbours(f.inn, `Belts in (${mode === "call" ? "calls" : "imports"})`) + neighbours(f.out, `Belts out (${mode === "call" ? "calls" : "imports"})`);
     pane.querySelectorAll("[data-file]").forEach((el) => el.onclick = () => { const g = fileById.get(el.dataset.file); select(g); focusOn(g); });
     pane.querySelectorAll("[data-trace]").forEach((el) => el.onclick = () => showTrace(el.dataset.trace));
+    wireFix(pane);
     tab("selected");
   }
   function showTrace(id) {
@@ -609,6 +638,7 @@
   const sev = { high: 0, warn: 0, info: 0 };
   for (const fl of D.flags) sev[fl.severity]++;
   $("#title").textContent = D.root.split(/[\\/]/).filter(Boolean).pop() || D.root;
-  $("#meta").textContent = `${D.language} · ${files.length} files · ${D.functions.filter((f) => f.kind !== "module").length} functions · ${sev.high} high · ${sev.warn} warn · ${sev.info} info`;
+  const quiet = (D.silenced || []).length;
+  $("#meta").textContent = `${D.language} · ${files.length} files · ${D.functions.filter((f) => f.kind !== "module").length} functions · ${sev.high} high · ${sev.warn} warn · ${sev.info} info${quiet ? ` · ${quiet} silenced` : ""}`;
   resize(); fit(); renderIssues(); select(null); tab("issues"); requestAnimationFrame(draw);
 })();

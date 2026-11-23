@@ -69,6 +69,11 @@ def shape_of(node) -> tuple[str, str]:
                 parts.append(n.attr)
             elif isinstance(n, ast.Name) and n.id not in local:
                 parts.append(n.id)
+            elif isinstance(n, ast.Constant) and isinstance(n.value, str):
+                # a string's words count: two functions differing only in their SQL or messages aren't copies
+                parts += [f"S:{w}" for w in n.value.split()[:24]]
+            elif isinstance(n, ast.Constant) and isinstance(n.value, (int, float)) and not isinstance(n.value, bool):
+                parts.append(f"N:{n.value}")
     text = " ".join(parts)
     return hashlib.sha1(text.encode()).hexdigest()[:16], text
 

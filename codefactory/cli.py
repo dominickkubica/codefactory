@@ -16,7 +16,10 @@ from .config import load_config
 from .flags import SEVERITY_ORDER, run_flags
 from .graph import Flag, Graph
 from .layers import assign_layers
+from .baseline import baseline_path, compare, read_baseline, write_baseline
+from .plan import make_plan, plan_markdown
 from .skill import install_skill
+from .suppress import apply_suppressions
 from .sqlgraph import query_flags, run_query, to_sqlite
 from .trace import find_function, shortest_path, trace
 from .viewer import render_html
@@ -30,6 +33,7 @@ def build(root: Path, languages: list[str] | None = None) -> Graph:
     if cfg.queries:
         g.flags += [Flag(**f) for f in query_flags(g.to_dict(), cfg.queries)]
         g.flags.sort(key=lambda f: (SEVERITY_ORDER[f.severity], f.kind, f.target))
+    apply_suppressions(g, root, cfg)
     return g
 
 
@@ -120,25 +124,44 @@ def cmd_analyze(a) -> int:
     return 0
 
 
+def _repo(path: str) -> Path:
+    p = Path(path)
+    return p if p.is_dir() else p.parent
+
+
+def _new_only(graph: dict, path: str) -> list[dict]:
+    base = read_baseline(baseline_path(_repo(path)))
+    if base is None:
+        raise SystemExit("codefactory: no baseline yet. Run `codefactory baseline` first (and commit the file).")
+    return compare(graph, base)[0]
+
+
 def cmd_flags(a) -> int:
     graph = load_graph(Path(a.path), a.lang, not a.no_cache)
     limit = SEVERITY_ORDER[a.min]
-    shown = [f for f in graph["flags"] if SEVERITY_ORDER[f["severity"]] <= limit and (not a.kind or f["kind"] in a.kind)]
+    pool = _new_only(graph, a.path) if a.new else graph["flags"]
+    if a.silenced:
+        pool = graph.get("silenced", [])
+    shown = [f for f in pool if SEVERITY_ORDER[f["severity"]] <= limit and (not a.kind or f["kind"] in a.kind)]
     if a.json:
         print(json.dumps([_flag_dict(graph, f) for f in shown], indent=1))
     else:
         for f in shown:
             d = _flag_dict(graph, f)
             print(f"{f['severity']:<5} {f['kind']:<16} {d['file']}:{d['line']}" + (f"  {d['function']}" if d["function"] else ""))
-            print(f"      {f['message']}")
+            print(f"      {f['message']}" + (f"\n      silenced: {f['reason']}" if a.silenced else ""))
         counts = {s: sum(1 for f in graph["flags"] if f["severity"] == s) for s in SEVERITY_ORDER}
-        print(f"\n{len(graph['files'])} files · " + " · ".join(f"{n} {s}" for s, n in counts.items()))
+        quiet = len(graph.get("silenced", []))
+        print(f"\n{len(graph['files'])} files · " + " · ".join(f"{n} {s}" for s, n in counts.items()) +
+              (f" · {quiet} silenced (--silenced lists them)" if quiet else "") +
+              (f" · showing {len(shown)} new since the baseline" if a.new else ""))
     fail = a.fail_on and any(SEVERITY_ORDER[f["severity"]] <= SEVERITY_ORDER[a.fail_on] for f in graph["flags"])
     return 1 if fail else 0
 
 
 def cmd_view(a) -> int:
     graph = load_graph(Path(a.path), a.lang, not a.no_cache)
+    graph = {**graph, "tasks": [{k: t[k] for k in ("id", "title", "prompt", "flags", "score")} for t in make_plan(graph)]}
     out = Path(a.output or "factory.html")
     _write(out, render_html(graph))
     print(f"Wrote {out}: {len(graph['files'])} machines, {len(graph['flags'])} issues")
@@ -235,6 +258,61 @@ def cmd_context(a) -> int:
     return 0
 
 
+def cmd_baseline(a) -> int:
+    graph = load_graph(Path(a.path), a.lang, not a.no_cache)
+    out = baseline_path(_repo(a.path)) if not a.output else Path(a.output)
+    n = write_baseline(graph, out)
+    print(f"Wrote {out}: {n} issues as the baseline. Commit it; `codefactory check` then fails only on new ones.")
+    return 0
+
+
+def cmd_check(a) -> int:
+    """For CI and pre-commit hooks: new issues since the baseline (or, without one, high-severity ones) fail."""
+    graph = load_graph(Path(a.path), a.lang, not a.no_cache)
+    base = read_baseline(baseline_path(_repo(a.path)))
+    level = SEVERITY_ORDER[a.fail_on]
+    if base is None:
+        blocking = [f for f in graph["flags"] if f["severity"] == "high"]
+        fixed = {}
+        print("No baseline (codefactory baseline): checking for high-severity issues only.")
+    else:
+        new, fixed = compare(graph, base)
+        blocking = [f for f in new if SEVERITY_ORDER[f["severity"]] <= level]
+    for f in blocking:
+        d = _flag_dict(graph, f)
+        print(f"{f['severity']:<5} {f['kind']:<16} {d['file']}:{d['line']}" + (f"  {d['function']}" if d["function"] else ""))
+        print(f"      {f['message']}")
+    summary = f"{len(blocking)} new issue(s)" + (f" at {a.fail_on} or worse" if base is not None else "")
+    if fixed:
+        summary += f" · {sum(fixed.values())} fixed since the baseline (run `codefactory baseline` to lock that in)"
+    print(("FAIL: " if blocking else "OK: ") + summary)
+    if blocking:
+        print("Fix them, or if one is intended, add `codefactory: ignore <kind> — <why>` above it.")
+    return 1 if blocking else 0
+
+
+def cmd_plan(a) -> int:
+    tasks = make_plan(load_graph(Path(a.path), a.lang, not a.no_cache))
+    if a.json:
+        print(json.dumps(tasks[: a.top], indent=1))
+    else:
+        print(plan_markdown(tasks, a.top), end="")
+    return 0
+
+
+def cmd_prompt(a) -> int:
+    path, (task_id,) = _split(a.values, 1)
+    tasks = make_plan(load_graph(Path(path), a.lang, not a.no_cache))
+    if task_id.isdigit() and len(task_id) < 4:  # "1" = the first task of the plan
+        task = tasks[int(task_id) - 1] if 0 < int(task_id) <= len(tasks) else None
+    else:
+        task = next((t for t in tasks if t["id"] == task_id), None)
+    if not task:
+        raise SystemExit(f"codefactory: no task {task_id!r}. `codefactory plan` lists them.")
+    print(task["prompt"], end="")
+    return 0
+
+
 def cmd_skill(a) -> int:
     path = install_skill(Path(a.path))
     print(f"Wrote {path}. Claude Code in that repo now knows when and how to use codefactory.")
@@ -251,6 +329,10 @@ COMMANDS = {
     "path": (cmd_path, "the shortest call path between two functions: path [repo] from to"),
     "brief": (cmd_brief, "a Markdown map of the repo for an AI agent: layers, hubs, issues by what to do"),
     "context": (cmd_context, "before changing a file or function: callers, calls, impact, tests: context [repo] name"),
+    "plan": (cmd_plan, "ranked tasks with steps, tests and a fix prompt each: the work list"),
+    "prompt": (cmd_prompt, "a ready-to-paste Claude Code prompt for one task: prompt [repo] <id or rank>"),
+    "baseline": (cmd_baseline, "save today's issues (codefactory-baseline.json, commit it) so only new ones fail"),
+    "check": (cmd_check, "for CI / pre-commit: fail on issues new since the baseline"),
     "skill": (cmd_skill, "teach Claude Code in a repo to use codefactory (writes .claude/skills/codefactory/SKILL.md)"),
 }
 
@@ -261,18 +343,18 @@ def parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="cmd", required=True)
     for name, (_, text) in COMMANDS.items():
         s = sub.add_parser(name, help=text, description=text)
-        if name in ("query", "trace", "path", "context"):
+        if name in ("query", "trace", "path", "context", "prompt"):
             s.add_argument("values", nargs="+", metavar="value")
         else:
             s.add_argument("path", nargs="?", default=".", help="the codebase folder (default: here), or a graph .json")
         if name != "skill":
             s.add_argument("--lang", action="append", choices=sorted(ANALYZERS), help="only these languages")
             s.add_argument("--no-cache", action="store_true", help="analyze again even if nothing changed")
-        if name in ("flags", "query", "trace", "path", "context"):
+        if name in ("flags", "query", "trace", "path", "context", "plan"):
             s.add_argument("--json", action="store_true", help="machine-readable output")
         if name in ("trace", "path"):
             s.add_argument("--refs", action="store_true", help="also follow functions passed by name (callbacks)")
-        if name in ("analyze", "view", "brief"):
+        if name in ("analyze", "view", "brief", "baseline"):
             s.add_argument("-o", "--output", help="output file")
         if name in ("brief", "context"):
             s.add_argument("--limit", type=int, default=12 if name == "brief" else 20, help="items per list")
@@ -280,6 +362,12 @@ def parser() -> argparse.ArgumentParser:
             s.add_argument("--min", choices=list(SEVERITY_ORDER), default="info", help="lowest severity to show")
             s.add_argument("--kind", action="append", help="only these kinds (e.g. --kind io_in_loop --kind similar)")
             s.add_argument("--fail-on", choices=list(SEVERITY_ORDER), help="exit 1 if any issue is this severe (for CI)")
+            s.add_argument("--new", action="store_true", help="only issues not in the baseline")
+            s.add_argument("--silenced", action="store_true", help="list the silenced issues and why")
+        if name == "check":
+            s.add_argument("--fail-on", choices=list(SEVERITY_ORDER), default="warn", help="lowest new severity that fails (default warn)")
+        if name == "plan":
+            s.add_argument("--top", type=int, default=10, help="how many tasks (default 10)")
         if name == "view":
             s.add_argument("--no-open", action="store_true", help="don't open the browser")
         if name == "sql":

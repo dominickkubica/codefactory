@@ -14,6 +14,7 @@ file changes. Run it from the repo root. If the command isn't found, use `python
 | Situation | Command |
 |---|---|
 | Starting a restructure, cleanup or performance pass | `codefactory brief` (layers, most-used code, issues grouped by what to do, copied-code groups with lines saved) |
+| Deciding what to work on | `codefactory plan` (ranked tasks with steps and tests); `codefactory prompt <id or rank>` prints one task as a full brief to follow |
 | About to change, move, rename or delete a function or file | `codefactory context <name or path>` (callers, what it calls, how many functions/files depend on it, tests that exercise it) |
 | Debugging: what does X eventually do? | `codefactory trace <function>` |
 | Debugging: how does A end up calling B? | `codefactory path <A> <B>` |
@@ -34,8 +35,15 @@ file changes. Run it from the repo root. If the command isn't found, use `python
    loaded by convention). Search for the name (including strings) before deleting.
 5. **Static analysis misses dynamic calls** (getattr, callbacks stored in variables, untyped `obj.method()`). Treat
    "no callers" as "no callers found".
-6. **After changing, verify.** Re-run `codefactory flags --min warn` and compare with before (fixed issues gone, no
-   new import loops or layer violations), and run the tests `context` listed plus the project's test command.
+6. **After changing, verify.** Run `codefactory check` if the repo has a `codefactory-baseline.json` (it fails on
+   issues your change introduced), otherwise re-run `codefactory flags --min warn` and compare with before. Run the
+   tests `context` (or the task) listed, plus the project's test command.
+7. **An issue that's intended** (a bounded loop, a deliberate copy, code a framework calls by name): don't contort the
+   code. Add a comment on the line above the function or the flagged line, saying why:
+   `// codefactory: ignore io_in_loop — one query per table, there are 7` (or `# …` in Python). It moves to
+   `codefactory flags --silenced` with its reason.
+8. **Don't update the baseline yourself** (`codefactory baseline`) unless the user asks: it's the line that new
+   issues are measured against.
 
 ## Interpreting severities
 

@@ -54,3 +54,8 @@ h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: v
 .link { color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .empty { color: var(--muted); }
 button:focus-visible, input:focus-visible, .flag:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.fixbtn { display: inline-block; margin-top: 6px; font: 11.5px var(--sans); padding: 3px 9px; border-radius: 999px;
+  border: 1px solid var(--accent); color: var(--accent); background: none; cursor: pointer; }
+.fixbtn:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+#toast { position: absolute; bottom: 64px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--panel);
+  padding: 8px 14px; border-radius: 6px; font-size: 13px; }

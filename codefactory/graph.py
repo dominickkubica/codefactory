@@ -60,6 +60,7 @@ class Flag:
     related: list[str] = field(default_factory=list)
     line: int = 0  # where to look (the function's line, or the exact call)
     score: float = 0.0  # similar: the highest similarity to another member (0-1)
+    reason: str = ""  # silenced: why (from the comment or factory.toml)
 
 
 @dataclass
@@ -71,6 +72,7 @@ class Graph:
     edges: list[Edge] = field(default_factory=list)
     sites: list[Site] = field(default_factory=list)
     flags: list[Flag] = field(default_factory=list)
+    silenced: list[Flag] = field(default_factory=list)  # issues marked as intended; kept so they can be listed
     layers: list[str] = field(default_factory=list)  # left-to-right order for the viewer
     rules: list[str] = field(default_factory=list)  # "a -> b" pairs that are forbidden
 
