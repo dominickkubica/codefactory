@@ -349,7 +349,8 @@ class Review:
                "| # | Action | Effort | Why |", "|---|---|---|---|"]
         for i, f in enumerate(self.findings[:5], 1):
             action = re.split(r"[;:]\s|\.\s", f.fix)[0].rstrip(".")
-            out.append(f"| {i} | **{f.title}**: {action} | {f.effort} | {re.split(r'[;:]\s|\.\s', f.impact)[0].rstrip('.')} |")
+            why = re.split(r"[;:]\s|\.\s", f.impact)[0].rstrip(".")
+            out.append(f"| {i} | **{f.title}**: {action} | {f.effort} | {why} |")
         out += ["", "## 2. System map", "", "| Layer | Files | Lines | Calls into |", "|---|---|---|---|"]
         layer_of = {f["id"]: f["layer"] for f in g["files"]}
         fn_file = {f["id"]: f["file"] for f in g["functions"]}
