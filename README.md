@@ -40,6 +40,11 @@ codefactory query path/to/repo "SELECT qualname, fan_in FROM function_stats ORDE
 `python -m codefactory …` works the same without installing. The HTML page is self-contained: no server, no
 network, so it can be emailed or attached to a PR.
 
+**Zoomed out**, a big codebase shows as halls, one per zone, each with a summary card (files, functions, lines,
+issues, its most-used files) and one conveyor per pair of halls labelled with how many calls (or imports) it carries.
+Forward conveyors arch over the top; dashed orange ones under the floor run backwards. Hover a hall to see only its
+conveyors; click it, or zoom in, and the halls fade into their machines.
+
 **In the viewer:** drag to pan, scroll to zoom, `f` to fit. **Tests** shows or hides test files (hidden at first when
 they're a big share of the code). Hover a machine to see only its belts; click it for its
 functions (lines, callers, callees), issues and neighbours. **Calls / Imports** switches what the belts show. The
