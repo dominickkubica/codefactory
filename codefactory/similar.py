@@ -97,8 +97,8 @@ def near_duplicates(g: Graph, cfg: Config) -> list[Flag]:
             sims = [pairs.get((m, o) if m < o else (o, m)) for o in others]
             known = [s for s in sims if s]
             names = ", ".join(by_id[o].qualname for o in others[:4]) + (" …" if len(others) > 4 else "")
-            pct = f"{round(min(known) * 100)}–{round(max(known) * 100)}%" if len(known) > 1 and min(known) != max(known) \
-                else f"{round(max(known) * 100)}%"
+            lo, hi = round(min(known) * 100), round(max(known) * 100)
+            pct = f"{lo}–{hi}%" if lo != hi else f"{hi}%"
             out.append(Flag("similar", "warn" if best[m] >= 0.85 else "info", m, f"{pct} similar to {names}: likely a copy that was edited",
                             others, line=by_id[m].line, score=round(best[m], 3)))
     return out

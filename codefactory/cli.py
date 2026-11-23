@@ -19,6 +19,7 @@ from .layers import assign_layers
 from .baseline import baseline_path, compare, read_baseline, write_baseline
 from .plan import make_plan, plan_markdown
 from .review import review_markdown
+from .sarif import build_sarif, github_annotations
 from .skill import install_skill
 from .suppress import apply_suppressions
 from .sqlgraph import query_flags, run_query, to_sqlite
@@ -146,6 +147,8 @@ def cmd_flags(a) -> int:
     shown = [f for f in pool if SEVERITY_ORDER[f["severity"]] <= limit and (not a.kind or f["kind"] in a.kind)]
     if a.json:
         print(json.dumps([_flag_dict(graph, f) for f in shown], indent=1))
+    elif a.github:
+        print(github_annotations(graph, shown))
     else:
         for f in shown:
             d = _flag_dict(graph, f)
@@ -279,6 +282,8 @@ def cmd_check(a) -> int:
     else:
         new, fixed = compare(graph, base)
         blocking = [f for f in new if SEVERITY_ORDER[f["severity"]] <= level]
+    if a.github and blocking:
+        print(github_annotations(graph, blocking))
     for f in blocking:
         d = _flag_dict(graph, f)
         print(f"{f['severity']:<5} {f['kind']:<16} {d['file']}:{d['line']}" + (f"  {d['function']}" if d["function"] else ""))
@@ -327,6 +332,29 @@ def cmd_review(a) -> int:
     return 0
 
 
+def cmd_sarif(a) -> int:
+    path = Path(a.path)
+    graph = load_graph(path, a.lang, not a.no_cache)
+    new_keys = None
+    base = read_baseline(baseline_path(_repo(a.path)))
+    if base is not None:
+        from collections import Counter
+        from .baseline import issue_key
+        fns = {f["id"]: f for f in graph["functions"]}
+        new_keys = Counter(issue_key(graph, f, fns) for f in compare(graph, base)[0])
+    doc = build_sarif(graph, path.resolve() if path.is_dir() and not a.no_source_checks else None, new_keys, a.min)
+    if a.new and new_keys is not None:
+        doc["runs"][0]["results"] = [r for r in doc["runs"][0]["results"] if r.get("baselineState", "new") == "new"
+                                     and "suppressions" not in r]
+    out = Path(a.output or "codefactory.sarif")
+    _write(out, json.dumps(doc, indent=1))
+    n = len(doc["runs"][0]["results"])
+    quiet = sum(1 for r in doc["runs"][0]["results"] if "suppressions" in r)
+    print(f"Wrote {out}: {n} results ({quiet} silenced, shown as suppressed). Upload it to GitHub code scanning, or open "
+          "it in VS Code with the SARIF Viewer extension.")
+    return 0
+
+
 def cmd_skill(a) -> int:
     path = install_skill(Path(a.path))
     print(f"Wrote {path}. Claude Code in that repo now knows when and how to use codefactory.")
@@ -348,6 +376,7 @@ COMMANDS = {
     "prompt": (cmd_prompt, "a ready-to-paste Claude Code prompt for one task: prompt [repo] <id or rank>"),
     "baseline": (cmd_baseline, "save today's issues (codefactory-baseline.json, commit it) so only new ones fail"),
     "check": (cmd_check, "for CI / pre-commit: fail on issues new since the baseline"),
+    "sarif": (cmd_sarif, "write issues as SARIF 2.1.0 for GitHub code scanning, VS Code and CI tools"),
     "skill": (cmd_skill, "teach Claude Code in a repo to use codefactory (writes .claude/skills/codefactory/SKILL.md)"),
 }
 
@@ -369,7 +398,7 @@ def parser() -> argparse.ArgumentParser:
             s.add_argument("--json", action="store_true", help="machine-readable output")
         if name in ("trace", "path"):
             s.add_argument("--refs", action="store_true", help="also follow functions passed by name (callbacks)")
-        if name in ("analyze", "view", "brief", "baseline", "review"):
+        if name in ("analyze", "view", "brief", "baseline", "review", "sarif"):
             s.add_argument("-o", "--output", help="output file")
         if name in ("brief", "context"):
             s.add_argument("--limit", type=int, default=12 if name == "brief" else 20, help="items per list")
@@ -379,7 +408,13 @@ def parser() -> argparse.ArgumentParser:
             s.add_argument("--fail-on", choices=list(SEVERITY_ORDER), help="exit 1 if any issue is this severe (for CI)")
             s.add_argument("--new", action="store_true", help="only issues not in the baseline")
             s.add_argument("--silenced", action="store_true", help="list the silenced issues and why")
+            s.add_argument("--github", action="store_true", help="print GitHub Actions annotations (::warning file=…)")
+        if name == "sarif":
+            s.add_argument("--min", choices=list(SEVERITY_ORDER), default="info", help="lowest severity to include")
+            s.add_argument("--new", action="store_true", help="only results new since the baseline")
+            s.add_argument("--no-source-checks", action="store_true", help="only the graph's issues, not secrets/SQL/… line checks")
         if name == "check":
+            s.add_argument("--github", action="store_true", help="also print GitHub Actions annotations for new issues")
             s.add_argument("--fail-on", choices=list(SEVERITY_ORDER), default="warn", help="lowest new severity that fails (default warn)")
         if name == "review":
             s.add_argument("--for-ai", action="store_true", help="append an evidence pack for an AI to finish the review")

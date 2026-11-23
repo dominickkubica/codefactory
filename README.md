@@ -43,6 +43,7 @@ codefactory plan path/to/repo                      # the work list: ranked tasks
 codefactory prompt path/to/repo 1                  # task #1 as a ready-to-paste Claude Code prompt
 codefactory baseline path/to/repo                  # save today's issues (commit codefactory-baseline.json)
 codefactory check path/to/repo                     # CI / pre-commit: fail only on issues new since the baseline
+codefactory sarif path/to/repo -o codefactory.sarif   # issues inline in GitHub code scanning and VS Code
 ```
 
 Commands that take a name also work from inside the repo without the path: `codefactory context setDayMarks`.
@@ -157,6 +158,40 @@ jobs:
 
 As a git pre-commit hook: put `codefactory check` in `.git/hooks/pre-commit` (fast after the first run: unchanged
 code comes from the cache).
+
+## Issues on the line: SARIF and GitHub annotations
+
+`codefactory sarif` writes SARIF 2.1.0 (validated against the OASIS schema), the format GitHub code scanning,
+VS Code and most CI tools read. Every issue, plus the line-level review checks (credentials, SQL built from strings,
+shell strings, swallowed errors…), appears on its line, with:
+
+- a rule per kind, with help text and a fix; security rules carry a `security-severity` so GitHub ranks them
+- links between related places (each copy of duplicated code links to the others)
+- stable fingerprints (kind, file, function: not line numbers), so an alert follows its code through edits
+- silenced issues included as suppressed, with your reason
+- with a baseline, `baselineState` new or unchanged on every result; `--new` keeps only new ones
+
+`--min warn` leaves out the info-level notes (long functions, hubs…), which is usually what you want on pull requests.
+
+**GitHub code scanning** (free on public repos; private repos need GitHub Advanced Security):
+
+```yaml
+      - run: codefactory sarif --min warn -o codefactory.sarif
+      - uses: github/codeql-action/upload-sarif@v3
+        with: { sarif_file: codefactory.sarif, category: codefactory }
+```
+
+**Without code scanning**, `--github` prints GitHub Actions annotations instead, which show on the pull request's
+changed lines on any plan:
+
+```yaml
+      - run: codefactory check --github     # annotations for new issues, and fails on them
+```
+
+(`codefactory flags --github --min warn` annotates every issue instead of only new ones.)
+
+**VS Code:** install Microsoft's *SARIF Viewer* extension and open `codefactory.sarif`: issues list in a panel and
+squiggle in the editor.
 
 ## With Claude Code (or another AI coding agent)
 
@@ -281,6 +316,8 @@ codefactory/
   plan.py               Issues -> ranked tasks with steps, tests and prompts
   suppress.py           Silencing by comment or factory.toml
   baseline.py           The baseline file and the comparison `check` uses
+  review.py, checks.py  The review report and its security / reliability / delivery checks
+  sarif.py              SARIF 2.1.0 and GitHub annotations
   sqlgraph.py           The graph as SQLite; saved queries -> flags
   trace.py              trace (EXPLAIN for a function) and shortest call path
   config.py             factory.toml

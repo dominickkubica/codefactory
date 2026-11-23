@@ -58,9 +58,10 @@ def duplicates(g: Graph, cfg: Config) -> list[Flag]:
         if len(fns) < 2:
             continue
         ids = [f.id for f in fns]
-        names = ", ".join(f.qualname for f in fns[:4]) + (" …" if len(fns) > 4 else "")
         for f in fns:
-            out.append(Flag("duplicate", "warn", f.id, f"Same structure as {len(fns) - 1} other function(s): {names}",
+            others = [o for o in fns if o is not f]
+            names = ", ".join(f"{o.qualname} ({o.file})" for o in others[:3]) + (" …" if len(others) > 3 else "")
+            out.append(Flag("duplicate", "warn", f.id, f"Same code as {names}",
                             [i for i in ids if i != f.id]))
     return out
 
