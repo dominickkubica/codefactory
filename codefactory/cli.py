@@ -54,7 +54,20 @@ def _one_function(graph: dict, name: str) -> dict:
     return hits[0]
 
 
+def _safe_stdout() -> None:
+    """Output piped or redirected on Windows defaults to a code page without → or ·: write UTF-8 there instead, and
+    never crash on a character a console can't show."""
+    out = sys.stdout
+    if not hasattr(out, "reconfigure"):
+        return
+    try:
+        out.reconfigure(encoding="utf-8") if not out.isatty() else out.reconfigure(errors="replace")
+    except (ValueError, OSError):
+        pass
+
+
 def main(argv: list[str] | None = None) -> int:
+    _safe_stdout()
     p = argparse.ArgumentParser(prog="codefactory", description="See a codebase as a factory floor and find its issues.")
     p.add_argument("--version", action="version", version=f"codefactory {__version__}")
     sub = p.add_subparsers(dest="cmd", required=True)
