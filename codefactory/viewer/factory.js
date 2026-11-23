@@ -40,6 +40,24 @@
     fnCallers.get(e.dst).push(e); fnCallees.get(e.src).push(e);
   }
 
+  // EXPLAIN for a function: everything it eventually calls, each at its shortest depth.
+  function traceFrom(start) {
+    const depth = new Map([[start, 0]]), order = [];
+    const q = [start];
+    let loop = false;
+    while (q.length) {
+      const cur = q.shift();
+      for (const e of fnCallees.get(cur) || []) {
+        if (e.kind !== "call") continue;
+        if (e.dst === start) loop = true;
+        if (!depth.has(e.dst) && fnById.has(e.dst)) { depth.set(e.dst, depth.get(cur) + 1); order.push(e.dst); q.push(e.dst); }
+      }
+    }
+    const fns = order.map((id) => ({ fn: fnById.get(id), depth: depth.get(id) }));
+    return { start: fnById.get(start), fns, loop, files: new Set([fnById.get(start).file, ...fns.map((x) => x.fn.file)]),
+      maxDepth: Math.max(0, ...fns.map((x) => x.depth)), loc: fns.reduce((t, x) => t + x.fn.loc, 0) };
+  }
+
   // ---- layout -------------------------------------------------------------------------------------------
   const GAP = 140, PAD = 40, TOP = 110;
   const size = (f) => Math.round(Math.min(150, Math.max(36, 26 + Math.sqrt(f.loc) * 2.6)) / 10) * 10;
@@ -90,7 +108,7 @@
 
   // ---- view ---------------------------------------------------------------------------------------------
   const canvas = $("#floor"), ctx = canvas.getContext("2d");
-  let scale = 1, ox = 0, oy = 0, hover = null, selected = null, flagFilter = null, query = "";
+  let scale = 1, ox = 0, oy = 0, hover = null, selected = null, flagFilter = null, query = "", traced = null;
   function resize() {
     const r = canvas.getBoundingClientRect(), dpr = devicePixelRatio || 1;
     canvas.width = r.width * dpr; canvas.height = r.height * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -142,7 +160,7 @@
       ctx.fillText(`${z.name.toUpperCase()}  ·  ${z.count}`, z.x + 10, TOP - 12);
     }
     const focus = hover || selected;
-    const linked = (b) => !focus || b.src === focus || b.dst === focus;
+    const linked = (b) => traced ? traced.files.has(b.src.id) && traced.files.has(b.dst.id) : !focus || b.src === focus || b.dst === focus;
     // belts
     for (const b of belts) {
       const on = linked(b), visible = matches(b.src) || matches(b.dst);
@@ -162,7 +180,7 @@
     ctx.globalAlpha = 1;
     // machines
     for (const f of files) {
-      const dim = !matches(f) || (focus && f !== focus && !focus.inn.has(f) && !focus.out.has(f));
+      const dim = !matches(f) || (traced ? !traced.files.has(f.id) : focus && f !== focus && !focus.inn.has(f) && !focus.out.has(f));
       ctx.globalAlpha = dim ? 0.25 : 1;
       const idle = f.inn.size === 0 && f.out.size === 0;
       ctx.fillStyle = idle ? C.idle : C.machine; ctx.fillRect(f.x, f.y, f.s, f.s);
@@ -227,7 +245,7 @@
     ox = px - (px - ox) * (next / scale); oy = py - (py - oy) * (next / scale); scale = next;
   }, { passive: false });
   addEventListener("resize", resize);
-  addEventListener("keydown", (e) => { if (e.target.tagName !== "INPUT" && e.key === "f") fit(); if (e.key === "Escape") select(null); });
+  addEventListener("keydown", (e) => { if (e.target.tagName !== "INPUT" && e.key === "f") fit(); if (e.key === "Escape") { traced = null; select(null); } });
 
   // ---- panels -------------------------------------------------------------------------------------------
   const KIND = { cycle: "Import loops", layer_violation: "Layer violations", duplicate: "Duplicates", unused: "Unused",
@@ -253,7 +271,7 @@
     return f.fns.slice().sort((a, b) => a.line - b.line).map((fn) => {
       const inn = (fnCallers.get(fn.id) || []).length, out = (fnCallees.get(fn.id) || []).length;
       const fl = D.flags.filter((x) => x.target === fn.id).map((x) => KIND[x.kind] || x.kind).join(", ");
-      return `<tr><td>${esc(fn.qualname)}<div class="where" style="color:var(--muted)">line ${fn.line}${fl ? " · " + esc(fl) : ""}</div></td>
+      return `<tr><td><span class="link" data-trace="${esc(fn.id)}" title="Trace what it calls">${esc(fn.qualname)}</span><div class="where" style="color:var(--muted)">line ${fn.line}${fl ? " · " + esc(fl) : ""}</div></td>
         <td class="n">${fn.loc}</td><td class="n">${inn}</td><td class="n">${out}</td></tr>`;
     }).join("");
   }
@@ -262,7 +280,7 @@
     return `<h2>${label}</h2>` + (rows ? `<table>${rows}</table>` : `<p class="empty">None.</p>`);
   }
   function select(f) {
-    selected = f;
+    selected = f; traced = null;
     const pane = $("#selected");
     if (!f) { pane.innerHTML = `<p class="empty">Click a machine to see its functions, belts and issues.</p>`; return; }
     pane.innerHTML = `<h2>Machine</h2><div style="font:13px var(--mono);word-break:break-all">${esc(f.id)}</div>
@@ -271,6 +289,23 @@
       `<h2>Functions</h2>` + (f.fns.length ? `<table><tr><th>Name</th><th class="n">Lines</th><th class="n">In</th><th class="n">Out</th></tr>${fnRows(f)}</table>` : `<p class="empty">None.</p>`) +
       neighbours(f.inn, `Belts in (${mode === "call" ? "calls" : "imports"})`) + neighbours(f.out, `Belts out (${mode === "call" ? "calls" : "imports"})`);
     pane.querySelectorAll("[data-file]").forEach((el) => el.onclick = () => { const g = fileById.get(el.dataset.file); select(g); focusOn(g); });
+    pane.querySelectorAll("[data-trace]").forEach((el) => el.onclick = () => showTrace(el.dataset.trace));
+    tab("selected");
+  }
+  function showTrace(id) {
+    traced = traceFrom(id);
+    const t = traced, pane = $("#selected");
+    pane.innerHTML = `<h2>Trace</h2><div style="font:13px var(--mono);word-break:break-all">${esc(t.start.qualname)}</div>
+      <div class="sub">${esc(t.start.file)}:${t.start.line}</div>
+      <p>Reaches <b>${t.fns.length}</b> ${t.fns.length === 1 ? "function" : "functions"} in <b>${t.files.size - 1}</b> other ${t.files.size === 2 ? "file" : "files"}, <b>${t.maxDepth}</b> ${t.maxDepth === 1 ? "call" : "calls"} deep,
+      <b>${t.loc}</b> lines of code.${t.loop ? ` <span style="color:var(--warn)">Calls back into itself (a call loop).</span>` : ""}</p>
+      <button class="chip" id="untrace">Clear trace</button>
+      <h2>Calls, by depth</h2>` + (t.fns.length ? `<table>${t.fns.map((x) => `<tr><td style="padding-left:${6 + (x.depth - 1) * 14}px">
+        <span class="link" data-trace="${esc(x.fn.id)}">${esc(x.fn.qualname)}</span>
+        <div style="color:var(--muted);font:11.5px var(--mono)">${esc(x.fn.file)}:${x.fn.line}</div></td>
+        <td class="n">${x.fn.loc}</td></tr>`).join("")}</table>` : `<p class="empty">It calls nothing the analyzer could resolve.</p>`);
+    pane.querySelectorAll("[data-trace]").forEach((el) => el.onclick = () => showTrace(el.dataset.trace));
+    $("#untrace").onclick = () => { const f = fileById.get(t.start.file); traced = null; select(f); };
     tab("selected");
   }
   function tab(name) {

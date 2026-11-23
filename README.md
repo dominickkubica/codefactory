@@ -26,6 +26,10 @@ codefactory view path/to/repo        # writes factory.html and opens it in your 
 codefactory flags path/to/repo       # issues in the terminal
 codefactory analyze path/to/repo -o repo.graph.json      # the raw graph, for other tools
 codefactory flags path/to/repo --fail-on high            # exit 1 on any high-severity issue (CI)
+codefactory trace path/to/repo checkout            # everything checkout() eventually calls (like SQL EXPLAIN)
+codefactory path path/to/repo checkout tax_for     # the shortest call path between two functions
+codefactory sql path/to/repo -o repo.db            # the graph as a SQLite database
+codefactory query path/to/repo "SELECT qualname, fan_in FROM function_stats ORDER BY fan_in DESC LIMIT 10"
 ```
 
 `python -m codefactory …` works the same without installing. The HTML page is self-contained: no server, no
@@ -33,7 +37,41 @@ network, so it can be emailed or attached to a PR.
 
 **In the viewer:** drag to pan, scroll to zoom, `f` to fit. Hover a machine to see only its belts; click it for its
 functions (lines, callers, callees), issues and neighbours. **Calls / Imports** switches what the belts show. The
-Issues tab filters by kind; clicking an issue flies to its machine.
+Issues tab filters by kind; clicking an issue flies to its machine. Click a function's name to **trace** it: the
+floor lights up only the machines it reaches, and the panel lists every function it calls, by depth, with the total
+lines involved.
+
+## Ask it anything with SQL
+
+`codefactory sql` (or `query`, which builds the database in memory) gives you:
+
+| Table / view | Columns |
+|---|---|
+| `files` | id, module, loc, layer |
+| `functions` | id, file, name, qualname, line, end_line, loc, kind, decorated, exported, dynamic |
+| `edges` | src, dst, kind (`call`, `ref`, `import`), count |
+| `flags` | kind, severity, target, message |
+| `function_stats` (view) | id, file, qualname, loc, fan_in, fan_out, caller_files |
+| `file_deps` (view) | src_file, dst_file, calls |
+
+```sql
+-- big functions everyone depends on: the riskiest code to change
+SELECT qualname, file, loc, caller_files FROM function_stats WHERE loc > 40 AND caller_files >= 5 ORDER BY caller_files DESC;
+-- which files does the api layer pull from the db layer?
+SELECT d.* FROM file_deps d JOIN files a ON a.id = d.src_file JOIN files b ON b.id = d.dst_file
+WHERE a.layer = 'api' AND b.layer = 'db';
+```
+
+**Saved queries become flags.** Add them to `factory.toml`; each row returned is one issue, with a `target` column (a
+file or function id), an optional `message`, and any other columns appended to the message:
+
+```toml
+[[queries]]
+name = "risky_hub"
+severity = "warn"
+message = "Large function called from many files"
+sql = "SELECT id AS target, loc, caller_files FROM function_stats WHERE loc > 40 AND caller_files >= 5"
+```
 
 ## What it flags
 
@@ -88,6 +126,8 @@ codefactory/
   graph.py              The language-neutral graph (files, functions, edges, flags)
   layers.py             Zones and their order
   flags.py              Issue detectors (read only the graph, so they work for every language)
+  sqlgraph.py           The graph as SQLite; saved queries -> flags
+  trace.py              trace (EXPLAIN for a function) and shortest call path
   config.py             factory.toml
   viewer/               The factory page (canvas, no libraries), inlined into one HTML file
   cli.py                analyze / flags / view
@@ -97,6 +137,16 @@ tests/                  unittest; fixtures/shop is a small app with planted prob
 ## Roadmap
 
 - **TypeScript / JavaScript analyzer** (TypeScript compiler API), then more languages via tree-sitter.
+- **Graph diffs, like schema migrations:** compare two commits and report what a change added (new import loops, rule
+  breaks, duplicates, files that grew), as a CLI command and a PR check.
+- **Constraints beyond `forbid`:** allow-lists ("only `services/` may import `db/`"), limits ("no file over 600 lines",
+  "no function with over 15 callees") and must-go-through rules, runnable as a pre-commit hook.
+- **Low cohesion ("normalize this file"):** flag files whose functions never call each other and serve separate
+  callers, and suggest how to split them.
+- **Readable layouts at scale:** order machines inside each zone to minimise belt crossings (layered/Sugiyama layout),
+  show call counts at belt ends like crow's-foot notation, and save named views (e.g. "the checkout flow").
+- **Data dictionary:** docstrings in the machine panel; per-machine count of calls the analyzer couldn't resolve, so
+  you know how far to trust its belts.
 - **Live traffic:** load OpenTelemetry traces or a small Python profiler so real calls move along the belts and slow or
   repeated calls (N+1) pile up visibly.
 - **Agent view:** a Claude Code hook that logs which files each AI session reads and edits, shown as workers walking

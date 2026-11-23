@@ -5,3 +5,4 @@ dist/
 .venv/
 factory.html
 *.graph.json
+*.db

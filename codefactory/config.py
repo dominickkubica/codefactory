@@ -20,6 +20,7 @@ class Config:
     long_function: int = 60
     duplicate_min_lines: int = 6
     hub_callers: int = 12
+    queries: list[dict] = field(default_factory=list)  # saved SQL checks that become flags
 
 
 def parse_rule(rule: str) -> tuple[str, str]:
@@ -44,4 +45,10 @@ def load_config(root: Path) -> Config:
     cfg.long_function = int(t.get("long_function", cfg.long_function))
     cfg.duplicate_min_lines = int(t.get("duplicate_min_lines", cfg.duplicate_min_lines))
     cfg.hub_callers = int(t.get("hub_callers", cfg.hub_callers))
+    for q in data.get("queries", []):
+        if not q.get("name") or not q.get("sql"):
+            raise ValueError("Each [[queries]] entry in factory.toml needs a name and sql")
+        if q.get("severity", "warn") not in ("high", "warn", "info"):
+            raise ValueError(f"Query {q['name']!r}: severity must be high, warn or info")
+        cfg.queries.append({k: q[k] for k in ("name", "sql", "severity", "message") if k in q})
     return cfg
