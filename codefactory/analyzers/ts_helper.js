@@ -29,7 +29,8 @@ function walkDir(dir, out) {
 let options = { allowJs: true, jsx: ts.JsxEmit.Preserve, noEmit: true, skipLibCheck: true, esModuleInterop: true };
 let fileNames = [];
 const cfgPath = ts.findConfigFile(root, ts.sys.fileExists, "tsconfig.json");
-if (cfgPath && path.dirname(cfgPath) === path.resolve(root)) {
+// (TypeScript reports paths with "/", Node on Windows with "\\": compare both resolved.)
+if (cfgPath && path.resolve(path.dirname(cfgPath)) === path.resolve(root)) {
   const cfg = ts.readConfigFile(cfgPath, ts.sys.readFile);
   if (!cfg.error) {
     const parsed = ts.parseJsonConfigFileContent(cfg.config, ts.sys, path.dirname(cfgPath));
