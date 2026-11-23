@@ -18,6 +18,7 @@ from .graph import Flag, Graph
 from .layers import assign_layers
 from .baseline import baseline_path, compare, read_baseline, write_baseline
 from .plan import make_plan, plan_markdown
+from .review import review_markdown
 from .skill import install_skill
 from .suppress import apply_suppressions
 from .sqlgraph import query_flags, run_query, to_sqlite
@@ -313,6 +314,19 @@ def cmd_prompt(a) -> int:
     return 0
 
 
+def cmd_review(a) -> int:
+    path = Path(a.path)
+    if not path.is_dir():
+        raise SystemExit("codefactory: review needs the repository folder (it reads manifests, CI files and source text)")
+    text = review_markdown(load_graph(path, a.lang, not a.no_cache), path.resolve(), a.for_ai)
+    if a.output:
+        _write(Path(a.output), text)
+        print(f"Wrote {a.output}")
+    else:
+        print(text, end="")
+    return 0
+
+
 def cmd_skill(a) -> int:
     path = install_skill(Path(a.path))
     print(f"Wrote {path}. Claude Code in that repo now knows when and how to use codefactory.")
@@ -329,6 +343,7 @@ COMMANDS = {
     "path": (cmd_path, "the shortest call path between two functions: path [repo] from to"),
     "brief": (cmd_brief, "a Markdown map of the repo for an AI agent: layers, hubs, issues by what to do"),
     "context": (cmd_context, "before changing a file or function: callers, calls, impact, tests: context [repo] name"),
+    "review": (cmd_review, "a full technical review (summary, system map, findings by severity, gaps), no AI needed"),
     "plan": (cmd_plan, "ranked tasks with steps, tests and a fix prompt each: the work list"),
     "prompt": (cmd_prompt, "a ready-to-paste Claude Code prompt for one task: prompt [repo] <id or rank>"),
     "baseline": (cmd_baseline, "save today's issues (codefactory-baseline.json, commit it) so only new ones fail"),
@@ -354,7 +369,7 @@ def parser() -> argparse.ArgumentParser:
             s.add_argument("--json", action="store_true", help="machine-readable output")
         if name in ("trace", "path"):
             s.add_argument("--refs", action="store_true", help="also follow functions passed by name (callbacks)")
-        if name in ("analyze", "view", "brief", "baseline"):
+        if name in ("analyze", "view", "brief", "baseline", "review"):
             s.add_argument("-o", "--output", help="output file")
         if name in ("brief", "context"):
             s.add_argument("--limit", type=int, default=12 if name == "brief" else 20, help="items per list")
@@ -366,6 +381,8 @@ def parser() -> argparse.ArgumentParser:
             s.add_argument("--silenced", action="store_true", help="list the silenced issues and why")
         if name == "check":
             s.add_argument("--fail-on", choices=list(SEVERITY_ORDER), default="warn", help="lowest new severity that fails (default warn)")
+        if name == "review":
+            s.add_argument("--for-ai", action="store_true", help="append an evidence pack for an AI to finish the review")
         if name == "plan":
             s.add_argument("--top", type=int, default=10, help="how many tasks (default 10)")
         if name == "view":

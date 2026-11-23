@@ -38,6 +38,7 @@ codefactory query path/to/repo "SELECT qualname, fan_in FROM function_stats ORDE
 codefactory brief path/to/repo                     # a Markdown map for an AI agent (or you)
 codefactory context path/to/repo useGuidedWorkout  # before changing it: callers, calls, impact, tests to run
 codefactory skill path/to/repo                     # teach Claude Code in that repo to use all of this
+codefactory review path/to/repo -o review.md       # a full technical review, no AI (add --for-ai for an AI to finish it)
 codefactory plan path/to/repo                      # the work list: ranked tasks with steps and tests
 codefactory prompt path/to/repo 1                  # task #1 as a ready-to-paste Claude Code prompt
 codefactory baseline path/to/repo                  # save today's issues (commit codefactory-baseline.json)
@@ -71,6 +72,33 @@ functions (lines, callers, callees), issues and neighbours. **Calls / Imports** 
 Issues tab filters by kind; clicking an issue flies to its machine. Click a function's name to **trace** it: the
 floor lights up only the machines it reaches, and the panel lists every function it calls, by depth, with the total
 lines involved.
+
+## A technical review without an AI
+
+`codefactory review` writes the report a principal engineer would: **executive summary** (what the system is,
+overall health as Strong / Adequate / Fragile / At risk with what drives it, top 5 actions with effort), **system
+map** (layers and how they call each other, data stores, external services, trust boundaries, most-depended-on
+code), **findings** by severity (Critical, High, Medium, Low), each with file:line evidence, impact, fix and effort,
+**what is working**, **testing and release gaps**, **open questions** and **review limits**.
+
+On top of everything above (structure, copies, loops, dead code), it checks:
+
+| Area | Checks |
+|---|---|
+| Security | credentials in source, committed `.env` files, SQL built from strings (naming what's interpolated), eval / exec / pickle / unsafe YAML, shell commands built at runtime, TLS checks turned off, raw HTML injection, plain-HTTP URLs |
+| Reliability | swallowed errors, React UI without an error boundary, network calls without a timeout, module-level mutable state, N+1 loops |
+| Testing | no tests; which important code (I/O, widely used) no test reaches, from the call graph |
+| Delivery | CI present, what it runs, whether it runs on pushes; lockfile; dependencies on `*` / `latest` / git; unpinned Python requirements; runtime version pinned; README with run instructions |
+
+Silence a check that doesn't apply with the same comments as other issues (`codefactory: ignore shell — <why>`).
+
+**`--for-ai`** appends an evidence pack: instructions plus the riskiest functions' code (those that delete databases
+or files, swallow errors, branch a lot, do I/O and that no test reaches). An AI confirms or rejects each finding from
+the cited lines and judges the risky code, reading a few thousand tokens instead of the whole repository. On a
+600-file React Native app the whole report with the pack is about 2,600 words.
+
+What it can't judge: intent, product context, runtime and concurrency behaviour that no rule describes. Those are
+what the evidence pack points an AI or a person at.
 
 ## From issues to fixes
 
