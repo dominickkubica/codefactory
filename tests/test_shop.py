@@ -64,6 +64,9 @@ class ShopTest(unittest.TestCase):
             self.assertEqual(json.loads(out.read_text())["schema"], 1)
             self.assertEqual(main(["flags", str(out), "--fail-on", "high"]), 1)
             self.assertEqual(main(["view", str(out), "-o", str(Path(d) / "f.html"), "--no-open"]), 0)
+            with self.assertRaises(SystemExit) as e:  # a folder that doesn't exist: a plain message, not a traceback
+                main(["view", str(out), "-o", str(Path(d) / "missing" / "f.html"), "--no-open"])
+            self.assertIn("doesn't exist", str(e.exception.code))
 
 
 if __name__ == "__main__":

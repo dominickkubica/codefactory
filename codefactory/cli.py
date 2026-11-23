@@ -44,6 +44,17 @@ def _table(cols: list[str], rows: list[tuple], limit: int = 200) -> str:
     return "\n".join([line(cols), line(["-" * w for w in widths]), *map(line, rows)])
 
 
+def _write(path: Path, text: str) -> None:
+    """Writes an output file, or explains plainly why it can't (the folder doesn't exist, no permission)."""
+    if not path.parent.exists():
+        raise SystemExit(f"codefactory: can't save {path}: the folder {path.parent} doesn't exist. "
+                         "Pick an existing folder with -o (on Windows, a OneDrive-synced Desktop is under OneDrive\\Desktop).")
+    try:
+        path.write_text(text, encoding="utf-8")
+    except OSError as e:
+        raise SystemExit(f"codefactory: can't save {path}: {e.strerror or e}")
+
+
 def _one_function(graph: dict, name: str) -> dict:
     hits = find_function(graph, name)
     if not hits:
@@ -109,7 +120,7 @@ def main(argv: list[str] | None = None) -> int:
     if a.cmd == "analyze":
         text = json.dumps(graph, indent=1)
         if a.output:
-            Path(a.output).write_text(text, encoding="utf-8")
+            _write(Path(a.output), text)
             print(f"Wrote {a.output}: {len(graph['files'])} files, {len(graph['flags'])} issues")
         else:
             print(text)
@@ -125,6 +136,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1 if fail else 0
 
     if a.cmd == "sql":
+        if not Path(a.output).resolve().parent.exists():
+            raise SystemExit(f"codefactory: can't save {a.output}: its folder doesn't exist")
         to_sqlite(graph, a.output).close()
         print(f"Wrote {a.output}: tables files, functions, edges, flags; views function_stats, file_deps")
         return 0
@@ -168,7 +181,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     out = Path(a.output or "factory.html")
-    out.write_text(render_html(graph), encoding="utf-8")
+    _write(out, render_html(graph))
     print(f"Wrote {out}: {len(graph['files'])} machines, {len(graph['flags'])} issues")
     if not a.no_open:
         webbrowser.open(out.resolve().as_uri())
