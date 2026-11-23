@@ -1,0 +1,5 @@
+{
+  "compilerOptions": { "strict": true, "jsx": "preserve", "module": "esnext", "moduleResolution": "bundler",
+    "target": "es2022", "paths": { "@/*": ["./src/*"] } },
+  "include": ["src/**/*"]
+}

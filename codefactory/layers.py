@@ -10,7 +10,8 @@ from pathlib import PurePosixPath
 from .config import Config
 from .graph import Graph
 
-TEST_DIRS = {"test", "tests", "testing"}
+TEST_DIRS = {"test", "tests", "testing", "__tests__", "__mocks__", "spec"}
+SOURCE_DIRS = {"src", "lib", "source"}
 
 
 def _inferred(paths: list[str]) -> dict[str, str]:
@@ -29,6 +30,9 @@ def _inferred(paths: list[str]) -> dict[str, str]:
             out[p] = "tests"
             continue
         rest = d[len(common):] if tuple(d[: len(common)]) == tuple(common) else d
+        if rest and rest[0] in SOURCE_DIRS:  # src/app/x.ts -> "app"; files directly in src/ -> "src"
+            out[p] = rest[1] if len(rest) > 1 else rest[0]
+            continue
         out[p] = rest[0] if rest else (common[-1] if common else "root")
     return out
 

@@ -27,7 +27,7 @@
     for (const e of D.edges) {
       if (kind === "call" ? e.kind !== "call" : e.kind !== "import") continue;
       const a = fileOf(e.src), b = fileOf(e.dst);
-      if (!a || !b || a === b) continue;
+      if (!a || !b || a === b || a.hidden || b.hidden) continue;
       const k = a.id + "\u0000" + b.id;
       agg.set(k, (agg.get(k) || 0) + e.count);
     }
@@ -62,25 +62,38 @@
   const GAP = 140, PAD = 40, TOP = 110;
   const size = (f) => Math.round(Math.min(150, Math.max(36, 26 + Math.sqrt(f.loc) * 2.6)) / 10) * 10;
   const layers = D.layers.length ? D.layers : [...new Set(files.map((f) => f.layer))];
-  const zones = [];
-  let x = 0;
-  for (const name of layers) {
-    const members = files.filter((f) => f.layer === name);
-    if (!members.length) continue;
-    members.forEach((f) => { f.s = size(f); });
-    members.sort((a, b) => b.s - a.s || a.id.localeCompare(b.id));
-    const area = members.reduce((t, f) => t + (f.s + PAD) ** 2, 0);
-    const width = Math.max(220, Math.ceil(Math.sqrt(area) * 1.1 / 10) * 10);
-    let cx = 0, cy = 0, rowH = 0;
-    for (const f of members) {
-      if (cx > 0 && cx + f.s > width) { cx = 0; cy += rowH + PAD; rowH = 0; }
-      f.x = x + PAD + cx; f.y = TOP + cy; cx += f.s + PAD; rowH = Math.max(rowH, f.s);
-      f.zone = zones.length;
+  const hasTests = files.some((f) => f.layer === "tests");
+  let showTests = !hasTests || files.filter((f) => f.layer === "tests").length < files.length * 0.1;
+  let zones = [], worldW = 0, worldH = 0;
+  files.forEach((f) => { f.s = size(f); });
+  // Zones are halls of one shared height, each as wide as its machines need, so the whole floor has about the
+  // screen's shape: a big codebase fits on screen instead of becoming a long thin strip.
+  function layout() {
+    zones = [];
+    files.forEach((f) => { f.hidden = f.layer === "tests" && !showTests; f.zone = -1; });
+    const groups = layers.map((name) => files.filter((f) => f.layer === name && !f.hidden)).filter((m) => m.length);
+    const areaOf = (m) => m.reduce((t, f) => t + (f.s + PAD) ** 2, 0) * 1.15;
+    const total = groups.reduce((t, m) => t + areaOf(m), 0);
+    const aspect = Math.max(1, (innerWidth - 360) / Math.max(300, innerHeight));
+    const hall = Math.max(240, Math.sqrt(total / aspect));
+    let x = 0;
+    for (const members of groups) {
+      members.sort((a, b) => b.s - a.s || a.id.localeCompare(b.id));
+      const width = Math.max(members[0].s + PAD, Math.ceil(areaOf(members) / hall / 10) * 10);
+      let cx = 0, cy = 0, rowH = 0;
+      for (const f of members) {
+        if (cx > 0 && cx + f.s > width) { cx = 0; cy += rowH + PAD; rowH = 0; }
+        f.x = x + PAD + cx; f.y = TOP + cy; cx += f.s + PAD; rowH = Math.max(rowH, f.s);
+        f.zone = zones.length;
+      }
+      zones.push({ name: members[0].layer, x, w: width + PAD * 2, h: cy + rowH + PAD * 2 + 30, count: members.length });
+      x += width + PAD * 2 + GAP;
     }
-    zones.push({ name, x, w: width + PAD * 2, h: cy + rowH + PAD * 2 + 30, count: members.length });
-    x += width + PAD * 2 + GAP;
+    const h = Math.max(...zones.map((z) => z.h), 200);
+    zones.forEach((z) => { z.h = h; });
+    worldW = x - GAP; worldH = h + TOP;
   }
-  const worldW = x - GAP, worldH = Math.max(...zones.map((z) => z.h), 200) + TOP;
+  layout();
 
   let mode = "call", belts = [];
   function buildBelts() {
@@ -119,12 +132,13 @@
     ox = (r.width - worldW * scale) / 2; oy = Math.max(20, (r.height - worldH * scale) / 2);
   }
   function focusOn(f) {
+    if (f.hidden) { showTests = true; testsBtn.setAttribute("aria-pressed", true); layout(); buildBelts(); }
     const r = canvas.getBoundingClientRect();
     scale = Math.max(scale, 1);
     ox = r.width / 2 - (f.x + f.s / 2) * scale; oy = r.height / 2 - (f.y + f.s / 2) * scale;
   }
   const toWorld = (px, py) => [(px - ox) / scale, (py - oy) / scale];
-  const hit = (wx, wy) => files.find((f) => wx >= f.x && wx <= f.x + f.s && wy >= f.y && wy <= f.y + f.s) || null;
+  const hit = (wx, wy) => files.find((f) => !f.hidden && wx >= f.x && wx <= f.x + f.s && wy >= f.y && wy <= f.y + f.s) || null;
   const matches = (f) => (!query || f.id.toLowerCase().includes(query)) && (!flagFilter || f.flags.some((fl) => fl.kind === flagFilter));
 
   function pointAt(b, d) {
@@ -164,7 +178,9 @@
     // belts
     for (const b of belts) {
       const on = linked(b), visible = matches(b.src) || matches(b.dst);
-      ctx.globalAlpha = !visible ? 0.06 : on ? 0.9 : 0.12;
+      // with no machine in focus, a big floor's belts stay faint so the machines read first
+      const rest = focus || traced ? 0.9 : belts.length > 300 ? 0.28 : 0.8;
+      ctx.globalAlpha = !visible ? 0.06 : on ? rest : 0.1;
       ctx.strokeStyle = b.back ? C.back : C.belt; ctx.lineWidth = b.w;
       ctx.setLineDash(b.back ? [8, 5] : []);
       ctx.beginPath(); ctx.moveTo(...b.pts[0]); for (const p of b.pts.slice(1)) ctx.lineTo(...p); ctx.stroke();
@@ -180,6 +196,7 @@
     ctx.globalAlpha = 1;
     // machines
     for (const f of files) {
+      if (f.hidden) continue;
       const dim = !matches(f) || (traced ? !traced.files.has(f.id) : focus && f !== focus && !focus.inn.has(f) && !focus.out.has(f));
       ctx.globalAlpha = dim ? 0.25 : 1;
       const idle = f.inn.size === 0 && f.out.size === 0;
@@ -319,6 +336,14 @@
     if (selected) select(selected);
   });
   $("#fit").onclick = fit;
+  const testsBtn = $("#tests");
+  testsBtn.hidden = !hasTests;
+  testsBtn.setAttribute("aria-pressed", showTests);
+  testsBtn.onclick = () => {
+    showTests = !showTests; testsBtn.setAttribute("aria-pressed", showTests);
+    if (selected && selected.layer === "tests" && !showTests) select(null);
+    traced = null; layout(); buildBelts(); fit();
+  };
   $("#search").oninput = (e) => { query = e.target.value.trim().toLowerCase(); };
   $("#search").onkeydown = (e) => { if (e.key === "Enter") { const f = files.find(matches); if (f) { select(f); focusOn(f); } } };
 

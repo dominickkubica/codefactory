@@ -20,6 +20,7 @@ class Function:
     exported: bool = False  # listed in __all__ or an entry point
     shape: str = ""  # structural hash, for duplicate detection
     dynamic: bool = False  # a method whose name is used as obj.name somewhere we couldn't resolve
+    public: bool = False  # TS/JS `export`: in a file nothing imports, a framework's entry point (a route, a screen)
 
 
 @dataclass

@@ -12,15 +12,29 @@ SEVERITY_ORDER = {"high": 0, "warn": 1, "info": 2}
 def _is_entry(fn) -> bool:
     n = fn.name
     return (fn.kind == "module" or fn.exported or fn.decorated or n.startswith("__") or n.startswith("test")
-            or n in ("setUp", "tearDown", "setUpClass", "tearDownClass") or "/tests/" in f"/{fn.file}"
-            or fn.file.split("/")[-1].startswith("test_"))
+            or n in ("setUp", "tearDown", "setUpClass", "tearDownClass") or _is_test_file(fn.file))
+
+
+def _is_test_file(path: str) -> bool:
+    parts = path.split("/")
+    name = parts[-1]
+    return any(p in ("tests", "test", "__tests__", "__mocks__") for p in parts[:-1]) or name.startswith("test_") \
+        or ".test." in name or ".spec." in name or name.endswith("_test.py")
 
 
 def dead_code(g: Graph) -> list[Flag]:
+    file_of = {fn.id: fn.file for fn in g.functions}
     used = {e.dst for e in g.edges if e.kind in ("call", "ref")}
+    used_by_code = {e.dst for e in g.edges if e.kind in ("call", "ref") and not _is_test_file(file_of.get(e.src, ""))}
+    imported = {e.dst for e in g.edges if e.kind == "import"}
     out = []
     for fn in g.functions:
-        if fn.id in used or _is_entry(fn):
+        # A file nothing imports is loaded by a framework, a runner or a user: its exports are entry points.
+        if _is_entry(fn) or (fn.public and fn.file not in imported):
+            continue
+        if fn.id in used:
+            if fn.id not in used_by_code and not _is_test_file(fn.file):
+                out.append(Flag("test_only", "info", fn.id, f"{fn.qualname} is only called from tests"))
             continue
         if fn.kind == "method":  # often called through an instance or a framework: only a hint
             if fn.dynamic:

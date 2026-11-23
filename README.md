@@ -3,6 +3,8 @@
 See a codebase as a top-down factory floor, then use it to find what's wrong: dead code, copy-pasted functions,
 import loops, layer violations, oversized files and hubs everything depends on.
 
+Reads **Python** and **TypeScript / JavaScript** (including React and React Native: hooks, JSX components, path aliases).
+
 | On the floor | In the code |
 |---|---|
 | **Zone** | A layer: a top-level folder (`api/`, `db/`…), one you define, or for flat projects a level of import depth |
@@ -17,7 +19,10 @@ utilities), like raw materials arriving on the right and finished goods leaving 
 
 ## Install and run
 
-Needs Python 3.11+. No dependencies.
+Needs Python 3.11+, with no Python dependencies. For TypeScript / JavaScript it also needs
+[Node.js](https://nodejs.org) and the `typescript` package: the analyzed repo's own `node_modules/typescript` is used
+(so `npm install` there is enough), else a global one (`npm install -g typescript`), or set `CODEFACTORY_TYPESCRIPT`
+to its folder. Without them, Python is still mapped and TypeScript is skipped with a note.
 
 ```bash
 pip install git+https://github.com/<you>/codefactory      # or, from a clone: pip install -e .
@@ -35,7 +40,8 @@ codefactory query path/to/repo "SELECT qualname, fan_in FROM function_stats ORDE
 `python -m codefactory …` works the same without installing. The HTML page is self-contained: no server, no
 network, so it can be emailed or attached to a PR.
 
-**In the viewer:** drag to pan, scroll to zoom, `f` to fit. Hover a machine to see only its belts; click it for its
+**In the viewer:** drag to pan, scroll to zoom, `f` to fit. **Tests** shows or hides test files (hidden at first when
+they're a big share of the code). Hover a machine to see only its belts; click it for its
 functions (lines, callers, callees), issues and neighbours. **Calls / Imports** switches what the belts show. The
 Issues tab filters by kind; clicking an issue flies to its machine. Click a function's name to **trace** it: the
 floor lights up only the machines it reaches, and the panel lists every function it calls, by depth, with the total
@@ -82,6 +88,7 @@ sql = "SELECT id AS target, loc, caller_files FROM function_stats WHERE loc > 40
 | Duplicate | warn | Functions with the same structure, even with renamed variables (≥ 6 lines, not one-liners) |
 | Unused | warn / info | Functions nothing calls or references. Methods are only "info", and skipped when their name is used as `obj.name` anywhere |
 | Hub | info | A function called from 12+ files: change it carefully |
+| Test only | info | Code nothing but tests calls: dead in the product, still kept alive by its tests |
 | Large file / long function | info | Over 400 / 60 lines |
 
 ## factory.toml (optional)
@@ -108,7 +115,20 @@ hub_callers = 12
 
 ## How accurate is it?
 
-Analysis is static (nothing is run), so the graph is a good approximation, not the truth:
+Analysis is static (nothing is run), so the graph is a good approximation, not the truth.
+
+**TypeScript / JavaScript** uses the TypeScript compiler's type checker with the repo's own `tsconfig.json`, so it
+follows most calls:
+
+- imports through path aliases (`@/db/steps`), re-exports and `require()`; `import type` doesn't count as an import
+- methods on typed objects (`store.save()`), functions handed out by hooks (`const { logSet } = useRun(); logSet()`),
+  JSX components (`<Button />` is a call to `Button`), `new Class()` to its constructor
+- named functions inside functions (a hook's handlers) are machines' functions of their own, qualified by their
+  owner (`useRun.logSet`); inline callbacks (`onPress={() => …}`) belong to the function around them
+- not "unused": default exports, exports of files nothing imports (routes and screens a framework loads), functions
+  kept in objects (`{ label, onPress }`), tests. Exports nobody uses in imported files are reported.
+
+**Python:**
 
 - **Resolved:** plain calls, imported names (absolute and relative, through package re-exports), `module.func()`,
   `self.method()`, `cls.method()`, `ClassName()` (to `__init__`), and functions passed by name (callbacks).
@@ -116,13 +136,14 @@ Analysis is static (nothing is run), so the graph is a good approximation, not t
   isn't known. Those methods are protected from false "unused" reports, but their belts don't show.
 - Decorated functions, `__all__` names, `main`, dunders and tests are treated as entry points and never "unused".
 
-Speed is about 15 ms per file (a 1,000-file repo maps in ~15 s).
+Speed: Python about 15 ms per file; TypeScript about 30 s for a 600-file React Native app (the type checker dominates).
 
 ## Layout
 
 ```
 codefactory/
   analyzers/python.py   Python → graph (stdlib ast). Add a language by adding a module and registering it
+  analyzers/typescript.py, ts_helper.js   TypeScript/JavaScript → graph (TypeScript compiler, run in Node)
   graph.py              The language-neutral graph (files, functions, edges, flags)
   layers.py             Zones and their order
   flags.py              Issue detectors (read only the graph, so they work for every language)
@@ -136,7 +157,7 @@ tests/                  unittest; fixtures/shop is a small app with planted prob
 
 ## Roadmap
 
-- **TypeScript / JavaScript analyzer** (TypeScript compiler API), then more languages via tree-sitter.
+- **More languages** via tree-sitter (Go, Rust, Java, C#, Swift).
 - **Graph diffs, like schema migrations:** compare two commits and report what a change added (new import loops, rule
   breaks, duplicates, files that grew), as a CLI command and a PR check.
 - **Constraints beyond `forbid`:** allow-lists ("only `services/` may import `db/`"), limits ("no file over 600 lines",

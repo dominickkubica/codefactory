@@ -19,3 +19,4 @@ include = ["codefactory*"]
 
 [tool.setuptools.package-data]
 "codefactory.viewer" = ["*.html", "*.css", "*.js"]
+"codefactory.analyzers" = ["*.js"]
