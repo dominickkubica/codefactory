@@ -106,12 +106,15 @@ def _collect(mod: _Module, known: set[str]) -> None:
 
 def _add_function(mod: _Module, node, qualname: str, kind: str) -> Function:
     end = getattr(node, "end_lineno", node.lineno)
+    # The same name defined twice (a property's getter and setter, a platform-specific redefinition): the later
+    # one gets its line in the id, and name lookups keep finding the first.
+    fid = f"{mod.rel}::{qualname}" if qualname not in mod.funcs else f"{mod.rel}::{qualname}@{node.lineno}"
     f = Function(
-        id=f"{mod.rel}::{qualname}", file=mod.rel, name=node.name, qualname=qualname, line=node.lineno, end=end,
+        id=fid, file=mod.rel, name=node.name, qualname=qualname, line=node.lineno, end=end,
         loc=end - node.lineno + 1, kind=kind, decorated=bool(node.decorator_list),
         exported=node.name in mod.exports or node.name == "main", shape=shape_of(node),
     )
-    mod.funcs[qualname] = f
+    mod.funcs.setdefault(qualname, f)
     return f
 
 

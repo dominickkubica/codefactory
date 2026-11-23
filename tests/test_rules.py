@@ -68,6 +68,21 @@ class RulesTest(unittest.TestCase):
         self.assertNotIn("app.py::index", unused)  # decorated: a framework calls it
         self.assertNotIn("app.py::route", unused)  # used as a decorator
 
+    def test_same_name_twice_gets_unique_ids(self):
+        root = project({"a.py": """
+            class Box:
+                @property
+                def size(self):
+                    return self._size
+
+                @size.setter
+                def size(self, v):
+                    self._size = v
+        """})
+        ids = [f.id for f in build(root).functions if f.name == "size"]
+        self.assertEqual(len(set(ids)), 2)
+        self.assertIn("a.py::Box.size", ids)
+
     def test_bad_syntax_is_skipped(self):
         root = project({"ok.py": "def f():\n    return 1\n", "broken.py": "def (:\n"})
         self.assertEqual([f.id for f in build(root).files], ["ok.py"])
