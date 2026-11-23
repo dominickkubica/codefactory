@@ -13,7 +13,7 @@ CREATE TABLE files (id TEXT PRIMARY KEY, module TEXT, loc INTEGER, layer TEXT);
 CREATE TABLE functions (id TEXT PRIMARY KEY, file TEXT REFERENCES files(id), name TEXT, qualname TEXT,
   line INTEGER, end_line INTEGER, loc INTEGER, kind TEXT, decorated INTEGER, exported INTEGER, dynamic INTEGER);
 CREATE TABLE edges (src TEXT, dst TEXT, kind TEXT, count INTEGER);
-CREATE TABLE flags (kind TEXT, severity TEXT, target TEXT, message TEXT);
+CREATE TABLE flags (kind TEXT, severity TEXT, target TEXT, message TEXT, line INTEGER);
 CREATE INDEX edges_src ON edges(src, kind);
 CREATE INDEX edges_dst ON edges(dst, kind);
 CREATE INDEX functions_file ON functions(file);
@@ -43,8 +43,8 @@ def to_sqlite(graph: dict, path: str | Path = ":memory:") -> sqlite3.Connection:
                      int(f["decorated"]), int(f["exported"]), int(f.get("dynamic", False))) for f in graph["functions"]])
     db.executemany("INSERT INTO edges VALUES (?, ?, ?, ?)",
                    [(e["src"], e["dst"], e["kind"], e["count"]) for e in graph["edges"]])
-    db.executemany("INSERT INTO flags VALUES (?, ?, ?, ?)",
-                   [(f["kind"], f["severity"], f["target"], f["message"]) for f in graph["flags"]])
+    db.executemany("INSERT INTO flags VALUES (?, ?, ?, ?, ?)",
+                   [(f["kind"], f["severity"], f["target"], f["message"], f.get("line", 0)) for f in graph["flags"]])
     db.commit()
     return db
 

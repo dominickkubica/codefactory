@@ -12,7 +12,7 @@ import hashlib
 from collections import Counter
 from pathlib import Path
 
-from ..graph import Edge, File, Function, Graph
+from ..graph import Edge, File, Function, Graph, Site
 
 
 def iter_files(root: Path, ignore: list[str]) -> list[Path]:
@@ -35,19 +35,28 @@ def module_name(rel: Path) -> str:
     return ".".join(parts)
 
 
-def shape_of(node) -> str:
-    """Hash of a function's structure. Local names (arguments, variables) and the docstring are blanked out, so
-    a copy with renamed variables still matches; names it uses from outside (calls, attributes) are kept, so two
-    small functions that merely look alike don't."""
+def _preorder(node):
+    stack = [node]
+    while stack:
+        n = stack.pop()
+        yield n
+        stack.extend(reversed(list(ast.iter_child_nodes(n))))
+
+
+def shape_of(node) -> tuple[str, str]:
+    """(hash, tokens) of a function's structure, in source order. Local names (arguments, variables) and the
+    docstring are blanked out, so a copy with renamed variables still matches; names it uses from outside (calls,
+    attributes) are kept, so two small functions that merely look alike don't. The tokens feed near-duplicate
+    detection; the hash, exact duplicates."""
     body = list(node.body)
     if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant) \
             and isinstance(body[0].value.value, str):
         body = body[1:]
-    nodes = [n for stmt in body for n in ast.walk(stmt)]
+    nodes = [n for stmt in body for n in _preorder(stmt)]
     local = {a.arg for a in ast.walk(node.args) if isinstance(a, ast.arg)}
     local |= {n.id for n in nodes if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store)}
     if len(nodes) < 15:  # a line or two (raise NotImplementedError, return self.x): alike by nature, not copies
-        return ""
+        return "", ""
     parts = []
     for n in nodes:
         if True:
@@ -60,7 +69,68 @@ def shape_of(node) -> str:
                 parts.append(n.attr)
             elif isinstance(n, ast.Name) and n.id not in local:
                 parts.append(n.id)
-    return hashlib.sha1(" ".join(parts).encode()).hexdigest()[:16] if parts else ""
+    text = " ".join(parts)
+    return hashlib.sha1(text.encode()).hexdigest()[:16], text
+
+
+# Calls that leave the process: a database, files, the network, other programs. Matched on calls the analyzer
+# couldn't resolve to the codebase's own functions (those are followed instead).
+DB_METHODS = {"execute", "executemany", "executescript", "fetchone", "fetchall", "fetchmany", "commit", "rollback",
+              "scalars", "scalar", "query", "bulk_create", "bulk_update", "get_or_create", "update_or_create"}
+IO_MODULES = {"requests", "httpx", "urllib", "aiohttp", "subprocess", "socket", "boto3", "redis", "shutil", "smtplib",
+              "ftplib", "sqlite3", "psycopg", "psycopg2", "pymongo", "asyncpg"}
+FILE_METHODS = {"read_text", "write_text", "read_bytes", "write_bytes", "urlopen", "iterdir", "glob", "rglob"}
+
+
+def io_call(func: ast.AST, call: ast.Call | None = None) -> str | None:
+    """The I/O call's name ("cursor.execute"), or None. A SQL string starting with SELECT marks a read."""
+    sink = _io_call(func)
+    if sink and call is not None and call.args and isinstance(call.args[0], ast.Constant) and isinstance(call.args[0].value, str):
+        verb = call.args[0].value.lstrip().split(" ", 1)[0].upper()
+        if verb in ("SELECT", "WITH"):
+            sink += '("SELECT …")'
+    return sink
+
+
+def _io_call(func: ast.AST) -> str | None:
+    dotted = _dotted(func) or ""
+    last = func.attr if isinstance(func, ast.Attribute) else func.id if isinstance(func, ast.Name) else ""
+    head = dotted.split(".")[0]
+    if isinstance(func, ast.Name) and last in ("open", "urlopen"):
+        return last
+    if head in IO_MODULES or ".objects." in f".{dotted}." or dotted in ("time.sleep", "asyncio.sleep"):
+        return dotted
+    if isinstance(func, ast.Attribute) and (last in DB_METHODS or last in FILE_METHODS):
+        return dotted or last
+    return None
+
+
+LOOPS = (ast.For, ast.AsyncFor, ast.While)
+COMPREHENSIONS = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
+SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
+
+
+def walk_loops(nodes):
+    """Every node under `nodes`, with whether it runs once per iteration of a loop (for/while/comprehension) and
+    whether that's a for/while statement (where an await waits on each round in turn). A nested def starts afresh."""
+    stack = [(n, False, False) for n in reversed(list(nodes))]
+    while stack:
+        n, loop, stmt = stack.pop()
+        yield n, loop, stmt
+        kids: list[tuple[ast.AST, bool, bool]] = []
+        if isinstance(n, (ast.For, ast.AsyncFor)):
+            kids = [(n.target, loop, stmt), (n.iter, loop, stmt)] + [(c, True, True) for c in n.body + n.orelse]
+        elif isinstance(n, ast.While):
+            kids = [(n.test, True, True)] + [(c, True, True) for c in n.body + n.orelse]
+        elif isinstance(n, COMPREHENSIONS):
+            gens = n.generators
+            kids = [(gens[0].iter, loop, stmt)] + [(c, True, stmt) for c in ast.iter_child_nodes(n) if c is not gens[0]]
+            kids += [(c, True, stmt) for c in ast.iter_child_nodes(gens[0]) if c is not gens[0].iter]
+        elif isinstance(n, SCOPES) and stack is not None:
+            kids = [(c, False, False) for c in ast.iter_child_nodes(n)]
+        else:
+            kids = [(c, loop, stmt) for c in ast.iter_child_nodes(n)]
+        stack.extend(reversed(kids))
 
 
 class _Module:
@@ -109,10 +179,11 @@ def _add_function(mod: _Module, node, qualname: str, kind: str) -> Function:
     # The same name defined twice (a property's getter and setter, a platform-specific redefinition): the later
     # one gets its line in the id, and name lookups keep finding the first.
     fid = f"{mod.rel}::{qualname}" if qualname not in mod.funcs else f"{mod.rel}::{qualname}@{node.lineno}"
+    shape, tokens = shape_of(node)
     f = Function(
         id=fid, file=mod.rel, name=node.name, qualname=qualname, line=node.lineno, end=end,
         loc=end - node.lineno + 1, kind=kind, decorated=bool(node.decorator_list),
-        exported=node.name in mod.exports or node.name == "main", shape=shape_of(node),
+        exported=node.name in mod.exports or node.name == "main", shape=shape, tokens=tokens,
     )
     mod.funcs.setdefault(qualname, f)
     return f
@@ -206,22 +277,33 @@ def _dotted(node: ast.AST) -> str | None:
     return None
 
 
-def _edges_from(body_nodes, mod: _Module, cls: str | None, src_id: str, res: _Resolver, calls: Counter, refs: Counter):
+def _edges_from(body_nodes, mod: _Module, cls: str | None, src_id: str, res: _Resolver, calls: Counter, refs: Counter,
+                sites: list | None = None, io: set | None = None):
     call_funcs = set()
-    for stmt in body_nodes:
-        for n in ast.walk(stmt):
-            if isinstance(n, ast.Call):
-                call_funcs.add(id(n.func))
-                target = res.name(mod, n.func.id) if isinstance(n.func, ast.Name) else (
-                    res.attr(mod, n.func, cls) if isinstance(n.func, ast.Attribute) else None)
-                if target and target != src_id:
-                    calls[(src_id, target)] += 1
-                elif not target and isinstance(n.func, ast.Attribute) and n.func.attr in res.unique_methods:
+    walked = list(walk_loops(body_nodes))
+    for n, loop, stmt in walked:
+        if isinstance(n, ast.Await) and stmt and sites is not None:
+            sites.append(Site(src_id, "loop_await", n.lineno))
+        if isinstance(n, ast.Call):
+            call_funcs.add(id(n.func))
+            target = res.name(mod, n.func.id) if isinstance(n.func, ast.Name) else (
+                res.attr(mod, n.func, cls) if isinstance(n.func, ast.Attribute) else None)
+            if target and target != src_id:
+                calls[(src_id, target)] += 1
+                if loop and sites is not None:
+                    sites.append(Site(src_id, "loop_call", n.lineno, target=target))
+            elif not target:
+                sink = io_call(n.func, n)
+                if sink and io is not None:
+                    io.add(sink)
+                    if loop and sites is not None:
+                        sites.append(Site(src_id, "loop_io", n.lineno, detail=sink))
+                if isinstance(n.func, ast.Attribute) and n.func.attr in res.unique_methods:
                     guess = res.unique_methods[n.func.attr]
                     if guess != src_id:
                         refs[(src_id, guess)] += 1
-    for stmt in body_nodes:
-        for n in ast.walk(stmt):
+    for n, _, _ in walked:
+        if True:
             if id(n) in call_funcs:
                 continue
             target = None
@@ -258,19 +340,23 @@ def analyze_python(root: Path, ignore: list[str]) -> Graph:
         top = Function(id=f"{m.rel}::<module>", file=m.rel, name="<module>", qualname="<module>", line=1,
                        end=1, loc=0, kind="module")
         g.functions.append(top)
+        top_io: set[str] = set()
         top_level = [n for n in m.tree.body if not isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
         for n in top_level:  # class bodies' own statements, decorators and module code
             if isinstance(n, ast.ClassDef):
                 stmts = [s for s in n.body if not isinstance(s, (ast.FunctionDef, ast.AsyncFunctionDef))]
                 stmts += [d for s in n.body if isinstance(s, (ast.FunctionDef, ast.AsyncFunctionDef))
                           for d in s.decorator_list]
-                _edges_from(stmts + n.decorator_list, m, n.name, top.id, res, calls, refs)
+                _edges_from(stmts + n.decorator_list, m, n.name, top.id, res, calls, refs, g.sites, top_io)
             else:
-                _edges_from([n], m, None, top.id, res, calls, refs)
+                _edges_from([n], m, None, top.id, res, calls, refs, g.sites, top_io)
         for fn, node, cls in defs[name]:
             g.functions.append(fn)
+            fn_io: set[str] = set()
             _edges_from(node.decorator_list, m, cls, top.id, res, calls, refs)
-            _edges_from(node.body, m, cls, fn.id, res, calls, refs)
+            _edges_from(node.body, m, cls, fn.id, res, calls, refs, g.sites, fn_io)
+            fn.io = sorted(fn_io)
+        top.io = sorted(top_io)
         targets = set(m.aliases.values()) | {src for src, _ in m.symbols.values()}
         for t in targets:
             dst = modules.get(t)

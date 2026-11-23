@@ -21,6 +21,41 @@
     f.flags.push(fl);
     if (f.worst === null || SEV[fl.severity] < SEV[f.worst]) f.worst = fl.severity;
   }
+  // Lenses: duplication (copies and near-copies), efficiency (I/O, searches and awaits inside loops), size.
+  const DUP = new Set(["duplicate", "similar"]), SLOW = new Set(["io_in_loop", "quadratic_scan", "sequential_await"]);
+  const LENS_KINDS = { duplication: DUP, efficiency: SLOW, size: new Set(["large_file", "long_function"]) };
+  for (const f of files) {
+    const copied = new Set(f.flags.filter((x) => DUP.has(x.kind)).map((x) => x.target));
+    f.dupFns = copied.size;
+    f.dupLoc = [...copied].reduce((t, id) => t + (fnById.get(id)?.loc || 0), 0);
+    f.slow = f.flags.filter((x) => SLOW.has(x.kind)).reduce((t, x) => t + (x.severity === "warn" ? 3 : 1), 0);
+    f.ioFns = f.fns.filter((fn) => fn.io && fn.io.length).length;
+    f.longFns = f.flags.filter((x) => x.kind === "long_function").length;
+  }
+  const twins = new Map(); // "a|b" -> { a, b, score }: two files holding copies of each other's code
+  for (const fl of D.flags) {
+    if (!DUP.has(fl.kind)) continue;
+    const a = fileOf(fl.target);
+    for (const r of fl.related || []) {
+      const b = fileOf(r);
+      if (!a || !b || a === b) continue;
+      const [x, y] = a.id < b.id ? [a, b] : [b, a], k = x.id + "|" + y.id;
+      const score = fl.kind === "duplicate" ? 1 : fl.score || 0.8;
+      const t = twins.get(k);
+      if (!t || t.score < score) twins.set(k, { a: x, b: y, score, n: (t?.n || 0) + 1 });
+      else t.n++;
+    }
+  }
+  const hot = new Set(); // "src>dst" file pairs where a loop calls into code that does I/O
+  for (const fl of D.flags) {
+    if (fl.kind !== "io_in_loop") continue;
+    const a = fileOf(fl.target), b = fl.related && fl.related[0] ? fileOf(fl.related[0]) : a;
+    if (a && b) hot.add(a.id + ">" + b.id);
+  }
+  const lensMetric = { issues: () => 0, duplication: (f) => f.dupLoc, efficiency: (f) => f.slow, size: (f) => f.loc };
+  const lensMax = {};
+  for (const k of Object.keys(lensMetric)) lensMax[k] = Math.max(1, ...files.map(lensMetric[k]));
+  let lens = "issues";
   const fnCallers = new Map(), fnCallees = new Map();
   function beltsFor(kind) {
     const agg = new Map();
@@ -133,6 +168,12 @@
       z.sev = { high: 0, warn: 0, info: 0 };
       for (const f of members) for (const fl of f.flags) z.sev[fl.severity]++;
       z.top = members.filter((f) => f.inn.size).sort((p, q) => q.inn.size - p.inn.size).slice(0, 3);
+      z.dupFns = members.reduce((t, f) => t + f.dupFns, 0);
+      z.slowWarn = members.reduce((t, f) => t + f.flags.filter((x) => SLOW.has(x.kind) && x.severity === "warn").length, 0);
+      z.slowAll = members.reduce((t, f) => t + f.flags.filter((x) => SLOW.has(x.kind)).length, 0);
+      z.ioFns = members.reduce((t, f) => t + f.ioFns, 0);
+      z.longFns = members.reduce((t, f) => t + f.longFns, 0);
+      z.metric = members.reduce((t, f) => t + lensMetric[lens](f), 0);
     });
   }
   let zoneLinks = [];
@@ -140,7 +181,7 @@
 
   // ---- view ---------------------------------------------------------------------------------------------
   const canvas = $("#floor"), ctx = canvas.getContext("2d");
-  let scale = 1, ox = 0, oy = 0, hover = null, selected = null, flagFilter = null, query = "", traced = null;
+  let scale = 1, ox = 0, oy = 0, hover = null, selected = null, flagFilter = null, query = "", traced = null, spot = null;
   function resize() {
     const r = canvas.getBoundingClientRect(), dpr = devicePixelRatio || 1;
     canvas.width = r.width * dpr; canvas.height = r.height * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -193,13 +234,17 @@
     while (t.length > 1 && ctx.measureText(t + "…").width > max) t = t.slice(0, -1);
     return t + "…";
   }
-  function drawOverview(C, a) {
+  function drawOverview(C, a, lensColor) {
+    const zMax = Math.max(1, ...zones.map((z) => z.metric || 0));
     const max = Math.max(1, ...zoneLinks.map((l) => l.count));
     ctx.save(); ctx.globalAlpha = a;
     // halls
     zones.forEach((z, i) => {
       const h = hallRect(z);
       ctx.fillStyle = C.panel; ctx.globalAlpha = a * 0.88; ctx.fillRect(h.x, h.y, h.w, h.h); ctx.globalAlpha = a;
+      if (lensColor && z.metric > 0) {
+        ctx.fillStyle = lensColor; ctx.globalAlpha = a * (0.08 + 0.32 * Math.sqrt(z.metric / zMax)); ctx.fillRect(h.x, h.y, h.w, h.h); ctx.globalAlpha = a;
+      }
       ctx.strokeStyle = i === hoverZone ? C.sel : C.edge; ctx.lineWidth = i === hoverZone ? 2.5 : 1.2; ctx.strokeRect(h.x, h.y, h.w, h.h);
     });
     // conveyors: forward ones arch over the top, backward ones (a lower layer reaching up) under the floor
@@ -259,6 +304,16 @@
         ctx.globalAlpha = a; ctx.fillStyle = C[sv]; ctx.fillText(t, px + 6, y + small * 1.15);
         px += w + 5;
       }
+      // what the lens is about, in words
+      const lensLine = lens === "duplication" ? (z.dupFns ? `${z.dupFns} copied functions` : "no copies")
+        : lens === "efficiency" ? `${z.slowWarn} N+1 loops · ${z.slowAll - z.slowWarn} minor loop notes · ${z.ioFns} functions do I/O`
+        : lens === "size" ? `${z.longFns} long functions` : "";
+      if (lensLine) {
+        y += small * 2.6; ctx.font = `700 ${small}px Inter, system-ui, sans-serif`; ctx.fillStyle = lensColor;
+        const words = lensLine.split(" · ");
+        for (const w of words) { ctx.fillText(fitText(w, room), h.x + pad, y); y += small * 1.4; }
+        y -= small * 1.4;
+      }
       // most-used files
       if (z.top.length && y + small * 7 < h.y + h.h) {
         y += small * 3.2; ctx.fillStyle = C.muted; ctx.font = `600 ${small}px Inter, system-ui, sans-serif`;
@@ -280,7 +335,8 @@
     const C = { floor: css("--floor"), grid: css("--grid"), machine: css("--machine"), edge: css("--machine-edge"),
       belt: css("--belt"), dot: css("--belt-dot"), back: css("--back"), ink: css("--ink"), muted: css("--muted"),
       idle: css("--idle"), sel: css("--sel"), high: css("--high"), warn: css("--warn"), info: css("--info"), line: css("--line"),
-      panel: css("--panel") };
+      panel: css("--panel"), dup: css("--dup"), slow: css("--slow"), size: css("--size") };
+    const lensColor = { duplication: C.dup, efficiency: C.slow, size: C.size }[lens];
     const detail = detailLevel();
     ctx.fillStyle = C.floor; ctx.fillRect(0, 0, r.width, r.height);
     ctx.save(); ctx.translate(ox, oy); ctx.scale(scale, scale);
@@ -305,10 +361,12 @@
     for (const b of belts) {
       const on = linked(b), visible = matches(b.src) || matches(b.dst);
       // with no machine in focus, a big floor's belts stay faint so the machines read first
+      const isHot = lens === "efficiency" && hot.has(b.src.id + ">" + b.dst.id);
       const rest = focus || traced ? 0.9 : belts.length > 300 ? 0.28 : 0.8;
-      ctx.globalAlpha = (!visible ? 0.06 : on ? rest : 0.1) * detail;
+      const lensDim = lens === "issues" || isHot ? 1 : lens === "efficiency" ? 0.25 : 0.35;
+      ctx.globalAlpha = (!visible ? 0.06 : on ? (isHot ? 1 : rest) : 0.1) * detail * lensDim;
       if (detail === 0) continue;
-      ctx.strokeStyle = b.back ? C.back : C.belt; ctx.lineWidth = b.w;
+      ctx.strokeStyle = isHot ? C.slow : b.back ? C.back : C.belt; ctx.lineWidth = isHot ? b.w + 2.5 : b.w;
       ctx.setLineDash(b.back ? [8, 5] : []);
       ctx.beginPath(); ctx.moveTo(...b.pts[0]); for (const p of b.pts.slice(1)) ctx.lineTo(...p); ctx.stroke();
       ctx.setLineDash([]);
@@ -324,12 +382,27 @@
     // machines
     for (const f of files) {
       if (f.hidden) continue;
-      const dim = !matches(f) || (traced ? !traced.files.has(f.id) : focus && f !== focus && !focus.inn.has(f) && !focus.out.has(f));
+      const dim = !matches(f) || (spot ? !spot.has(f.id) : traced ? !traced.files.has(f.id) : focus && f !== focus && !focus.inn.has(f) && !focus.out.has(f));
       ctx.globalAlpha = (dim ? 0.25 : 1) * (0.3 + 0.7 * detail);
       const idle = f.inn.size === 0 && f.out.size === 0;
       ctx.fillStyle = idle ? C.idle : C.machine; ctx.fillRect(f.x, f.y, f.s, f.s);
+      if (lensColor) { // heat: how much of this lens's problem the machine holds
+        const m = lensMetric[lens](f);
+        if (m > 0) {
+          const a0 = ctx.globalAlpha;
+          ctx.globalAlpha = a0 * (0.18 + 0.67 * Math.sqrt(m / lensMax[lens]));
+          ctx.fillStyle = lensColor; ctx.fillRect(f.x, f.y, f.s, f.s); ctx.globalAlpha = a0;
+        }
+      }
       ctx.strokeStyle = f === selected ? C.sel : C.edge; ctx.lineWidth = f === selected ? 3 : 1.5;
       ctx.strokeRect(f.x, f.y, f.s, f.s);
+      if (lens === "efficiency" && f.ioFns) { // a drum: this file talks to a database, files or the network itself
+        const cx = f.x + 10, cy = f.y + 10;
+        ctx.fillStyle = C.slow; ctx.strokeStyle = C.slow; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.ellipse(cx, cy - 3, 5, 2, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(cx - 5, cy - 3); ctx.lineTo(cx - 5, cy + 3); ctx.ellipse(cx, cy + 3, 5, 2, 0, Math.PI, 0, true);
+        ctx.lineTo(cx + 5, cy - 3); ctx.stroke();
+      }
       // function bars: one tick per function, height by its size
       const n = Math.min(f.fns.length, Math.floor((f.s - 10) / 4));
       ctx.fillStyle = C.muted;
@@ -353,8 +426,28 @@
         ctx.fillText(name, f.x, f.y + f.s + 14);
       }
     }
+    if (lens === "duplication" && detail > 0) { // arcs joining files that hold copies of each other's code
+      ctx.font = "600 11px Inter, system-ui, sans-serif"; ctx.textAlign = "center";
+      for (const t of twins.values()) {
+        if (t.a.hidden || t.b.hidden) continue;
+        const on = !(hover || selected || spot) || [hover, selected].includes(t.a) || [hover, selected].includes(t.b) || (spot && spot.has(t.a.id) && spot.has(t.b.id));
+        const x1 = t.a.x + t.a.s / 2, y1 = t.a.y + t.a.s / 2, x2 = t.b.x + t.b.s / 2, y2 = t.b.y + t.b.s / 2;
+        const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
+        const cx = mx - (dy / len) * Math.min(160, len * 0.3), cy = my + (dx / len) * Math.min(160, len * 0.3);
+        ctx.globalAlpha = detail * (on ? 0.95 : 0.12);
+        ctx.strokeStyle = C.dup; ctx.lineWidth = 1.5 + 2.5 * t.score; ctx.setLineDash([7, 4]);
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.quadraticCurveTo(cx, cy, x2, y2); ctx.stroke(); ctx.setLineDash([]);
+        if (on && scale > 0.3) {
+          const lx = 0.25 * x1 + 0.5 * cx + 0.25 * x2, ly = 0.25 * y1 + 0.5 * cy + 0.25 * y2, label = `${Math.round(t.score * 100)}%`;
+          const w = ctx.measureText(label).width + 8;
+          ctx.fillStyle = C.floor; ctx.fillRect(lx - w / 2, ly - 8, w, 16);
+          ctx.fillStyle = C.dup; ctx.fillText(label, lx, ly + 4);
+        }
+      }
+      ctx.textAlign = "left";
+    }
     ctx.globalAlpha = 1; ctx.restore();
-    if (detail < 1) drawOverview(C, 1 - detail);
+    if (detail < 1) drawOverview(C, 1 - detail, lensColor);
     requestAnimationFrame(draw);
   }
 
@@ -411,14 +504,16 @@
   addEventListener("keydown", (e) => { if (e.target.tagName !== "INPUT" && e.key === "f") fit(); if (e.key === "Escape") { traced = null; select(null); } });
 
   // ---- panels -------------------------------------------------------------------------------------------
-  const KIND = { cycle: "Import loops", layer_violation: "Layer violations", duplicate: "Duplicates", unused: "Unused",
-    hub: "Hubs", large_file: "Large files", long_function: "Long functions" };
+  const KIND = { cycle: "Import loops", layer_violation: "Layer violations", io_in_loop: "Calls in loops",
+    duplicate: "Duplicates", similar: "Near-duplicates", unused: "Unused", quadratic_scan: "Searches in loops",
+    sequential_await: "Awaits in loops", test_only: "Test only", hub: "Hubs", large_file: "Large files", long_function: "Long functions" };
   const shortTarget = (t) => t.includes("::") ? t.split("::")[1] + "  ·  " + t.split("::")[0] : t;
   function renderIssues() {
     const counts = {};
     for (const fl of D.flags) counts[fl.kind] = (counts[fl.kind] || 0) + 1;
     const kinds = Object.keys(counts).sort((a, b) => Object.keys(KIND).indexOf(a) - Object.keys(KIND).indexOf(b));
-    const list = D.flags.filter((fl) => !flagFilter || fl.kind === flagFilter).slice(0, 400);
+    const lensSet = LENS_KINDS[lens];
+    const list = D.flags.filter((fl) => flagFilter ? fl.kind === flagFilter : !lensSet || lensSet.has(fl.kind)).slice(0, 400);
     $("#issues").innerHTML = (kinds.length ? `<div class="chips">${kinds.map((k) =>
       `<button class="chip" data-kind="${k}" aria-pressed="${flagFilter === k}">${KIND[k] || k} ${counts[k]}</button>`).join("")}</div>` :
       `<p class="empty">No issues found.</p>`) +
@@ -426,7 +521,13 @@
         <div class="where">${esc(shortTarget(fl.target))}</div></div>`).join("");
     $("#issues").querySelectorAll(".chip").forEach((b) => b.onclick = () => { flagFilter = flagFilter === b.dataset.kind ? null : b.dataset.kind; renderIssues(); });
     $("#issues").querySelectorAll(".flag").forEach((el) => {
-      const go = () => { const f = fileOf(D.flags[+el.dataset.i].target); if (f) { select(f); focusOn(f); } };
+      const go = () => {
+        const fl = D.flags[+el.dataset.i], f = fileOf(fl.target);
+        if (!f) return;
+        select(f); focusOn(f);
+        // a copy or a loop calling elsewhere: light up every file involved
+        if (fl.related && fl.related.length) spot = new Set([f.id, ...fl.related.map((r) => fileOf(r)?.id).filter(Boolean)]);
+      };
       el.onclick = go; el.onkeydown = (e) => { if (e.key === "Enter") go(); };
     });
   }
@@ -443,7 +544,7 @@
     return `<h2>${label}</h2>` + (rows ? `<table>${rows}</table>` : `<p class="empty">None.</p>`);
   }
   function select(f) {
-    selected = f; traced = null;
+    selected = f; traced = null; spot = null;
     const pane = $("#selected");
     if (!f) { pane.innerHTML = `<p class="empty">Click a machine to see its functions, belts and issues.</p>`; return; }
     pane.innerHTML = `<h2>Machine</h2><div style="font:13px var(--mono);word-break:break-all">${esc(f.id)}</div>
@@ -482,6 +583,18 @@
     if (selected) select(selected);
   });
   $("#fit").onclick = fit;
+  const LEGEND = {
+    issues: $("#legend").innerHTML,
+    duplication: `<span><i style="background:var(--dup)"></i>tint = lines in copied functions</span><span><i style="background:var(--dup);border-radius:0"></i>dashed arc = files holding copies, with similarity</span>`,
+    efficiency: `<span><i style="background:var(--slow)"></i>tint = loop problems</span><span><i style="background:var(--slow);border-radius:0"></i>red belt = a loop calling into I/O</span><span>drum = does database, file or network I/O</span>`,
+    size: `<span><i style="background:var(--size)"></i>tint = lines of code</span>`,
+  };
+  $("#lens").onchange = (e) => {
+    lens = e.target.value; flagFilter = null;
+    zones.forEach((z, i) => { z.metric = files.filter((f) => f.zone === i).reduce((t, f) => t + lensMetric[lens](f), 0); });
+    $("#legend").innerHTML = LEGEND[lens];
+    renderIssues(); tab("issues");
+  };
   const testsBtn = $("#tests");
   testsBtn.hidden = !hasTests;
   testsBtn.setAttribute("aria-pressed", showTests);

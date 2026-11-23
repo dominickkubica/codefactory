@@ -35,7 +35,14 @@ codefactory trace path/to/repo checkout            # everything checkout() event
 codefactory path path/to/repo checkout tax_for     # the shortest call path between two functions
 codefactory sql path/to/repo -o repo.db            # the graph as a SQLite database
 codefactory query path/to/repo "SELECT qualname, fan_in FROM function_stats ORDER BY fan_in DESC LIMIT 10"
+codefactory brief path/to/repo                     # a Markdown map for an AI agent (or you)
+codefactory context path/to/repo useGuidedWorkout  # before changing it: callers, calls, impact, tests to run
+codefactory skill path/to/repo                     # teach Claude Code in that repo to use all of this
 ```
+
+Commands that take a name also work from inside the repo without the path: `codefactory context setDayMarks`.
+The first run analyzes; later runs reuse `.codefactory/graph.json` (it ignores itself in git) until a source file
+changes, so repeated questions answer in well under a second.
 
 `python -m codefactory …` works the same without installing. The HTML page is self-contained: no server, no
 network, so it can be emailed or attached to a PR.
@@ -45,12 +52,32 @@ issues, its most-used files) and one conveyor per pair of halls labelled with ho
 Forward conveyors arch over the top; dashed orange ones under the floor run backwards. Hover a hall to see only its
 conveyors; click it, or zoom in, and the halls fade into their machines.
 
+**Lenses** (the Lens menu) recolour the floor for one kind of problem:
+
+- **Duplication**: machines tinted by how many lines sit in copied functions; dashed purple arcs join files that
+  hold copies of each other's code, labelled with how similar they are. Click a duplicate in the Issues list to light
+  up every copy.
+- **Efficiency**: machines tinted by loop problems; belts that carry a loop's calls into database or network code
+  turn red; a drum marks files that do I/O themselves. Hall cards count N+1 loops per layer.
+- **Size**: machines tinted by lines of code.
+
 **In the viewer:** drag to pan, scroll to zoom, `f` to fit. **Tests** shows or hides test files (hidden at first when
 they're a big share of the code). Hover a machine to see only its belts; click it for its
 functions (lines, callers, callees), issues and neighbours. **Calls / Imports** switches what the belts show. The
 Issues tab filters by kind; clicking an issue flies to its machine. Click a function's name to **trace** it: the
 floor lights up only the machines it reaches, and the panel lists every function it calls, by depth, with the total
 lines involved.
+
+## With Claude Code (or another AI coding agent)
+
+Run `codefactory skill` in a repo once. It writes `.claude/skills/codefactory/SKILL.md`, which tells Claude Code
+when to reach for which command: `brief` at the start of a restructure or cleanup, `context` before changing or
+deleting anything (callers, impact, the tests to run afterwards), `trace` and `path` when debugging how one part
+reaches another, `flags --json` for work lists, and how to read each issue (and which ones are only hints).
+Everything prints `file:line`, and `--json` is there for scripts.
+
+A typical restructure then goes: `brief` → pick a copied-code group or an N+1 loop → `context` on each function
+involved → change it → `flags --min warn` again to confirm it's gone and nothing new appeared → run the listed tests.
 
 ## Ask it anything with SQL
 
@@ -61,7 +88,7 @@ lines involved.
 | `files` | id, module, loc, layer |
 | `functions` | id, file, name, qualname, line, end_line, loc, kind, decorated, exported, dynamic |
 | `edges` | src, dst, kind (`call`, `ref`, `import`), count |
-| `flags` | kind, severity, target, message |
+| `flags` | kind, severity, target, message, line |
 | `function_stats` (view) | id, file, qualname, loc, fan_in, fan_out, caller_files |
 | `file_deps` (view) | src_file, dst_file, calls |
 
@@ -90,7 +117,11 @@ sql = "SELECT id AS target, loc, caller_files FROM function_stats WHERE loc > 40
 |---|---|---|
 | Import loop | high | Files that import each other in a circle (Tarjan's algorithm on the import graph) |
 | Layer violation | high | An import your `factory.toml` forbids, e.g. `ui -> db` |
+| Calls in loops (`io_in_loop`) | warn / info | A database, network or file call, or a call into the codebase that eventually makes one, runs once per loop iteration. Reads and network = warn (the N+1 pattern); writes and files = info |
 | Duplicate | warn | Functions with the same structure, even with renamed variables (≥ 6 lines, not one-liners) |
+| Near-duplicate (`similar`) | warn / info | Copies that were edited afterwards: 75%+ of their structure in common (MinHash over 4-token shingles); 85%+ = warn |
+| Searches in loops (`quadratic_scan`) | info | `find` / `filter` / `includes` / `indexOf`… on an array inside a loop or `.map`: O(n²) on long lists (TypeScript) |
+| Awaits in loops (`sequential_await`) | info | Each round waits for the last; independent ones could run together (not reported again where a call-in-loop already explains it) |
 | Unused | warn / info | Functions nothing calls or references. Methods are only "info", and skipped when their name is used as `obj.name` anywhere |
 | Hub | info | A function called from 12+ files: change it carefully |
 | Test only | info | Code nothing but tests calls: dead in the product, still kept alive by its tests |
@@ -152,11 +183,16 @@ codefactory/
   graph.py              The language-neutral graph (files, functions, edges, flags)
   layers.py             Zones and their order
   flags.py              Issue detectors (read only the graph, so they work for every language)
+  similar.py            Near-duplicates (MinHash + LSH over structure tokens)
+  efficiency.py         Calls, searches and awaits in loops; which functions reach I/O
+  brief.py              brief and context: Markdown/JSON views for AI agents
+  cache.py              .codefactory/graph.json, reused while no source file changed
+  skill_template/       The Claude Code skill `codefactory skill` installs
   sqlgraph.py           The graph as SQLite; saved queries -> flags
   trace.py              trace (EXPLAIN for a function) and shortest call path
   config.py             factory.toml
   viewer/               The factory page (canvas, no libraries), inlined into one HTML file
-  cli.py                analyze / flags / view
+  cli.py                The commands
 tests/                  unittest; fixtures/shop is a small app with planted problems
 ```
 

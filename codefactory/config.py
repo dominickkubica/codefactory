@@ -7,7 +7,7 @@ from pathlib import Path
 
 DEFAULT_IGNORE = [
     ".git", ".hg", "node_modules", ".venv", "venv", "env", "__pycache__", "build", "dist", ".tox",
-    ".mypy_cache", ".pytest_cache", ".ruff_cache", "site-packages", ".eggs",
+    ".mypy_cache", ".pytest_cache", ".ruff_cache", "site-packages", ".eggs", ".codefactory", ".expo", "coverage",
 ]
 
 
@@ -19,6 +19,7 @@ class Config:
     large_file: int = 400
     long_function: int = 60
     duplicate_min_lines: int = 6
+    similar_threshold: float = 0.75  # near-duplicates: share of structure in common (0-1)
     hub_callers: int = 12
     queries: list[dict] = field(default_factory=list)  # saved SQL checks that become flags
 
@@ -44,6 +45,7 @@ def load_config(root: Path) -> Config:
     cfg.large_file = int(t.get("large_file", cfg.large_file))
     cfg.long_function = int(t.get("long_function", cfg.long_function))
     cfg.duplicate_min_lines = int(t.get("duplicate_min_lines", cfg.duplicate_min_lines))
+    cfg.similar_threshold = float(t.get("similar", cfg.similar_threshold))
     cfg.hub_callers = int(t.get("hub_callers", cfg.hub_callers))
     for q in data.get("queries", []):
         if not q.get("name") or not q.get("sql"):

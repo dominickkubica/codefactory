@@ -4,7 +4,9 @@ from __future__ import annotations
 from collections import defaultdict
 
 from .config import Config
+from .efficiency import efficiency_flags
 from .graph import Flag, Graph
+from .similar import near_duplicates
 
 SEVERITY_ORDER = {"high": 0, "warn": 1, "info": 2}
 
@@ -154,6 +156,12 @@ def layer_violations(g: Graph, cfg: Config) -> list[Flag]:
 
 
 def run_flags(g: Graph, cfg: Config) -> None:
-    g.flags = [*import_cycles(g), *layer_violations(g, cfg), *duplicates(g, cfg), *dead_code(g),
-               *hubs(g, cfg), *size_flags(g, cfg)]
+    g.flags = [*import_cycles(g), *layer_violations(g, cfg), *duplicates(g, cfg), *near_duplicates(g, cfg),
+               *efficiency_flags(g), *dead_code(g), *hubs(g, cfg), *size_flags(g, cfg)]
+    by_id = {fn.id: fn for fn in g.functions}
+    for f in g.flags:  # every issue points at a line, for editors and for Claude Code
+        if not f.line and f.target in by_id:
+            f.line = by_id[f.target].line
     g.flags.sort(key=lambda f: (SEVERITY_ORDER[f.severity], f.kind, f.target))
+    for fn in g.functions:  # only needed for the checks above; keeps the saved graph and the HTML small
+        fn.tokens = ""

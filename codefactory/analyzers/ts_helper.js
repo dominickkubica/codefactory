@@ -44,6 +44,7 @@ const checker = program.getTypeChecker();
 const sources = program.getSourceFiles().filter((sf) => all.has(path.resolve(sf.fileName)));
 
 const files = [], functions = [], fnByNode = new Map(), calls = new Map(), refs = new Map(), imports = new Set();
+const sites = [], ioOf = new Map();
 const unresolvedProps = new Set();
 const bump = (m, k) => m.set(k, (m.get(k) || 0) + 1);
 const isFnLike = (n) => ts.isFunctionDeclaration(n) || ts.isMethodDeclaration(n) || ts.isArrowFunction(n) ||
@@ -107,7 +108,65 @@ function shapeOf(n, sf) {
     ts.forEachChild(x, visit);
   };
   visit(body);
-  return count < 15 ? "" : hash(parts.join(" "));
+  if (count < 15) return { shape: "", tokens: "" };
+  const tokens = parts.join(" ");
+  return { shape: hash(tokens), tokens };
+}
+
+// Efficiency: where a call or await sits relative to loops, and which calls leave the process.
+const ITER = new Set(["map", "forEach", "filter", "reduce", "reduceRight", "some", "every", "flatMap", "find", "findIndex",
+  "findLast", "findLastIndex", "sort", "toSorted"]);
+const SCAN = new Set(["find", "filter", "includes", "indexOf", "lastIndexOf", "some", "every", "findIndex", "findLast", "findLastIndex"]);
+const IO_FN = /^(getAll|getFirst|getEach|run|exec|prepare|execute|withTransaction|withExclusiveTransaction)(Async|Sync)$|^(fetch|readAsStringAsync|writeAsStringAsync|downloadAsync|downloadFileAsync|uploadAsync|getItemAsync|setItemAsync|deleteItemAsync|readFile|writeFile|readFileSync|writeFileSync|appendFile|appendFileSync|readdir|readdirSync|stat|statSync)$/;
+const IO_RECEIVER = /^(axios|AsyncStorage|prisma|knex|pool|client|db|sql|supabase|firestore|redis|mongoose)$/i;
+const IO_VIA_RECEIVER = /^(query|execute|get|set|post|put|patch|delete|findMany|findUnique|findFirst|create|update|upsert|select|insert|from|getItem|setItem|removeItem|multiGet|multiSet)$/;
+
+// { loop, stmt }: runs once per iteration of a loop (for/while, or an array callback like .map); stmt = a for/while
+// statement around it in the same function body (an await there waits on each round in turn).
+function loopState(n) {
+  let loop = false, stmt = false, crossed = false;
+  for (let c = n, p = n.parent; p; c = p, p = p.parent) {
+    if (fnByNode.has(p) || ts.isSourceFile(p)) break;
+    const statementLoop = ((ts.isForOfStatement(p) || ts.isForInStatement(p)) && c === p.statement) ||
+      (ts.isForStatement(p) && c !== p.initializer) || ts.isWhileStatement(p) || ts.isDoStatement(p);
+    if (statementLoop) { loop = true; if (!crossed) stmt = true; }
+    if (isFnLike(p)) {
+      const call = p.parent;
+      const iterating = call && ts.isCallExpression(call) && call.arguments.includes(p) && ts.isPropertyAccessExpression(call.expression) &&
+        ITER.has(call.expression.name.text);
+      // any other callback (onPress={() => …}, setTimeout, .then) runs later, not once per iteration of loops around it
+      if (!iterating) break;
+      loop = true;
+      crossed = true;
+    }
+  }
+  return { loop, stmt };
+}
+function lastName(expr) {
+  while (expr && (ts.isPropertyAccessExpression(expr) || ts.isCallExpression(expr) || ts.isNonNullExpression(expr))) {
+    if (ts.isPropertyAccessExpression(expr)) return expr.name.text;
+    expr = expr.expression;
+  }
+  return expr && ts.isIdentifier(expr) ? expr.text : expr && expr.kind === ts.SyntaxKind.ThisKeyword ? "this" : "";
+}
+function headName(expr) {
+  while (expr && (ts.isPropertyAccessExpression(expr) || ts.isCallExpression(expr) || ts.isNonNullExpression(expr))) expr = expr.expression;
+  return expr && ts.isIdentifier(expr) ? expr.text : "";
+}
+function ioCall(call) {
+  const e = call.expression;
+  if (ts.isIdentifier(e)) return IO_FN.test(e.text) ? e.text : null;
+  if (!ts.isPropertyAccessExpression(e)) return null;
+  const name = e.name.text, recv = lastName(e.expression), head = headName(e.expression);
+  if (IO_FN.test(name) || IO_RECEIVER.test(head) && (IO_VIA_RECEIVER.test(name) || /^axios$/i.test(head))) return recv ? `${recv}.${name}` : name;
+  return null;
+}
+function arrayish(expr) {
+  try {
+    const t = checker.getTypeAtLocation(expr);
+    if (typeof checker.isArrayType === "function" && checker.isArrayType(t)) return true;
+    return /\[\]$|^(readonly )?(Readonly)?Array</.test(checker.typeToString(t));
+  } catch { return false; }
 }
 
 // 1. Files and functions. Nested named functions (a hook's handlers, a component's callbacks) are their own
@@ -116,7 +175,7 @@ for (const sf of sources) {
   const id = rel(sf.fileName);
   files.push({ id, module: id.replace(EXT, ""), loc: sf.getLineAndCharacterOfPosition(sf.end).line + 1 });
   const top = { id: `${id}::<module>`, file: id, name: "<module>", qualname: "<module>", line: 1, end: 1, loc: 0,
-    kind: "module", decorated: false, exported: false, shape: "", dynamic: false, public: false };
+    kind: "module", decorated: false, exported: false, shape: "", tokens: "", dynamic: false, public: false, io: [] };
   functions.push(top);
   fnByNode.set(sf, top);
   const seen = new Map();
@@ -142,7 +201,7 @@ for (const sf of sources) {
         const fn = { id: fid, file: id, name, qualname: qual, line, end, loc: end - line + 1,
           kind: prefix && prefix === cls ? "method" : "function", decorated: !!(ts.canHaveDecorators(n) && ts.getDecorators(n)?.length),
           exported: !!asData || isDefaultExport(n) || (n.parent && ts.isVariableDeclaration(n.parent) && isDefaultExport(n.parent.parent.parent)),
-          shape: shapeOf(n, sf), dynamic: false, public: isExported(n) };
+          ...shapeOf(n, sf), dynamic: false, public: isExported(n), io: [] };
         functions.push(fn);
         fnByNode.set(n, fn);
         next = fn;
@@ -221,8 +280,25 @@ for (const sf of sources) {
       if (dst && dst !== fileId) imports.add(`${fileId}\u0000${dst}`);
     } else if (isCall) {
       const src = ownerOf(n), dst = calleeOf(n);
-      if (src && dst && dst !== src) bump(calls, `${src.id}\u0000${dst.id}`);
-      else if (!dst && ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)) unresolvedProps.add(n.expression.name.text);
+      const where = src && (ts.isCallExpression(n) || ts.isNewExpression(n)) ? loopState(n) : { loop: false };
+      const line = lineOf(sf, n.getStart(sf));
+      if (src && dst && dst !== src) {
+        bump(calls, `${src.id}\u0000${dst.id}`);
+        if (where.loop) sites.push({ fn: src.id, kind: "loop_call", line, target: dst.id, detail: "" });
+      } else if (!dst && ts.isCallExpression(n)) {
+        if (ts.isPropertyAccessExpression(n.expression)) unresolvedProps.add(n.expression.name.text);
+        const io = src && ioCall(n);
+        if (io) {
+          (ioOf.get(src) || ioOf.set(src, new Set()).get(src)).add(io);
+          if (where.loop) sites.push({ fn: src.id, kind: "loop_io", line, target: "", detail: io });
+        } else if (src && where.loop && ts.isPropertyAccessExpression(n.expression) && SCAN.has(n.expression.name.text) &&
+                   arrayish(n.expression.expression)) {
+          sites.push({ fn: src.id, kind: "loop_scan", line, target: "", detail: `${lastName(n.expression.expression) || "array"}.${n.expression.name.text}` });
+        }
+      }
+    } else if (ts.isAwaitExpression(n)) {
+      const src = ownerOf(n);
+      if (src && loopState(n).stmt) sites.push({ fn: src.id, kind: "loop_await", line: lineOf(sf, n.getStart(sf)), target: "", detail: "" });
     } else if (ts.isIdentifier(n)) {
       const p = n.parent;
       const callee = p && (ts.isCallExpression(p) || ts.isNewExpression(p)) && p.expression === n;
@@ -247,4 +323,5 @@ const edges = [];
 for (const [k, count] of calls) { const [src, dst] = k.split("\u0000"); edges.push({ src, dst, kind: "call", count }); }
 for (const [k, count] of refs) if (!calls.has(k)) { const [src, dst] = k.split("\u0000"); edges.push({ src, dst, kind: "ref", count }); }
 for (const k of imports) { const [src, dst] = k.split("\u0000"); edges.push({ src, dst, kind: "import", count: 1 }); }
-process.stdout.write(JSON.stringify({ files, functions, edges }));
+for (const [fn, set] of ioOf) fn.io = [...set].sort();
+process.stdout.write(JSON.stringify({ files, functions, edges, sites }));

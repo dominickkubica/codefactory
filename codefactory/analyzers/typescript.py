@@ -14,7 +14,7 @@ import sys
 from importlib.resources import files as pkg_files
 from pathlib import Path
 
-from ..graph import Edge, File, Function, Graph
+from ..graph import Edge, File, Function, Graph, Site
 
 EXTENSIONS = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts")
 
@@ -68,4 +68,5 @@ def analyze_typescript(root: Path, ignore: list[str]) -> Graph:
     g.files = [File(**f) for f in data["files"]]
     g.functions = [Function(**f) for f in data["functions"]]
     g.edges = [Edge(**e) for e in data["edges"]]
+    g.sites = [Site(**s) for s in data.get("sites", [])]
     return g
