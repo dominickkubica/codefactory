@@ -146,7 +146,7 @@ fixing what it got wrong: each false positive got a test before its fix, and sna
 three sample apps make any change in output visible in CI.
 
 - **Precision and recall are measured** on a labeled corpus in eight languages, in CI: 91% precision and 84%
-  recall the first time it met code it hadn't been tuned on; 100% and 99% after fixing what that found. Details,
+  recall the first time it met code it hadn't been tuned on; 100% and 100% after fixing what that found. Details,
   per check, in [Accuracy](docs/ACCURACY.md).
 - **Checked on real code** in each language family: two production apps (React Native, FastAPI), pip, Python's and
   Go's standard libraries, Apache commons-lang (Java), OkHttp (Kotlin) and Rack (Ruby).

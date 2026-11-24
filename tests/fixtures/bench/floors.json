@@ -1,6 +1,12 @@
 {
   "_": "Accuracy floors for tests/test_bench.py. Raise them when the checks improve; never lower them to pass.",
-  "tuning": {"precision": 1.0, "recall": 1.0},
-  "holdout": {"precision": 1.0, "recall": 0.97},
-  "known_misses": ["holdout/rb/users_controller.rb:18 io_in_loop"]
+  "tuning": {
+    "precision": 1.0,
+    "recall": 1.0
+  },
+  "holdout": {
+    "precision": 1.0,
+    "recall": 1.0
+  },
+  "known_misses": []
 }

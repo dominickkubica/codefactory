@@ -13,6 +13,7 @@ Supply chain.
 - **Signed, reproducible releases:** a tag builds the wheel and sdist byte-for-byte reproducibly, attests build
   provenance and the SBOM (Sigstore, verifiable with `gh attestation verify`), publishes `SHA256SUMS`, moves the
   `v0` tag for the Action, and can publish to PyPI by trusted publishing. Every action in it is pinned to a commit.
+- Rails N+1 through associations: `user.posts.count` in a loop, when a model declares `has_many :posts`.
 - [SECURITY.md](SECURITY.md): reporting, what codefactory does and doesn't do with your code, verifying a release.
 - Tests that the same code gives byte-identical graph, review and SARIF output.
 

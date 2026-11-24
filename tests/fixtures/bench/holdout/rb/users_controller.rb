@@ -18,6 +18,10 @@ class UsersController < ApplicationController
     users.map { |u| u.posts.count }
   end
 
+  def item_counts(users)
+    users.map { |u| u.items.count }
+  end
+
   def digest(password)
     Digest::MD5.hexdigest(password)
   end

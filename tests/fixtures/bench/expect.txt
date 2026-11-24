@@ -219,6 +219,7 @@ holdout/rb/users_controller.rb | sql_built | email = '#{params[:email]}'
 holdout/rb/users_controller.rb | ~sql_built | User.where(email: params[:email])
 holdout/rb/users_controller.rb | shell | `ls #{dir}`
 holdout/rb/users_controller.rb | io_in_loop | u.posts.count
+holdout/rb/users_controller.rb | ~io_in_loop | u.items.count
 holdout/rb/users_controller.rb | weak_hash | Digest::MD5.hexdigest(password)
 
 holdout/Dockerfile | docker_latest | FROM gcr.io/distroless/static

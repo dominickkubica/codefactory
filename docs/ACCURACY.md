@@ -31,15 +31,17 @@ first measurement is the honest estimate of how codefactory does on code it hasn
 |---|--:|--:|
 | Tuning part, first measurement | 97% | 89% |
 | Held-out part, first measurement (untuned) | **91%** | **84%** |
-| Both, after fixing what the held-out part found | 100% | 99% |
+| Both, after fixing what the held-out part found | 100% | 100% |
 
 The held-out run found six real defects, since fixed: Dockerfile findings pointed one line early when a blank line
 came before `FROM`; JavaScript's `exec()` from `child_process` was reported as code execution instead of a shell
 command; a constant `os.system("clear")` was reported as shell injection; Swift's `\(value)` and Kotlin's `$value`
 interpolation weren't seen as values in log calls and SQL; Rails `where("… #{…}")` wasn't checked as SQL.
 
-One miss is kept on purpose: a Rails association counted per row (`users.map { |u| u.posts.count }`) is an N+1,
-but seeing it needs the model definitions. It's listed in `floors.json`.
+The last miss was a Rails association counted per row (`users.map { |u| u.posts.count }`), an N+1 that needs the
+model definitions to see. codefactory now reads `has_many` declarations; the held-out part gained the model file it
+would have in a real app (`models/user.rb`), and a look-alike (`u.items.count` on an attribute that isn't an
+association) that must stay quiet.
 
 ### Tuning part
 
@@ -95,7 +97,7 @@ but seeing it needs the model definitions. It's listed in `floors.json`.
 | `docker_root` | 0 | 0 | 0 | 1 | – | – |
 | `fetch_no_timeout` | 2 | 0 | 0 | 1 | 100% | 100% |
 | `insecure_cookie` | 1 | 0 | 0 | 0 | 100% | 100% |
-| `io_in_loop` | 5 | 1 | 0 | 0 | 100% | 83% |
+| `io_in_loop` | 6 | 0 | 0 | 1 | 100% | 100% |
 | `main_thread_io` | 1 | 0 | 0 | 0 | 100% | 100% |
 | `plain_http` | 1 | 0 | 0 | 0 | 100% | 100% |
 | `privacy_log` | 3 | 0 | 0 | 2 | 100% | 100% |
@@ -108,7 +110,7 @@ but seeing it needs the model definitions. It's listed in `floors.json`.
 | `taint` | 1 | 0 | 0 | 0 | 100% | 100% |
 | `weak_hash` | 5 | 0 | 0 | 1 | 100% | 100% |
 | `weak_random` | 2 | 0 | 0 | 2 | 100% | 100% |
-| **All** | **37** | **1** | **0** | **17** | **100%** | **97%** |
+| **All** | **38** | **0** | **0** | **18** | **100%** | **100%** |
 <!-- bench:holdout:end -->
 
 ### What it doesn't cover

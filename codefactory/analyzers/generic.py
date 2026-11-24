@@ -209,7 +209,23 @@ def analyze_generic(root: Path, ignore: list[str], include_js: bool = False, cac
         return g
     items = [(rel, (str(root / rel), rel, lang)) for rel, lang in found]
     parsed = parallel.run(root, "generic", items, parse_file, tool="treewalk-4", cache=cache)
-    return link(g, parsed)
+    return link(g, parsed, rails_associations(root, [rel for rel, _ in found if rel.endswith(".rb")]))
+
+
+def rails_associations(root: Path, files: list[str]) -> re.Pattern | None:
+    """`user.posts.count` loads from the database when the models say `has_many :posts`: a call through an
+    association, matched on the names the models declare (so an array attribute called `items` doesn't count)."""
+    names: set[str] = set()
+    for rel in files:
+        try:
+            text = (root / rel).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        names |= set(re.findall(r"^\s*(?:has_many|has_and_belongs_to_many)\s+:(\w+)", text, re.M))
+    if not names:
+        return None
+    alt = "|".join(sorted(map(re.escape, names)))
+    return re.compile(rf"(?:^|[^\w.])[a-z_]\w*\.(?:{alt})\.(?:count|where|find_by\w*|find|pluck|sum|exists\?|first|last)$")
 
 
 def _typed(callee: str, src: str, types: dict[str, str], cands: list[str]) -> str | None:
@@ -233,7 +249,7 @@ def _typed(callee: str, src: str, types: dict[str, str], cands: list[str]) -> st
     return fits[0] if len(fits) == 1 else None
 
 
-def link(g: Graph, parsed: dict[str, dict]) -> Graph:
+def link(g: Graph, parsed: dict[str, dict], associations: re.Pattern | None = None) -> Graph:
     """Turns per-file results into the graph: functions, import edges, name-matched calls, loop sites."""
     langs = Counter(d["lang"] for d in parsed.values())
     g.language = "+".join(sorted(langs))
@@ -333,6 +349,7 @@ def link(g: Graph, parsed: dict[str, dict]) -> Graph:
                     IO_RECEIVER.search(callee)
                     or IO_NAME.search(callee)
                     or (src.split("::")[0].endswith(".rb") and AR.search(callee))
+                    or (associations and src.split("::")[0].endswith(".rb") and associations.search(callee))
                 ):
                     io.add(callee)
                     if in_loop:
