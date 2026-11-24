@@ -107,8 +107,12 @@ def io_call(func: ast.AST, call: ast.Call | None = None) -> str | None:
     if isinstance(first, ast.JoinedStr) and first.values and isinstance(first.values[0], ast.Constant):
         first = first.values[0]  # f"SELECT … {table}": the leading text says what kind of statement it is
     is_text = isinstance(first, ast.Constant) and isinstance(first.value, str)
-    if sink and is_text and first.value.lstrip().split(" ", 1)[0].upper() in ("SELECT", "WITH"):
+    word = re.match(r"\s*(\w+)", first.value) if is_text else None  # (triple-quoted SQL starts on a new line)
+    verb = word.group(1).upper() if word else ""
+    if sink and verb in ("SELECT", "WITH"):
         sink += '("SELECT …")'
+    elif sink and verb in ("INSERT", "UPDATE", "DELETE", "REPLACE", "UPSERT", "MERGE"):
+        sink += f'("{verb} …")'  # what it changes is visible: a write, for the security checks
     return sink
 
 

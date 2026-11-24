@@ -166,6 +166,26 @@ severity, lines saved and number of callers; tests and one-off scripts count for
 behaviour identical, update every caller of anything renamed) and how to know it's done. The viewer's **Copy fix
 prompt** button copies the same text.
 
+## The attack surface
+
+`codefactory surface` lists every HTTP endpoint it recognises, with its method and path (router prefixes included), the
+auth check it found, whether it changes data, and which risky code it reaches. Frameworks: FastAPI (decorators,
+`Depends`/`Security`, `Annotated` aliases, router- and app-level `dependencies`), Flask (`@login_required` and kin,
+blueprint prefixes), Django and DRF, Express-style routers (auth middleware arguments, `app.use(auth)`), Next.js API
+routes, Spring (`@PreAuthorize`, `@Secured`), Go (`net/http`, gin, echo, chi), Rails (`before_action`) and Sinatra.
+
+The review uses it two ways:
+- **Endpoints that change data without an auth check:** each with the function where the change happens. High when
+  other endpoints do check (likely a missing check); Low when none do and the server only listens on this machine;
+  Medium when it listens locally by default but can be opened to the network; High when it listens on every
+  interface.
+- **Risky lines ranked by reachability:** SQL built from strings, shell commands, `eval` and raw HTML go one
+  severity level up when a request reaches them, with the chain as evidence (`← reached from POST /orders → create →
+  save`), and one level down when the code has endpoints and none reaches them.
+
+It's pattern-based: an auth check done elsewhere (a gateway, a proxy, a decorator with an unusual name) isn't seen,
+so "none found" is a question to answer. If the check exists, `codefactory accept` it with the reason.
+
 ## Measured test coverage
 
 "No test reaches it" is estimated from the call graph: which functions tests call, directly or not. On a 500-file

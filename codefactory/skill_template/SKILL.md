@@ -25,6 +25,7 @@ an option is rejected, run `codefactory update` (it also refreshes this file to 
 | Debugging: how does A end up calling B? | `codefactory path <A> <B>` |
 | A list to work through | `codefactory flags --kind similar --kind duplicate`, `--kind io_in_loop`, `--min warn`; add `--json` to parse |
 | Any other question | `codefactory query "SELECT … FROM function_stats …"` (tables files, functions, edges, flags; views function_stats(fan_in, fan_out, caller_files), file_deps) |
+| Security work: which endpoints exist, which check auth, what they change | `codefactory surface` (method, path, auth found, changes data, risky code reached); the review ranks risky lines by whether a request reaches them |
 | A finding is intended (confirmed safe, deliberate) | `codefactory accept <kind> <file> --why "…"` or `codefactory accept <plan task id> --why "…"` (writes a rule to `factory.toml`; the user decides whether to commit it) |
 | Showing the human | `codefactory view -o <file>.html` (an interactive factory-floor map; lenses for duplication, efficiency, size) |
 

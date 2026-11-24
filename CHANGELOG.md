@@ -3,6 +3,27 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.11.0 · 2026-11-24
+
+Closer to a security audit.
+
+### Added
+- **The attack surface** (`codefactory surface`, and a line in the review's summary): every HTTP endpoint with its
+  method, path, framework and auth check. Recognised: FastAPI, Flask, Django/DRF, Express-style routers, Next.js,
+  Spring, Go, Rails and Sinatra. Also: whether each changes data or reaches risky code, and whether the server
+  listens only locally, can be opened, or listens everywhere.
+- **Endpoints that change data without an auth check:** a review finding, with the function where each change happens.
+  Its severity depends on whether other endpoints check (an inconsistency is likely a bug) and where the server
+  listens. On a real FastAPI app: 34 endpoints, 15 of them change data (including a file upload and deletes), none
+  check auth, and it listens locally but has a LAN mode, so Medium.
+- **Risky lines ranked by reachability:** SQL built from strings, shell commands, `eval` and raw HTML go one level up,
+  with the chain (`← reached from GET /search → search → find`), when a request reaches them, and one level down when
+  none does.
+
+### Changed
+- The Python analyzer labels the SQL verb of `execute("INSERT …")`/`UPDATE`/`DELETE` like it did `SELECT`, and reads
+  it from triple-quoted SQL that starts on a new line.
+
 ## 0.10.1 · 2026-11-24
 
 ### Fixed (checked on real code: Apache commons-lang, OkHttp, Rack, Go's standard library)

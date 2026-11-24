@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "codefactory"
-version = "0.10.1"
+version = "0.11.0"
 description = "See a codebase as a factory floor, find what's wrong with it (copies, N+1 loops, dead code, import loops, security and reliability problems), and turn it into ranked work."
 readme = "README.md"
 license = {text = "MIT"}

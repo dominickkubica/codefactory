@@ -19,6 +19,7 @@ from .config import load_config
 from .coverage import measured
 from .paths import is_script, is_test
 from .plan import make_plan
+from .security import SINK_KINDS, function_at, surface, writes
 
 SEV = ["Critical", "High", "Medium", "Low"]
 POINTS = {"Critical": 30, "High": 10, "Medium": 3, "Low": 1}
@@ -80,6 +81,8 @@ class Review:
         self.repo = scan_repo(root)
         self.scan = scan_sources(root, [f["id"] for f in g["files"]])
         self._apply_silence(load_config(root).silence)
+        self.surface = surface(root, g, self.v)
+        self.writers = writes(self.v)
         static = test_reach(self.v)
         self.coverage = measured(root, g["functions"])
         if self.coverage:  # what ran, where the report knows; the static estimate for files it doesn't cover
@@ -141,11 +144,12 @@ class Review:
                     if s["sql_built"].data.get(e.at())
                     else ""
                 )
+                + self._reached_by(e)
                 for e in s["sql_built"].hits[:6]
             ]
             self.add(
                 "SQL assembled from strings",
-                "Medium",
+                self._by_reach("Medium", s["sql_built"].hits),
                 "Security",
                 ev,
                 "If any interpolated value can come from a user, a file or the network, this is SQL injection. "
@@ -196,7 +200,131 @@ class Review:
             hits = s[key].hits
             if hits:
                 ev, more = _ev(hits)
+                if key in SINK_KINDS:
+                    ev = [line + self._reached_by(e) for line, e in zip(ev, hits, strict=False)]
+                    sev = self._by_reach(sev, hits)
                 self.add(title, sev, "Security", ev, impact, fix, _effort(len(hits), len({e.file for e in hits})), more)
+        self.endpoints()
+
+    # -- the attack surface --------------------------------------------------------------------------------------
+    def _reached_by(self, hit) -> str:
+        """`  ← POST /orders → create_order → save` when a request reaches the line."""
+        if not self.surface.entries:
+            return ""
+        fid = function_at(self.v, hit.file, hit.line)
+        chain = self.surface.chain(fid, self.v) if fid else ""
+        return f"  ← reached from `{chain}`" if chain else "  (no endpoint reaches it)"
+
+    def _by_reach(self, sev: str, hits) -> str:
+        """Severity from reachability: a risky line a request reaches is evidence (one level up); when the code has
+        endpoints and none reaches it, it's a lead (one level down). Without endpoints (a library, a client app), as is."""
+        if not self.surface.entries:
+            return sev
+        reached = any(self.surface.chain(f, self.v) for e in hits if (f := function_at(self.v, e.file, e.line)))
+        order = ["Low", "Medium", "High", "Critical"]
+        i = order.index(sev) + (1 if reached else -1)
+        return order[max(0, min(len(order) - 1, i))]
+
+    def _writing_entries(self) -> list[tuple]:
+        """(entry, the first function it reaches that changes data) for endpoints that change data."""
+        out_edges: dict[str, list[str]] = {}
+        for e in self.g["edges"]:
+            if e["kind"] in ("call", "ref"):
+                out_edges.setdefault(e["src"], []).append(e["dst"])
+        found, seen_routes = [], set()
+        for entry in self.surface.entries:
+            key = (entry.method, entry.path, entry.fn)
+            if key in seen_routes:
+                continue
+            seen_routes.add(key)
+            seen, q = {entry.fn}, [entry.fn]
+            while q:
+                cur = q.pop(0)
+                if cur in self.writers:
+                    found.append((entry, cur))
+                    break
+                for nxt in out_edges.get(cur, ()):
+                    if nxt not in seen:
+                        seen.add(nxt)
+                        q.append(nxt)
+        return found
+
+    def endpoints(self) -> None:
+        entries = self.surface.entries
+        if not entries:
+            return
+        writing = self._writing_entries()
+        open_writes = [(e, w) for e, w in writing if not e.auth]
+        if not open_writes:
+            return
+        authed = [e for e in entries if e.auth]
+        exp, why = self.surface.exposure, self.surface.exposure_evidence
+        if authed:
+            sev, impact = (
+                "High",
+                (
+                    f"Other endpoints check who's asking ({len(authed)} of {len(entries)}), these don't: likely a missing check, "
+                    "so anyone who can reach the server can change this data."
+                ),
+            )
+        elif exp == "local":
+            sev, impact = (
+                "Low",
+                (
+                    f"No endpoint checks who's asking, and the server listens only on this machine ({why}): fine for a local "
+                    "tool, as long as it never listens on the network."
+                ),
+            )
+        elif exp == "configurable":
+            sev, impact = (
+                "Medium",
+                (
+                    f"No endpoint checks who's asking. The server listens locally by default but can be opened to the network "
+                    f"({why}): then anyone on that network can change data."
+                ),
+            )
+        else:
+            sev, impact = (
+                ("High" if exp == "open" else "Medium"),
+                (
+                    "No endpoint checks who's asking"
+                    + (f", and the server listens on every interface ({why})" if exp == "open" else "")
+                    + ": anyone who can reach it can change data."
+                ),
+            )
+        self.add(
+            f"Endpoints that change data without an auth check ({len(open_writes)})",
+            sev,
+            "Security",
+            [
+                f"`{e.method} {e.path}` (`{e.file}:{e.line}`) → changes data in `{self.v.fn[w]['qualname']}` "
+                f"(`{', '.join(self.v.fn[w]['io'][:2])}`)"
+                for e, w in open_writes[:8]
+            ],
+            impact + " Pattern-based: an auth check done elsewhere (a gateway, a proxy, an unusual decorator) isn't seen.",
+            "Require authentication on each (a dependency, decorator or middleware), or document why it's open and "
+            "`codefactory accept` it.",
+            _effort(len(open_writes), len({e.file for e, _ in open_writes})),
+            max(0, len(open_writes) - 8),
+        )
+
+    def surface_line(self) -> str:
+        entries = self.surface.entries
+        if not entries:
+            return ""
+        frameworks = sorted({e.framework for e in entries})
+        authed = sum(1 for e in entries if e.auth)
+        writing = len(self._writing_entries())
+        exp = {
+            "local": "listens only on this machine",
+            "configurable": "listens locally by default, can be opened to the network",
+            "open": "listens on every interface",
+            "unknown": "listening address not found",
+        }[self.surface.exposure]
+        return (
+            f"- **Attack surface:** {_n(len(entries), 'HTTP endpoint')} ({', '.join(frameworks)}); {authed} check auth; "
+            f"{writing} change data; {exp}."
+        )
 
     def reliability(self) -> None:
         s = self.scan
@@ -638,6 +766,7 @@ class Review:
             f"- **External services:** {', '.join(sorted(hosts)[:8]) or 'none found in the code'}"
             + (f" (+{len(hosts) - 8} more)" if len(hosts) > 8 else "")
             + ".",
+            *([line] if (line := self.surface_line()) else []),
             f"- **Tests:** {len([f for f in g['files'] if is_test(f['id'])])} test files"
             + (f", reaching {self.test_pct}% of functions" if self.test_pct is not None else "")
             + ".",

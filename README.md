@@ -49,7 +49,7 @@ codefactory plan                 # what to fix first, ranked; then: codefactory 
   | Performance | Database or network calls once per item (N+1), searches inside loops over loaded data, writes outside a transaction |
   | Duplication | Identical and near-identical functions, merged into one task per group |
   | Structure | Import loops, layer-rule breaks, unused code, functions nobody tests, very long or complex functions |
-  | Security | Leaked credentials, SQL built from strings, `eval`, shell strings, disabled TLS checks, plain HTTP |
+  | Security | Every HTTP endpoint and whether it checks who's asking; endpoints that change data without an auth check; risky lines (SQL built from strings, shell, `eval`, raw HTML) ranked by whether a request reaches them, with the route → … → line chain; leaked credentials, disabled TLS checks, plain HTTP |
   | Reliability | Swallowed errors, network calls without a timeout, missing error boundaries |
   | Delivery | No CI or CI without tests, floating dependency versions, no lockfile, no runtime pin |
 
@@ -81,6 +81,7 @@ For the by-name languages, call, impact and unused-code findings are leads to co
 | `view` | The interactive factory floor (one HTML file), with lenses for duplication, efficiency and size |
 | `flags` | Every issue with `file:line`; `--min warn`, `--kind similar`, `--json`, `--github` |
 | `plan` / `prompt` | Ranked tasks with steps and tests / one task as a ready-to-paste Claude Code prompt |
+| `surface` | The attack surface: every HTTP endpoint, its auth check, and whether it changes data or reaches risky code |
 | `accept` | Mark a finding as intended, with the reason, so later runs show only what's new |
 | `brief` / `context` | A compact map of the repo / everything about one file or function before you change it |
 | `trace` / `path` | What a function eventually calls / how one function reaches another |

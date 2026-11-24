@@ -16,6 +16,7 @@ from .analyzers import LANGUAGES, analyze
 from .baseline import baseline_path, compare, read_baseline, write_baseline
 from .brief import brief_markdown, context_data, context_markdown
 from .cache import load_cached, save_cache
+from .checks import scan_sources
 from .config import load_config
 from .flags import SEVERITY_ORDER, run_flags
 from .graph import Flag, Graph
@@ -321,6 +322,59 @@ def cmd_plan(a) -> int:
     return 0
 
 
+def cmd_surface(a) -> int:
+    from .brief import View
+    from .security import SINK_KINDS, function_at, surface, writes
+
+    root = Path(a.path).resolve()
+    graph = load_graph(root, a.lang, not a.no_cache)
+    v = View(graph)
+    s = surface(root, graph, v)
+    writers = writes(v)
+    scan = scan_sources(root, [f["id"] for f in graph["files"]])
+    sinks = {}  # function id -> risky kinds in it
+    for kind in SINK_KINDS:
+        for e in scan[kind].hits:
+            if fid := function_at(v, e.file, e.line):
+                sinks.setdefault(fid, set()).add(kind)
+    rows = []
+    for i, e in enumerate(s.entries):
+        reached = {f for f, (j, _) in s.reach.items() if j == i} | _reachable_from(graph, e.fn)
+        rows.append({
+            "method": e.method, "path": e.path, "framework": e.framework, "handler": f"{e.file}:{e.line}",
+            "auth": e.auth, "changes_data": any(f in writers for f in reached),
+            "risky": sorted({k for f in reached for k in sinks.get(f, ())}),
+        })  # fmt: skip
+    if a.json:
+        print(json.dumps({"exposure": s.exposure, "evidence": s.exposure_evidence, "endpoints": rows}, indent=1))
+        return 0
+    if not rows:
+        print(
+            "No HTTP endpoints found (recognised: FastAPI, Flask, Django/DRF, Express-style, Next.js, Spring, Go, "
+            "Rails, Sinatra)."
+        )
+        return 0
+    print(f"{len(rows)} endpoints · listening: {s.exposure}" + (f" ({s.exposure_evidence})" if s.exposure_evidence else ""))
+    print(_table(["method", "path", "auth", "changes data", "risky code", "handler"],
+                 [(r["method"], r["path"], r["auth"] or "none found", "yes" if r["changes_data"] else "",
+                   ", ".join(r["risky"]), r["handler"]) for r in rows], limit=500))  # fmt: skip
+    return 0
+
+
+def _reachable_from(graph: dict, start: str) -> set[str]:
+    out_edges: dict[str, list[str]] = {}
+    for e in graph["edges"]:
+        if e["kind"] in ("call", "ref"):
+            out_edges.setdefault(e["src"], []).append(e["dst"])
+    seen, q = {start}, [start]
+    while q:
+        for nxt in out_edges.get(q.pop(), ()):
+            if nxt not in seen:
+                seen.add(nxt)
+                q.append(nxt)
+    return seen
+
+
 def cmd_accept(a) -> int:
     from .accept import append_rules, known_kinds, normalize_where, rules_for_task
 
@@ -441,6 +495,10 @@ COMMANDS = {
     "baseline": (cmd_baseline, "save today's issues (codefactory-baseline.json, commit it) so only new ones fail"),
     "check": (cmd_check, "for CI / pre-commit: fail on issues new since the baseline"),
     "sarif": (cmd_sarif, "write issues as SARIF 2.1.0 for GitHub code scanning, VS Code and CI tools"),
+    "surface": (
+        cmd_surface,
+        "the attack surface: every HTTP endpoint, its auth check, and whether it changes data or reaches risky code",
+    ),
     "accept": (cmd_accept, "mark a finding as intended, with the reason (writes a [[silence]] rule to factory.toml)"),
     "update": (cmd_update, "upgrade codefactory to the latest version (and refresh this repo's skill)"),
     "skill": (cmd_skill, "teach Claude Code in a repo to use codefactory (writes .claude/skills/codefactory/SKILL.md)"),
@@ -484,7 +542,7 @@ Run `codefactory <command> --help` for a command's options.""",
                 help="only these analyzers (other = every language but Python and TypeScript)",
             )
             s.add_argument("--no-cache", action="store_true", help="analyze again even if nothing changed")
-        if name in ("flags", "query", "trace", "path", "context", "plan"):
+        if name in ("flags", "query", "trace", "path", "context", "plan", "surface"):
             s.add_argument("--json", action="store_true", help="machine-readable output")
         if name in ("trace", "path"):
             s.add_argument("--refs", action="store_true", help="also follow functions passed by name (callbacks)")

@@ -227,7 +227,7 @@ def analyze_python(root: Path, ignore: list[str], cache: bool = True) -> Graph:
     g = Graph(root=str(root), language="python")
     paths = [p.relative_to(root) for p in iter_files(root, ignore)]
     parsed = parallel.run(root, "python", [(rel.as_posix(), (str(root / rel), rel.as_posix())) for rel in paths], parse_module,
-                          tool="python-ir-4", cache=cache)  # fmt: skip
+                          tool="python-ir-6", cache=cache)  # fmt: skip
     modules: dict[str, _Module] = {}
     for rel in paths:
         data = parsed.get(rel.as_posix())

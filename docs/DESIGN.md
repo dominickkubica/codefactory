@@ -293,6 +293,23 @@ calling the transaction helper itself in a loop is the batching and isn't report
 `large_file` (over 400 lines), `long_function` (over 60), `hub` (called from 12 or more files) are context rather
 than defects. Saved SQL queries run against the in-memory SQLite form of the graph; each row returned is a flag.
 
+## The attack surface
+
+`security.py` finds HTTP entry points from the source around each handler: decorators and annotations above the
+definition, route registrations (`app.post("/x", mw, handler)`), and file conventions (Next.js `pages/api`, Rails
+controllers). For each it records the auth evidence: a decorator, a `Depends(…)` whose target is named like an auth
+check (also through `Annotated` aliases and router-level dependencies), a middleware argument, or app-wide
+middleware. Where the server listens comes from literals: `127.0.0.1`/`localhost` alone is local, plus a `0.0.0.0`
+anywhere is configurable, `0.0.0.0` alone is open.
+
+Reachability is a breadth-first search over call and ref edges from every entry. A risky line (the review's
+`sql_built`, `shell`, `eval` and `raw_html` checks) is attributed to the innermost function holding it, and its
+finding moves one severity level by whether any entry reaches it. "Changes data" means a function visibly writes: an
+`INSERT`/`UPDATE`/`DELETE` (the Python analyzer now labels the SQL verb of an `execute`), a call named for a change
+(`save`, `insert…`, `delete…`, `write…`, `runAsync`), a file write or a program run. A bare `commit` doesn't count
+(every `with db.session():` helper commits), and neither do migrations, which run on every open. Both rules came
+from a real FastAPI app where they made every endpoint look like it changed data.
+
 ## Silencing, baselines and fingerprints
 
 - **Silencing** happens after all checks. A `codefactory: ignore <kinds> — reason` comment on the flagged line, the
