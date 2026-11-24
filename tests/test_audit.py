@@ -77,6 +77,16 @@ class RepositoryChecksTest(unittest.TestCase):
         self.assertEqual(got["docker_secret"], [("Dockerfile", 2)])
         self.assertEqual(got["mobile_cleartext"], [("app.json", 1)])
 
+    def test_ignored_folders_are_left_out(self):
+        root = tree({
+            "factory.toml": 'ignore = ["fixtures"]\n',
+            "Dockerfile": "FROM python:3.12-slim\nUSER app\n",
+            "tests/fixtures/demo/Dockerfile": "FROM node:latest\n",
+        })  # fmt: skip
+        found, _ = scan(root, set())
+        self.assertEqual(found["docker_latest"].hits, [])
+        self.assertEqual(found["docker_root"].hits, [])
+
     def test_a_deleted_secret_is_still_in_history(self):
         root = tree({"config.py": 'STRIPE = "sk_live_' + "4eC39HqLyjWDarjtT1zdp7dc" + '"\n'})
         git = ["git", "-C", str(root), "-c", "user.name=t", "-c", "user.email=t@example.invalid"]

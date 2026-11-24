@@ -18,6 +18,13 @@ from codefactory.sbom import document, purl
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
+def _portable(sarif: dict) -> dict:
+    """Without the run's absolute root (where this copy happened to be), the one machine-specific field."""
+    for run in sarif["runs"]:
+        run.pop("originalUriBaseIds", None)
+    return sarif
+
+
 class SbomTest(unittest.TestCase):
     def setUp(self):
         self.root = Path(tempfile.mkdtemp())
@@ -66,7 +73,7 @@ class ReproducibleTest(unittest.TestCase):
                 (
                     json.dumps(g, sort_keys=True),
                     review_markdown(g, root),
-                    json.dumps(build_sarif(g, root), sort_keys=True).replace(root.as_uri(), "ROOT"),
+                    json.dumps(_portable(build_sarif(g, root)), sort_keys=True),
                 )
             )
         graph, review, sarif = zip(*outputs, strict=True)

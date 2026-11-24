@@ -13,7 +13,7 @@ import subprocess
 from pathlib import Path
 
 from .checks import PATTERNS, VENDOR_SECRETS, Check, Evidence
-from .paths import is_test
+from .paths import drop_ignored, is_test
 from .suppress import MARK
 
 # GitHub Actions
@@ -175,10 +175,10 @@ def scan_config(root: Path) -> dict[str, Check]:
     workflows(root, out)
     dockerfiles(root, find_dockerfiles(root), out)
     mobile(root, out)
-    return out
+    return drop_ignored(out, root)
 
 
 def scan(root: Path, current_secrets: set[str]) -> tuple[dict[str, Check], str]:
     out = scan_config(root)
     note = history(root, current_secrets, out)
-    return out, note
+    return drop_ignored(out, root), note

@@ -167,6 +167,7 @@ def vulnerabilities(pkgs: list[Package], timeout: int = 30) -> list[Vulnerabilit
             found += [Vulnerability(p, v["id"]) for v in res.get("vulns") or []]
     for v in found[:DETAILS]:
         try:
+            # codefactory: ignore io_in_loop — OSV has no batch endpoint for details; capped at DETAILS requests
             d = _get(f"{API}/vulns/{v.id}", timeout)
         except (OSError, ValueError):
             continue

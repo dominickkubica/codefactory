@@ -11,7 +11,7 @@ import re
 from pathlib import Path
 
 from .checks import Check, Evidence
-from .paths import is_test
+from .paths import drop_ignored, is_test
 
 FORCE = re.compile(r"\btry!|\bas!\s")
 STORED_CLOSURE = re.compile(
@@ -79,4 +79,4 @@ def scan(root: Path, files: list[str]) -> dict[str, Check]:
         for m in WEAK_ENTITLEMENTS.finditer(text):
             rel = path.relative_to(root).as_posix()
             out["entitlement_weakened"].hits.append(Evidence(rel, text.count("\n", 0, m.start()) + 1, m.group(1)))
-    return out
+    return drop_ignored(out, root)

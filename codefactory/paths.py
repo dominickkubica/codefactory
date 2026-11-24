@@ -8,6 +8,22 @@ TEST_DIRS = ("tests", "test", "testing", "__tests__", "__mocks__", "spec")
 SCRIPT_DIRS = ("scripts", "script", "tools", "bin")
 
 
+def ignored(path: str, ignore: list[str]) -> bool:
+    """In a folder factory.toml's `ignore` names (fixtures, vendor…): left out of every check, like the analyzers do."""
+    return bool(set(path.replace("\\", "/").split("/")[:-1]) & set(ignore))
+
+
+def drop_ignored(checks: dict, root) -> dict:
+    """Remove evidence in ignored folders from a {key: Check} result."""
+    from .config import load_config
+
+    ignore = load_config(root).ignore
+    if ignore:
+        for c in checks.values():
+            c.hits = [e for e in c.hits if not ignored(e.file, ignore)]
+    return checks
+
+
 def is_test(path: str) -> bool:
     """tests/…, __tests__/…, test_*.py, *_test.py, *.test.ts, *.spec.js…"""
     parts = path.replace("\\", "/").split("/")

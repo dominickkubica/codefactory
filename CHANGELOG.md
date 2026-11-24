@@ -16,6 +16,10 @@ Supply chain.
 - [SECURITY.md](SECURITY.md): reporting, what codefactory does and doesn't do with your code, verifying a release.
 - Tests that the same code gives byte-identical graph, review and SARIF output.
 
+### Fixed
+- Folders in `factory.toml`'s `ignore` (test fixtures, vendored code) were still read by the Dockerfile, workflow,
+  entitlement and git-history checks; they're now left out everywhere, as the analyzers already did.
+
 ### Changed
 - The Action pins `actions/setup-python` to a commit, and the docs use `@v0` instead of `@main`.
 - Package metadata uses an SPDX license expression (setuptools 77+).
