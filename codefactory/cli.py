@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import functools
 import json
 import os
 import sys
@@ -37,6 +38,10 @@ def build(root: Path, languages: list[str] | None = None, cache: bool = True) ->
     g = analyze(root, cfg.ignore, languages, cache)
     assign_layers(g, cfg)
     run_flags(g, cfg)
+    if cfg.rules:
+        from .rules import custom_flags
+
+        g.flags += custom_flags(g, root, cfg)
     if cfg.queries:
         g.flags += [Flag(**f) for f in query_flags(g.to_dict(), cfg.queries)]
         g.flags.sort(key=lambda f: (SEVERITY_ORDER[f.severity], f.kind, f.target))
@@ -114,7 +119,10 @@ def _split(values: list[str], wanted: int) -> tuple[str, list[str]]:
 
 def _flag_dict(graph: dict, f: dict) -> dict:
     fn = next((x for x in graph["functions"] if x["id"] == f["target"]), None)
+    file = fn["file"] if fn else f["target"]
+    owners = _owners(Path(graph["root"]))
     return {
+        "owners": owners.of(file) if owners else [],
         "severity": f["severity"],
         "kind": f["kind"],
         "file": fn["file"] if fn else f["target"],
@@ -123,6 +131,13 @@ def _flag_dict(graph: dict, f: dict) -> dict:
         "message": f["message"],
         "related": f.get("related", []),
     }
+
+
+@functools.lru_cache(maxsize=8)
+def _owners(root: Path):
+    from .owners import load
+
+    return load(root)
 
 
 # ---- commands ----------------------------------------------------------------------------------------------------
@@ -322,6 +337,37 @@ def cmd_plan(a) -> int:
     return 0
 
 
+def cmd_org(a) -> int:
+    """Many repositories: a dashboard of health, findings and trends, and findings per owning team."""
+    from . import org
+
+    paths = list(a.repos)
+    if a.list:
+        paths += [
+            ln.strip() for ln in Path(a.list).read_text(encoding="utf-8").splitlines() if ln.strip() and not ln.startswith("#")
+        ]
+    if not paths:
+        raise ValueError("give the repositories to include (folders), or --list FILE with one folder per line")
+    snaps, histories = [], {}
+    for p in paths:
+        root = Path(p).resolve()
+        if not root.is_dir():
+            print(f"codefactory: skipping {p}: not a folder", file=sys.stderr)
+            continue
+        snap = org.snapshot(root, load_graph(root, a.lang, not a.no_cache))
+        histories[snap["path"]] = org.record(root, snap)
+        snaps.append(snap)
+        print(
+            f"{snap['grade']:<9} {snap['repo']}  " + " ".join(f"{k[0]}{v}" for k, v in snap["findings"].items()), file=sys.stderr
+        )
+    if a.json:
+        print(json.dumps({"repositories": snaps}, indent=1))
+    else:
+        _write(Path(a.output), org.page(snaps, histories))
+        print(f"Wrote {a.output}: {len(snaps)} repositories")
+    return 0
+
+
 def cmd_diff(a) -> int:
     """What this change adds: new findings compared with the base branch (merge-base), for pull requests."""
     from . import diff
@@ -340,9 +386,9 @@ def cmd_diff(a) -> int:
             kind = {"high": "error", "warn": "warning"}.get(i.severity, "notice")
             print(f"::{kind} file={i.file},line={max(1, i.line)},title=codefactory {i.kind}::{i.message}")
     else:
-        print(diff.markdown(result), end="")
+        print(diff.markdown(result, owners=_owners(root.resolve())), end="")
     if a.comment:
-        _write(Path(a.comment), diff.markdown(result))
+        _write(Path(a.comment), diff.markdown(result, owners=_owners(root.resolve())))
     return 1 if blocking else 0
 
 
@@ -519,6 +565,7 @@ COMMANDS = {
     "baseline": (cmd_baseline, "save today's issues (codefactory-baseline.json, commit it) so only new ones fail"),
     "check": (cmd_check, "for CI / pre-commit: fail on issues new since the baseline"),
     "sarif": (cmd_sarif, "write issues as SARIF 2.1.0 for GitHub code scanning, VS Code and CI tools"),
+    "org": (cmd_org, "a dashboard across many repositories: health, findings, trends and findings per owning team"),
     "diff": (cmd_diff, "what a change adds: new and fixed findings compared with the base branch (for pull requests)"),
     "surface": (
         cmd_surface,
@@ -551,6 +598,10 @@ Run `codefactory <command> --help` for a command's options.""",
         s = sub.add_parser(name, help=text, description=text)
         if name in ("query", "trace", "path", "context", "prompt", "accept"):
             s.add_argument("values", nargs="+", metavar="value")
+        elif name == "org":
+            s.add_argument("repos", nargs="*", help="the repositories (folders) to include")
+            s.add_argument("--list", metavar="FILE", help="a file with one repository folder per line")
+            s.add_argument("-o", "--output", default="codefactory-dashboard.html", help="where to write the dashboard")
         else:
             s.add_argument("path", nargs="?", default=".", help="the codebase folder (default: here), or a graph .json")
         if name == "diff":
@@ -573,7 +624,7 @@ Run `codefactory <command> --help` for a command's options.""",
                 help="only these analyzers (other = every language but Python and TypeScript)",
             )
             s.add_argument("--no-cache", action="store_true", help="analyze again even if nothing changed")
-        if name in ("flags", "query", "trace", "path", "context", "plan", "surface", "diff"):
+        if name in ("flags", "query", "trace", "path", "context", "plan", "surface", "diff", "org"):
             s.add_argument("--json", action="store_true", help="machine-readable output")
         if name in ("trace", "path"):
             s.add_argument("--refs", action="store_true", help="also follow functions passed by name (callbacks)")

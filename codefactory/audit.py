@@ -12,7 +12,8 @@ import re
 import subprocess
 from pathlib import Path
 
-from .checks import PATTERNS, Check, Evidence
+from .checks import PATTERNS, VENDOR_SECRETS, Check, Evidence
+from .paths import is_test
 from .suppress import MARK
 
 # GitHub Actions
@@ -135,8 +136,9 @@ def history(root: Path, current: set[str], out: dict[str, Check], max_lines: int
                 file = raw[6:].strip() if raw.startswith("+++ b/") else ""
             elif raw.startswith("+") and not raw.startswith("+++") and file:
                 line = raw[1:]
-                if len(line) < 2000 and any(p.search(line) for p in pats):
-                    value = next(m.group(0) for p in pats if (m := p.search(line)))
+                use = VENDOR_SECRETS if is_test(file) else pats  # test fixtures: only real credential formats
+                if len(line) < 2000 and any(p.search(line) for p in use):
+                    value = next(m.group(0) for p in use if (m := p.search(line)))
                     if re.search(r"(?i)example|placeholder|dummy|xxxx|your[_-]|changeme|<", line) or MARK.search(line):
                         continue  # (a `codefactory: ignore` comment on it said it isn't real)
                     if value in current or (file, value) in seen:

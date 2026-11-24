@@ -32,7 +32,10 @@ class AcceptTest(unittest.TestCase):
         self.assertIn("SQL assembled from strings", review_markdown(build(self.root, cache=False).to_dict(), self.root))
         self.assertEqual(run("accept", str(self.root), "sql_built", "app.py:2", "--why", 'checked "t" against TABLES'), 0)
         rules = tomllib.loads((self.root / "factory.toml").read_text(encoding="utf-8"))["silence"]
-        self.assertEqual(rules, [{"kind": "sql_built", "where": "app.py", "reason": 'checked "t" against TABLES'}])
+        (rule,) = rules
+        self.assertEqual({k: rule[k] for k in ("kind", "where", "reason")},
+                         {"kind": "sql_built", "where": "app.py", "reason": 'checked "t" against TABLES'})  # fmt: skip
+        self.assertTrue(rule["by"] and len(rule["on"]) == 10)  # the audit trail: who, and when (YYYY-MM-DD)
         self.assertNotIn("SQL assembled from strings", review_markdown(build(self.root, cache=False).to_dict(), self.root))
 
     def test_a_plan_task(self):
@@ -41,7 +44,8 @@ class AcceptTest(unittest.TestCase):
         g = build(self.root, cache=False)
         self.assertNotIn(("unused", "app.py::helper"), {(f.kind, f.target) for f in g.flags})
         # the task covers every unused function in the file: each is silenced, with the reason
-        self.assertEqual({f.reason for f in g.silenced if f.kind == "unused"}, {"kept for the plugin API"})
+        reasons = {f.reason for f in g.silenced if f.kind == "unused"}
+        self.assertTrue(reasons and all(r.startswith("kept for the plugin API (accepted by ") for r in reasons), reasons)
         self.assertIn("app.py::helper", {f.target for f in g.silenced})
 
     def test_typos_are_refused(self):

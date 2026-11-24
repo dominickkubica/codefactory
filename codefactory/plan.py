@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 from collections import defaultdict
+from pathlib import Path
 
 from .brief import View
 from .paths import is_script, is_test
@@ -42,6 +43,9 @@ class Planner:
         self.g, self.v = g, View(g)
         self.layer_rank = {name: i for i, name in enumerate(g["layers"])}  # right = more depended upon
         self.idx = {id(f): i for i, f in enumerate(g["flags"])}
+        from .owners import load as load_owners
+
+        self.owners = load_owners(Path(g["root"])) if g.get("root") and Path(g["root"]).is_dir() else None
 
     # -- helpers ---------------------------------------------------------------------------------------------------
     def at(self, fid: str, line: int | None = None) -> dict:
@@ -319,6 +323,8 @@ class Planner:
             "verify": verify,
             "flags": sorted(self.idx[id(f)] for f in flags if id(f) in self.idx),
         }
+        if self.owners:  # who to hand it to (CODEOWNERS)
+            t["owners"] = sorted({o for w in where for o in self.owners.of(w["file"])})
         t["prompt"] = prompt_for(t)
         return t
 

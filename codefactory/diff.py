@@ -146,8 +146,8 @@ def run(root: Path, base_ref: str, load) -> dict:
     return {"base": sha, "changed": sorted(changed), "new": sorted(new, key=order), "fixed": sorted(gone, key=order)}
 
 
-def markdown(result: dict, limit: int = 30) -> str:
-    """A pull-request comment."""
+def markdown(result: dict, limit: int = 30, owners=None) -> str:
+    """A pull-request comment (with each finding's owners, when the repository has a CODEOWNERS file)."""
     new, fixed, changed = result["new"], result["fixed"], set(result["changed"])
     counts = Counter(i.severity for i in new)
     head = (
@@ -160,6 +160,8 @@ def markdown(result: dict, limit: int = 30) -> str:
         lines += ["| | Finding | Where |", "|---|---|---|"]
         for i in new[:limit]:
             where = f"`{i.file}:{i.line}`" + (f" {i.function}" if i.function else "")
+            if owners and (who := owners.of(i.file)):
+                where += " · " + " ".join(who)
             note = "" if i.file in changed else " (a file this change didn't touch: a consequence, such as a caller removed)"
             lines.append(f"| {i.severity} | {i.message.replace('|', '/')} | {where}{note} |")
         if len(new) > limit:

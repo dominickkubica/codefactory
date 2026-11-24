@@ -81,6 +81,8 @@ For the by-name languages, call, impact and unused-code findings are leads to co
 | `view` | The interactive factory floor (one HTML file), with lenses for duplication, efficiency and size |
 | `flags` | Every issue with `file:line`; `--min warn`, `--kind similar`, `--json`, `--github` |
 | `plan` / `prompt` | Ranked tasks with steps and tests / one task as a ready-to-paste Claude Code prompt |
+| `diff` | What a change adds and fixes, compared with the base branch: a pull-request comment, annotations or JSON |
+| `org` | A dashboard across many repositories: health, findings, trends, and findings per owning team |
 | `surface` | The attack surface: every HTTP endpoint, its auth check, and whether it changes data or reaches risky code |
 | `accept` | Mark a finding as intended, with the reason, so later runs show only what's new |
 | `brief` / `context` | A compact map of the repo / everything about one file or function before you change it |
@@ -111,13 +113,25 @@ findings instead of the whole repository, and verifies each change with the test
 
 ## In CI
 
-Fail a pull request only on problems it adds, with annotations on the changed lines:
+Comment on every pull request with the findings it adds and fixes (one comment, updated on each push), and
+optionally fail on new ones:
 
 ```yaml
-# .github/workflows/codefactory.yml (after `codefactory baseline` is committed)
-- run: pip install "codefactory[languages] @ git+https://github.com/dominickkubica/codefactory"
-- run: codefactory check --github
+# .github/workflows/codefactory.yml
+on: pull_request
+permissions: { contents: read, pull-requests: write }
+jobs:
+  codefactory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: dominickkubica/codefactory@main
+        with: { fail-on: high }
 ```
+
+Locally, `codefactory diff --base main` shows the same. Findings are matched by identity, not line, so code that
+moved isn't "new", and each one names its owners when the repository has a CODEOWNERS file.
 
 `codefactory sarif -o codefactory.sarif` feeds GitHub code scanning instead. The [usage guide](docs/USAGE.md#keeping-new-problems-out-baseline-and-check)
 has complete workflows.

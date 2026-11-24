@@ -672,6 +672,38 @@ class Review:
                 "S",
             )
 
+    def custom(self) -> None:
+        """The team's own rules from factory.toml, one finding per rule."""
+        by_rule: dict[str, list[dict]] = {}
+        for f in self.by_kind["custom"]:
+            by_rule.setdefault(f.get("detail") or "custom", []).append(f)
+        for rule, flags in sorted(by_rule.items()):
+            sev = {"high": "High", "warn": "Medium", "info": "Low"}[
+                min((f["severity"] for f in flags), key=["high", "warn", "info"].index)
+            ]
+            message = flags[0]["message"].split("] ", 1)[-1]
+            self.add(f"Custom rule {rule} ({len(flags)})", sev, "Custom", [self.where(f) for f in flags[:6]], message,
+                     "See the rule in factory.toml.", _effort(len(flags), len({self._file(f) for f in flags})),
+                     max(0, len(flags) - 6))  # fmt: skip
+
+    def _by_owner(self) -> list[str]:
+        """Findings per owning team, from CODEOWNERS: who has the most to act on."""
+        from .owners import load
+
+        owners = load(self.root)
+        if not owners:
+            return []
+        counts: dict[str, Counter] = {}
+        files = [(self._file(f), f["severity"]) for f in self.g["flags"]]
+        files += [(e.file, "warn") for k, c in self.scan.items() if k in SECURITY_KEYS for e in c.hits]
+        for file, sev in files:
+            for who in owners.of(file) or ["(no owner)"]:
+                counts.setdefault(who, Counter())[sev] += 1
+        rows = sorted(counts.items(), key=lambda kv: (-kv[1]["high"], -kv[1]["warn"], -sum(kv[1].values())))
+        out = [f"### By owner ({owners.source})", "", "| Owner | High | Warn | Info |", "|---|---|---|---|"]
+        out += [f"| {who} | {c['high']} | {c['warn']} | {c['info']} |" for who, c in rows[:15]]
+        return [*out, ""]
+
     def delivery(self) -> None:
         r = self.repo
         if not r["ci"]:
@@ -781,6 +813,7 @@ class Review:
         self.architecture()
         self.testing()
         self.delivery()
+        self.custom()
         self.findings.sort(key=lambda f: (SEV.index(f.severity), -len(f.evidence) - f.more))
 
     def health(self) -> tuple[str, list[Finding]]:
@@ -925,6 +958,7 @@ class Review:
                 if f.more:
                     out.append(f"  - … {f.more} more")
                 out += [f"- Impact: {f.impact}", f"- Fix: {f.fix}", ""]
+        out += self._by_owner()
         out += ["## 4. What is working", ""] + [f"- {w}" for w in self.strengths()] + [""]
         out += ["## 5. Testing and release gaps", ""]
         gaps = [f for f in self.findings if f.area in ("Testing", "Delivery", "Dependencies")]
@@ -1208,6 +1242,9 @@ class Review:
 
 
 CI_HINT = [".github/workflows", ".gitlab-ci.yml", ".circleci", "Jenkinsfile"]
+SECURITY_KEYS = {"secret", "eval", "shell", "tls_off", "raw_html", "sql_built", "history_secret", "secret_key_literal",
+                 "jwt_unverified", "weak_cipher", "weak_hash", "weak_random", "cors_any", "insecure_cookie", "debug_on",
+                 "sensitive_storage", "docker_secret", "gha_injection"}  # fmt: skip
 
 # (check, title, severity, impact, fix) for the configuration, crypto, CI, container, mobile and history checks
 CONFIG_CHECKS = [

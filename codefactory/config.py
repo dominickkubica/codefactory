@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -39,7 +40,8 @@ class Config:
     similar_threshold: float = 0.75  # near-duplicates: share of structure in common (0-1)
     hub_callers: int = 12
     queries: list[dict] = field(default_factory=list)  # saved SQL checks that become flags
-    silence: list[dict] = field(default_factory=list)  # [[silence]] kind / where (glob) / reason
+    silence: list[dict] = field(default_factory=list)  # [[silence]] kind / where (glob) / reason (+ by, on)
+    rules: list[dict] = field(default_factory=list)  # [[rule]] custom pattern checks: id, pattern, files, severity…
 
 
 def parse_rule(rule: str) -> tuple[str, str]:
@@ -49,15 +51,38 @@ def parse_rule(rule: str) -> tuple[str, str]:
     return left.strip(), right.strip()
 
 
+def _read(path: Path, seen: tuple = ()) -> dict:
+    """factory.toml, merged over the policy it `extends` (an organisation's shared file): tables merge, lists append,
+    so a team adds to the shared rules and thresholds rather than replacing them."""
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError as e:
+        raise ValueError(f"{path.name} isn't valid TOML: {e}") from None
+    except OSError as e:
+        raise ValueError(f"can't read {path}: {e.strerror}") from None
+    parent = data.pop("extends", None)
+    if not parent:
+        return data
+    base_path = (path.parent / parent).resolve()
+    if base_path in seen:
+        raise ValueError(f"factory.toml `extends` loops back to {base_path}")
+    merged = _read(base_path, (*seen, path.resolve()))
+    for key, value in data.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = {**merged[key], **value}
+        elif isinstance(value, list) and isinstance(merged.get(key), list):
+            merged[key] = merged[key] + value
+        else:
+            merged[key] = value
+    return merged
+
+
 def load_config(root: Path) -> Config:
     path = root / "factory.toml"
     cfg = Config()
     if not path.is_file():
         return cfg
-    try:
-        data = tomllib.loads(path.read_text(encoding="utf-8"))
-    except tomllib.TOMLDecodeError as e:
-        raise ValueError(f"factory.toml isn't valid TOML: {e}") from None
+    data = _read(path)
     layers = data.get("layers", {})
     cfg.layers = {name: [globs] if isinstance(globs, str) else list(globs) for name, globs in layers.items()}
     cfg.forbid = [parse_rule(r) for r in data.get("rules", {}).get("forbid", [])]
@@ -77,5 +102,24 @@ def load_config(root: Path) -> Config:
     for rule in data.get("silence", []):
         if not rule.get("where"):
             raise ValueError("Each [[silence]] entry in factory.toml needs `where` (a file or file::function glob)")
-        cfg.silence.append({"kind": rule.get("kind", "*"), "where": rule["where"], "reason": rule.get("reason", "")})
+        reason = rule.get("reason", "")
+        if rule.get("by") or rule.get("on"):  # who accepted it, and when (written by `codefactory accept`)
+            by = f" by {rule['by']}" if rule.get("by") else ""
+            on = f" on {rule['on']}" if rule.get("on") else ""
+            reason += f" (accepted{by}{on})"
+        cfg.silence.append({"kind": rule.get("kind", "*"), "where": rule["where"], "reason": reason})
+    for r in data.get("rule", []):
+        if not r.get("id") or not r.get("pattern"):
+            raise ValueError("Each [[rule]] entry in factory.toml needs an id and a pattern (a regular expression)")
+        if r.get("severity", "warn") not in ("high", "warn", "info"):
+            raise ValueError(f"Rule {r['id']!r}: severity must be high, warn or info")
+        try:
+            regex = re.compile(r["pattern"])
+        except re.error as e:
+            raise ValueError(f"Rule {r['id']!r}: the pattern isn't a valid regular expression ({e})") from None
+        files = r.get("files", ["**/*"])
+        cfg.rules.append({
+            "id": r["id"], "regex": regex, "files": [files] if isinstance(files, str) else list(files),
+            "severity": r.get("severity", "warn"), "message": r.get("message", r["id"]), "fix": r.get("fix", ""),
+        })  # fmt: skip
     return cfg

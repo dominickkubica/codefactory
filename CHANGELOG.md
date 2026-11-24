@@ -3,6 +3,29 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.13.0 · 2026-11-24
+
+Pull requests and organisations.
+
+### Added
+- **`codefactory diff`:** the findings a change adds and fixes, compared with the base branch's merge-base.
+  Output: a pull-request comment, GitHub annotations or JSON, and `--fail-on` for CI. Findings are matched by
+  identity, so moved code isn't new. On a real pull request (four swallowed errors fixed) it reported exactly
+  those four as fixed and nothing new.
+- **A GitHub Action** (`uses: dominickkubica/codefactory@main`) that keeps one comment per pull request up to date.
+- **Owners from CODEOWNERS** on every finding: JSON, SARIF, plan tasks, the PR comment, and a "By owner" table in the
+  review.
+- **Custom rules** (`[[rule]]` in factory.toml: a regular expression, files, severity, message) and **shared policy**
+  (`extends`).
+- **`codefactory org`:** a dashboard across many repositories with health, findings, trends and findings per owner.
+- **`accept` records who and when.**
+
+### Fixed
+- Checks for `eval`, `exec` and shell strings run only in languages where those are built-ins (Go's own `eval()`
+  functions were reported as dynamic code execution).
+- In test files, only real credential formats count as leaked secrets (AWS, GitHub, Slack, Stripe, Google), not
+  fixture keys such as an example's private key.
+
 ## 0.12.0 · 2026-11-24
 
 The rest of a security audit.

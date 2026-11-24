@@ -289,6 +289,7 @@ RULES: dict[str, tuple] = {
         ["security"],
         "4.0",
     ),
+    "custom": ("CustomRule", "A custom rule from factory.toml matched", "See the rule's message.", "warn", ["custom"], None),
     "docker_latest": (
         "UnpinnedBaseImage",
         "Container base image not pinned",
@@ -434,6 +435,15 @@ def build_sarif(graph: dict, root: Path | None = None, new_keys: Counter | None 
                     + (f" (interpolates: {', '.join(check.data.get(e.at(), []))})" if check.data.get(e.at()) else ""),
                 }.get(key, RULES[key][1])
                 add(key, sev_of[key], f"{text}: {e.text}", _loc(e.file, e.line), f"{key}|{e.file}|{e.text}")
+
+    from .owners import load as load_owners
+
+    owners = load_owners(Path(graph["root"])) if graph.get("root") else None
+    if owners:  # route each result to its team (CODEOWNERS)
+        for r in results:
+            uri = r["locations"][0]["physicalLocation"]["artifactLocation"]["uri"]
+            if who := owners.of(uri):
+                r.setdefault("properties", {})["owners"] = who
 
     return {
         "$schema": SCHEMA,

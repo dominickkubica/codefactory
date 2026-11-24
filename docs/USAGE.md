@@ -166,6 +166,51 @@ severity, lines saved and number of callers; tests and one-off scripts count for
 behaviour identical, update every caller of anything renamed) and how to know it's done. The viewer's **Copy fix
 prompt** button copies the same text.
 
+## Pull requests: diff
+
+```bash
+codefactory diff --base main                 # new and fixed findings since the branch left main (Markdown)
+codefactory diff --json                      # for scripts
+codefactory diff --github --fail-on high     # annotations; exit 1 on new high findings
+codefactory diff --comment comment.md        # also write the pull-request comment
+```
+
+The base is the merge-base with `--base` (default: `origin/HEAD`, `main` or `master`), extracted once into
+`.codefactory/diff/` and analyzed with the same caches, so a second run after a push only re-reads what changed.
+Uncommitted work counts. Findings are matched by kind + file + function (graph findings) or kind + file + the line's
+text (source checks), not by line number. A new finding in a file the change didn't touch (a function that became
+unused because its caller was deleted) is shown with that note.
+
+The repository is also a GitHub Action (`uses: dominickkubica/codefactory@main`, inputs `base`, `fail-on`,
+`comment`, `languages`). It posts one comment per pull request and updates it on every push; check out with
+`fetch-depth: 0` so the base commit is there.
+
+## Teams and organisations
+
+- **Owners:** with a CODEOWNERS file (`.github/`, the root, `docs/` or `.gitlab/`), every finding carries its owners:
+  `flags --json`, SARIF (`properties.owners`), plan tasks, the PR comment, and a "By owner" table in the review.
+- **Shared policy:** `extends = "../policy/codefactory.toml"` in `factory.toml` merges an organisation's file under
+  the repository's: tables merge, lists (rules, silences, queries) add up.
+- **Custom rules** without code:
+
+  ```toml
+  [[rule]]
+  id = "no-raw-print"
+  pattern = "\\bprint\\("          # a regular expression, matched per line
+  files = ["src/**/*.py"]
+  severity = "info"                # high | warn | info
+  message = "Use the logger: print output is lost in production"
+  fix = "log.info(...)"
+  ```
+
+  Each match is a `custom` finding on the function holding it: silencing, baselines, SARIF, `diff` and the review all
+  apply.
+- **Audit trail:** `codefactory accept` records who (git's `user.name`) and when; `flags --silenced` shows it.
+- **Dashboard:** `codefactory org repo-a repo-b … -o dashboard.html` (or `--list repos.txt`, or `--json`) analyzes
+  each repository and writes one page: health, findings by severity, endpoints without auth, test reach, a trend
+  line, the top findings, and findings per owner across all of them. Each run appends a daily snapshot to the
+  repository's `.codefactory/history.jsonl`, which is where the trend comes from.
+
 ## The attack surface
 
 `codefactory surface` lists every HTTP endpoint it recognises, with its method and path (router prefixes included), the

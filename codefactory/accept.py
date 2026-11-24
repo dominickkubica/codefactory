@@ -7,8 +7,11 @@ don't own, a quick triage pass), and for review findings: it appends a [[silence
 
 from __future__ import annotations
 
+import getpass
 import json
 import re
+import subprocess
+from datetime import date
 from pathlib import Path
 
 from .sarif import RULES
@@ -36,13 +39,30 @@ def normalize_where(where: str) -> str:
     return re.sub(r":\d+$", "", where)
 
 
+def _who(root: Path) -> str:
+    """The person accepting: git's user.name, else the login name."""
+    try:
+        proc = subprocess.run(["git", "-C", str(root), "config", "user.name"], capture_output=True, text=True, timeout=10)
+        name = proc.stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        name = ""
+    try:
+        return name or getpass.getuser()
+    except (OSError, KeyError):
+        return "unknown"
+
+
 def append_rules(root: Path, rules: list[tuple[str, str]], reason: str) -> Path:
     path = root / "factory.toml"
     text = path.read_text(encoding="utf-8") if path.is_file() else ""
     blocks = []
+    by, on = _who(root), date.today().isoformat()  # the audit trail: who accepted it, and when
     for kind, where in rules:
         # JSON strings are valid TOML basic strings (same escapes), so quoting can't break the file
-        blocks.append(f"[[silence]]\nkind = {json.dumps(kind)}\nwhere = {json.dumps(where)}\nreason = {json.dumps(reason)}\n")
+        blocks.append(
+            f"[[silence]]\nkind = {json.dumps(kind)}\nwhere = {json.dumps(where)}\nreason = {json.dumps(reason)}\n"
+            f"by = {json.dumps(by)}\non = {json.dumps(on)}\n"
+        )
     sep = "" if not text or text.endswith("\n\n") else ("\n" if text.endswith("\n") else "\n\n")
     path.write_text(text + sep + "\n".join(blocks), encoding="utf-8")
     return path

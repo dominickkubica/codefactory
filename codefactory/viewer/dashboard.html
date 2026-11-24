@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>codefactory dashboard</title>
+<style>
+:root { --bg: #fff; --fg: #1d1d1f; --muted: #6e6e73; --line: #e5e5ea;
+  --crit: #b3261e; --high: #d9480f; --med: #b8860b; --low: #5f6b7a; --good: #2e7d32; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #111214; --fg: #f2f2f7; --muted: #a1a1aa; --line: #2c2c2e; --good: #66bb6a; --med: #e0b100; }
+}
+body { margin: 0; padding: 24px 16px; background: var(--bg); color: var(--fg);
+  font: 14px/1.45 -apple-system, "Segoe UI", Roboto, sans-serif; }
+h1 { font-size: 20px; margin: 0 0 4px; }
+h2 { font-size: 16px; margin: 24px 0 0; }
+.muted { color: var(--muted); font-size: 12px; }
+.wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+th, td { border-bottom: 1px solid var(--line); padding: 8px; text-align: left; vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.top { font-size: 12px; max-width: 360px; }
+.sev-critical, .grade-at-risk { color: var(--crit); font-weight: 600; }
+.sev-high, .grade-fragile { color: var(--high); font-weight: 600; }
+.sev-medium, .grade-adequate { color: var(--med); }
+.sev-low { color: var(--low); }
+.grade-strong { color: var(--good); font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>codefactory dashboard</h1>
+<div class="muted">__SUMMARY__</div>
+<div class="wrap"><table>
+<thead><tr><th>Repository</th><th>Health</th><th class="num">Critical</th><th class="num">High</th>
+<th class="num">Medium</th><th class="num">Low</th><th class="num">Endpoints</th><th class="num">Tests reach</th>
+<th>Trend</th><th>Top findings</th></tr></thead>
+<tbody>
+__ROWS__
+</tbody></table></div>
+__OWNERS__
+</body>
+</html>

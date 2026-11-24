@@ -145,6 +145,14 @@ PATTERNS.update(
         ],
     }
 )
+# Checks for built-ins only some languages have: Go's eval() or Java's exec() are ordinary functions.
+LANG_ONLY = {
+    "eval": (".py", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".rb", ".php"),
+    "shell": (".py", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".rb", ".php"),
+}
+# In tests, keys are fixtures (a PEM block in an example, "secret = 'xxxx…'"): only real credential formats count there,
+# because a live AWS, GitHub, Slack, Stripe or Google key in a test is as leaked as anywhere else.
+VENDOR_SECRETS = PATTERNS["secret"][1:6]
 # Lines that only count when they're about something security-sensitive: an md5 for a cache key or Math.random() for a
 # chart colour is fine; for a password, a token or a session it isn't.
 CONTEXT = {
@@ -244,7 +252,11 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
         def hit(key: str, i: int, lines=lines, file_kinds=file_kinds) -> bool:  # bound to this file's lines
             return not _ignored(lines, i, key, file_kinds)
 
-        present = {k: v for k, v in PATTERNS.items() if (not test or k == "secret") and ANY[k].search(text)}
+        present = {
+            k: (VENDOR_SECRETS if test and k == "secret" else v)
+            for k, v in PATTERNS.items()
+            if (not test or k == "secret") and (k not in LANG_ONLY or fid.endswith(LANG_ONLY[k])) and ANY[k].search(text)
+        }
         sql_here = not test and SQL_HINT.search(text) is not None
         hosts_here = not test and "://" in text
         boundary_here = re.search(r"ErrorBoundary|componentDidCatch|getDerivedStateFromError", text) is not None
