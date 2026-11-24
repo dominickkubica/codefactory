@@ -80,6 +80,78 @@ class FindingsTest(unittest.TestCase):
         write(self.root, {"pyproject.toml": '[project]\nname = "x"\ndependencies = ["duckdb>=1.0", "pyarrow", "fastapi[all]"]\n'})
         self.assertTrue({"duckdb", "pyarrow", "fastapi"} <= set(scan_repo(self.root)["deps"]))
 
+    def test_a_method_named_in_getattr_is_used(self):
+        write(self.root, {"app.py": '''
+            class Provider:
+                def bulk(self, ids):
+                    return ids
+
+                def never(self):
+                    return 0
+
+
+            def load(provider, ids):
+                fetch = getattr(provider, "bulk", None)
+                return fetch(ids) if fetch else []
+            '''})  # fmt: skip
+        unused = {f.target.split("::")[-1] for f in build(self.root, cache=False).flags if f.kind == "unused"}
+        self.assertNotIn("Provider.bulk", unused)
+        self.assertIn("Provider.never", unused)
+
+    def test_review_separates_writes_from_file_operations_and_fixed_loops(self):
+        from codefactory.review import review_markdown
+
+        write(self.root, {"app.py": '''
+            from pathlib import Path
+
+            TABLES = ["a", "b"]
+
+
+            def snapshot_dates(folder, symbols):
+                return [sorted(Path(folder, s).glob("*.parquet")) for s in symbols]
+
+
+            def save(conn, rows):
+                for r in rows:
+                    conn.execute("INSERT INTO t VALUES (?)", (r,))
+
+
+            def count_tables(conn):
+                return [conn.execute(f"SELECT count(*) FROM {t}").fetchone() for t in TABLES]
+            '''})  # fmt: skip
+        text = review_markdown(build(self.root, cache=False).to_dict(), self.root)
+        self.assertIn("Writes inside loops in 1 place", text)
+        self.assertIn("File or program operations inside loops in 1 place", text)
+        self.assertNotIn("count_tables", text.split("## 4.")[0].split("Writes inside loops")[-1])
+
+    def test_loop_calls_are_classified_by_what_they_do(self):
+        write(self.root, {"app.py": '''
+            import shutil
+
+
+            def read_snapshot(conn, day):
+                return conn.execute(f"SELECT * FROM snaps WHERE day = '{day}'").fetchall()
+
+
+            def load_bars(conn, day):
+                return conn.execute(QUERY, (day,))
+
+
+            def backup(files, dest):
+                for f in files:
+                    shutil.copy2(f, dest)
+
+
+            def fit(conn, days):
+                return [read_snapshot(conn, d) for d in days]
+
+
+            def fit_again(conn, days):
+                return [load_bars(conn, d) for d in days]
+            '''})  # fmt: skip
+        kinds = {f.target.split("::")[-1]: f.detail for f in build(self.root, cache=False).flags if f.kind == "io_in_loop"}
+        self.assertEqual(kinds, {"backup": "file", "fit": "read", "fit_again": "read"})
+
     def test_complexity_and_batch_names(self):
         write(self.root, {"m.py": "def f(x):\n    if x and x > 1:\n        return [i for i in x if i]\n    return 0\n"})
         f = next(f for f in build(self.root, cache=False).functions if f.name == "f")

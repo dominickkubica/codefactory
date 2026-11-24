@@ -260,21 +260,32 @@ class Review:
                 _effort(len(reads), len(reads)),
                 max(0, len(reads) - 6),
             )
-        writes = [
-            f
-            for f in self.by_kind["io_in_loop"]
-            if f["severity"] == "info" and not self._script(f) and not is_test(self._file(f))
-        ]
+        product = [f for f in self.by_kind["io_in_loop"] if not self._script(f) and not is_test(self._file(f))]
+        writes = [f for f in product if f.get("detail") == "write"]  # loops that can grow; fixed ones are fine as is
+        files = [f for f in product if f.get("detail") in ("file", "process")]
         if writes:
             self.add(
                 f"Writes inside loops in {_n(len(writes), 'place')}",
                 "Low",
                 "Performance",
                 [self.where(f) for f in writes[:6]],
-                "Fine inside one transaction for small loops; slow for large ones.",
-                "Confirm each runs inside one transaction; batch the ones that can grow.",
+                "One write per item: fine for a few, slow for many, and partial if it fails halfway outside a transaction.",
+                "Wrap each loop in one transaction (or have the caller do so); for loops that can grow, write all rows "
+                "with one multi-row INSERT/UPDATE.",
                 "M",
                 max(0, len(writes) - 6),
+            )
+        if files:
+            self.add(
+                f"File or program operations inside loops in {_n(len(files), 'place')}",
+                "Low",
+                "Performance",
+                [self.where(f) for f in files[:6]],
+                "One file read, write, copy or directory walk (or program run) per item: normal when each item is its "
+                "own file, slow when it's the same file or folder every time.",
+                "Where it's the same file or folder each round, read it once before the loop and look items up in memory.",
+                "S",
+                max(0, len(files) - 6),
             )
 
     def architecture(self) -> None:

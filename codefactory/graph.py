@@ -67,6 +67,7 @@ class Flag:
     line: int = 0  # where to look (the function's line, or the exact call)
     score: float = 0.0  # similar: the highest similarity to another member (0-1)
     reason: str = ""  # silenced: why (from the comment or factory.toml)
+    detail: str = ""  # io_in_loop: network | read | file | write, with ":fixed" when the loop can't grow with the data
 
 
 @dataclass

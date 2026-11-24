@@ -3,6 +3,23 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.9.3 · 2026-11-24
+
+### Fixed (a second pass over the same FastAPI + React app)
+- **Calls in loops are classified by what they do**, and the review reports each kind separately:
+  - "Writes inside loops" no longer includes file operations, program runs, or loops over fixed lists and
+    migrations (which said "fine as is").
+  - File copies, moves and deletes (`shutil.copy2`, `rename`, `unlink`…) count as file operations, not database
+    writes.
+  - `subprocess.run()` per item counts as a program run.
+  - `time.sleep()` in a loop is pacing on purpose and isn't reported.
+- **Reads hidden behind `execute`:** an f-string starting with `SELECT` marks a read. When the SQL can't be seen, a
+  function on the way named like a read (`read_*`, `get_*`, `load_*`…) makes it one, so these are no longer filed as
+  writes.
+- **A function named `migrate*` counts as a migration**, wherever it lives.
+- **`getattr(obj, "name")` and `hasattr` with a literal name use that name**, so a method only reached that way isn't
+  reported as unused.
+
 ## 0.9.2 · 2026-11-24
 
 What a review of a 55,000-line FastAPI + React app showed could be better.

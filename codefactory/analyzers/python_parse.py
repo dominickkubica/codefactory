@@ -104,6 +104,8 @@ def io_call(func: ast.AST, call: ast.Call | None = None) -> str | None:
     elif isinstance(func, ast.Attribute) and (last in DB_METHODS or last in FILE_METHODS):
         sink = full or last
     first = call.args[0] if call is not None and call.args else None
+    if isinstance(first, ast.JoinedStr) and first.values and isinstance(first.values[0], ast.Constant):
+        first = first.values[0]  # f"SELECT … {table}": the leading text says what kind of statement it is
     is_text = isinstance(first, ast.Constant) and isinstance(first.value, str)
     if sink and is_text and first.value.lstrip().split(" ", 1)[0].upper() in ("SELECT", "WITH"):
         sink += '("SELECT …")'
@@ -254,6 +256,18 @@ class _Ctx:
         return None
 
 
+BY_NAME = {"getattr", "hasattr", "setattr", "delattr"}
+
+
+def by_name(call: ast.Call) -> str | None:
+    """The attribute a getattr/hasattr/setattr call names with a literal string, if it does."""
+    if isinstance(call.func, ast.Name) and call.func.id in BY_NAME and len(call.args) >= 2:
+        arg = call.args[1]
+        if isinstance(arg, ast.Constant) and isinstance(arg.value, str) and arg.value.isidentifier():
+            return arg.value
+    return None
+
+
 def events(nodes, ctx: _Ctx, sites: bool = True) -> list:
     out: list = []
     refs: list = []
@@ -277,6 +291,11 @@ def events(nodes, ctx: _Ctx, sites: bool = True) -> list:
                 expr = None
             attr = f.attr if isinstance(f, ast.Attribute) else None
             out.append(["c", n.lineno, bool(loop), b, expr, io_call(f, n), attr, tx])
+            # getattr(obj, "save"): the same as obj.save, written as a string
+            name = by_name(n)
+            target = n.args[0] if name and isinstance(n.args[0], (ast.Name, ast.Attribute)) else None
+            if target is not None and (e := ctx.expr(ast.Attribute(value=target, attr=name, ctx=ast.Load()))):
+                refs.append(["r", e])
     for n, *_ in walked:
         if id(n) in call_funcs:
             continue
@@ -371,5 +390,9 @@ def parse_module(path: str, rel: str) -> dict | None:
         "classes": sorted(ctx.classes),
         "defs": defs,
         "top": top,
-        "attrs": sorted({n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}),
+        # names used as obj.name, or as getattr(obj, "name"): a method of that name may be what runs
+        "attrs": sorted(
+            {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}
+            | {s for n in ast.walk(tree) if isinstance(n, ast.Call) and (s := by_name(n))}
+        ),
     }

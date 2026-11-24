@@ -264,6 +264,15 @@ below the threshold; at 0.70, unrelated components that merely share JSX structu
 
 Test files are excluded: a setup loop in a test isn't a production problem.
 
+**Kinds.** Each call in a loop is classified by the I/O it reaches:
+- **wait:** `sleep`, which is pacing, so it isn't reported.
+- **process:** a program run.
+- **network**, **file**, **read** or **write**.
+
+An unrecognised `execute` counts as a write unless its SQL starts with `SELECT` (f-strings included) or a function on
+the way is named like a read. The kind is kept on the finding (`detail`), so the review groups writes, file and
+program operations, and reads/requests separately, and leaves loops over fixed lists out.
+
 **Transactions.** A write in a loop is the advice "batch it or put it in one transaction"; when it's already inside
 one (`with db.session():`, `with transaction.atomic():`, `with conn:`; a callback given to `transaction(…)`), the
 advice is moot and it isn't reported. Only the enclosing block is seen: a function whose caller opens the

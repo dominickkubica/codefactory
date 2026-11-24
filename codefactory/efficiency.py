@@ -37,6 +37,19 @@ def io_reach(g: Graph) -> dict[str, tuple[str, str]]:
     return reach
 
 
+def _path_names(start: str, reach: dict, by_id: dict) -> list[str]:
+    """The names of the functions from `start` to the one doing the I/O."""
+    names, cur, seen = [], start, set()
+    while cur in by_id and cur not in seen:
+        seen.add(cur)
+        names.append(by_id[cur].name)
+        nxt = reach.get(cur, (cur,))[0]
+        if nxt == cur:
+            break
+        cur = nxt
+    return names
+
+
 def _name(fn) -> str:
     return f"top-level code in {fn.file.split('/')[-1]}" if fn.kind == "module" else fn.qualname
 
@@ -51,9 +64,15 @@ READS = re.compile(
 
 FILES = re.compile(
     r"readFile|writeFile|appendFile|readdir|(^|\.)stat(Sync)?$|read_text|write_text|read_bytes|"
-    r"write_bytes|AsStringAsync|downloadAsync|downloadFileAsync|uploadAsync|^open$|iterdir|r?glob$",
+    r"write_bytes|AsStringAsync|downloadAsync|downloadFileAsync|uploadAsync|^open$|iterdir|r?glob$|shutil\.|"
+    r"(^|\.)(copy2?|copyfile|copytree|move|rename|replace|unlink|remove|rmtree|mkdir|makedirs|rmdir|touch|"
+    r"copyFile|copyAsync|moveAsync|deleteAsync|makeDirectoryAsync)$",
     re.I,
 )
+
+
+WAIT = re.compile(r"(^|\.)(sleep|wait|setTimeout|delay)$")
+PROCESS = re.compile(r"subprocess\.|(^|\.)(system|popen|spawn|execSync|execFile|exec_command)$|child_process", re.I)
 
 
 def called(x: str) -> str:
@@ -61,14 +80,31 @@ def called(x: str) -> str:
 
 
 def kind_of(sink: str) -> str:
-    """network | file | read | write: how much a call in a loop costs. Network and database reads are the classic
-    N+1; files one by one are normal in scripts; writes one at a time are slower than a batch but usually fine inside
-    one transaction."""
+    """wait | process | network | file | read | write: how much a call in a loop costs. Network and database reads are
+    the classic N+1; files one by one are normal in scripts; writes one at a time are slower than a batch but usually
+    fine inside one transaction; a sleep in a loop is pacing on purpose."""
+    if WAIT.search(sink):
+        return "wait"
+    if PROCESS.search(sink):
+        return "process"
     if NETWORK.search(sink):
         return "network"
     if FILES.search(sink):
         return "file"
     return "read" if READS.search(sink) else "write"
+
+
+WRITE_SQL = re.compile(r"INSERT|UPDATE|DELETE|REPLACE|UPSERT|commit|save|put|set|write|create|add|remove|delete", re.I)
+READ_NAME = re.compile(r"^_?(read|get|load|fetch|list|find|count|select|query|lookup|latest|recent|stored)", re.I)
+
+
+def kind_through(sink: str, path: list[str]) -> str:
+    """kind_of, using the names of the functions on the way as a hint when the call itself doesn't say: a
+    `conn.execute(sql)` reached through `read_snapshots` is a read, not a write."""
+    kind = kind_of(sink)
+    if kind == "write" and not WRITE_SQL.search(sink) and any(READ_NAME.match(n) for n in path):
+        return "read"
+    return kind
 
 
 def efficiency_flags(g: Graph) -> list[Flag]:
@@ -111,6 +147,8 @@ def efficiency_flags(g: Graph) -> list[Flag]:
     advice = {
         "network": "one network request per item. Send one request for all items, or run them together.",
         "read": "one query per item (the N+1 pattern). Load them all with one query (WHERE id IN (…), a JOIN).",
+        "process": "one program run per item. Fine for a handful; for many, pass them all to one run if the "
+        "program accepts several.",
         "file": "one file operation per item. Normal when each item is its own file; if it's the same file each "
         "time, read it once before the loop.",
         "write": "one write per item. Fine for a few inside one transaction; for many, batch them (one multi-row "
@@ -124,12 +162,14 @@ def efficiency_flags(g: Graph) -> list[Flag]:
         explained[fid].update(lines)
         where = f"line {lines[0]}" + (f" and {len(lines) - 1} more" if len(lines) > 1 else "")
         sink = reach[what][1] if what in by_id else what
-        kind = kind_of(sink)
+        kind = kind_through(sink, _path_names(what, reach, by_id))
+        if kind == "wait":
+            continue  # sleeping between rounds is pacing (rate limits, polling), chosen on purpose
         if kind == "write" and (fid, what) not in outside_tx:
             continue  # writes batched inside one transaction: the advice would be to do what it already does
         sev = "warn" if kind in ("network", "read") else "info"
         fixed = (fid, what) not in unbounded
-        migration = "migration" in fn.file.lower()
+        migration = "migration" in fn.file.lower() or "migrat" in fn.name.lower()
         if fixed or migration:  # can't grow with the data: worth knowing, not worth fixing
             sev = "info"
         note = (
@@ -150,6 +190,7 @@ def efficiency_flags(g: Graph) -> list[Flag]:
                     f"and that reaches {called(sink)}: {advice[kind]}{note}",
                     [what],
                     line=lines[0],
+                    detail=kind + (":fixed" if fixed or migration else ""),
                 )
             )
         else:
@@ -160,6 +201,7 @@ def efficiency_flags(g: Graph) -> list[Flag]:
                     fid,
                     f"{_name(fn)} calls {called(what)} inside a loop ({where}): {advice[kind]}{note}",
                     line=lines[0],
+                    detail=kind + (":fixed" if fixed or migration else ""),
                 )
             )
     for fid, all_lines in awaits.items():
