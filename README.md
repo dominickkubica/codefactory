@@ -59,7 +59,8 @@ The map is a single HTML file: no server, no network, nothing uploaded. It can b
 | `sarif` | Issues for GitHub code scanning and VS Code (SARIF 2.1.0) |
 | `query` / `sql` | Ask anything in SQL / export the graph as a SQLite database |
 | `analyze` | The raw graph as JSON |
-| `skill` | Teach Claude Code in a repository when and how to use all of the above |
+| `skill` | Teach Claude Code in a repository when and how to use all of the above (`--hook`: keep it current) |
+| `update` | Upgrade codefactory to the latest version |
 
 Commands that take a name work from inside the repository: `codefactory context checkout`. After the first run,
 results come from a cache (`.codefactory/`, ignored by git) until a source file changes, so repeated questions answer
@@ -68,8 +69,13 @@ in well under a second.
 ## With Claude Code
 
 ```bash
-codefactory skill      # once per repository; commit .claude/skills/codefactory/SKILL.md
+codefactory skill --hook   # once per repository; commit .claude/
 ```
+
+This writes the skill (`.claude/skills/codefactory/SKILL.md`) and a session-start hook. Every Claude Code session in
+that repository then starts with codefactory installed, upgraded at most once a day, and its instructions matching
+the installed version. Without `--hook`, the skill still refreshes itself whenever codefactory runs, and
+`codefactory update` upgrades on demand.
 
 Then ask in plain words: *"what should I clean up first?"*, *"review the codebase"*, *"what breaks if I change
 `useCart`?"*, *"did my change add any problems?"*. Claude Code runs the right command, reads a few thousand tokens of

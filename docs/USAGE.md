@@ -242,8 +242,18 @@ baseline exists, `new` or `unchanged` on every result (`--new` keeps only new on
 ## Working with Claude Code
 
 ```bash
-codefactory skill        # writes .claude/skills/codefactory/SKILL.md; commit it
+codefactory skill --hook   # writes the skill and a session-start hook; commit .claude/
 ```
+
+**Staying current.** Three things keep Claude working from the latest codefactory:
+- The skill records the version that wrote it, and any codefactory command run in the repository rewrites it when
+  it's older (a note goes to stderr).
+- The hook (`.claude/hooks/codefactory.sh`, added to `.claude/settings.json` without touching other settings) runs at
+  each session start: it installs codefactory if missing, upgrades it at most once a day (stamp in
+  `~/.cache/codefactory/`), and refreshes the skill. If a checkout of codefactory sits next to the repository, it
+  installs that instead. Failures (no network, no Python) are ignored; it never blocks a session. It is a bash script,
+  which Claude Code runs on Windows through Git Bash.
+- `codefactory update` upgrades on demand (`--source` installs from somewhere else, e.g. a local checkout).
 
 The skill tells Claude Code which command answers which question and how to read each finding, including which ones
 are only hints. In practice:
@@ -258,8 +268,10 @@ are only hints. In practice:
 
 Every command prints `file:line`, and `--json` is available on `flags`, `plan`, `context`, `trace`, `path` and `query`.
 
-**Cloud sessions** (Claude Code on the web) start from a fresh machine each time, so codefactory has to be installed
-there too: add a setup script with the `pip install` line above to the cloud environment.
+**Cloud sessions** (Claude Code on the web) start from a fresh machine each time. The hook installs codefactory
+there, as long as the machine can reach GitHub and the codefactory repository is public; for a private copy, attach
+the codefactory repository to the session (the hook then installs that checkout) or add the install to the cloud
+environment's setup script.
 
 ## Asking questions: trace, path, context, SQL
 

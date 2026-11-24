@@ -23,7 +23,8 @@ from .layers import assign_layers
 from .plan import make_plan, plan_markdown
 from .review import review_markdown
 from .sarif import build_sarif, github_annotations
-from .skill import install_skill
+from .skill import SOURCE as SKILL_SOURCE
+from .skill import install_hook, install_skill, refresh_skill, update
 from .sqlgraph import query_flags, run_query, to_sqlite
 from .suppress import apply_suppressions
 from .trace import find_function, shortest_path, trace
@@ -375,8 +376,23 @@ def cmd_sarif(a) -> int:
 
 
 def cmd_skill(a) -> int:
-    path = install_skill(Path(a.path))
+    repo = Path(a.path)
+    path = install_skill(repo)
     print(f"Wrote {path}. Claude Code in that repo now knows when and how to use codefactory.")
+    if a.hook:
+        hook, settings = install_hook(repo)
+        print(
+            f"Wrote {hook} and registered it in {settings}: each Claude Code session now starts with codefactory "
+            "installed, upgraded (at most once a day) and its skill current. Commit .claude/."
+        )
+    return 0
+
+
+def cmd_update(a) -> int:
+    old, new = update(a.source)
+    print(f"codefactory {old} -> {new}" if old != new else f"codefactory {new} is already the latest.")
+    if refresh_skill(Path(".")):
+        print("Refreshed .claude/skills/codefactory/SKILL.md for the new version.")
     return 0
 
 
@@ -396,6 +412,7 @@ COMMANDS = {
     "baseline": (cmd_baseline, "save today's issues (codefactory-baseline.json, commit it) so only new ones fail"),
     "check": (cmd_check, "for CI / pre-commit: fail on issues new since the baseline"),
     "sarif": (cmd_sarif, "write issues as SARIF 2.1.0 for GitHub code scanning, VS Code and CI tools"),
+    "update": (cmd_update, "upgrade codefactory to the latest version (and refresh this repo's skill)"),
     "skill": (cmd_skill, "teach Claude Code in a repo to use codefactory (writes .claude/skills/codefactory/SKILL.md)"),
 }
 
@@ -423,7 +440,11 @@ Run `codefactory <command> --help` for a command's options.""",
             s.add_argument("values", nargs="+", metavar="value")
         else:
             s.add_argument("path", nargs="?", default=".", help="the codebase folder (default: here), or a graph .json")
-        if name != "skill":
+        if name == "skill":
+            s.add_argument("--hook", action="store_true", help="also add a session-start hook that keeps codefactory current")
+        if name == "update":
+            s.add_argument("--source", default=SKILL_SOURCE, help="where to install from (default: the GitHub repository)")
+        if name not in ("skill", "update"):
             s.add_argument("--lang", action="append", choices=sorted(ANALYZERS), help="only these languages")
             s.add_argument("--no-cache", action="store_true", help="analyze again even if nothing changed")
         if name in ("flags", "query", "trace", "path", "context", "plan"):
@@ -469,6 +490,9 @@ def main(argv: list[str] | None = None) -> int:
     _safe_stdout()
     a = parser().parse_args(argv)
     debug = a.debug or bool(os.environ.get("CODEFACTORY_DEBUG"))
+    repo = Path(getattr(a, "path", None) or ".")
+    if a.cmd not in ("skill", "update") and refresh_skill(repo if repo.is_dir() else repo.parent):
+        print("codefactory: refreshed .claude/skills/codefactory/SKILL.md for this version.", file=sys.stderr)
     try:
         return COMMANDS[a.cmd][0](a)
     except KeyboardInterrupt:

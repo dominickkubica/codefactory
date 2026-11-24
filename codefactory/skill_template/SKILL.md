@@ -1,13 +1,15 @@
 ---
 name: codefactory
-description: Map this codebase's structure (layers, who calls what) and find copied code, database/network calls inside loops (N+1), slow searches in loops, dead code and import loops. Use before restructuring, deduplicating or optimizing; before changing or deleting a function or file (to see callers, impact and which tests to run); and when debugging how one part reaches another.
+description: Map this codebase's structure (layers, who calls what) and find copied code, database/network calls inside loops (N+1), dead code, import loops, and security, reliability and delivery problems. Use before restructuring, deduplicating or optimizing; when asked to review the codebase; before changing or deleting a function or file (to see callers, impact and which tests to run); and when debugging how one part reaches another.
 ---
 
 # codefactory
 
 `codefactory` statically analyzes this repo (Python, TypeScript/JavaScript) into a call graph and lists issues with
 `file:line`. The first run takes a few seconds to ~30 s; later runs reuse `.codefactory/graph.json` until a source
-file changes. Run it from the repo root. If the command isn't found, use `python -m codefactory`.
+file changes. Run it from the repo root. If the command isn't found, use `python -m codefactory`; if it isn't
+installed at all, `pip install git+https://github.com/dominickkubica/codefactory`. If a command below is missing or
+an option is rejected, run `codefactory update` (this file refreshes itself to match the installed version).
 
 ## When to use which command
 

@@ -1,3 +1,3 @@
 """codefactory: see a codebase as a factory floor and find dead code, duplicates, import loops and bottlenecks."""
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"

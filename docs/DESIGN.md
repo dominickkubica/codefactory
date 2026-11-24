@@ -74,7 +74,7 @@ The code is organised the same way:
 | `checks.py`, `review.py` | Source-text and repository checks; the review report |
 | `plan.py`, `brief.py`, `trace.py`, `sarif.py` | Outputs |
 | `viewer/` | The HTML map (template, CSS, JavaScript; no libraries) |
-| `cache.py`, `cli.py`, `skill.py` | Caching; the command line; the Claude Code skill installer |
+| `cache.py`, `cli.py`, `skill.py` | Caching; the command line; the Claude Code skill, its self-refresh, the session hook and `update` |
 
 ## The graph
 
@@ -318,6 +318,13 @@ before doing anything, and still misses things outside what it read. codefactory
 
 The skill file (`codefactory skill`) tells Claude Code which command answers which question, and, as importantly,
 which findings are only hints (`unused`, `test_only`, "no test reaches it") and must be verified before acting.
+
+Instructions that lag the tool are worse than none, so the skill is versioned: it carries a
+`<!-- codefactory skill X.Y.Z -->` stamp after its front matter, and every command checks it (one small file read)
+and rewrites a stale copy before running. The optional session hook closes the other gap, an outdated tool: it
+upgrades at most once a day so a session start costs nothing on most days, uses a local checkout when one is
+present (cloud sessions with the repository attached), and always exits 0, because a helper must never stop a
+session from starting.
 
 ## Testing
 

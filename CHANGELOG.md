@@ -3,6 +3,18 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.8.0 · 2026-11-24
+
+Staying current in Claude Code.
+
+### Added
+- **The skill keeps itself current.** `SKILL.md` records the version that wrote it; any codefactory command run in a
+  repository with an older skill rewrites it, so Claude never follows instructions for commands that changed.
+- `codefactory update`: upgrades codefactory from GitHub (or `--source`) and refreshes the repository's skill.
+- `codefactory skill --hook`: adds a Claude Code session-start hook (`.claude/hooks/codefactory.sh`, registered in
+  `.claude/settings.json` alongside existing settings) that installs codefactory if missing, upgrades it at most once
+  a day, and refreshes the skill. It never blocks or fails a session.
+
 ## 0.7.0 · 2026-11-24
 
 Hardening and documentation for a first wider release.
