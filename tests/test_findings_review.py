@@ -85,6 +85,24 @@ class FindingsTest(unittest.TestCase):
         flagged = {f.target.split("::")[-1] for f in build(self.root, cache=False).flags if f.kind == "io_in_loop"}
         self.assertEqual(flagged, {"insert_logs"})
 
+    def test_a_transaction_opened_further_up_the_call_chain_counts(self):
+        write(self.root, {"app/__init__.py": "", "app/layers.py": '''
+            def insert_rows(conn, rows):
+                for r in rows:
+                    conn.execute("INSERT INTO t VALUES (?)", (r,))
+
+
+            def import_file(conn, rows):
+                insert_rows(conn, rows)
+
+
+            def handle_upload(db, rows):
+                with db.session() as conn:
+                    import_file(conn, rows)
+            '''})  # fmt: skip
+        flagged = {f.target.split("::")[-1] for f in build(self.root, cache=False).flags if f.kind == "io_in_loop"}
+        self.assertEqual(flagged, set())  # route -> service -> repository, two levels from the transaction
+
     def test_top_of_a_split_package_is_placed_by_its_imports(self):
         files = {"src/pkg/__init__.py": "", "src/pkg/config.py": "LEVEL = 1\n",
                  "src/pkg/cli.py": "from pkg.jobs import a\nfrom pkg.api import b\nfrom pkg.store import c\n"}  # fmt: skip

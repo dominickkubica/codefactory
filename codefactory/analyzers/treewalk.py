@@ -151,6 +151,24 @@ def _inherits(node, source: bytes) -> bool:
     return bool(re.search(rb"\b(?:extends|implements)\b|^\s*(?:\w+\s+)*(?:class|struct|object|enum)\s+\w+[^:<(]*[:<]", head))
 
 
+OVERRIDE = re.compile(r"\boverride\b|@Override\b")
+PRIVATE = re.compile(r"^\s*(?:@\w+(?:\([^)]*\))?\s+)*(?:\w+\s+)*?(?:private|internal|protected|fileprivate)\b")
+PUBLIC_BY_DEFAULT = (".kt", ".kts", ".scala", ".sc", ".groovy", ".rb", ".php")  # no modifier = public
+
+
+def _public(head: str, name: str, rel: str) -> bool:
+    """Part of the file's public surface: an explicit `public`/`export`/`pub`, a capitalised Go name, a Dart name
+    without `_`, or no restricting modifier in a language where members are public by default (Kotlin, Scala, Ruby,
+    PHP)."""
+    if PUBLIC.match(head) or name == "main":
+        return True
+    if rel.endswith(".go"):
+        return name[:1].isupper()
+    if rel.endswith(".dart"):
+        return not name.startswith("_")
+    return rel.endswith(PUBLIC_BY_DEFAULT) and not PRIVATE.match(head)
+
+
 def walk(source: bytes, parser, rel: str) -> dict:
     """Functions (with calls, loops and structure tokens), imports and the file's top-level calls."""
     tree = parser.parse(source)
@@ -169,8 +187,9 @@ def walk(source: bytes, parser, rel: str) -> dict:
         if IMPORT.match(t) and fn is None:
             out["imports"] += _import_sources(node)
             continue
-        if FUNC.match(t) and not NOT_FUNC.search(t) and _has_body(node):
-            name = _name(node) or "<anonymous>"
+        if FUNC.match(t) and not NOT_FUNC.search(t) and _has_body(node) and _name(node):
+            # (a definition without a name, such as a property getter `get() = …`, is part of what holds it)
+            name = _name(node)
             head = source[node.start_byte : min(node.end_byte, node.start_byte + 200)].decode("utf-8", "replace")
             receiver = re.match(r"\s*func\s*\(\s*\w*\s*\*?\s*(\w+)", head)  # Go methods live outside their type
             qual = ".".join([*classes, *([receiver.group(1)] if receiver else []), name])
@@ -180,8 +199,9 @@ def walk(source: bytes, parser, rel: str) -> dict:
                 "line": node.start_point[0] + 1,
                 "end": node.end_point[0] + 1,
                 "kind": "method" if classes or receiver else "function",
-                "framework": bool(classes) and classes[-1] in inheriting,
-                "public": bool(PUBLIC.match(head)) or (name[:1].isupper() and rel.endswith(".go")) or name == "main",
+                # an override is called through the type it overrides (a framework, an interface): never "unused"
+                "framework": (bool(classes) and classes[-1] in inheriting) or bool(OVERRIDE.search(head)),
+                "public": _public(head, name, rel),
                 "calls": [],
                 "refs": set(),
                 "branches": 0,

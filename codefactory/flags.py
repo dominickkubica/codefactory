@@ -90,9 +90,9 @@ def dead_code(g: Graph) -> list[Flag]:
             if fn.id not in used_by_code and not is_test(fn.file):
                 out.append(Flag("test_only", "info", fn.id, f"{fn.qualname} is only called from tests"))
             continue
+        if fn.dynamic:  # its name is used where the analyzer can't tell which definition runs: maybe this one
+            continue
         if fn.kind == "method":  # often called through an instance or a framework: only a hint
-            if fn.dynamic:
-                continue
             out.append(
                 Flag(
                     "unused",
@@ -114,7 +114,11 @@ def duplicates(g: Graph, cfg: Config) -> list[Flag]:
     out = []
     for group in groups.values():
         # the same file for another platform (x_linux.go / x_darwin.go) copies on purpose: keep one of each set
-        fns = [f for i, f in enumerate(group) if not any(platform_variants(f.file, o.file) for o in group[:i])]
+        fns = [
+            f
+            for i, f in enumerate(group)
+            if not any(platform_variants(f.file, o.file) or (f.file == o.file and f.name == o.name) for o in group[:i])
+        ]  # (and overloads: one method per type, in one file)
         if len(fns) < 2:
             continue
         ids = [f.id for f in fns]
@@ -171,9 +175,17 @@ def import_cycles(g: Graph) -> list[Flag]:
     out = []
     for comp in comps:
         loop = " → ".join(c.split("/")[-1] for c in comp)
+        # Python and JavaScript run a module's code as it's imported, so a loop can break loading: high. Classes in
+        # Java, Kotlin, C#, Swift… load lazily, so a loop works at runtime and is a design smell (they can't be
+        # understood, tested or reused apart): warn.
+        lazy = all(c.endswith(LAZY_LOADING) for c in comp)
+        sev, what = ("warn", "Dependency loop") if lazy else ("high", "Import loop")
         for f in comp:
-            out.append(Flag("cycle", "high", f, f"Import loop of {len(comp)} files: {loop}", [c for c in comp if c != f]))
+            out.append(Flag("cycle", sev, f, f"{what} of {len(comp)} files: {loop}", [c for c in comp if c != f]))
     return out
+
+
+LAZY_LOADING = (".java", ".kt", ".kts", ".scala", ".sc", ".groovy", ".cs", ".swift", ".dart", ".fs", ".m", ".mm")
 
 
 def size_flags(g: Graph, cfg: Config) -> list[Flag]:

@@ -177,10 +177,13 @@ have no call captures).
 - **Imports** are matched by path suffix: the longest one that names a file (C's `"net/socket.h"`, Java's
   `a.b.Orders`), else a package folder, linked through one file of it (its namesake when there is one), the shallowest
   folder winning. Go imports always name packages; linking every file of a package made Go's standard library look
-  like a 1,886-file import loop.
-- **Unused:** exported names (`public`, `pub`, a capitalised Go name) and names a runtime calls (`main`, `init`) are
-  API, never dead; methods of a class that extends or implements something may be called by a framework or through the
-  interface (Swift delegate methods), so they count as possibly called.
+  like a 1,886-file import loop. An import that names something inside a file (`import a.b.fn`, Java static imports)
+  links to that file.
+- **Unused:** exported names are API, never dead: `public`, `pub`, a capitalised Go name, a Dart name without `_`, or
+  no restricting modifier in languages where members are public by default (Kotlin, Scala, Ruby, PHP). So are names
+  a runtime calls (`main`, `init`). Overrides, methods of a class that extends or implements something (Swift
+  delegate methods), and every function sharing a name that's called where the analyzer can't tell which definition
+  runs, count as possibly called. Property getters aren't functions of their own.
 - **Loops:** `for`/`while`/`loop`/`foreach` nodes, and blocks or closures handed to iteration helpers (`each`, `map`,
   `forEach`…). **I/O** is recognised on calls nothing in the codebase defines, by receiver (`db.`, `conn.`, `client.`,
   `$pdo->`…) or by name (`query`, `executeQuery`, `QueryRow`, `fetch`, `findById`…).
@@ -221,6 +224,10 @@ goes left. `tests` always goes first; import-depth levels go highest first.
 
 ### Import loops
 
+Python and JavaScript run a module's code when it's imported, so a loop can break loading: high. Classes in Java,
+Kotlin, C#, Swift, Scala and Dart load lazily, so there a loop is reported as a warn-level "dependency loop", which
+works at runtime but ties the classes together.
+
 Tarjan's strongly-connected-components algorithm (iterative, so deep graphs can't overflow the stack) on the
 load-time import graph. Each file in a component of two or more gets a `high` flag naming the loop.
 
@@ -244,7 +251,8 @@ is the commonest source of false positives. A function reached only from test fi
   Jaccard similarity of their shingle sets. A pair qualifies at 0.75 or more, if both
   have at least 40 tokens and their sizes are within 60% of each other; exact duplicates and a function paired with one
   nested inside it are skipped, and so are buckets of more than 200 functions (boilerplate everyone shares). Copies between per-platform versions of one file
-  (`x_linux.go` / `x_darwin.go`, `io_win32.c`) are on purpose and skipped. Pairs are
+  (`x_linux.go` / `x_darwin.go`, `io_win32.c`) are on purpose and skipped, and so are overloads (same name, same
+  file: one method per type). Pairs are
   grouped into clusters with union–find. Clusters at 0.85 or more are `warn`, the rest `info`.
 
 The parameters were tuned on real code: with 5-token shingles at 0.80, a copy with one added line in seven fell
@@ -276,9 +284,9 @@ program operations, and reads/requests separately, and leaves loops over fixed l
 
 **Transactions.** A write in a loop is the advice "batch it or put it in one transaction"; when it's already inside
 one (`with db.session():`, `with transaction.atomic():`, `with conn:`; a callback given to `transaction(…)`), the
-advice is moot and it isn't reported. A function every call of which happens inside one (the analyzers record calls
-made in a transaction block or callback) counts as inside one too, one level deep; calling the transaction helper
-itself in a loop is the batching and isn't reported.
+advice is moot and it isn't reported. A function every call of which happens inside one, or is made by a function that
+always runs in one, counts as inside one too (followed to a fixed point, so route → service → repository works);
+calling the transaction helper itself in a loop is the batching and isn't reported.
 
 ### Size, hubs and saved queries
 

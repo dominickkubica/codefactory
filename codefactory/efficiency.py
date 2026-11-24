@@ -111,16 +111,25 @@ TX_WRAPPER = re.compile(r"transaction|atomic|withTransaction|writeTxn", re.I)
 
 
 def in_transaction(g: Graph) -> set[str]:
-    """Functions every call of which happens inside a transaction (the caller opened it): their writes are batched."""
+    """Functions that always run inside a transaction: every call to them is made inside a transaction block, or by a
+    function that itself always runs in one (route -> service -> repository), followed to a fixed point."""
     tx_calls: dict[tuple[str, str], int] = defaultdict(int)
     for s in g.sites:
         if s.kind == "tx_call" or (s.kind == "loop_call" and s.tx):
             tx_calls[(s.fn, s.target)] += 1
-    calls: dict[str, list[tuple[str, int]]] = defaultdict(list)
+    callers: dict[str, list[tuple[str, int]]] = defaultdict(list)
     for e in g.edges:
         if e.kind == "call":
-            calls[e.dst].append((e.src, e.count))
-    return {dst for dst, srcs in calls.items() if all(tx_calls.get((src, dst), 0) >= count for src, count in srcs)}
+            callers[e.dst].append((e.src, e.count))
+    inside: set[str] = set()
+    changed = True
+    while changed:  # each round can only add, so this ends; each added function is justified by the ones before it
+        changed = False
+        for dst, srcs in callers.items():
+            if dst not in inside and all(src in inside or tx_calls.get((src, dst), 0) >= n for src, n in srcs):
+                inside.add(dst)
+                changed = True
+    return inside
 
 
 def efficiency_flags(g: Graph) -> list[Flag]:

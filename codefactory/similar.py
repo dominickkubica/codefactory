@@ -133,6 +133,8 @@ def similar_pairs(g: Graph, min_tokens: int = 40, threshold: float = 0.75) -> di
                     continue  # an exact copy: reported as a duplicate
                 if platform_variants(fa.file, fb.file):
                     continue  # the same file for another platform: copied on purpose
+                if fa.file == fb.file and fa.name == fb.name:
+                    continue  # overloads (indexOf(int[]), indexOf(long[])): one method per type, as Java requires
                 if fa.file == fb.file and (
                     fa.qualname.startswith(fb.qualname + ".") or fb.qualname.startswith(fa.qualname + ".")
                 ):

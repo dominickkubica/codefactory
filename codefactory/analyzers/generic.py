@@ -169,17 +169,19 @@ def _resolve_import(source: str, idx: dict[str, list[str]], lang: str) -> list[s
     Among several equal matches the shallowest folder wins; more than three equal files is too ambiguous to link."""
     s = re.sub(r"\.(?:h|hpp|hh|rb|php|lua|dart|go|rs|java|kt|swift|cs|ex|js|ts)$", "", source.strip())
     parts = [p for p in re.split(r"[./\\:]+", s) if p and p not in ("crate", "self", "super", "~", "@", "..")]
-    for i in range(len(parts)):
-        key = "/".join(parts[i:])
-        if lang != "go" and key in idx and len(idx[key]) <= 3:
-            return idx[key]
-        if key + "/" in idx:
-            files = [f for f in idx[key + "/"] if not _is_test(f)]
-            if not files:
-                continue
-            top = min(f.count("/") for f in files)  # the shallowest folder with that name
-            files = [f for f in files if f.count("/") == top]
-            return sorted(files, key=lambda f: (Path(f).stem != parts[-1], f))[:1]
+    # the path as written, then without its last part: `import a.b.fn` (Kotlin, Java static) names something inside a.b
+    for named in (parts, parts[:-1]):
+        for i in range(len(named)):
+            key = "/".join(named[i:])
+            if lang != "go" and key in idx and len(idx[key]) <= 3:
+                return idx[key]
+            if key + "/" in idx:  # a package (Go, Java): the folder stands for its files; link to one of them
+                files = [f for f in idx[key + "/"] if not _is_test(f)]
+                if not files:
+                    continue
+                top = min(f.count("/") for f in files)  # the shallowest folder with that name
+                files = [f for f in files if f.count("/") == top]
+                return sorted(files, key=lambda f: (Path(f).stem != named[-1], f))[:1]
     return []
 
 
@@ -203,7 +205,7 @@ def analyze_generic(root: Path, ignore: list[str], include_js: bool = False, cac
         )
         return g
     items = [(rel, (str(root / rel), rel, lang)) for rel, lang in found]
-    parsed = parallel.run(root, "generic", items, parse_file, tool="treewalk-2", cache=cache)
+    parsed = parallel.run(root, "generic", items, parse_file, tool="treewalk-3", cache=cache)
     return link(g, parsed)
 
 

@@ -302,12 +302,15 @@ class Review:
         cycles = {frozenset([f["target"], *f.get("related", [])]) for f in self.by_kind["cycle"]}
         if cycles:
             biggest = max(len(c) for c in cycles)
+            load_order = any(f["severity"] == "high" for f in self.by_kind["cycle"])  # modules that run on import
             self.add(
-                f"Import loops ({len(cycles)})",
-                "High" if biggest >= 3 else "Medium",
+                f"{'Import' if load_order else 'Dependency'} loops ({len(cycles)})",
+                ("High" if biggest >= 3 else "Medium") if load_order else ("Medium" if biggest >= 3 else "Low"),
                 "Architecture",
                 [" → ".join(sorted(c)) for c in list(cycles)[:4]],
-                "Files in a loop load in a fragile order and can't be understood, tested or moved alone.",
+                "Files in a loop load in a fragile order and can't be understood, tested or moved alone."
+                if load_order
+                else "Classes in a loop work at runtime, but can't be understood, tested, reused or moved apart.",
                 "Move what both sides need into a module that imports neither, or pass the dependency in.",
                 _effort(len(cycles), biggest),
             )

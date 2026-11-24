@@ -127,6 +127,8 @@ Analysis is static: nothing is executed. Most of codefactory's accuracy came fro
 fixing what it got wrong: each false positive got a test before its fix, and snapshot tests of every finding on
 three sample apps make any change in output visible in CI.
 
+- **Checked on real code** in each language family: two production apps (React Native, FastAPI), pip, Python's and
+  Go's standard libraries, Apache commons-lang (Java), OkHttp (Kotlin) and Rack (Ruby).
 - **Hints are labelled as hints.** Calls through reflection or untyped objects can be missed, so "unused" and "no
   test reaches it" are reported as leads to verify.
 - **Measured where it can be.** With a coverage report in the repository (`coverage/lcov.info`, Istanbul's

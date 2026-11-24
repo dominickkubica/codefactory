@@ -91,3 +91,53 @@ class ExtractionTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipUnless(available(), 'needs pip install "codefactory[languages]"')
+class RealCodeRulesTest(unittest.TestCase):
+    """Rules learned on commons-lang (Java), OkHttp (Kotlin) and Rack (Ruby)."""
+
+    def build(self, files: dict[str, str]):
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        for name, text in files.items():
+            (root / name).parent.mkdir(parents=True, exist_ok=True)
+            (root / name).write_text(text, encoding="utf-8")
+        g = build(root, cache=False)
+        self.tmp.cleanup()
+        return g, {(f.kind, f.target.split("::")[-1]) for f in g.flags}
+
+    def test_kotlin_public_by_default_overrides_getters_and_function_imports(self):
+        g, flags = self.build({
+            "lib/internal/util.kt": "package lib.internal\n\nfun parseCookie(s: String): String = s.trim()\n\n"
+                                    "private fun secretHelper(s: String): String = s + s\n\n"
+                                    "fun Socket.isHealthy(t: Int): Boolean { return t > 0 }\n",
+            "lib/conn/Pool.kt": "package lib.conn\n\nimport lib.internal.isHealthy\n\nclass Pool {\n"
+                                "  fun check(s: Socket): Boolean = s.isHealthy(3)\n"
+                                "  val size: Int\n    get() = 3\n"
+                                "  val fmt = object : ThreadLocal<String>() {\n    override fun initialValue(): String { return \"x\" }\n  }\n}\n",
+        })  # fmt: skip
+        self.assertNotIn(("unused", "parseCookie"), flags)  # public: no modifier in Kotlin
+        self.assertIn(("unused", "secretHelper"), flags)
+        self.assertFalse({k for k in flags if k[1] in ("initialValue", "Pool.initialValue")})  # an override
+        self.assertFalse([f for f in g.functions if "anonymous" in f.name])  # a getter isn't a function
+        imports = {(e.src, e.dst) for e in g.edges if e.kind == "import"}
+        self.assertIn(("lib/conn/Pool.kt", "lib/internal/util.kt"), imports)  # import lib.internal.isHealthy
+
+    def test_java_overloads_are_not_copies_and_class_loops_are_warn(self):
+        body = "{ if (a == null) return -1; for (int i = 0; i < a.length; i++) { if (a[i] == v) return i; } return -1; }"
+        _, flags = self.build({
+            "p/ArrayUtils.java": "package p;\nimport p.Other;\npublic class ArrayUtils {\n"
+                                 + "".join(f"  public static int indexOf({t}[] a, {t} v) {body}\n" for t in ("int", "long", "short"))
+                                 + "}\n",
+            "p/Other.java": "package p;\nimport p.ArrayUtils;\npublic class Other { public int x() { return 1; } }\n",
+        })  # fmt: skip
+        self.assertFalse({k for k in flags if k[0] in ("duplicate", "similar")})
+        self.assertIn(("cycle", "p/ArrayUtils.java"), flags)
+
+    def test_class_loop_severity(self):
+        g, _ = self.build({
+            "p/A.java": "package p;\nimport p.B;\npublic class A { public int a() { return 1; } }\n",
+            "p/B.java": "package p;\nimport p.A;\npublic class B { public int b() { return 2; } }\n",
+        })  # fmt: skip
+        self.assertEqual({f.severity for f in g.flags if f.kind == "cycle"}, {"warn"})

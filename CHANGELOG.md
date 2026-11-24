@@ -3,6 +3,24 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.10.1 · 2026-11-24
+
+### Fixed (checked on real code: Apache commons-lang, OkHttp, Rack, Go's standard library)
+- **Kotlin, Scala, Ruby and PHP members are public unless marked otherwise**, so a Kotlin top-level `fun` with no
+  modifier is API, not dead code. Dart names without `_` are public too.
+- **Overrides** (`override fun`, `@Override`) are called through the type they override and are never "unused".
+- **A property getter** (`get() = …`) is part of its property, not an unnamed function.
+- **Imports that name a function** (`import okhttp3.internal.isHealthy`, Java static imports) link to the file that
+  defines it.
+- **A function called by a name many things define** (per-platform `lock()` in Go, `isHealthy` on several types)
+  counts as possibly called, as methods already did. On Go's standard library this removed 1,450 false "unused".
+- **Overloads** (`indexOf(int[])`, `indexOf(long[])`…) aren't copies of each other. This removed most of the 459
+  "near-duplicates" on commons-lang; the rest are real (deprecated aliases that copy their replacement).
+- **Loops between classes in Java, Kotlin, C#, Swift, Scala and Dart are warn ("dependency loops")**, not high.
+  Classes load lazily there, so a loop is a design smell, not a loading failure as in Python or JavaScript.
+- **Transactions are followed up the whole call chain**: a function counts as inside one when every caller calls it
+  in a transaction or itself always runs in one (route → service → repository).
+
 ## 0.10.0 · 2026-11-24
 
 ### Added
