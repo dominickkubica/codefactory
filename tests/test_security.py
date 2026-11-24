@@ -98,6 +98,16 @@ class FastAPITest(unittest.TestCase):
         self.assertEqual((f.severity, f.title), ("High", "Endpoints that change data without an auth check (1)"))
         self.assertIn("DELETE /items/{item_id}", f.evidence[0])  # GET /items only reads: not listed
 
+    def test_the_ai_evidence_pack_carries_the_attack_surface(self):
+        from codefactory.review import review_markdown
+
+        root = project(FASTAPI)
+        text = review_markdown(build(root, cache=False).to_dict(), root, for_ai=True)
+        pack = text.split("### Attack surface", 1)[1]
+        self.assertIn("| `DELETE /items/{item_id}` | `app/routes.py:", pack)
+        self.assertIn("| none | delete_item |", pack)
+        self.assertIn("| Depends(get_current_user) | insert_item |", pack)
+
     def test_router_level_auth_covers_every_route(self):
         files = dict(FASTAPI)
         files["app/routes.py"] = files["app/routes.py"].replace(

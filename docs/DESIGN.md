@@ -310,6 +310,21 @@ finding moves one severity level by whether any entry reaches it. "Changes data"
 (every `with db.session():` helper commits), and neither do migrations, which run on every open. Both rules came
 from a real FastAPI app where they made every endpoint look like it changed data.
 
+## Configuration, CI, history and dependencies
+
+`audit.py` reads what surrounds the code: GitHub workflows (a `pull_request_target` trigger is only critical when the
+workflow checks out or builds the PR's code; otherwise it's the safe way to label PRs), Dockerfiles, mobile
+configuration files, and `git log --all -p`. A secret in history is reported only when it isn't in the current files
+(those are reported already) and isn't marked as made up with a `codefactory: ignore secret` comment. Line-level
+configuration and crypto patterns live with the others in `checks.py`; three of them (insecure cookies, weak hashes,
+predictable random numbers) also need a security word on the same line, because on real code most MD5s are cache
+keys and most `Math.random()`s pick colours. The word "token" alone isn't enough: on a React Native app it was a
+draft id, and in codefactory itself the structure tokens of duplicate detection.
+
+`deps.py` reads lockfiles (exact installed versions) and asks OSV.dev in batches of 500, then fetches details
+(summary, severity, fixed versions) for the first 60. It only runs with `--online`. On a 1,122-package React Native
+app it took about 12 seconds and found 21 known vulnerabilities in 7 packages, 6 of them development-only.
+
 ## Silencing, baselines and fingerprints
 
 - **Silencing** happens after all checks. A `codefactory: ignore <kinds> — reason` comment on the flagged line, the

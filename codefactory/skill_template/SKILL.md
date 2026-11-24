@@ -18,7 +18,7 @@ an option is rejected, run `codefactory update` (it also refreshes this file to 
 | Situation | Command |
 |---|---|
 | Starting a restructure, cleanup or performance pass | `codefactory brief` (layers, most-used code, issues grouped by what to do, copied-code groups with lines saved) |
-| Asked to review the codebase (architecture, security, reliability, quality) | `codefactory review --for-ai`, then confirm or reject each finding from its cited lines and judge the risky code it includes; read other files only when a finding needs it |
+| Asked to review the codebase (architecture, security, reliability, quality) | `codefactory review --for-ai` (add `--online` to check dependencies for known vulnerabilities, if the user agrees to send package names to OSV.dev), then confirm or reject each finding from its cited lines and judge the risky code it includes; read other files only when a finding needs it |
 | Deciding what to work on | `codefactory plan` (ranked tasks with steps and tests); `codefactory prompt <id or rank>` prints one task as a full brief to follow |
 | About to change, move, rename or delete a function or file | `codefactory context <name or path>` (callers, what it calls, how many functions/files depend on it, tests that exercise it) |
 | Debugging: what does X eventually do? | `codefactory trace <function>` |

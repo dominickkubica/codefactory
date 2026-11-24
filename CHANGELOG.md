@@ -3,6 +3,30 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.12.0 · 2026-11-24
+
+The rest of a security audit.
+
+### Added
+- **Configuration and crypto checks:** debug mode in code, CORS `*`, insecure session cookies, signing keys in the
+  code, JWT verification off, ECB/DES/RC4, MD5/SHA-1 for passwords or signatures, predictable random numbers for
+  secrets, and tokens in unencrypted mobile/browser storage. The last three only next to a security-sensitive name.
+- **CI, containers and mobile config:** `pull_request_target` workflows that run a fork's code with secrets, PR or
+  issue text pasted into shell scripts, unpinned third-party actions, containers running as root, unpinned base
+  images, secrets in images, and apps allowing plain HTTP.
+- **Secrets in git history:** committed once and deleted later, so still leaked; with the commit to look at.
+- **Known-vulnerable dependencies** (`review --online`): every pinned version in the lockfiles of npm, yarn, pnpm,
+  poetry, uv, Pipfile, requirements and constraints files, Cargo, Go, Bundler and Composer, checked against OSV.dev.
+  Grouped by package with the fixed version, dev-only packages marked and ranked lower. Only package names and
+  versions are sent. On real apps it found a critical `certifi` (compromised CA certificates) in a FastAPI app's
+  constraints, and 21 vulnerabilities in 7 packages of a React Native app (6 of them dev-only).
+- **The AI evidence pack** (`--for-ai`) includes the attack surface: every endpoint, its auth check and where it
+  changes data, with instructions to check authorization per record and input validation.
+- SARIF rules for every new check.
+
+### Fixed
+- Whole-file pre-checks for line patterns anchored at `^` only looked at the first line.
+
 ## 0.11.0 · 2026-11-24
 
 Closer to a security audit.

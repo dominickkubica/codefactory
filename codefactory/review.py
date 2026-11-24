@@ -13,6 +13,8 @@ from dataclasses import dataclass, field
 from fnmatch import fnmatch
 from pathlib import Path
 
+from .audit import current_secrets
+from .audit import scan as audit_scan
 from .brief import View
 from .checks import scan_repo, scan_sources, test_reach
 from .config import load_config
@@ -76,10 +78,13 @@ def _effort(count: int, files: int) -> str:
 
 
 class Review:
-    def __init__(self, g: dict, root: Path):
+    def __init__(self, g: dict, root: Path, online: bool = False):
         self.g, self.root, self.v = g, root, View(g)
         self.repo = scan_repo(root)
         self.scan = scan_sources(root, [f["id"] for f in g["files"]])
+        extra, self.history_note = audit_scan(root, current_secrets(self.scan["secret"]))
+        self.scan.update(extra)  # CI, Docker, mobile config and git history: same shape, same silencing
+        self.online, self.vulns, self.deps_note = online, [], ""
         self._apply_silence(load_config(root).silence)
         self.surface = surface(root, g, self.v)
         self.writers = writes(self.v)
@@ -205,6 +210,88 @@ class Review:
                     sev = self._by_reach(sev, hits)
                 self.add(title, sev, "Security", ev, impact, fix, _effort(len(hits), len({e.file for e in hits})), more)
         self.endpoints()
+        self.config_findings()
+        self.dependencies()
+
+    def config_findings(self) -> None:
+        """Configuration, crypto, CI, containers, mobile settings and git history (the rest of a security audit)."""
+        s = self.scan
+        pr = s["gha_pr_target"]
+        dangerous = [e for e in pr.hits if pr.data.get(e.file) == "checkout"]
+        if dangerous:
+            self.add(
+                "Workflow runs a fork's code with this repository's secrets",
+                "Critical",
+                "Security",
+                [f"`{e.at()}` {e.text}" for e in dangerous],
+                "`pull_request_target` runs with write access and secrets; checking out the pull request's code lets "
+                "anyone who opens a PR run it with both.",
+                "Use `pull_request` for anything that builds or tests PR code; keep `pull_request_target` for "
+                "labelling and commenting, without checking the PR out.",
+                "S",
+            )
+        for key, title, sev, impact, fix in CONFIG_CHECKS:
+            hits = s[key].hits
+            if hits:
+                ev, more = _ev(hits)
+                self.add(title, sev, "Security", ev, impact, fix, _effort(len(hits), len({e.file for e in hits})), more)
+
+    def dependencies(self) -> None:
+        if not self.online:
+            return
+        from .deps import packages, vulnerabilities
+
+        pkgs = packages(self.root)
+        if not pkgs:
+            self.deps_note = "no lockfile found, so dependencies weren't checked for known vulnerabilities"
+            return
+        try:
+            self.vulns = vulnerabilities(pkgs)
+        except (OSError, ValueError) as e:
+            self.deps_note = f"OSV.dev couldn't be reached ({type(e).__name__}): dependencies not checked"
+            return
+        self.deps_note = f"{len(pkgs)} pinned dependencies checked against OSV.dev"
+        if not self.vulns:
+            return
+        rank = ["CRITICAL", "HIGH", "MODERATE", "MEDIUM", "LOW", ""]
+        by_pkg: dict = {}
+        for vuln in self.vulns:
+            by_pkg.setdefault(vuln.package, []).append(vuln)
+        shipped = {p: vs for p, vs in by_pkg.items() if not p.dev}
+        worst = min((vuln.severity for vs in (shipped or by_pkg).values() for vuln in vs), key=rank.index)
+        sev = {"CRITICAL": "Critical", "HIGH": "High", "MODERATE": "Medium", "MEDIUM": "Medium", "LOW": "Low"}.get(
+            worst, "Medium"
+        )
+        if not shipped:  # only development tools: not in what users run
+            sev = {"Critical": "High", "High": "Medium", "Medium": "Low"}.get(sev, "Low")
+
+        def line(pkg, vs) -> str:
+            vs = sorted(vs, key=lambda x: rank.index(x.severity))
+            sevs = ", ".join(f"{n} {s.lower()}" for s in rank if s and (n := sum(1 for x in vs if x.severity == s)))
+            fixed = sorted({f for x in vs for f in x.fixed.split(", ") if f})
+            return (
+                f"`{pkg.name}@{pkg.version}` ({pkg.source}{', dev only' if pkg.dev else ''}): "
+                + (f"{len(vs)} vulnerability" if len(vs) == 1 else f"{len(vs)} vulnerabilities")
+                + (f" ({sevs})" if sevs else "")
+                + (f", e.g. {vs[0].id}: {vs[0].summary}" if vs[0].summary else f", e.g. {vs[0].id}")
+                + (f"; fixed in {', '.join(fixed[:3])}" if fixed else "")
+            )
+
+        ordered = sorted(by_pkg.items(), key=lambda kv: (kv[0].dev, min(rank.index(x.severity) for x in kv[1])))
+        self.add(
+            f"Dependencies with known vulnerabilities ({len(self.vulns)} in {len(by_pkg)} packages"
+            + (", all development-only" if not shipped else "")
+            + ")",
+            sev,
+            "Security",
+            [line(p, vs) for p, vs in ordered[:8]],
+            "Published vulnerabilities in the exact versions installed. Whether each is exploitable depends on how the "
+            "package is used, but attackers scan for these first.",
+            "Upgrade to a fixed version (`npm audit fix`, `pip install -U`, `cargo update`…); where there's no fix, "
+            "check whether the vulnerable feature is used.",
+            _effort(len(by_pkg), len(by_pkg)),
+            max(0, len(by_pkg) - 8),
+        )
 
     # -- the attack surface --------------------------------------------------------------------------------------
     def _reached_by(self, hit) -> str:
@@ -993,8 +1080,15 @@ class Review:
         out += [
             "Calls through dynamic dispatch (callbacks in variables, getattr, untyped objects) can be missing, so "
             "'unused' and 'no test reaches it' are hints.",
-            "Not checked: runtime behaviour, concurrency and transaction semantics, business logic, dependency "
-            "vulnerabilities (no network lookups), infrastructure-as-code, git history.",
+            (
+                f"Dependencies: {self.deps_note}."
+                if self.online
+                else "Dependencies weren't checked for known vulnerabilities: `--online` does it (sends package names "
+                "and versions to OSV.dev, nothing else)."
+            ),
+            *([f"Git history: {self.history_note}."] if self.history_note else []),
+            "Not checked: runtime behaviour, concurrency and transaction semantics, business logic, infrastructure "
+            "beyond Dockerfiles and CI workflows.",
             "Severity is set by rules, not by knowing the product: re-rank with what you know about users and data.",
         ]
         return out
@@ -1067,6 +1161,7 @@ class Review:
             "### Riskiest code (deletes data, does I/O, untested, swallows errors)",
             "",
         ]
+        out += self._surface_pack()
         for _score, f, reasons, lines in risky[:6]:
             ext = Path(f["file"]).suffix.lstrip(".") or "text"
             out += (
@@ -1078,6 +1173,33 @@ class Review:
             out.append("No function combines deleting data, I/O and missing tests.")
         return "\n".join(out)
 
+    def _surface_pack(self) -> list[str]:
+        """The attack surface for the AI: every endpoint with its auth check and what it changes, so it judges
+        authorization (can user A reach user B's data?) and input handling on the paths that matter."""
+        entries = self.surface.entries
+        if not entries:
+            return []
+        writing = {(e.method, e.path): self.v.fn[w]["qualname"] for e, w in self._writing_entries()}
+        out = [
+            "### Attack surface",
+            "",
+            f"Listening: {self.surface.exposure}"
+            + (f" ({self.surface.exposure_evidence})" if self.surface.exposure_evidence else "")
+            + ".",
+            "For each endpoint that changes data, check that it verifies who's asking and that the caller may change "
+            "*that* record (an id from the request must belong to them), and that its inputs are validated.",
+            "",
+            "| Endpoint | Handler | Auth found | Changes data in |",
+            "|---|---|---|---|",
+        ]
+        for e in entries[:40]:
+            out.append(
+                f"| `{e.method} {e.path}` | `{e.file}:{e.line}` | {e.auth or 'none'} | {writing.get((e.method, e.path), '')} |"
+            )
+        if len(entries) > 40:
+            out.append(f"| … {len(entries) - 40} more (`codefactory surface`) | | | |")
+        return [*out, ""]
+
     @staticmethod
     def _version() -> str:
         from . import __version__
@@ -1087,8 +1209,61 @@ class Review:
 
 CI_HINT = [".github/workflows", ".gitlab-ci.yml", ".circleci", "Jenkinsfile"]
 
+# (check, title, severity, impact, fix) for the configuration, crypto, CI, container, mobile and history checks
+CONFIG_CHECKS = [
+    ("history_secret", "Credentials in git history (deleted, still leaked)", "High",
+     "Anyone with a clone, a fork or an old CI log has them, even though the current files don't.",
+     "Rotate each one now; rewriting history doesn't help once it has been pushed."),
+    ("secret_key_literal", "Signing key written in the code", "High",
+     "Whoever reads the code can forge sessions, tokens or signed links.",
+     "Load it from the environment or a secret store, and rotate the one that was committed."),
+    ("jwt_unverified", "JWT checks turned off", "High",
+     "A token that isn't verified (signature, algorithm or expiry) can be forged or reused.",
+     "Always verify the signature with an explicit algorithm list, and keep expiry checks on."),
+    ("weak_cipher", "Broken encryption mode or cipher (ECB, DES, RC4)", "High",
+     "Patterns in the data survive encryption (ECB), or the cipher can be broken (DES, RC4).",
+     "Use an authenticated mode such as AES-GCM (or a library like libsodium / Fernet)."),
+    ("docker_secret", "Secrets baked into a container image", "High",
+     "Every layer of an image is readable by anyone who can pull it.",
+     "Pass secrets at runtime (environment, mounted secret, build secret), never in ENV/ARG."),
+    ("gha_injection", "Untrusted text run as a shell command in CI", "High",
+     "A PR or issue title or body is pasted into a `run:` script: whoever writes it can run commands with the "
+     "workflow's secrets.",
+     "Pass it through an environment variable (`env: TITLE: ${{ … }}`) and quote it in the script."),
+    ("weak_hash", "MD5 / SHA-1 used for security", "Medium",
+     "Both are broken for passwords and signatures: fast to brute-force, and collisions can be forged.",
+     "Passwords: bcrypt, scrypt or argon2. Signatures and tokens: HMAC-SHA-256 or better."),
+    ("weak_random", "Predictable random numbers for secrets", "Medium",
+     "`random` / `Math.random()` can be predicted from earlier outputs; tokens made with them can be guessed.",
+     "Use `secrets` (Python), `crypto.randomBytes` / `crypto.getRandomValues` (JavaScript)."),
+    ("cors_any", "Any website may call this API (CORS *)", "Medium",
+     "Every site a user visits can read this API's responses in their browser.",
+     "List the origins that need access."),
+    ("insecure_cookie", "Session cookies without Secure / HttpOnly", "Medium",
+     "Cookies can travel over plain HTTP, or be read by injected scripts.",
+     "Set Secure and HttpOnly (and SameSite) on session and auth cookies."),
+    ("debug_on", "Debug mode switched on in code", "Medium",
+     "Debug pages show code, settings and sometimes a console to whoever triggers an error.",
+     "Turn it on from the environment for development only."),
+    ("sensitive_storage", "Tokens or passwords in unencrypted storage", "Medium",
+     "AsyncStorage / localStorage are plain files or readable by any script on the page.",
+     "Use the platform's secure store (Keychain / Keystore via SecureStore, or an HttpOnly cookie on the web)."),
+    ("mobile_cleartext", "App allows unencrypted HTTP", "Medium",
+     "Traffic can be read or changed on public Wi-Fi.",
+     "Remove the exception, or limit it to the hosts that need it."),
+    ("docker_root", "Container runs as root", "Medium",
+     "A break-in through the app gets root inside the container, one step from the host.",
+     "Add a non-root `USER` after installing packages."),
+    ("gha_unpinned", "Third-party CI actions not pinned to a commit", "Low",
+     "A tag can be moved: a compromised action then runs in your CI with its secrets.",
+     "Pin third-party actions to a full commit SHA (keep the tag in a comment)."),
+    ("docker_latest", "Container base image not pinned", "Low",
+     "`latest` or no tag changes under you: builds aren't reproducible and can pick up a bad release.",
+     "Pin a version tag (or a digest)."),
+]  # fmt: skip
 
-def review_markdown(g: dict, root: Path, for_ai: bool = False) -> str:
-    r = Review(g, root)
+
+def review_markdown(g: dict, root: Path, for_ai: bool = False, online: bool = False) -> str:
+    r = Review(g, root, online)
     r.run()
     return r.markdown(for_ai)

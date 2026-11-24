@@ -25,7 +25,7 @@ the number of calls it carries. Dashed orange conveyors run backwards, from a lo
 pip install "codefactory[languages] @ git+https://github.com/dominickkubica/codefactory"
 cd path/to/your/repo
 
-codefactory review -o review.md  # a technical review of the repository
+codefactory review -o review.md  # a technical review of the repository (--online: also vulnerable dependencies)
 codefactory view                 # the interactive map, in your browser
 codefactory plan                 # what to fix first, ranked; then: codefactory prompt 1
 ```
@@ -49,7 +49,7 @@ codefactory plan                 # what to fix first, ranked; then: codefactory 
   | Performance | Database or network calls once per item (N+1), searches inside loops over loaded data, writes outside a transaction |
   | Duplication | Identical and near-identical functions, merged into one task per group |
   | Structure | Import loops, layer-rule breaks, unused code, functions nobody tests, very long or complex functions |
-  | Security | Every HTTP endpoint and whether it checks who's asking; endpoints that change data without an auth check; risky lines (SQL built from strings, shell, `eval`, raw HTML) ranked by whether a request reaches them, with the route → … → line chain; leaked credentials, disabled TLS checks, plain HTTP |
+  | Security | Every HTTP endpoint and whether it checks who's asking; endpoints that change data without an auth check; risky lines (SQL built from strings, shell, `eval`, raw HTML) ranked by whether a request reaches them, with the route → … → line chain; leaked credentials, including ones deleted but still in git history; debug mode, CORS `*`, insecure cookies, unverified JWTs, weak crypto and random numbers; unsafe CI workflows, root containers, secrets in images; known-vulnerable dependencies (`--online`) |
   | Reliability | Swallowed errors, network calls without a timeout, missing error boundaries |
   | Delivery | No CI or CI without tests, floating dependency versions, no lockfile, no runtime pin |
 
@@ -160,8 +160,8 @@ Files are parsed on every core and cached one by one, so a repeat run re-reads o
 ## Privacy
 
 Everything runs locally and nothing is uploaded. The map is a single HTML file with no network access. The only
-network use is the install itself, `codefactory update`, and tree-sitter grammars downloading the first time a
-language is analyzed. Caches live in `.codefactory/` inside the repository, which ignores itself in git.
+network use is the install itself, `codefactory update`, tree-sitter grammars downloading the first time a language
+is analyzed, and `review --online`, which sends package names and versions (nothing else) to OSV.dev. Caches live in `.codefactory/` inside the repository, which ignores itself in git.
 
 ## Documentation
 

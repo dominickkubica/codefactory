@@ -421,7 +421,7 @@ def cmd_review(a) -> int:
     path = Path(a.path)
     if not path.is_dir():
         raise SystemExit("codefactory: review needs the repository folder (it reads manifests, CI files and source text)")
-    text = review_markdown(load_graph(path, a.lang, not a.no_cache), path.resolve(), a.for_ai)
+    text = review_markdown(load_graph(path, a.lang, not a.no_cache), path.resolve(), a.for_ai, a.online)
     if a.output:
         _write(Path(a.output), text)
         print(f"Wrote {a.output}")
@@ -570,6 +570,11 @@ Run `codefactory <command> --help` for a command's options.""",
             )
         if name == "review":
             s.add_argument("--for-ai", action="store_true", help="append an evidence pack for an AI to finish the review")
+            s.add_argument(
+                "--online",
+                action="store_true",
+                help="also check dependencies for known vulnerabilities at OSV.dev (sends package names and versions only)",
+            )
         if name == "plan":
             s.add_argument("--top", type=int, default=10, help="how many tasks (default 10)")
         if name == "view":

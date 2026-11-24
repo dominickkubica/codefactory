@@ -1,4 +1,4 @@
-# codefactory: ignore-file secret, eval, shell, tls_off, raw_html, plain_http, swallowed — the patterns themselves
+# codefactory: ignore-file secret, eval, shell, tls_off, raw_html, plain_http, swallowed, debug_on, cors_any, insecure_cookie, jwt_unverified, weak_cipher, weak_hash, weak_random, secret_key_literal, sensitive_storage — the patterns themselves  # noqa: E501
 """Repository and source checks for the review: security, reliability, delivery, dependencies, docs, testing.
 
 Pattern checks read the source text (any comment style, both languages); repository checks read manifests and CI
@@ -93,6 +93,74 @@ PATTERNS: dict[str, list[re.Pattern]] = {
         re.compile(r"except(?:\s+[\w.(), ]+)?\s*:\s*pass\b"),
     ],
 }
+PATTERNS.update(
+    {
+        "debug_on": [
+            re.compile(r"^\s*DEBUG\s*=\s*True\b"),
+            re.compile(r"\.run\([^)]*debug\s*=\s*True"),
+            re.compile(r"\bapp\.debug\s*=\s*True"),
+            re.compile(r"FLASK_DEBUG\s*=\s*['\"]?1"),
+        ],
+        "cors_any": [
+            re.compile(r"allow_origins\s*=\s*\[\s*['\"]\*['\"]"),
+            re.compile(r"CORS_(?:ALLOW_ALL_ORIGINS|ORIGIN_ALLOW_ALL)\s*=\s*True"),
+            re.compile(r"Access-Control-Allow-Origin['\"]\s*[,:]\s*['\"]\*"),
+            re.compile(r"\borigin\s*:\s*['\"]\*['\"]"),
+            re.compile(r"(?<![\w.])CORS\(\s*app\s*\)"),
+            re.compile(r"(?<![\w.])cors\(\s*\)"),
+        ],
+        "insecure_cookie": [
+            re.compile(r"(?:SESSION|CSRF)_COOKIE_(?:SECURE|HTTPONLY)\s*=\s*False"),
+            re.compile(r"(?:secure|httponly)\s*=\s*False"),
+            re.compile(r"(?:httpOnly|secure)\s*:\s*false"),
+        ],
+        "jwt_unverified": [
+            re.compile(r"verify_(?:signature|exp)['\"]?\s*:\s*False"),
+            re.compile(r"jwt\.decode\([^)]*verify\s*=\s*False"),
+            re.compile(r"algorithms?\s*[:=]\s*\[?\s*['\"]none['\"]", re.I),
+            re.compile(r"ignoreExpiration\s*:\s*true"),
+        ],
+        "weak_cipher": [
+            re.compile(r"AES\.MODE_ECB|/ECB/|['\"]aes-\d+-ecb['\"]", re.I),
+            re.compile(r"\b(?:DES|DES3|RC4|ARC4|Blowfish)\.new\(|createCipheriv\(\s*['\"](?:des|rc4|bf)", re.I),
+        ],
+        "weak_hash": [
+            re.compile(r"hashlib\.(?:md5|sha1)\(|createHash\(\s*['\"](?:md5|sha1)['\"]"),
+            re.compile(r"MessageDigest\.getInstance\(\s*\"(?:MD5|SHA-?1)\""),
+        ],
+        "weak_random": [
+            re.compile(r"(?<![\w.])random\.(?:random|randint|choice|choices|getrandbits|randrange)\("),
+            re.compile(r"Math\.random\(\)"),
+        ],
+        "secret_key_literal": [
+            re.compile(r"^\s*(?:SECRET_KEY|JWT_SECRET(?:_KEY)?|SESSION_SECRET)\s*=\s*['\"][^'\"]{6,}['\"]"),
+            re.compile(r"\bapp\.secret_key\s*=\s*['\"][^'\"]{6,}['\"]"),
+        ],
+        "sensitive_storage": [
+            re.compile(
+                r"(?:AsyncStorage|localStorage|sessionStorage)\.setItem\(\s*['\"`][^'\"`]*"
+                r"(?:token|password|passwd|secret|jwt|credential|api_?key)",
+                re.I,
+            ),
+        ],
+    }
+)
+# Lines that only count when they're about something security-sensitive: an md5 for a cache key or Math.random() for a
+# chart colour is fine; for a password, a token or a session it isn't.
+CONTEXT = {
+    "insecure_cookie": re.compile(r"cookie|session|csrf", re.I),
+    "weak_hash": re.compile(
+        r"passw|pwd|secret|signature|\bsign\(|hmac|credential|otp|salt|"
+        r"(?:access|refresh|reset|auth|csrf|session|api|bearer)[_ -]?(?:token|key)",
+        re.I,
+    ),
+    # a bare "token" is too vague (a draft id, a list key): it needs to be named for what it guards
+    "weak_random": re.compile(
+        r"(?:access|refresh|reset|auth|csrf|session|api|invite|verif\w*|bearer|login|magic)[_ -]?(?:token|key|code|id)|"
+        r"secret|passw|otp|nonce|salt|csrf",
+        re.I,
+    ),
+}
 SQL_CALL = re.compile(
     r"(?:execute|executemany|executescript|query|raw|getAllAsync|getFirstAsync|runAsync|execAsync|"
     r"prepareAsync|getAllSync|runSync)\s*\(\s*(f['\"]|`|['\"][^'\"]*['\"]\s*(?:%|\+|\.format))"
@@ -111,7 +179,7 @@ def _group(pats: list[re.Pattern]) -> re.Pattern:
         body = p.pattern[4:] if p.pattern.startswith("(?i)") else p.pattern
         insensitive = p.pattern.startswith("(?i)") or p.flags & re.I
         parts.append(f"(?i:{body})" if insensitive else f"(?:{body})")
-    return re.compile("|".join(parts))
+    return re.compile("|".join(parts), re.M)  # over a whole file: ^ means the start of any line
 
 
 ANY = {k: _group(pats) for k, pats in PATTERNS.items()}
@@ -187,6 +255,8 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                 continue
             for key, pats in present.items():  # tests: only secrets (a test may do anything; a leaked key is leaked)
                 if any(p.search(line) for p in pats) and hit(key, i):
+                    if key in CONTEXT and not CONTEXT[key].search(line):
+                        continue
                     if key == "secret" and re.search(r"(?i)example|placeholder|dummy|xxxx|your[_-]|changeme|<", line):
                         continue
                     if key == "swallowed" and (why := swallow_intent(line, lines[i - 2] if i > 1 else "")):

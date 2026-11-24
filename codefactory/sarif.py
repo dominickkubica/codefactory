@@ -168,6 +168,135 @@ RULES: dict[str, tuple] = {
         "6.1",
     ),
     "plain_http": ("PlainHttp", "Plain-HTTP URL", "Use https:// where the host supports it.", "info", ["security"], "4.3"),
+    "secret_key_literal": (
+        "SigningKeyInSource",
+        "A signing key is written in the code",
+        "Load it from the environment or a secret store, and rotate it.",
+        "high",
+        ["security"],
+        "8.1",
+    ),
+    "jwt_unverified": (
+        "JwtUnverified",
+        "JWT verification turned off",
+        "Verify the signature with an explicit algorithm list; keep expiry checks on.",
+        "high",
+        ["security"],
+        "8.1",
+    ),
+    "weak_cipher": (
+        "WeakCipher",
+        "Broken cipher or mode (ECB, DES, RC4)",
+        "Use AES-GCM or a vetted library.",
+        "high",
+        ["security"],
+        "7.5",
+    ),
+    "weak_hash": (
+        "WeakHash",
+        "MD5 / SHA-1 used for security",
+        "bcrypt/scrypt/argon2 for passwords; HMAC-SHA-256 for signatures.",
+        "warn",
+        ["security"],
+        "5.9",
+    ),
+    "weak_random": (
+        "PredictableRandom",
+        "Predictable random numbers for a secret",
+        "Use `secrets` / `crypto.randomBytes` / `crypto.getRandomValues`.",
+        "warn",
+        ["security"],
+        "5.9",
+    ),
+    "cors_any": (
+        "CorsAnyOrigin",
+        "Any website may call this API (CORS *)",
+        "List the origins that need access.",
+        "warn",
+        ["security"],
+        "5.3",
+    ),
+    "insecure_cookie": (
+        "InsecureCookie",
+        "Session cookie without Secure / HttpOnly",
+        "Set Secure, HttpOnly and SameSite on session and auth cookies.",
+        "warn",
+        ["security"],
+        "5.3",
+    ),
+    "debug_on": (
+        "DebugEnabled",
+        "Debug mode switched on in code",
+        "Enable it from the environment for development only.",
+        "warn",
+        ["security"],
+        "5.3",
+    ),
+    "sensitive_storage": (
+        "SensitiveStorage",
+        "Token or password in unencrypted storage",
+        "Use Keychain/Keystore (SecureStore) or an HttpOnly cookie.",
+        "warn",
+        ["security"],
+        "5.5",
+    ),
+    "history_secret": (
+        "CredentialInHistory",
+        "A credential is in git history",
+        "Rotate it: history can't be unpublished.",
+        "high",
+        ["security"],
+        "8.5",
+    ),
+    "docker_secret": (
+        "SecretInImage",
+        "A secret is baked into a container image",
+        "Pass secrets at runtime, never in ENV/ARG.",
+        "high",
+        ["security"],
+        "8.1",
+    ),
+    "gha_injection": (
+        "WorkflowInjection",
+        "Untrusted text run as a shell command in CI",
+        "Pass it through an environment variable and quote it.",
+        "high",
+        ["security"],
+        "8.8",
+    ),
+    "gha_pr_target": (
+        "PullRequestTarget",
+        "pull_request_target workflow",
+        "Don't check out or build PR code under pull_request_target.",
+        "warn",
+        ["security"],
+        "7.0",
+    ),
+    "mobile_cleartext": (
+        "CleartextTraffic",
+        "App allows unencrypted HTTP",
+        "Remove the exception or limit it to hosts.",
+        "warn",
+        ["security"],
+        "5.3",
+    ),
+    "docker_root": ("ContainerRoot", "Container runs as root", "Add a non-root USER.", "warn", ["security"], "4.7"),
+    "gha_unpinned": (
+        "UnpinnedAction",
+        "Third-party CI action not pinned to a commit",
+        "Pin it to a full commit SHA.",
+        "info",
+        ["security"],
+        "4.0",
+    ),
+    "docker_latest": (
+        "UnpinnedBaseImage",
+        "Container base image not pinned",
+        "Pin a version tag or digest.",
+        "info",
+        ["maintainability"],
+        None,
+    ),
     "swallowed": (
         "SwallowedError",
         "An error is caught and dropped",
@@ -291,7 +420,12 @@ def build_sarif(graph: dict, root: Path | None = None, new_keys: Counter | None 
 
     if root is not None:  # line-level source checks (as in the review)
         sev_of = {k: v[3] for k, v in RULES.items()}
-        for key, check in scan_sources(root, [f["id"] for f in graph["files"]]).items():
+        from .audit import current_secrets
+        from .audit import scan as audit_scan
+
+        checks = scan_sources(root, [f["id"] for f in graph["files"]])
+        checks.update(audit_scan(root, current_secrets(checks["secret"]))[0])
+        for key, check in checks.items():
             if key not in RULES:
                 continue
             for e in check.hits:

@@ -186,6 +186,23 @@ The review uses it two ways:
 It's pattern-based: an auth check done elsewhere (a gateway, a proxy, a decorator with an unusual name) isn't seen,
 so "none found" is a question to answer. If the check exists, `codefactory accept` it with the reason.
 
+## The rest of a security audit
+
+Beyond the attack surface, the review checks:
+
+| Area | Checks |
+|---|---|
+| Configuration | Debug mode on in code, CORS allowing any origin, session cookies without Secure/HttpOnly, signing keys (`SECRET_KEY`, JWT secrets) written in the code |
+| Crypto | JWT verification turned off (signature, `none` algorithm, expiry), ECB/DES/RC4, MD5/SHA-1 for passwords or signatures, `random`/`Math.random()` for tokens, OTPs, salts and resets |
+| Mobile | Tokens or passwords in AsyncStorage/localStorage, apps allowing plain HTTP (`NSAllowsArbitraryLoads`, `usesCleartextTraffic`) |
+| CI | `pull_request_target` workflows that check out the PR's code (secrets exposed to forks), PR/issue text pasted into `run:` scripts, third-party actions not pinned to a commit |
+| Containers | Images that run as root, unpinned base images, secrets in `ENV`/`ARG` |
+| Git history | Credentials committed and later deleted: still in every clone, so still leaked (reads up to 400,000 changed lines; a shallow clone has less) |
+| Dependencies | With `--online`: every pinned version in the lockfiles (npm, yarn, pnpm, poetry, uv, Pipfile, requirements and constraints files, Cargo, Go, Bundler, Composer) against OSV.dev, grouped by package with the fixed version, dev-only packages marked and ranked lower. Sends package names and versions only. |
+
+Checks that would flood a report are narrowed to what's security-sensitive: an MD5 for a cache key or `Math.random()`
+for a colour isn't reported, only next to passwords, secrets, signatures, or tokens named for what they guard.
+
 ## Measured test coverage
 
 "No test reaches it" is estimated from the call graph: which functions tests call, directly or not. On a 500-file
