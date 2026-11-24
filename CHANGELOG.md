@@ -3,6 +3,24 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.8.1 · 2026-11-24
+
+### Fixed (review false positives found on a real React Native app)
+- **Swallowed errors:** an empty catch isn't reported when a comment says why, when it's best-effort cleanup of a
+  leftover (cancelling a notification, deleting a stored item, file or cache; never the user's records), or when the
+  failure becomes a fallback value (`const x = await load().catch(() => null)`). The review's limits section counts
+  them. On that app: 16 reported before, 5 after, all 5 real.
+- **SQL built from strings:** names that come from a fixed list or are checked against one in the lines above
+  (`for (const t of Object.keys(TABLES))`, `known.has(t)`, `.filter((c) => allowed.has(c))`) and numeric expressions
+  (`version + 1`, `Math.floor(v)`) are safe. Only the template literal itself is read, and `{name}` counts as
+  interpolation only in Python strings.
+- **Module-level state** in a UI app (React, React Native, Expo, Vue, Svelte) is reported only when exported mutable;
+  per-app singletons are normal there.
+- **Copied logic** in the review lists only identical or ≥85% similar groups with no test among them; lower scores are
+  usually deliberate variants.
+- **CI not on push** isn't reported when the workflow explains in a comment why it runs on pull requests only.
+- `http://*` (an origin wildcard) isn't a plain-HTTP URL.
+
 ## 0.8.0 · 2026-11-24
 
 Staying current in Claude Code.

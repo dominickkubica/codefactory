@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .brief import View
+from .intent import interp_safe, push_skip_explained, safe_names, swallow_intent
 from .paths import is_test
 from .suppress import MARK
 from .suppress import _parse as parse_mark
@@ -78,7 +79,9 @@ PATTERNS: dict[str, list[re.Pattern]] = {
         re.compile(r"\bmark_safe\s*\("),
     ],
     "plain_http": [
-        re.compile(r"""['"`]http://(?!localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|schemas\.|www\.w3\.org|xmlns)[^'"`\s]+""")
+        re.compile(
+            r"""['"`]http://(?!localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|schemas\.|www\.w3\.org|xmlns)[a-z0-9][^'"`\s]*""", re.I
+        )
     ],
     "swallowed": [
         re.compile(r"catch\s*(?:\([^)]*\))?\s*\{\s*\}"),
@@ -114,7 +117,8 @@ def _ignored(lines: list[str], i: int, key: str, file_kinds: set[str] | None) ->
 
 
 def scan_sources(root: Path, files: list[str]) -> dict[str, Check]:
-    out = {k: Check(k) for k in [*PATTERNS, "sql_built", "module_state", "fetch_no_timeout", "hosts", "error_boundary"]}
+    keys = [*PATTERNS, "sql_built", "module_state", "fetch_no_timeout", "hosts", "error_boundary", "swallowed_ok"]
+    out = {k: Check(k) for k in keys}
     for fid in files:
         if not fid.endswith(SRC_EXT):
             continue
@@ -139,12 +143,21 @@ def scan_sources(root: Path, files: list[str]) -> dict[str, Check]:
                 if any(p.search(line) for p in pats) and hit(key, i):
                     if key == "secret" and re.search(r"(?i)example|placeholder|dummy|xxxx|your[_-]|changeme|<", line):
                         continue
+                    if key == "swallowed" and (why := swallow_intent(line, lines[i - 2] if i > 1 else "")):
+                        out["swallowed_ok"].hits.append(Evidence(fid, i, why))  # deliberate: counted, not reported
+                        continue
                     out[key].hits.append(Evidence(fid, i, _excerpt(line)))
             if not test and (m := SQL_CALL.search(line)) and hit("sql_built", i):
                 stmt = " ".join(lines[i - 1 : i + 4])
                 if SQL_WORD.search(stmt):
-                    names = [a or b for a, b in INTERP.findall(stmt[m.start() : m.start() + 600])]
-                    risky = [n for n in names if not CONSTANT.match(n.strip())]
+                    py_format = not m.group(1).startswith("`")  # {name} is interpolation only in Python strings
+                    body = stmt[m.end() : m.end() + 600]
+                    if not py_format:  # just this template literal, not the code after it
+                        body = re.split(r"(?<!\\)`", body, maxsplit=1)[0]
+                    names = [a or (b if py_format else "") for a, b in INTERP.findall(body)]
+                    names = [n for n in names if n]
+                    safe = safe_names(lines, i)
+                    risky = [n for n in names if not CONSTANT.match(n.strip()) and not interp_safe(n, safe)]
                     if risky or m.group(1).endswith(("%", "+")) or ".format" in m.group(1):
                         out["sql_built"].hits.append(Evidence(fid, i, _excerpt(line)))
                         out["sql_built"].data.setdefault(f"{fid}:{i}", risky[:4])
@@ -242,8 +255,8 @@ def scan_repo(root: Path) -> dict:
         }.items():
             if any(w in t for w in words):
                 info["ci_steps"].add(step)
-        if re.search(r"\bpush\s*:", t) or re.search(r"on:\s*\[?\s*push", t):
-            info["ci_on_push"] = True
+        if re.search(r"\bpush\s*:", t) or re.search(r"on:\s*\[?\s*push", t) or push_skip_explained(t):
+            info["ci_on_push"] = True  # runs on push, or says why it deliberately doesn't
     info["locks"] = [name for name in LOCKS if (root / name).exists()]
     pkg = root / "package.json"
     if pkg.is_file():

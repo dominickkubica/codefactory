@@ -59,6 +59,9 @@ def _ev(items, n: int = 6) -> tuple[list[str], int]:
     return shown, max(0, len(items) - n)
 
 
+CLIENT_APPS = {"React", "React Native", "Expo", "Vue", "Svelte"}  # a UI process serves one user
+
+
 def _n(n: int, word: str) -> str:
     return f"{n} {word}" + ("" if n == 1 else "s")
 
@@ -226,6 +229,8 @@ class Review:
                 more,
             )
         ms = s["module_state"].hits
+        if fw & CLIENT_APPS:  # one user per process: module singletons are a normal design; exported mutable bindings aren't
+            ms = s["module_state"].hits = [e for e in ms if e.text.startswith("export")]
         if len(ms) >= 3:
             ev, more = _ev(ms)
             self.add(
@@ -314,9 +319,7 @@ class Review:
                 "factory.toml ([rules] forbid).",
                 "S",
             )
-        copies = [
-            t for t in self.tasks if t["kind"] in ("duplicate", "similar") and not all(is_test(w["file"]) for w in t["where"])
-        ]
+        copies = [t for t in self.tasks if self._copied(t)]
         if copies:
             saved = sum(int(m.group(1)) for t in copies if (m := re.search(r"~(\d+) lines", t["title"])))
             self.add(
@@ -744,6 +747,15 @@ class Review:
         )
         return q
 
+    @staticmethod
+    def _copied(task: dict) -> bool:
+        """Copies worth merging: identical or nearly so (≥85%), and not a test restating code it checks (an oracle).
+        Below 85% the pair is usually a deliberate variant (unticking a set vs deleting it, "45 sec" vs "45s")."""
+        if task["kind"] not in ("duplicate", "similar") or any(is_test(w["file"]) for w in task["where"]):
+            return False
+        m = re.search(r"(\d+)% similar", task["title"])
+        return not m or int(m.group(1)) >= 85
+
     def limits(self) -> list[str]:
         analyzed = Counter(Path(f["id"]).suffix for f in self.g["files"])
         other = Counter()
@@ -755,6 +767,14 @@ class Review:
             f"Analyzed {len(self.g['files'])} files ({', '.join(f'{n} {ext}' for ext, n in analyzed.most_common(6))}) "
             "statically: call graph, imports, structure and text patterns. Nothing was executed."
         ]
+        if ok := self.scan["swallowed_ok"].hits:
+            kinds = Counter(e.text for e in ok)
+            why = {"explained": "a comment says why", "cleanup": "best-effort cleanup", "fallback": "a fallback value"}
+            out.append(
+                f"{_n(len(ok), 'empty catch block')} treated as deliberate, not reported ("
+                + ", ".join(f"{n}: {why[k]}" for k, n in kinds.most_common())
+                + ")."
+            )
         if other:
             out.append("Not analyzed (no analyzer yet): " + ", ".join(f"{n} {lang}" for lang, n in other.most_common()) + ".")
         out += [
