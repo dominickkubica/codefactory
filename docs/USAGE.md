@@ -165,6 +165,15 @@ severity, lines saved and number of callers; tests and one-off scripts count for
 behaviour identical, update every caller of anything renamed) and how to know it's done. The viewer's **Copy fix
 prompt** button copies the same text.
 
+## Measured test coverage
+
+"No test reaches it" is estimated from the call graph: which functions tests call, directly or not. On a 500-file
+React Native app the estimate matched Jest's coverage report for 97.6% of functions. When a coverage report is in the
+repository, the review uses it instead and says which one: `coverage/lcov.info` (Jest, Vitest, c8, pytest-cov
+`--cov-report=lcov`, Go and Rust tools), `coverage/coverage-final.json` (Istanbul) or `coverage.json`
+(coverage.py). A function counts as covered when a line of its body ran. Files the report has no data for keep the
+estimate. Regenerate the report when the tests change (`npx jest --coverage`, `pytest --cov --cov-report=lcov`).
+
 ## Silencing what's intended
 
 A loop over seven tables, a deliberate copy in a build script, a method a framework calls by name: when a finding is
@@ -178,7 +187,15 @@ either, in any comment style:
 // codefactory: ignore-file duplicate — generated code     (anywhere in a file: applies to the whole file)
 ```
 
-or in `factory.toml`:
+or from the command line, which writes the same rule to `factory.toml` for you (handy for review findings and for
+code you'd rather not touch):
+
+```bash
+codefactory accept sql_built src/db/encryptionCopy.ts --why "the key is 64 hex characters we generate"
+codefactory accept 3f9a2c --why "kept for the plugin API"     # every finding behind a plan task
+```
+
+or by hand in `factory.toml`:
 
 ```toml
 [[silence]]
@@ -255,8 +272,8 @@ codefactory skill --hook   # writes the skill and a session-start hook; commit .
 ```
 
 **Staying current.** Three things keep Claude working from the latest codefactory:
-- The skill records the version that wrote it, and any codefactory command run in the repository rewrites it when
-  it's older (a note goes to stderr).
+- The skill records the version that wrote it. Other commands print a note when it's out of date but never rewrite
+  it, so a clean checkout or CI run stays clean.
 - The hook (`.claude/hooks/codefactory.sh`, added to `.claude/settings.json` without touching other settings) runs at
   each session start: it installs codefactory if missing, upgrades it at most once a day (stamp in
   `~/.cache/codefactory/`), and refreshes the skill. If a checkout of codefactory sits next to the repository, it

@@ -3,6 +3,24 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.10.0 · 2026-11-24
+
+### Added
+- **`codefactory accept`:** marks a finding as intended, with the reason, by writing a `[[silence]]` rule to
+  `factory.toml`. It takes either a kind and a place (`accept sql_built src/db/x.ts --why "…"`) or a plan task, which
+  covers every finding behind it. The review's own checks now honour these rules too.
+- **Measured coverage:** when the repository has a coverage report (lcov, Istanbul `coverage-final.json`,
+  coverage.py `coverage.json`), "no test reaches it" comes from what actually ran, and the review names the report.
+  The call-graph estimate it replaces matched Jest's report for 97.6% of functions on a 500-file app.
+
+### Changed
+- **Ordinary commands never change the repository.** They used to rewrite an outdated
+  `.claude/skills/codefactory/SKILL.md`, which left clean checkouts and CI runs dirty. Now they print a note, and the
+  session hook, `codefactory skill` and `codefactory update` refresh it.
+- **Array searches inside loops** are reviewed only in functions that load data from storage or the network, where
+  the lists can grow. A search over a handful of UI items or a fixed table isn't worth a line in a review. On a React
+  Native app this went from 53 to 2.
+
 ## 0.9.4 · 2026-11-24
 
 ### Fixed (clean-slate runs on a React Native app and a FastAPI app)

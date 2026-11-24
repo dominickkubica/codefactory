@@ -24,7 +24,7 @@ from .plan import make_plan, plan_markdown
 from .review import review_markdown
 from .sarif import build_sarif, github_annotations
 from .skill import SOURCE as SKILL_SOURCE
-from .skill import install_hook, install_skill, refresh_skill, update
+from .skill import install_hook, install_skill, refresh_skill, skill_outdated, update
 from .sqlgraph import query_flags, run_query, to_sqlite
 from .suppress import apply_suppressions
 from .trace import find_function, shortest_path, trace
@@ -321,6 +321,35 @@ def cmd_plan(a) -> int:
     return 0
 
 
+def cmd_accept(a) -> int:
+    from .accept import append_rules, known_kinds, normalize_where, rules_for_task
+
+    values = list(a.values)
+    root = Path(values.pop(0)) if len(values) > 1 and Path(values[0]).is_dir() else Path(".")
+    rest = values
+    if not rest:
+        raise ValueError("say what to accept: a plan task (`codefactory accept 3f9a2c`) or a kind and where")
+    if len(rest) == 1:  # a plan task: every finding behind it
+        graph = load_graph(root, a.lang, not a.no_cache)
+        tasks = make_plan(graph)
+        key = rest[0]
+        task = tasks[int(key) - 1] if key.isdigit() and len(key) < 4 and 0 < int(key) <= len(tasks) else None
+        task = task or next((t for t in tasks if t["id"] == key), None)
+        if not task:
+            raise ValueError(f"no plan task {key!r}; for a single finding give its kind and where: accept sql_built src/db.py")
+        rules = rules_for_task(task, graph)
+    else:
+        kind, where = rest[0], normalize_where(rest[1])
+        if kind not in known_kinds():
+            raise ValueError(f"unknown kind {kind!r}; one of: {', '.join(sorted(known_kinds()))}")
+        rules = [(kind, where)]
+    file = append_rules(root, rules, a.why)
+    for kind, where in rules:
+        print(f"accepted {kind} at {where}: {a.why}")
+    print(f"Recorded in {file}; commit it so everyone (and CI) sees the same list. `codefactory flags --silenced` lists them.")
+    return 0
+
+
 def cmd_prompt(a) -> int:
     path, (task_id,) = _split(a.values, 1)
     tasks = make_plan(load_graph(Path(path), a.lang, not a.no_cache))
@@ -412,6 +441,7 @@ COMMANDS = {
     "baseline": (cmd_baseline, "save today's issues (codefactory-baseline.json, commit it) so only new ones fail"),
     "check": (cmd_check, "for CI / pre-commit: fail on issues new since the baseline"),
     "sarif": (cmd_sarif, "write issues as SARIF 2.1.0 for GitHub code scanning, VS Code and CI tools"),
+    "accept": (cmd_accept, "mark a finding as intended, with the reason (writes a [[silence]] rule to factory.toml)"),
     "update": (cmd_update, "upgrade codefactory to the latest version (and refresh this repo's skill)"),
     "skill": (cmd_skill, "teach Claude Code in a repo to use codefactory (writes .claude/skills/codefactory/SKILL.md)"),
 }
@@ -436,10 +466,12 @@ Run `codefactory <command> --help` for a command's options.""",
     sub = p.add_subparsers(dest="cmd", required=True)
     for name, (_, text) in COMMANDS.items():
         s = sub.add_parser(name, help=text, description=text)
-        if name in ("query", "trace", "path", "context", "prompt"):
+        if name in ("query", "trace", "path", "context", "prompt", "accept"):
             s.add_argument("values", nargs="+", metavar="value")
         else:
             s.add_argument("path", nargs="?", default=".", help="the codebase folder (default: here), or a graph .json")
+        if name == "accept":
+            s.add_argument("--why", required=True, help="why it's intended (kept with the rule, shown by flags --silenced)")
         if name == "skill":
             s.add_argument("--hook", action="store_true", help="also add a session-start hook that keeps codefactory current")
         if name == "update":
@@ -496,8 +528,11 @@ def main(argv: list[str] | None = None) -> int:
     a = parser().parse_args(argv)
     debug = a.debug or bool(os.environ.get("CODEFACTORY_DEBUG"))
     repo = Path(getattr(a, "path", None) or ".")
-    if a.cmd not in ("skill", "update") and refresh_skill(repo if repo.is_dir() else repo.parent):
-        print("codefactory: refreshed .claude/skills/codefactory/SKILL.md for this version.", file=sys.stderr)
+    if a.cmd not in ("skill", "update") and skill_outdated(repo if repo.is_dir() else repo.parent):
+        print(
+            "codefactory: .claude/skills/codefactory/SKILL.md is from an older version; `codefactory skill` updates it.",
+            file=sys.stderr,
+        )
     try:
         return COMMANDS[a.cmd][0](a)
     except KeyboardInterrupt:

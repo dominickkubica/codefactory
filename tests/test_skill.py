@@ -37,14 +37,17 @@ class SkillTest(unittest.TestCase):
         self.assertTrue(skill.refresh_skill(self.repo))
         self.assertIn(f"skill {__version__} -->", path.read_text(encoding="utf-8"))
 
-    def test_any_command_refreshes_a_stale_skill(self):
+    def test_ordinary_commands_never_change_the_repository(self):
         path = skill.skill_path(self.repo)
         path.parent.mkdir(parents=True)
         path.write_text("---\nname: codefactory\n---\nold instructions\n", encoding="utf-8")
         (self.repo / "a.py").write_text("def f():\n    return 1\n", encoding="utf-8")
         with mock.patch("sys.stdout"), mock.patch("sys.stderr"):
             main(["flags", str(self.repo), "--no-cache"])
-        self.assertIn(f"skill {__version__} -->", path.read_text(encoding="utf-8"))
+        self.assertEqual(path.read_text(encoding="utf-8"), "---\nname: codefactory\n---\nold instructions\n")
+        self.assertTrue(skill.skill_outdated(self.repo))
+        skill.install_skill(self.repo)
+        self.assertFalse(skill.skill_outdated(self.repo))
 
     def test_hook_merges_into_existing_settings_once(self):
         settings = self.repo / ".claude" / "settings.json"

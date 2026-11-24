@@ -12,7 +12,7 @@ installed at all, `pip install "codefactory[languages] @ git+https://github.com/
 It reads Python and TypeScript/JavaScript precisely; Go, Java, Kotlin, Swift, Rust, C/C++, C#, Ruby, PHP and others
 through tree-sitter, matching calls by name, so for those languages treat call, impact and unused findings as leads
 to confirm in the code. Big repositories are fine: files are parsed in parallel and cached per file. If a command below is missing or
-an option is rejected, run `codefactory update` (this file refreshes itself to match the installed version).
+an option is rejected, run `codefactory update` (it also refreshes this file to match the installed version).
 
 ## When to use which command
 

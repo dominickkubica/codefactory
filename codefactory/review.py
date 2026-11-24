@@ -10,10 +10,13 @@ import re
 import subprocess
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+from fnmatch import fnmatch
 from pathlib import Path
 
 from .brief import View
 from .checks import scan_repo, scan_sources, test_reach
+from .config import load_config
+from .coverage import measured
 from .paths import is_script, is_test
 from .plan import make_plan
 
@@ -76,7 +79,14 @@ class Review:
         self.g, self.root, self.v = g, root, View(g)
         self.repo = scan_repo(root)
         self.scan = scan_sources(root, [f["id"] for f in g["files"]])
-        self.reached = test_reach(self.v)
+        self._apply_silence(load_config(root).silence)
+        static = test_reach(self.v)
+        self.coverage = measured(root, g["functions"])
+        if self.coverage:  # what ran, where the report knows; the static estimate for files it doesn't cover
+            seen = self.coverage.seen
+            self.reached = self.coverage.covered | {fid for fid in static if self.v.fn.get(fid, {}).get("file") not in seen}
+        else:
+            self.reached = static
         self.tasks = make_plan(g)
         self.findings: list[Finding] = []
         self.by_kind = defaultdict(list)
@@ -376,15 +386,19 @@ class Review:
                 "S",
                 max(0, len(unused) - 6),
             )
-        scans = [f for f in self.by_kind["quadratic_scan"] if not self._script(f)]
-        if len(scans) >= 5:
+        # only where the lists plausibly grow: the function loads data itself or through what it calls. A search in
+        # a loop over a handful of UI items or a fixed table costs nothing, and listing 50 of them hides the few
+        # that matter
+        loads = self._loads_data()
+        scans = [f for f in self.by_kind["quadratic_scan"] if not self._script(f) and f["target"] in loads]
+        if scans:
             self.add(
-                f"Array searches inside loops ({len(scans)})",
+                f"Array searches inside loops over loaded data ({len(scans)})",
                 "Low",
                 "Performance",
                 [self.where(f) for f in scans[:5]],
-                "O(n²): invisible on small lists, slow on long ones.",
-                "Where a list can grow, build a Map/Set once before the loop.",
+                "O(n²) on data that comes from storage or the network: fine at today's size, slow as it grows.",
+                "Build a Map/Set (dict/set) from the list once before the loop, and look items up in it.",
                 "M",
                 max(0, len(scans) - 5),
             )
@@ -424,7 +438,7 @@ class Review:
                     for f in risky[:8]
                 ],
                 f"Tests reach {pct}% of functions, but not these: code that talks to storage or the network, or that "
-                "much of the app depends on.",
+                "much of the app depends on." + self._coverage_note(),
                 "Add tests that call these (against a real or in-memory store), starting with the ones that write data.",
                 _effort(len(risky), len({f["file"] for f in risky})),
                 max(0, len(risky) - 8),
@@ -769,10 +783,36 @@ class Review:
         if not self.repo["ci"]:
             q.append("How is the code built and released today?")
         q.append(
-            "Which findings above are known and accepted? Silence them (`codefactory: ignore <kind> — why`) "
+            "Which findings above are known and accepted? Mark them (`codefactory accept <kind> <file> --why …` or a "
+            "`codefactory: ignore <kind> — why` comment) "
             "so the next review shows only what's new."
         )
         return q
+
+    def _apply_silence(self, rules: list[dict]) -> None:
+        """[[silence]] rules in factory.toml (written by `codefactory accept`) apply to the review's own checks too."""
+        for key, check in self.scan.items():
+            check.hits = [
+                e for e in check.hits
+                if not any(r["kind"] in ("*", key) and (fnmatch(e.file, r["where"]) or fnmatch(f"{e.file}:{e.line}", r["where"]))
+                           for r in rules)
+            ]  # fmt: skip
+
+    def _coverage_note(self) -> str:
+        if self.coverage:
+            return (
+                f" Measured from {self.coverage.source} ({self.coverage.written}); rerun the tests with coverage to refresh it."
+            )
+        return " Estimated from which functions tests call (no coverage report found: coverage/lcov.info, coverage.json)."
+
+    def _loads_data(self) -> set[str]:
+        """Functions that read from a database, the network or files, themselves or through a function they call."""
+        io = {fid for fid, f in self.v.fn.items() if f.get("io")}
+        out = set(io)
+        for e in self.g["edges"]:
+            if e["kind"] == "call" and e["dst"] in io:
+                out.add(e["src"])
+        return out
 
     @staticmethod
     def _copied(task: dict) -> bool:

@@ -62,6 +62,7 @@ The map is a single HTML file: no server, no network, nothing uploaded. It can b
 | `query` / `sql` | Ask anything in SQL / export the graph as a SQLite database |
 | `analyze` | The raw graph as JSON |
 | `skill` | Teach Claude Code in a repository when and how to use all of the above (`--hook`: keep it current) |
+| `accept` | Mark a finding as intended, with the reason, so later runs show only what's new |
 | `update` | Upgrade codefactory to the latest version |
 
 Commands that take a name work from inside the repository: `codefactory context checkout`. After the first run,
@@ -76,8 +77,8 @@ codefactory skill --hook   # once per repository; commit .claude/
 
 This writes the skill (`.claude/skills/codefactory/SKILL.md`) and a session-start hook. Every Claude Code session in
 that repository then starts with codefactory installed, upgraded at most once a day, and its instructions matching
-the installed version. Without `--hook`, the skill still refreshes itself whenever codefactory runs, and
-`codefactory update` upgrades on demand.
+the installed version. Without `--hook`, `codefactory update` upgrades and refreshes it on demand, and other commands
+say when it's out of date (they never change files in the repository).
 
 Then ask in plain words: *"what should I clean up first?"*, *"review the codebase"*, *"what breaks if I change
 `useCart`?"*, *"did my change add any problems?"*. Claude Code runs the right command, reads a few thousand tokens of

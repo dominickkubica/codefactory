@@ -1,8 +1,8 @@
 """Keeps Claude Code's codefactory current in a repository.
 
 - The skill (.claude/skills/codefactory/SKILL.md) teaches Claude when and how to use each command. It carries the
-  version that wrote it; any codefactory run in that repository rewrites it when it's older, so Claude never works
-  from instructions for commands that changed.
+  version that wrote it. The session hook, `codefactory skill` and `codefactory update` rewrite it when its
+  instructions changed; other commands only say so, because they must never change the repository they analyze.
 - The session-start hook (.claude/hooks/codefactory.sh, registered in .claude/settings.json) installs codefactory if
   it's missing and upgrades it at most once a day, then refreshes the skill. It never blocks or fails a session.
 - `codefactory update` upgrades the installed tool on demand.
@@ -43,6 +43,18 @@ def install_skill(repo: Path) -> Path:
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(skill_text(), encoding="utf-8")
     return target
+
+
+def skill_outdated(repo: Path) -> bool:
+    """The repository's skill was written for different instructions than this version's. Read-only: ordinary commands
+    must never change files in the repository they analyze (a clean checkout or CI run would end up dirty)."""
+    try:
+        target = skill_path(repo)
+        if not target.is_file():
+            return False
+        return STAMP.sub("", target.read_text(encoding="utf-8")) != STAMP.sub("", skill_text())
+    except OSError:
+        return False
 
 
 def refresh_skill(repo: Path) -> bool:
