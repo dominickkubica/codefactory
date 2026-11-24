@@ -66,15 +66,16 @@ The code is organised the same way:
 
 | Module | Responsibility |
 |---|---|
-| `analyzers/` | Source → graph, one module per language |
+| `analyzers/` | Source → graph: Python (`python_parse.py` per file, `python.py` linking), TypeScript (`typescript.py`, `ts_helper.js`), every other language (`treewalk.py`, `generic.py`), and the parallel per-file runner with its cache (`parallel.py`) |
 | `graph.py` | The data model |
 | `layers.py`, `config.py` | Zones and their order; `factory.toml` |
 | `flags.py`, `similar.py`, `efficiency.py`, `sqlgraph.py` | Checks on the graph |
 | `suppress.py`, `baseline.py`, `paths.py` | Silencing; the ratchet; what counts as a test or a script |
-| `checks.py`, `review.py` | Source-text and repository checks; the review report |
+| `checks.py`, `intent.py`, `review.py` | Source-text and repository checks; code that shows its intent (explained catches, checked SQL names); the review report |
+| `coverage.py`, `accept.py` | Measured coverage from lcov / Istanbul / coverage.py reports; `codefactory accept` |
 | `plan.py`, `brief.py`, `trace.py`, `sarif.py` | Outputs |
 | `viewer/` | The HTML map (template, CSS, JavaScript; no libraries) |
-| `cache.py`, `cli.py`, `skill.py` | Caching; the command line; the Claude Code skill, its self-refresh, the session hook and `update` |
+| `cache.py`, `cli.py`, `skill.py` | Caching; the command line; the Claude Code skill, the session hook and `update` |
 
 ## The graph
 
@@ -305,7 +306,11 @@ than defects. Saved SQL queries run against the in-memory SQLite form of the gra
   Each honours `codefactory: ignore` comments; test files are only checked for credentials.
 - **Repository facts:** CI configuration and what it runs, lockfiles, floating or unpinned dependencies, runtime
   version pins, README, licence, committed `.env` files (checked against `git ls-files`), detected frameworks.
-- **Test reach:** a breadth-first search over call and ref edges from every function in a test file.
+- **Test reach:** a breadth-first search over call and ref edges from every function in a test file. When the
+  repository has a coverage report (lcov, Istanbul `coverage-final.json`, coverage.py `coverage.json`), what ran
+  replaces the estimate for every file the report covers: a function is covered when a line of its body ran (not its
+  first line, which in Python runs on import). Checked against Jest on a 500-file app, the estimate agreed for 97.6%
+  of functions (6 claimed tested that weren't, 13 missed).
 
 `review.py` turns these and the graph's flags into findings with severity, evidence (the first six instances),
 impact, a fix and an effort (S/M/L from the number of instances and files).
@@ -385,8 +390,10 @@ The skill file (`codefactory skill`) tells Claude Code which command answers whi
 which findings are only hints (`unused`, `test_only`, "no test reaches it") and must be verified before acting.
 
 Instructions that lag the tool are worse than none, so the skill is versioned: it carries a
-`<!-- codefactory skill X.Y.Z -->` stamp after its front matter, and every command checks it (one small file read)
-and rewrites a stale copy before running. The optional session hook closes the other gap, an outdated tool: it
+`<!-- codefactory skill X.Y.Z -->` stamp after its front matter. Every command checks it (one small file read) and
+says when the instructions are out of date, but only the hook, `codefactory skill` and `codefactory update` rewrite it,
+and only when the instructions changed (not for a version number alone): an analysis must never change the
+repository it reads, or a clean checkout or CI run ends up dirty. The optional session hook closes the other gap, an outdated tool: it
 upgrades at most once a day so a session start costs nothing on most days, uses a local checkout when one is
 present (cloud sessions with the repository attached), and always exits 0, because a helper must never stop a
 session from starting.

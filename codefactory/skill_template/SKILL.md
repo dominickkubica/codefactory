@@ -5,8 +5,7 @@ description: Map this codebase's structure (layers, who calls what) and find cop
 
 # codefactory
 
-`codefactory` statically analyzes this repo (Python, TypeScript/JavaScript) into a call graph and lists issues with
-`file:line`. The first run takes a few seconds to ~30 s; later runs reuse `.codefactory/graph.json` until a source
+`codefactory` statically analyzes this repo into a call graph and lists issues with `file:line`. The first run takes a few seconds to ~30 s; later runs reuse `.codefactory/graph.json` until a source
 file changes. Run it from the repo root. If the command isn't found, use `python -m codefactory`; if it isn't
 installed at all, `pip install "codefactory[languages] @ git+https://github.com/dominickkubica/codefactory"`.
 It reads Python and TypeScript/JavaScript precisely; Go, Java, Kotlin, Swift, Rust, C/C++, C#, Ruby, PHP and others
@@ -26,6 +25,7 @@ an option is rejected, run `codefactory update` (it also refreshes this file to 
 | Debugging: how does A end up calling B? | `codefactory path <A> <B>` |
 | A list to work through | `codefactory flags --kind similar --kind duplicate`, `--kind io_in_loop`, `--min warn`; add `--json` to parse |
 | Any other question | `codefactory query "SELECT … FROM function_stats …"` (tables files, functions, edges, flags; views function_stats(fan_in, fan_out, caller_files), file_deps) |
+| A finding is intended (confirmed safe, deliberate) | `codefactory accept <kind> <file> --why "…"` or `codefactory accept <plan task id> --why "…"` (writes a rule to `factory.toml`; the user decides whether to commit it) |
 | Showing the human | `codefactory view -o <file>.html` (an interactive factory-floor map; lenses for duplication, efficiency, size) |
 
 ## Working rules
@@ -35,9 +35,11 @@ an option is rejected, run `codefactory update` (it also refreshes this file to 
 2. **Copied code (`duplicate`, `similar`).** Merge into one function in the lowest layer that all copies' callers can
    import (usually `lib`/`utils`), then point each copy's callers at it. `brief` lists groups by lines saved.
 3. **Calls in loops (`io_in_loop`).** `warn` = reads or network: replace the per-item call with one batched query
-   (`WHERE id IN (…)`, a JOIN) or one request. `info` = writes/files: batch only if many items; keep them in one
-   transaction.
-4. **`unused` and `test_only` are hints, not proof.** Frameworks call some code by name (routes, handlers, exports
+   (`WHERE id IN (…)`, a JOIN) or one request. `info` = writes, files or programs: batch only if many items. Writes
+   already inside a transaction (also one opened by every caller) and sleeps aren't reported, so a reported write
+   is outside one: wrapping the loop in a transaction is usually the fix.
+4. **`unused`, `test_only` and "no test reaches it" are hints, not proof** (exact only when the review says it
+   measured coverage from a report). Frameworks call some code by name (routes, handlers, exports
    loaded by convention). Search for the name (including strings) before deleting.
 5. **Static analysis misses dynamic calls** (getattr, callbacks stored in variables, untyped `obj.method()`). Treat
    "no callers" as "no callers found".
@@ -47,7 +49,8 @@ an option is rejected, run `codefactory update` (it also refreshes this file to 
 7. **An issue that's intended** (a bounded loop, a deliberate copy, code a framework calls by name): don't contort the
    code. Add a comment on the line above the function or the flagged line, saying why:
    `// codefactory: ignore io_in_loop — one query per table, there are 7` (or `# …` in Python). It moves to
-   `codefactory flags --silenced` with its reason.
+   `codefactory flags --silenced` with its reason. Where editing the code isn't wanted, `codefactory accept` records
+   the same in `factory.toml`; ask the user before accepting findings on their behalf.
 8. **Don't update the baseline yourself** (`codefactory baseline`) unless the user asks: it's the line that new
    issues are measured against.
 
@@ -55,4 +58,5 @@ an option is rejected, run `codefactory update` (it also refreshes this file to 
 
 - `high`: import loops, layer violations (from `factory.toml`). Fix.
 - `warn`: copies, N+1 loops, dead code. Worth fixing while working nearby.
-- `info`: long functions, hubs, searches/awaits in loops, writes in loops. Context for decisions.
+- `info`: long functions, hubs, searches/awaits in loops, writes, file and program operations in loops. Context for
+  decisions.

@@ -50,7 +50,8 @@ committing it. An unexpected line there is a bug caught early.
 |---|---|
 | `codefactory/analyzers/` | Python (`python_parse.py` per file, `python.py` linking), TypeScript (`ts_helper.js`), every other language (`treewalk.py`, `generic.py`), the parallel per-file runner (`parallel.py`) |
 | `codefactory/flags.py`, `similar.py`, `efficiency.py` | Checks on the graph |
-| `codefactory/checks.py`, `review.py` | Source-text and repository checks; the review |
+| `codefactory/checks.py`, `intent.py`, `review.py` | Source-text and repository checks; the review |
+| `codefactory/coverage.py`, `accept.py` | Measured coverage; `codefactory accept` |
 | `codefactory/plan.py`, `brief.py`, `sarif.py`, `trace.py`, `sqlgraph.py` | Outputs |
 | `codefactory/viewer/` | The HTML map: `template.html`, `factory.css`, `factory.js` |
 | `tests/fixtures/shop`, `tsapp`, `polyglot` | Small Python, TypeScript and Go/Java/Ruby apps with planted problems |

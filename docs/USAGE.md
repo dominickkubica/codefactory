@@ -26,7 +26,8 @@ codefactory --version
 - **TypeScript / JavaScript** also needs [Node.js](https://nodejs.org) and the `typescript` package. codefactory uses,
   in order: the analyzed project's own `node_modules/typescript` (so `npm install` in the project is enough), a global
   install (`npm install -g typescript`), or the folder in the `CODEFACTORY_TYPESCRIPT` environment variable. Without
-  any of them, Python is still analyzed and TypeScript is skipped with a note.
+  any of them, TypeScript/JavaScript goes through the general analyzer (matching calls by name) if the language pack
+  is installed, and is skipped with a note if it isn't.
 - **Every other language** (Go, Java, Kotlin, Swift, Rust, C/C++, C#, Ruby, PHP, Scala, Dart, Lua, Elixir…) needs the
   optional language pack: `pip install "codefactory[languages] @ git+https://github.com/dominickkubica/codefactory"`
   (or `pip install tree-sitter tree-sitter-language-pack`). Each language's grammar downloads the first time it's
@@ -89,12 +90,12 @@ has a **Copy fix prompt** button.
 |---|---|---|
 | `cycle` | high | Files that import each other in a circle, counting only imports that run when a module loads (not imports inside functions or under `TYPE_CHECKING`, which are often placed there to break a loop). |
 | `layer_violation` | high | An import that `factory.toml` forbids, such as `ui -> db`. |
-| `io_in_loop` | warn / info | A database, network or file call, or a call into the codebase that eventually makes one, runs once per loop iteration. Reads and network calls are warn (the N+1 pattern); writes and file operations are info. Loops over a list fixed in the code (a literal, a constant, `Object.entries(CONST)`, `range(5)`, `.slice(0, 10)`) and loops in migrations are info, because they can't grow with the data. |
+| `io_in_loop` | warn / info | A database, network or file call, or a call into the codebase that eventually makes one, runs once per loop iteration. Reads and network calls are warn (the N+1 pattern); writes, file operations and program runs are info. Loops over a list fixed in the code (a literal, a constant, `Object.entries(CONST)`, `range(5)`, `.slice(0, 10)`) and loops in migrations are info, because they can't grow with the data. Not reported: writes inside a transaction (a `with db.session():` / `transaction(() => …)` block, or a function every caller calls inside one), calling the transaction helper itself once per batch, and `sleep` (pacing on purpose). |
 | `duplicate` | warn | Functions with the same structure and the same literal strings and numbers, even with renamed variables (at least 6 lines). |
 | `similar` | warn / info | Copies that were edited afterwards: 75% or more of their structure in common; 85% or more is warn. |
-| `quadratic_scan` | info | `find`, `filter`, `includes`, `indexOf`… on an array inside a loop: O(n²) as the list grows. Searches in a list written out in the code don't count. |
+| `quadratic_scan` | info | `find`, `filter`, `includes`, `indexOf`… on an array inside a loop: O(n²) as the list grows. Searches in a list written out in the code don't count; the review lists only those in functions that load data (where lists can grow). |
 | `sequential_await` | info | Awaits inside a loop, each waiting for the previous one; independent ones could run together. |
-| `unused` | warn / info | Functions nothing calls or references. Methods are only info, and never reported when their name is called on some object elsewhere or when a framework calls them by name (React lifecycle methods, web components, Angular, Django/DRF). Lazy `require()` / `import()` counts as a use, and so does a dispatch table (`COMMANDS[name](…)`). |
+| `unused` | warn / info | Functions nothing calls or references. Methods are only info, and never reported when their name is called on some object elsewhere or when a framework calls them by name (React lifecycle methods, web components, Angular, Django/DRF). Lazy `require()` / `import()` counts as a use, and so do a dispatch table (`COMMANDS[name](…)`) and `getattr(obj, "name")`. |
 | `test_only` | info | Code that only tests call: dead in the product, kept alive by its tests. |
 | `hub` | info | A function called from 12 or more files. |
 | `large_file` / `long_function` | info | Over 400 / 60 lines. |
@@ -373,7 +374,9 @@ sql = "SELECT id AS target FROM functions WHERE …"
 
 | Message | What to do |
 |---|---|
-| `skipping TypeScript/JavaScript … isn't installed` | Run `npm install` in the project (or `npm install -g typescript`). |
+| `… isn't installed. Using the general analyzer for TypeScript/JavaScript instead.` | For precise TypeScript analysis, run `npm install` in the project (or `npm install -g typescript`). |
+| `… files in go, java … aren't analyzed` | `pip install "codefactory[languages] @ git+https://github.com/dominickkubica/codefactory"` |
+| `SKILL.md is from an older version` | `codefactory skill` (or `codefactory update`) rewrites it; commit the change. |
 | `Node.js isn't installed` | Install Node.js, or analyze only Python with `--lang python`. |
 | `can't save …: the folder … doesn't exist` | Pick an existing folder with `-o`. On Windows a OneDrive-synced Desktop lives under `OneDrive\Desktop`. |
 | `factory.toml isn't valid TOML` | The message names the line; fix the file. |
