@@ -8,7 +8,10 @@ description: Map this codebase's structure (layers, who calls what) and find cop
 `codefactory` statically analyzes this repo (Python, TypeScript/JavaScript) into a call graph and lists issues with
 `file:line`. The first run takes a few seconds to ~30 s; later runs reuse `.codefactory/graph.json` until a source
 file changes. Run it from the repo root. If the command isn't found, use `python -m codefactory`; if it isn't
-installed at all, `pip install git+https://github.com/dominickkubica/codefactory`. If a command below is missing or
+installed at all, `pip install "codefactory[languages] @ git+https://github.com/dominickkubica/codefactory"`.
+It reads Python and TypeScript/JavaScript precisely; Go, Java, Kotlin, Swift, Rust, C/C++, C#, Ruby, PHP and others
+through tree-sitter, matching calls by name, so for those languages treat call, impact and unused findings as leads
+to confirm in the code. Big repositories are fine: files are parsed in parallel and cached per file. If a command below is missing or
 an option is rejected, run `codefactory update` (this file refreshes itself to match the installed version).
 
 ## When to use which command

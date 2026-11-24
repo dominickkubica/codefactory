@@ -27,7 +27,16 @@ codefactory --version
   in order: the analyzed project's own `node_modules/typescript` (so `npm install` in the project is enough), a global
   install (`npm install -g typescript`), or the folder in the `CODEFACTORY_TYPESCRIPT` environment variable. Without
   any of them, Python is still analyzed and TypeScript is skipped with a note.
+- **Every other language** (Go, Java, Kotlin, Swift, Rust, C/C++, C#, Ruby, PHP, Scala, Dart, Lua, Elixir…) needs the
+  optional language pack: `pip install "codefactory[languages] @ git+https://github.com/dominickkubica/codefactory"`
+  (or `pip install tree-sitter tree-sitter-language-pack`). Each language's grammar downloads the first time it's
+  needed and is cached, so after that it works offline. Without the pack, those files are listed in the review as
+  not analyzed. Without TypeScript, the pack also analyzes TypeScript/JavaScript, matching calls by name.
 - `python -m codefactory …` works the same as `codefactory …`.
+
+**Big codebases.** Files are parsed on every core (`CODEFACTORY_JOBS=N` to limit it) and the results are cached per
+file in `.codefactory/`, so later runs re-read only what changed. `--no-cache` ignores every cache. `--lang python`,
+`--lang typescript` or `--lang other` limit the analysis to one analyzer.
 
 Every command takes the repository as an optional path (default: the current folder). Commands that take a name
 (`context`, `trace`, `path`, `prompt`, `query`) take the path first when you give one: `codefactory trace path/to/repo checkout`.

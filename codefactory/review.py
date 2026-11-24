@@ -20,6 +20,7 @@ from .plan import make_plan
 SEV = ["Critical", "High", "Medium", "Low"]
 POINTS = {"Critical": 30, "High": 10, "Medium": 3, "Low": 1}
 CAPS = {"Medium": 24, "Low": 6}  # many small issues shouldn't outweigh one serious one
+TS_EXT = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts")
 OTHER_CODE = {
     ".swift": "Swift",
     ".kt": "Kotlin",
@@ -82,6 +83,7 @@ class Review:
         for f in g["flags"]:
             self.by_kind[f["kind"]].append(f)
         self.code_fns = [f for f in g["functions"] if f["kind"] != "module" and not is_test(f["file"])]
+        self._strengths: list[str] | None = None
 
     def add(self, *a, **k) -> None:
         self.findings.append(Finding(*a, **k))
@@ -689,6 +691,11 @@ class Review:
         )
 
     def strengths(self) -> list[str]:
+        if self._strengths is None:
+            self._strengths = self._find_strengths()
+        return self._strengths
+
+    def _find_strengths(self) -> list[str]:
         r, s, out = self.repo, self.scan, []
         if not self.by_kind["cycle"]:
             out.append("No import loops: every module can be loaded and understood on its own.")
@@ -708,11 +715,8 @@ class Review:
             out.append(f"Reproducible installs: {', '.join(r['locks'])} committed.")
         if r["runtime_pin"]:
             out.append(f"Runtime version pinned ({', '.join(r['runtime_pin'])}).")
-        copied = sum(
-            f["loc"]
-            for f in self.code_fns
-            if any(x["target"] == f["id"] for x in self.by_kind["duplicate"] + self.by_kind["similar"])
-        )
+        dup_targets = {x["target"] for x in self.by_kind["duplicate"] + self.by_kind["similar"]}
+        copied = sum(f["loc"] for f in self.code_fns if f["id"] in dup_targets)
         total = max(1, sum(f["loc"] for f in self.code_fns))
         if copied / total < 0.02:
             out.append(f"Little copied code ({round(100 * copied / total, 1)}% of function lines).")
@@ -758,10 +762,12 @@ class Review:
 
     def limits(self) -> list[str]:
         analyzed = Counter(Path(f["id"]).suffix for f in self.g["files"])
+        seen = {f["id"] for f in self.g["files"]}
         other = Counter()
         skip = {".git", "node_modules", ".venv", "venv", "dist", "build", ".codefactory", "__pycache__", ".expo", "Pods"}
         for p in self.root.rglob("*"):
-            if p.is_file() and p.suffix in OTHER_CODE and not (set(p.relative_to(self.root).parts) & skip):
+            rel = p.relative_to(self.root)
+            if p.is_file() and p.suffix in OTHER_CODE and not (set(rel.parts) & skip) and rel.as_posix() not in seen:
                 other[OTHER_CODE[p.suffix]] += 1
         out = [
             f"Analyzed {len(self.g['files'])} files ({', '.join(f'{n} {ext}' for ext, n in analyzed.most_common(6))}) "
@@ -776,7 +782,19 @@ class Review:
                 + ")."
             )
         if other:
-            out.append("Not analyzed (no analyzer yet): " + ", ".join(f"{n} {lang}" for lang, n in other.most_common()) + ".")
+            from .analyzers.generic import available
+
+            why = (
+                "generated, too large or not parseable"
+                if available()
+                else 'install the language pack to include them: pip install "codefactory[languages]"'
+            )
+            out.append(f"Not analyzed ({why}): " + ", ".join(f"{n} {lang}" for lang, n in other.most_common()) + ".")
+        if any(Path(f["id"]).suffix not in (".py", *TS_EXT) for f in self.g["files"]):
+            out.append(
+                "Languages other than Python and TypeScript/JavaScript are analyzed by tree-sitter, matching calls by "
+                "name: their unused-code and call findings are hints."
+            )
         out += [
             "Calls through dynamic dispatch (callbacks in variables, getattr, untyped objects) can be missing, so "
             "'unused' and 'no test reaches it' are hints.",

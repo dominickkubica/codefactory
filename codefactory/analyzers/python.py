@@ -8,12 +8,12 @@ doesn't look dead.
 
 from __future__ import annotations
 
-import ast
-import hashlib
 from collections import Counter
 from pathlib import Path
 
 from ..graph import Edge, File, Function, Graph, Site
+from . import parallel
+from .python_parse import parse_module
 
 
 def iter_files(root: Path, ignore: list[str]) -> list[Path]:
@@ -36,190 +36,17 @@ def module_name(rel: Path) -> str:
     return ".".join(parts)
 
 
-def _preorder(node):
-    stack = [node]
-    while stack:
-        n = stack.pop()
-        yield n
-        stack.extend(reversed(list(ast.iter_child_nodes(n))))
-
-
-def shape_of(node) -> tuple[str, str]:
-    """(hash, tokens) of a function's structure, in source order. Local names (arguments, variables) and the
-    docstring are blanked out, so a copy with renamed variables still matches; names it uses from outside (calls,
-    attributes) are kept, so two small functions that merely look alike don't. The tokens feed near-duplicate
-    detection; the hash, exact duplicates."""
-    body = list(node.body)
-    if (
-        body
-        and isinstance(body[0], ast.Expr)
-        and isinstance(body[0].value, ast.Constant)
-        and isinstance(body[0].value.value, str)
-    ):
-        body = body[1:]
-    nodes = [n for stmt in body for n in _preorder(stmt)]
-    local = {a.arg for a in ast.walk(node.args) if isinstance(a, ast.arg)}
-    local |= {n.id for n in nodes if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store)}
-    if len(nodes) < 15:  # a line or two (raise NotImplementedError, return self.x): alike by nature, not copies
-        return "", ""
-    parts = []
-    for n in nodes:
-        if True:
-            parts.append(type(n).__name__)
-            if hasattr(n, "op"):
-                parts.append(type(n.op).__name__)
-            elif isinstance(n, ast.Compare):
-                parts += [type(o).__name__ for o in n.ops]
-            elif isinstance(n, ast.Attribute):
-                parts.append(n.attr)
-            elif isinstance(n, ast.Name) and n.id not in local:
-                parts.append(n.id)
-            elif isinstance(n, ast.Constant) and isinstance(n.value, str):
-                # a string's words count: two functions differing only in their SQL or messages aren't copies
-                parts += [f"S:{w}" for w in n.value.split()[:24]]
-            elif isinstance(n, ast.Constant) and isinstance(n.value, (int, float)) and not isinstance(n.value, bool):
-                parts.append(f"N:{n.value}")
-    text = " ".join(parts)
-    return hashlib.sha1(text.encode("utf-8", "surrogatepass")).hexdigest()[:16], text
-
-
-# Calls that leave the process: a database, files, the network, other programs. Matched on calls the analyzer
-# couldn't resolve to the codebase's own functions (those are followed instead).
-DB_METHODS = {
-    "execute",
-    "executemany",
-    "executescript",
-    "fetchone",
-    "fetchall",
-    "fetchmany",
-    "commit",
-    "rollback",
-    "scalars",
-    "scalar",
-    "query",
-    "bulk_create",
-    "bulk_update",
-    "get_or_create",
-    "update_or_create",
-}
-IO_MODULES = {
-    "requests",
-    "httpx",
-    "urllib",
-    "aiohttp",
-    "subprocess",
-    "socket",
-    "boto3",
-    "redis",
-    "shutil",
-    "smtplib",
-    "ftplib",
-    "sqlite3",
-    "psycopg",
-    "psycopg2",
-    "pymongo",
-    "asyncpg",
-}
-FILE_METHODS = {"read_text", "write_text", "read_bytes", "write_bytes", "urlopen", "iterdir", "glob", "rglob"}
-
-
-def io_call(func: ast.AST, call: ast.Call | None = None) -> str | None:
-    """The I/O call's name ("cursor.execute"), or None. A SQL string starting with SELECT marks a read."""
-    sink = _io_call(func)
-    if sink and call is not None and call.args and isinstance(call.args[0], ast.Constant) and isinstance(call.args[0].value, str):
-        verb = call.args[0].value.lstrip().split(" ", 1)[0].upper()
-        if verb in ("SELECT", "WITH"):
-            sink += '("SELECT …")'
-    return sink
-
-
-def _io_call(func: ast.AST) -> str | None:
-    dotted = _dotted(func) or ""
-    last = func.attr if isinstance(func, ast.Attribute) else func.id if isinstance(func, ast.Name) else ""
-    head = dotted.split(".")[0]
-    if isinstance(func, ast.Name) and last in ("open", "urlopen"):
-        return last
-    if head in IO_MODULES or ".objects." in f".{dotted}." or dotted in ("time.sleep", "asyncio.sleep"):
-        return dotted
-    if isinstance(func, ast.Attribute) and (last in DB_METHODS or last in FILE_METHODS):
-        return dotted or last
-    return None
-
-
-LOOPS = (ast.For, ast.AsyncFor, ast.While)
-COMPREHENSIONS = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
-SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
-
-
-SMALL = 50
-LITERALS = (ast.List, ast.Tuple, ast.Set, ast.Dict)
-
-
-def const_iterable(e: ast.AST, consts: set[str]) -> bool:
-    """A sequence whose length is fixed in the code: a literal, a module-level constant holding one, range(N) or
-    x[:N] with a small N, or one of those through .items()/.keys()/.values(), sorted(), enumerate(), …"""
-    if isinstance(e, LITERALS):
-        return True
-    if isinstance(e, ast.Name):
-        return e.id in consts
-    if isinstance(e, ast.Attribute):
-        return e.attr in consts or (_dotted(e) or "") in consts
-    if isinstance(e, ast.Subscript) and isinstance(e.slice, ast.Slice):
-        up = e.slice.upper
-        return isinstance(up, ast.Constant) and isinstance(up.value, int) and up.value <= SMALL
-    if isinstance(e, ast.Call):
-        f = e.func
-        if isinstance(f, ast.Name) and f.id == "range" and e.args:
-            last = e.args[1] if len(e.args) > 1 else e.args[0]
-            return isinstance(last, ast.Constant) and isinstance(last.value, int) and last.value <= SMALL
-        if isinstance(f, ast.Name) and f.id in ("sorted", "reversed", "enumerate", "list", "tuple", "set", "zip") and e.args:
-            return all(const_iterable(a, consts) for a in e.args[:2])
-        if isinstance(f, ast.Attribute) and f.attr in ("items", "keys", "values"):
-            return const_iterable(f.value, consts)
-    return False
-
-
-def walk_loops(nodes, consts: set[str] | None = None):
-    """Every node under `nodes`, with whether it runs once per iteration of a loop (for/while/comprehension), whether
-    that's a for/while statement (where an await waits on each round in turn), and whether every loop around it goes
-    over a list fixed in the code (so its rounds can't grow with the data). A nested def starts afresh."""
-    consts = consts or set()
-    stack = [(n, False, False, True) for n in reversed(list(nodes))]
-    while stack:
-        n, loop, stmt, bounded = stack.pop()
-        yield n, loop, stmt, loop and bounded
-        if isinstance(n, (ast.For, ast.AsyncFor)):
-            inner = bounded and const_iterable(n.iter, consts)
-            kids = [(n.target, loop, stmt, bounded), (n.iter, loop, stmt, bounded)] + [
-                (c, True, True, inner) for c in n.body + n.orelse
-            ]
-        elif isinstance(n, ast.While):
-            kids = [(n.test, True, True, False)] + [(c, True, True, False) for c in n.body + n.orelse]
-        elif isinstance(n, COMPREHENSIONS):
-            gens = n.generators
-            inner = bounded and all(const_iterable(g.iter, consts) for g in gens)
-            kids = [(gens[0].iter, loop, stmt, bounded)] + [
-                (c, True, stmt, inner) for c in ast.iter_child_nodes(n) if c is not gens[0]
-            ]
-            kids += [(c, True, stmt, inner) for c in ast.iter_child_nodes(gens[0]) if c is not gens[0].iter]
-        elif isinstance(n, SCOPES):
-            kids = [(c, False, False, True) for c in ast.iter_child_nodes(n)]
-        else:
-            kids = [(c, loop, stmt, bounded) for c in ast.iter_child_nodes(n)]
-        stack.extend(reversed(kids))
-
-
 class _Module:
-    def __init__(self, rel: str, name: str, tree: ast.Module, is_pkg: bool):
-        self.rel, self.name, self.tree, self.is_pkg = rel, name, tree, is_pkg
+    def __init__(self, rel: str, name: str, data: dict, is_pkg: bool):
+        self.rel, self.name, self.data, self.is_pkg = rel, name, data, is_pkg
         self.funcs: dict[str, Function] = {}  # qualname -> function
-        self.classes: set[str] = set()
+        self.classes: set[str] = set(data["classes"])
         self.aliases: dict[str, str] = {}  # local name -> module name
         self.symbols: dict[str, tuple[str, str]] = {}  # local name -> (module name, symbol)
-        self.exports: set[str] = set()
+        self.exports: set[str] = set(data["exports"])
         self.load_imports: set[str] = set()  # modules imported when this one loads (not inside functions or TYPE_CHECKING)
-        self.consts: set[str] = set()  # module-level names bound to a literal list / tuple / set / dict
-        self.tables: dict[str, ast.AST] = {}  # those literals: COMMANDS = {"run": (cmd_run, …)} is a dispatch table
+        self.consts: set[str] = set(data["consts"])  # module-level names bound to a literal list / tuple / set / dict
+        self.tables: dict[str, list] = data["tables"]  # their references: COMMANDS = {"run": (cmd_run, …)}
 
 
 def _resolve_relative(mod: _Module, level: int, target: str | None) -> str:
@@ -229,103 +56,43 @@ def _resolve_relative(mod: _Module, level: int, target: str | None) -> str:
     return ".".join([*base, target] if target else base)
 
 
-def _type_checking(test: ast.AST) -> bool:
-    return (isinstance(test, ast.Name) and test.id == "TYPE_CHECKING") or (
-        isinstance(test, ast.Attribute) and test.attr == "TYPE_CHECKING"
-    )
-
-
-def _imports(tree: ast.Module):
-    """Every import, with whether it runs when the module loads. Imports inside functions (often placed there to
-    avoid an import loop) and under `if TYPE_CHECKING:` don't: they can't make a loop at load time."""
-    stack = [(n, True) for n in reversed(tree.body)]
-    while stack:
-        n, at_load = stack.pop()
-        if isinstance(n, (ast.Import, ast.ImportFrom)):
-            yield n, at_load
-            continue
-        if isinstance(n, ast.If) and _type_checking(n.test):
-            kids = [(c, False) for c in n.body] + [(c, at_load) for c in n.orelse]
-        elif isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
-            kids = [(c, False) for c in ast.iter_child_nodes(n)]
-        else:
-            kids = [(c, at_load) for c in ast.iter_child_nodes(n)]
-        stack.extend(reversed(kids))
-
-
 def _collect(mod: _Module, known: set[str]) -> None:
-    for node in mod.tree.body:
-        value = node.value if isinstance(node, (ast.Assign, ast.AnnAssign)) else None
-        if isinstance(value, LITERALS):
-            for t in node.targets if isinstance(node, ast.Assign) else [node.target]:
-                if isinstance(t, ast.Name):
-                    mod.consts.add(t.id)
-                    mod.tables[t.id] = value
-    for node, at_load in _imports(mod.tree):
-        if isinstance(node, ast.Import):
-            for a in node.names:
-                if a.asname:
-                    mod.aliases[a.asname] = a.name
-                else:
-                    mod.aliases[a.name.split(".")[0]] = a.name.split(".")[0]
-                    mod.aliases[a.name] = a.name
-                if at_load:
-                    mod.load_imports.add(a.name)
+    for imp in mod.data["imports"]:
+        if imp[0] == "import":
+            _, name, asname, at_load = imp
+            if asname:
+                mod.aliases[asname] = name
+            else:
+                mod.aliases[name.split(".")[0]] = name.split(".")[0]
+                mod.aliases[name] = name
+            if at_load:
+                mod.load_imports.add(name)
         else:
-            src = _resolve_relative(mod, node.level, node.module) if node.level else (node.module or "")
-            for a in node.names:
-                local = a.asname or a.name
-                full = f"{src}.{a.name}" if src else a.name
-                if full in known:
-                    mod.aliases[local] = full
-                else:
-                    mod.symbols[local] = (src, a.name)
-                if at_load:
-                    mod.load_imports.add(full if full in known else src)
-    for node in mod.tree.body:
-        if (
-            isinstance(node, ast.Assign)
-            and any(isinstance(t, ast.Name) and t.id == "__all__" for t in node.targets)
-            and isinstance(node.value, (ast.List, ast.Tuple))
-        ):
-            mod.exports |= {e.value for e in node.value.elts if isinstance(e, ast.Constant)}
+            _, module, level, name, asname, at_load = imp
+            src = _resolve_relative(mod, level, module) if level else (module or "")
+            local = asname or name
+            full = f"{src}.{name}" if src else name
+            if full in known:
+                mod.aliases[local] = full
+            else:
+                mod.symbols[local] = (src, name)
+            if at_load:
+                mod.load_imports.add(full if full in known else src)
 
 
-def _add_function(mod: _Module, node, qualname: str, kind: str) -> Function:
-    end = getattr(node, "end_lineno", node.lineno)
-    # The same name defined twice (a property's getter and setter, a platform-specific redefinition): the later
-    # one gets its line in the id, and name lookups keep finding the first.
-    fid = f"{mod.rel}::{qualname}" if qualname not in mod.funcs else f"{mod.rel}::{qualname}@{node.lineno}"
-    shape, tokens = shape_of(node)
-    f = Function(
-        id=fid,
-        file=mod.rel,
-        name=node.name,
-        qualname=qualname,
-        line=node.lineno,
-        end=end,
-        loc=end - node.lineno + 1,
-        kind=kind,
-        decorated=bool(node.decorator_list),
-        exported=node.name in mod.exports or node.name == "main",
-        shape=shape,
-        tokens=tokens,
-    )
-    mod.funcs.setdefault(qualname, f)
-    return f
-
-
-def _index_defs(mod: _Module) -> list[tuple[Function, ast.AST, str | None]]:
-    """Top-level functions and class methods. Nested functions belong to the function that holds them."""
+def _functions(mod: _Module) -> list[tuple[Function, dict]]:
+    """Top-level functions and class methods. Nested functions belong to the function that holds them. The same name
+    defined twice (a property's getter and setter) gets its line in the id; name lookups keep finding the first."""
     out = []
-    for node in mod.tree.body:
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            out.append((_add_function(mod, node, node.name, "function"), node, None))
-        elif isinstance(node, ast.ClassDef):
-            mod.classes.add(node.name)
-            for item in node.body:
-                if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    out.append((_add_function(mod, item, f"{node.name}.{item.name}", "method"), item, node.name))
+    for d in mod.data["defs"]:
+        q = d["qualname"]
+        fid = f"{mod.rel}::{q}" if q not in mod.funcs else f"{mod.rel}::{q}@{d['line']}"
+        f = Function(
+            id=fid, file=mod.rel, name=d["name"], qualname=q, line=d["line"], end=d["end"], loc=d["end"] - d["line"] + 1,
+            kind=d["kind"], decorated=d["decorated"], exported=d["exported"], shape=d["shape"], tokens=d["tokens"],
+        )  # fmt: skip
+        mod.funcs.setdefault(q, f)
+        out.append((f, d))
     return out
 
 
@@ -367,150 +134,112 @@ class _Resolver:
             return self.in_module(*mod.symbols[name])
         return None
 
-    def attr(self, mod: _Module, node: ast.Attribute, cls: str | None) -> str | None:
-        v = node.value
-        if isinstance(v, ast.Name):
-            if v.id in ("self", "cls") and cls:
-                f = mod.funcs.get(f"{cls}.{node.attr}")
+    def attr(self, mod: _Module, base: str | None, attr: str, dotted: str | None, cls: str | None) -> str | None:
+        if base is not None:
+            if base in ("self", "cls") and cls:
+                f = mod.funcs.get(f"{cls}.{attr}")
                 return f.id if f else None
-            if v.id in mod.aliases:
-                return self.in_module(mod.aliases[v.id], node.attr)
-            if v.id in mod.classes:
-                f = mod.funcs.get(f"{v.id}.{node.attr}")
+            if base in mod.aliases:
+                return self.in_module(mod.aliases[base], attr)
+            if base in mod.classes:
+                f = mod.funcs.get(f"{base}.{attr}")
                 return f.id if f else None
-            if v.id in mod.symbols:  # an imported class: Class.method
-                src, cname = mod.symbols[v.id]
+            if base in mod.symbols:  # an imported class: Class.method
+                src, cname = mod.symbols[base]
                 m = self.modules.get(src)
-                f = m.funcs.get(f"{cname}.{node.attr}") if m else None
+                f = m.funcs.get(f"{cname}.{attr}") if m else None
                 return f.id if f else None
-        dotted = _dotted(node)
         if dotted:  # package.module.func
             modname, _, sym = dotted.rpartition(".")
-            head = modname.split(".")[0]
-            if head in mod.aliases:
+            if modname.split(".")[0] in mod.aliases:
                 return self.in_module(modname, sym)
         return None
 
-
-def _dotted(node: ast.AST) -> str | None:
-    parts = []
-    while isinstance(node, ast.Attribute):
-        parts.append(node.attr)
-        node = node.value
-    if isinstance(node, ast.Name):
-        parts.append(node.id)
-        return ".".join(reversed(parts))
-    return None
+    def expr(self, mod: _Module, e: list | None, cls: str | None) -> str | None:
+        if not e:
+            return None
+        if e[0] == "n":
+            return self.name(mod, e[1])
+        if e[0] == "a":
+            return self.attr(mod, e[1], e[2], e[3], cls)
+        return None
 
 
-def _edges_from(
-    body_nodes,
-    mod: _Module,
-    cls: str | None,
-    src_id: str,
-    res: _Resolver,
-    calls: Counter,
-    refs: Counter,
-    sites: list | None = None,
-    io: set | None = None,
-):
-    call_funcs = set()
-    # constants defined here, or imported by name from another module of the codebase
-    consts = mod.consts | {
-        local for local, (src, name) in mod.symbols.items() if src in res.modules and name in res.modules[src].consts
-    }
-    walked = list(walk_loops(body_nodes, consts))
-    for n, loop, stmt, bounded in walked:
-        if isinstance(n, ast.Await) and stmt and sites is not None:
-            sites.append(Site(src_id, "loop_await", n.lineno, bounded=bounded))
-        if isinstance(n, ast.Call):
-            call_funcs.add(id(n.func))
-            target = (
-                res.name(mod, n.func.id)
-                if isinstance(n.func, ast.Name)
-                else (res.attr(mod, n.func, cls) if isinstance(n.func, ast.Attribute) else None)
-            )
-            if target and target != src_id:
-                calls[(src_id, target)] += 1
-                if loop and sites is not None:
-                    sites.append(Site(src_id, "loop_call", n.lineno, target=target, bounded=bounded))
-            elif not target and isinstance(n.func, ast.Subscript):
-                # TABLE[key](…) / TABLE[key][0](…): one of the table's functions runs; link to all of them
-                root = n.func
-                while isinstance(root, ast.Subscript):
-                    root = root.value
-                table = mod.tables.get(root.id) if isinstance(root, ast.Name) else None
-                for ref in ast.walk(table) if table is not None else ():
-                    fid = (
-                        res.name(mod, ref.id)
-                        if isinstance(ref, ast.Name)
-                        else (res.attr(mod, ref, cls) if isinstance(ref, ast.Attribute) else None)
-                    )
+def _link(
+    evs: list, mod: _Module, cls: str | None, src_id: str, res: _Resolver, calls: Counter, refs: Counter,
+    consts: set[str], sites: list | None = None, io: set | None = None,
+) -> None:  # fmt: skip
+    """Resolves one body's events (see python_parse) into call and ref edges, loop sites and I/O."""
+    for ev in evs:
+        kind = ev[0]
+        if kind == "w":
+            if sites is not None:
+                sites.append(Site(src_id, "loop_await", ev[1], bounded=ev[2] is not None and all(d in consts for d in ev[2])))
+        elif kind == "c":
+            _, line, loop, deps, e, sink, attr = ev
+            bounded = deps is not None and all(d in consts for d in deps)
+            target = res.expr(mod, e, cls)
+            if target:
+                if target != src_id:
+                    calls[(src_id, target)] += 1
+                    if loop and sites is not None:
+                        sites.append(Site(src_id, "loop_call", line, target=target, bounded=bounded))
+            elif e and e[0] == "s":  # TABLE[key](…): one of the table's functions runs; link to all of them
+                for ref in mod.tables.get(e[1], ()):
+                    fid = res.expr(mod, ref, cls)
                     if fid and fid != src_id:
                         refs[(src_id, fid)] += 1
-            elif not target:
-                sink = io_call(n.func, n)
+            else:
                 if sink and io is not None:
                     io.add(sink)
                     if loop and sites is not None:
-                        sites.append(Site(src_id, "loop_io", n.lineno, detail=sink, bounded=bounded))
-                if isinstance(n.func, ast.Attribute) and n.func.attr in res.unique_methods:
-                    guess = res.unique_methods[n.func.attr]
+                        sites.append(Site(src_id, "loop_io", line, detail=sink, bounded=bounded))
+                if attr in res.unique_methods:
+                    guess = res.unique_methods[attr]
                     if guess != src_id:
                         refs[(src_id, guess)] += 1
-    for n, _, _, _ in walked:
-        if True:
-            if id(n) in call_funcs:
-                continue
-            target = None
-            if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load):
-                target = res.name(mod, n.id)
-            elif isinstance(n, ast.Attribute) and isinstance(n.ctx, ast.Load):
-                target = res.attr(mod, n, cls)
+        else:
+            target = res.expr(mod, ev[1], cls)
             if target and target != src_id:
                 refs[(src_id, target)] += 1
 
 
-def analyze_python(root: Path, ignore: list[str]) -> Graph:
+def analyze_python(root: Path, ignore: list[str], cache: bool = True) -> Graph:
     g = Graph(root=str(root), language="python")
+    paths = [p.relative_to(root) for p in iter_files(root, ignore)]
+    parsed = parallel.run(root, "python", [(rel.as_posix(), (str(root / rel), rel.as_posix())) for rel in paths], parse_module,
+                          tool="python-ir-1", cache=cache)  # fmt: skip
     modules: dict[str, _Module] = {}
-    for path in iter_files(root, ignore):
-        rel = path.relative_to(root)
-        try:
-            text = path.read_text(encoding="utf-8", errors="replace")
-            tree = ast.parse(text, filename=str(rel))
-        except (SyntaxError, ValueError):
-            continue  # not valid for this Python: skip rather than fail the whole map
-        m = _Module(rel.as_posix(), module_name(rel), tree, rel.name == "__init__.py")
+    for rel in paths:
+        data = parsed.get(rel.as_posix())
+        if data is None:
+            continue
+        m = _Module(rel.as_posix(), module_name(rel), data, rel.name == "__init__.py")
         modules[m.name] = m
-        g.files.append(File(id=m.rel, module=m.name, loc=len(text.splitlines())))
+        g.files.append(File(id=m.rel, module=m.name, loc=data["loc"]))
     known = set(modules)
     for m in modules.values():
         _collect(m, known)
-    defs = {name: _index_defs(m) for name, m in modules.items()}
+    defs = {name: _functions(m) for name, m in modules.items()}
     res = _Resolver(modules)
     calls: Counter = Counter()
     refs: Counter = Counter()
     imports: Counter = Counter()
     for name, m in modules.items():
+        # constants defined here, or imported by name from another module of the codebase
+        consts = m.consts | {local for local, (src, sym) in m.symbols.items() if src in modules and sym in modules[src].consts}
         top = Function(
             id=f"{m.rel}::<module>", file=m.rel, name="<module>", qualname="<module>", line=1, end=1, loc=0, kind="module"
         )
         g.functions.append(top)
         top_io: set[str] = set()
-        top_level = [n for n in m.tree.body if not isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
-        for n in top_level:  # class bodies' own statements, decorators and module code
-            if isinstance(n, ast.ClassDef):
-                stmts = [s for s in n.body if not isinstance(s, (ast.FunctionDef, ast.AsyncFunctionDef))]
-                stmts += [d for s in n.body if isinstance(s, (ast.FunctionDef, ast.AsyncFunctionDef)) for d in s.decorator_list]
-                _edges_from(stmts + n.decorator_list, m, n.name, top.id, res, calls, refs, g.sites, top_io)
-            else:
-                _edges_from([n], m, None, top.id, res, calls, refs, g.sites, top_io)
-        for fn, node, cls in defs[name]:
+        for cls, evs in m.data["top"]:  # class bodies' own statements, decorators and module code
+            _link(evs, m, cls, top.id, res, calls, refs, consts, g.sites, top_io)
+        for fn, d in defs[name]:
             g.functions.append(fn)
             fn_io: set[str] = set()
-            _edges_from(node.decorator_list, m, cls, top.id, res, calls, refs)
-            _edges_from(node.body, m, cls, fn.id, res, calls, refs, g.sites, fn_io)
+            _link(d["deco"], m, d["cls"], top.id, res, calls, refs, consts)
+            _link(d["body"], m, d["cls"], fn.id, res, calls, refs, consts, g.sites, fn_io)
             fn.io = sorted(fn_io)
         top.io = sorted(top_io)
         for t in m.load_imports:
@@ -521,7 +250,7 @@ def analyze_python(root: Path, ignore: list[str]) -> Graph:
             if dst and dst.rel != m.rel:
                 imports[(m.rel, dst.rel)] += 1
     # obj.name anywhere (obj unknown): a method of that name may be what runs, so it isn't reported as unused.
-    attr_names = {n.attr for m in modules.values() for n in ast.walk(m.tree) if isinstance(n, ast.Attribute)}
+    attr_names = {a for m in modules.values() for a in m.data["attrs"]}
     for fn in g.functions:
         if fn.kind == "method" and fn.name in attr_names:
             fn.dynamic = True

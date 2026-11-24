@@ -19,7 +19,7 @@ from pathlib import Path
 
 from . import __version__
 
-SOURCE = "git+https://github.com/dominickkubica/codefactory"
+SOURCE = "codefactory[languages] @ git+https://github.com/dominickkubica/codefactory"
 STAMP = re.compile(r"<!-- codefactory skill (\S+) -->")
 HOOK_NAME = "codefactory.sh"
 HOOK_COMMAND = f'"$CLAUDE_PROJECT_DIR"/.claude/hooks/{HOOK_NAME}'
@@ -86,7 +86,7 @@ install() { # $1: what to install
 
 if [ -f ../codefactory/pyproject.toml ]; then
   # a checkout of codefactory next to this repository (a cloud session with both attached): use it as is
-  "$PY" -c "import codefactory" 2>/dev/null || install -e ../codefactory
+  "$PY" -c "import codefactory" 2>/dev/null || install -e "../codefactory[languages]"
 elif ! "$PY" -c "import codefactory" 2>/dev/null || [ -z "$(find "$STAMP" -mmin -1440 2>/dev/null)" ]; then
   install "$SOURCE" && touch "$STAMP"
 fi

@@ -14,7 +14,7 @@ const EXT = /\.(tsx?|jsx?|mjs|cjs|mts|cts)$/;
 const rel = (f) => path.relative(root, f).split(path.sep).join("/");
 const skipped = (f) => {
   const parts = rel(f).split("/");
-  return parts.slice(0, -1).some((p) => ignore.has(p)) || /\.d\.[mc]?ts$/.test(f) || !EXT.test(f) || rel(f).startsWith("..");
+  return parts.slice(0, -1).some((p) => ignore.has(p)) || /\.d\.[mc]?ts$|\.min\.[mc]?js$/.test(f) || !EXT.test(f) || rel(f).startsWith("..");
 };
 
 function walkDir(dir, out) {

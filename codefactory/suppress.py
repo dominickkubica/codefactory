@@ -38,18 +38,22 @@ def _parse(rest: str) -> tuple[set[str], str]:
 
 class _Sources:
     def __init__(self, root: Path):
-        self.root, self.cache = root, {}
+        self.root, self.cache, self.rules = root, {}, {}
 
     def lines(self, file: str) -> list[str]:
+        """The file's lines, or none when it has no codefactory comment at all (most files: nothing to look up)."""
         if file not in self.cache:
             try:
-                self.cache[file] = (self.root / file).read_text(encoding="utf-8", errors="replace").splitlines()
+                text = (self.root / file).read_text(encoding="utf-8", errors="replace")
             except OSError:
-                self.cache[file] = []
+                text = ""
+            self.cache[file] = text.splitlines() if MARK.search(text) else []
         return self.cache[file]
 
     def file_rules(self, file: str) -> list[tuple[set[str], str]]:
-        return [_parse(m.group(2)) for line in self.lines(file) if (m := MARK.search(line)) and m.group(1)]
+        if file not in self.rules:
+            self.rules[file] = [_parse(m.group(2)) for line in self.lines(file) if (m := MARK.search(line)) and m.group(1)]
+        return self.rules[file]
 
 
 def apply_suppressions(g: Graph, root: Path, cfg: Config) -> None:

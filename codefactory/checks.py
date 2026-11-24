@@ -19,7 +19,11 @@ from .paths import is_test
 from .suppress import MARK
 from .suppress import _parse as parse_mark
 
-SRC_EXT = (".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts")
+SRC_EXT = (
+    ".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts",
+    ".go", ".java", ".kt", ".kts", ".swift", ".rs", ".c", ".h", ".cc", ".cpp", ".hpp", ".cs", ".rb", ".php", ".scala",
+    ".dart", ".lua", ".ex", ".exs", ".m", ".mm", ".sh",
+)  # fmt: skip
 
 
 @dataclass
@@ -99,6 +103,21 @@ INTERP = re.compile(r"\$\{([^}]+)\}|\{([^}:!]+)[^}]*\}")
 CONSTANT = re.compile(r"^[A-Z0-9_]+$|^\w+\.length$|^\w+\.map\(\(\) => ['\"]\?['\"]\)\.join\(['\"], ?['\"]\)$")
 
 
+# One search per group over the whole file first: most files match none, and then no line is scanned for it.
+def _group(pats: list[re.Pattern]) -> re.Pattern:
+    """The patterns as one alternation, each keeping its own case-insensitivity."""
+    parts = []
+    for p in pats:
+        body = p.pattern[4:] if p.pattern.startswith("(?i)") else p.pattern
+        insensitive = p.pattern.startswith("(?i)") or p.flags & re.I
+        parts.append(f"(?i:{body})" if insensitive else f"(?:{body})")
+    return re.compile("|".join(parts))
+
+
+ANY = {k: _group(pats) for k, pats in PATTERNS.items()}
+SQL_HINT = re.compile(r"execute|query|raw|Async|Sync\s*\(")
+
+
 def _excerpt(line: str) -> str:
     t = line.strip()
     return t if len(t) <= 140 else t[:137] + "…"
@@ -116,7 +135,30 @@ def _ignored(lines: list[str], i: int, key: str, file_kinds: set[str] | None) ->
     return False
 
 
+CHECK_KEYS = [*PATTERNS, "sql_built", "module_state", "fetch_no_timeout", "hosts", "error_boundary", "swallowed_ok"]
+
+
 def scan_sources(root: Path, files: list[str]) -> dict[str, Check]:
+    """Every source file's pattern hits, in parallel and cached per file (see analyzers/parallel)."""
+    from .analyzers import parallel
+
+    items = [(fid, (str(root), fid)) for fid in files if fid.endswith(SRC_EXT)]
+    per_file = parallel.run(root, "checks", items, _scan_one, tool="checks")
+    out = {k: Check(k) for k in CHECK_KEYS}
+    for fid in files:
+        for key, got in per_file.get(fid, {}).items():
+            out[key].hits += [Evidence(fid, line, text) for line, text in got["hits"]]
+            for k, v in got["data"].items():
+                out[key].data.setdefault(k, v)  # hosts: the first file that uses each
+    return out
+
+
+def _scan_one(root: str, fid: str) -> dict:
+    found = _scan(Path(root), [fid])
+    return {k: {"hits": [[e.line, e.text] for e in c.hits], "data": c.data} for k, c in found.items() if c.hits or c.data}
+
+
+def _scan(root: Path, files: list[str]) -> dict[str, Check]:
     keys = [*PATTERNS, "sql_built", "module_state", "fetch_no_timeout", "hosts", "error_boundary", "swallowed_ok"]
     out = {k: Check(k) for k in keys}
     for fid in files:
@@ -134,12 +176,16 @@ def scan_sources(root: Path, files: list[str]) -> dict[str, Check]:
         def hit(key: str, i: int, lines=lines, file_kinds=file_kinds) -> bool:  # bound to this file's lines
             return not _ignored(lines, i, key, file_kinds)
 
+        present = {k: v for k, v in PATTERNS.items() if (not test or k == "secret") and ANY[k].search(text)}
+        sql_here = not test and SQL_HINT.search(text) is not None
+        hosts_here = not test and "://" in text
+        boundary_here = re.search(r"ErrorBoundary|componentDidCatch|getDerivedStateFromError", text) is not None
+        state_here = not test and fid.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs")) and "let " in text
+
         for i, line in enumerate(lines, 1):
             if len(line) > 2000:  # minified or data
                 continue
-            for key, pats in PATTERNS.items():
-                if test and key != "secret":  # tests may do anything on purpose; a leaked key is still leaked
-                    continue
+            for key, pats in present.items():  # tests: only secrets (a test may do anything; a leaked key is leaked)
                 if any(p.search(line) for p in pats) and hit(key, i):
                     if key == "secret" and re.search(r"(?i)example|placeholder|dummy|xxxx|your[_-]|changeme|<", line):
                         continue
@@ -147,7 +193,7 @@ def scan_sources(root: Path, files: list[str]) -> dict[str, Check]:
                         out["swallowed_ok"].hits.append(Evidence(fid, i, why))  # deliberate: counted, not reported
                         continue
                     out[key].hits.append(Evidence(fid, i, _excerpt(line)))
-            if not test and (m := SQL_CALL.search(line)) and hit("sql_built", i):
+            if sql_here and (m := SQL_CALL.search(line)) and hit("sql_built", i):
                 stmt = " ".join(lines[i - 1 : i + 4])
                 if SQL_WORD.search(stmt):
                     py_format = not m.group(1).startswith("`")  # {name} is interpolation only in Python strings
@@ -161,18 +207,13 @@ def scan_sources(root: Path, files: list[str]) -> dict[str, Check]:
                     if risky or m.group(1).endswith(("%", "+")) or ".format" in m.group(1):
                         out["sql_built"].hits.append(Evidence(fid, i, _excerpt(line)))
                         out["sql_built"].data.setdefault(f"{fid}:{i}", risky[:4])
-            if not test and not re.match(r"\s*(//|#|\*|/\*)", line):  # hosts the code uses, not ones a comment mentions
+            if hosts_here and "://" in line and not re.match(r"\s*(//|#|\*|/\*)", line):  # used, not just mentioned
                 for host in HOST.findall(line):
                     if host not in out["hosts"].data and not re.search(r"example\.|localhost|w3\.org|schema", host):
                         out["hosts"].data[host] = f"{fid}:{i}"
-            if re.search(r"ErrorBoundary|componentDidCatch|getDerivedStateFromError", line):
+            if boundary_here and re.search(r"ErrorBoundary|componentDidCatch|getDerivedStateFromError", line):
                 out["error_boundary"].hits.append(Evidence(fid, i, _excerpt(line)))
-            if (
-                not test
-                and fid.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs"))
-                and re.match(r"^(?:export\s+)?let\s+\w+", line)
-                and hit("module_state", i)
-            ):
+            if state_here and re.match(r"^(?:export\s+)?let\s+\w+", line) and hit("module_state", i):
                 out["module_state"].hits.append(Evidence(fid, i, _excerpt(line)))
         if (
             not test

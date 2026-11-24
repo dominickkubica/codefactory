@@ -7,7 +7,7 @@ from collections import defaultdict
 from .config import Config
 from .efficiency import efficiency_flags
 from .graph import Flag, Graph
-from .paths import is_test
+from .paths import is_test, platform_variants
 from .similar import near_duplicates
 
 SEVERITY_ORDER = {"high": 0, "warn": 1, "info": 2}
@@ -112,7 +112,9 @@ def duplicates(g: Graph, cfg: Config) -> list[Flag]:
         if fn.shape and fn.loc >= cfg.duplicate_min_lines:
             groups[fn.shape].append(fn)
     out = []
-    for fns in groups.values():
+    for group in groups.values():
+        # the same file for another platform (x_linux.go / x_darwin.go) copies on purpose: keep one of each set
+        fns = [f for i, f in enumerate(group) if not any(platform_variants(f.file, o.file) for o in group[:i])]
         if len(fns) < 2:
             continue
         ids = [f.id for f in fns]

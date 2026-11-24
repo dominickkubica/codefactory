@@ -2,7 +2,8 @@
 
 **See a codebase as a factory floor, find what's wrong with it, and turn that into work.**
 
-codefactory reads a Python or TypeScript/JavaScript repository without running it, builds a map of every file,
+codefactory reads a repository without running it (Python, TypeScript/JavaScript, Go, Java, Kotlin, Swift, Rust,
+C/C++, C#, Ruby, PHP and more), builds a map of every file,
 function and call, and checks that map for copied code, database calls inside loops, dead code, import loops and
 dozens of security, reliability and delivery problems. It shows the result as an interactive floor plan, writes a
 technical review, ranks the fixes, and hands each one to you, or to an AI coding agent, as a ready-made task.
@@ -33,9 +34,10 @@ the number of calls it carries. Dashed orange conveyors run backwards, from a lo
 
 Requires Python 3.11 or newer. TypeScript/JavaScript projects also need [Node.js](https://nodejs.org) and the
 project's dependencies installed (`npm install`), because codefactory uses the project's own TypeScript compiler.
+Other languages need the optional language pack (tree-sitter), installed with `[languages]`:
 
 ```bash
-pip install git+https://github.com/dominickkubica/codefactory
+pip install "codefactory[languages] @ git+https://github.com/dominickkubica/codefactory"
 cd path/to/your/repo
 
 codefactory view                 # the interactive map, in your browser
@@ -93,7 +95,19 @@ and anything intentional can be silenced with a comment that states why:
 // codefactory: ignore io_in_loop — one query per table, and there are seven
 ```
 
-On a 600-file React Native app, a full analysis takes about 30 seconds; Python runs at about 15 ms per file.
+Python and TypeScript are analyzed precisely (the standard library's parser; the TypeScript type checker). Other
+languages go through tree-sitter and match calls by name, so their call and unused-code findings are hints.
+
+**Speed.** Files are parsed on every core and cached one by one, so a repeat run re-reads only what changed:
+
+| Codebase (full review, 4 cores) | First run | One file changed | Nothing changed |
+|---|---|---|---|
+| A React Native app, 500 files, 33k lines | 14 s | 3 s (14 s for a TypeScript file\*) | 3 s |
+| Python's standard library and packages, 3,900 files, 1.7M lines | 48 s | 21 s | 5 s |
+| Go's standard library, 6,000 files, 2.4M lines | 65 s | | |
+
+\*The TypeScript type checker needs the whole program, so a TypeScript change re-runs it. Other commands (`flags`,
+`brief`, `context`, `plan`) answer from the cache in well under a second when nothing changed.
 
 ## Documentation
 
@@ -103,6 +117,5 @@ On a 600-file React Native app, a full analysis takes about 30 seconds; Python r
 
 ## Status
 
-Actively developed and used on real projects; at version 0.7. Python and TypeScript/JavaScript are supported;
-more languages are on the [roadmap](docs/DESIGN.md#roadmap). No license has been chosen yet, so all rights are
+Actively developed and used on real projects; at version 0.9. No license has been chosen yet, so all rights are
 reserved until one is.

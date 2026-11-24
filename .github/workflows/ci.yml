@@ -31,10 +31,15 @@ jobs:
         with:
           node-version: 22
       - run: npm install -g typescript@5.9.2
-      - run: python -m unittest discover -s tests -t .
+      - name: Tests without the optional language pack
+        run: python -m unittest discover -s tests -t .
+      - name: Tests with it (Go, Java, Ruby and more through tree-sitter)
+        run: |
+          pip install "tree-sitter>=0.25" "tree-sitter-language-pack>=1.0,<2"
+          python -m unittest discover -s tests -t .
       - name: Install as a user would, and run the command
         run: |
-          pip install .
+          pip install ".[languages]"
           codefactory --version
       - name: codefactory finds nothing serious in itself
         run: codefactory check .

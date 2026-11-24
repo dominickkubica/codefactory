@@ -12,7 +12,7 @@ import webbrowser
 from pathlib import Path
 
 from . import __version__
-from .analyzers import ANALYZERS, analyze
+from .analyzers import LANGUAGES, analyze
 from .baseline import baseline_path, compare, read_baseline, write_baseline
 from .brief import brief_markdown, context_data, context_markdown
 from .cache import load_cached, save_cache
@@ -31,9 +31,9 @@ from .trace import find_function, shortest_path, trace
 from .viewer import render_html
 
 
-def build(root: Path, languages: list[str] | None = None) -> Graph:
+def build(root: Path, languages: list[str] | None = None, cache: bool = True) -> Graph:
     cfg = load_config(root)
-    g = analyze(root, cfg.ignore, languages)
+    g = analyze(root, cfg.ignore, languages, cache)
     assign_layers(g, cfg)
     run_flags(g, cfg)
     if cfg.queries:
@@ -55,7 +55,7 @@ def load_graph(path: Path, languages: list[str] | None = None, cache: bool = Tru
         hit = load_cached(root, ignore)
         if hit is not None:
             return hit
-    graph = build(root, languages).to_dict()
+    graph = build(root, languages, cache).to_dict()
     if cache and not languages:
         save_cache(root, ignore, graph)
     return graph
@@ -445,7 +445,12 @@ Run `codefactory <command> --help` for a command's options.""",
         if name == "update":
             s.add_argument("--source", default=SKILL_SOURCE, help="where to install from (default: the GitHub repository)")
         if name not in ("skill", "update"):
-            s.add_argument("--lang", action="append", choices=sorted(ANALYZERS), help="only these languages")
+            s.add_argument(
+                "--lang",
+                action="append",
+                choices=LANGUAGES,
+                help="only these analyzers (other = every language but Python and TypeScript)",
+            )
             s.add_argument("--no-cache", action="store_true", help="analyze again even if nothing changed")
         if name in ("flags", "query", "trace", "path", "context", "plan"):
             s.add_argument("--json", action="store_true", help="machine-readable output")

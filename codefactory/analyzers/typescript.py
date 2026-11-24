@@ -7,6 +7,7 @@ then a global install (npm install -g typescript), or CODEFACTORY_TYPESCRIPT poi
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -24,13 +25,26 @@ class TypeScriptUnavailable(RuntimeError):
     pass
 
 
-def has_sources(root: Path, ignore: list[str]) -> bool:
+def sources_stamp(root: Path, ignore: list[str]) -> str:
+    """A fingerprint of every TypeScript/JavaScript file and tsconfig (empty when there are none)."""
     skip = set(ignore)
-    for _dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in skip]
-        if any(f.endswith(EXTENSIONS) and not f.endswith(".d.ts") for f in filenames):
-            return True
-    return False
+    h = hashlib.sha1()
+    found = False
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = sorted(d for d in dirnames if d not in skip)
+        for f in sorted(filenames):
+            if (f.endswith(EXTENSIONS) and not f.endswith(".d.ts")) or f.startswith(("tsconfig", "jsconfig", "package.json")):
+                found = found or f.endswith(EXTENSIONS)
+                try:
+                    st = os.stat(os.path.join(dirpath, f))
+                except OSError:
+                    continue
+                h.update(
+                    f"{os.path.relpath(os.path.join(dirpath, f), root)}|{st.st_size}|{st.st_mtime_ns}\n".encode(
+                        "utf-8", "surrogatepass"
+                    )
+                )
+    return h.hexdigest() if found else ""
 
 
 def find_typescript(root: Path, node: str) -> str:
@@ -54,10 +68,39 @@ def find_typescript(root: Path, node: str) -> str:
     )
 
 
-def analyze_typescript(root: Path, ignore: list[str]) -> Graph:
+def analyze_typescript(root: Path, ignore: list[str], cache: bool = True) -> Graph:
     g = Graph(root=str(root), language="typescript")
-    if not has_sources(root, ignore):
+    stamp = sources_stamp(root, ignore)
+    if not stamp:
         return g
+    from .parallel import _tool_hash
+
+    stamp = f"{stamp}|{_tool_hash()}"
+    saved = root / ".codefactory" / "typescript.json"
+    data = None
+    if cache:
+        try:
+            got = json.loads(saved.read_text(encoding="utf-8"))
+            data = got["data"] if got.get("stamp") == stamp else None
+        except (OSError, ValueError, KeyError):
+            data = None
+    if data is None:
+        data = _run_helper(root, ignore)
+        if cache:
+            try:
+                saved.parent.mkdir(exist_ok=True)
+                saved.write_text(json.dumps({"stamp": stamp, "data": data}), encoding="utf-8")
+            except OSError:
+                pass
+    g.files = [File(**f) for f in data["files"]]
+    g.functions = [Function(**f) for f in data["functions"]]
+    g.edges = [Edge(**e) for e in data["edges"]]
+    g.sites = [Site(**s) for s in data.get("sites", [])]
+    return g
+
+
+def _run_helper(root: Path, ignore: list[str]) -> dict:
+    """Runs ts_helper.js in Node over the whole project (the type checker needs all of it at once)."""
     node = shutil.which("node")
     if not node:
         raise TypeScriptUnavailable("TypeScript files found, but Node.js isn't installed (https://nodejs.org).")
@@ -72,9 +115,4 @@ def analyze_typescript(root: Path, ignore: list[str]) -> Graph:
     )
     if proc.returncode != 0:
         raise RuntimeError(f"The TypeScript analyzer failed:\n{proc.stderr.strip()[-2000:]}")
-    data = json.loads(proc.stdout)
-    g.files = [File(**f) for f in data["files"]]
-    g.functions = [Function(**f) for f in data["functions"]]
-    g.edges = [Edge(**e) for e in data["edges"]]
-    g.sites = [Site(**s) for s in data.get("sites", [])]
-    return g
+    return json.loads(proc.stdout)

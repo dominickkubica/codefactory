@@ -1,0 +1,327 @@
+"""The per-file half of the Python analyzer: one file's ast reduced to plain data (runs in a worker, cached per file).
+
+What a call or name refers to can depend on other modules, so nothing is resolved here. Each reference is kept as a
+small expression that python.py resolves once every module is known:
+  ["n", name]                       a plain name
+  ["a", base or None, attr, dotted]  obj.attr (base: the name at its root, when it's a plain name)
+  ["s", table]                      TABLE[key](…): a call through a dispatch table
+Events, in source order: ["c", line, in_loop, bounded, expr, io_sink, attr] for calls, ["w", line, bounded] for
+awaits in a for/while loop, then ["r", expr] for names used without being called. `bounded` is None (the loop's
+length depends on data) or the imported names that must be constants for it to be fixed in the code.
+"""
+
+from __future__ import annotations
+
+import ast
+import hashlib
+from pathlib import Path
+
+DB_METHODS = {
+    "execute", "executemany", "executescript", "fetchone", "fetchall", "fetchmany", "commit", "rollback", "scalars",
+    "scalar", "query", "bulk_create", "bulk_update", "get_or_create", "update_or_create",
+}  # fmt: skip
+IO_MODULES = {
+    "requests", "httpx", "urllib", "aiohttp", "subprocess", "socket", "boto3", "redis", "shutil", "smtplib", "ftplib",
+    "sqlite3", "psycopg", "psycopg2", "pymongo", "asyncpg",
+}  # fmt: skip
+FILE_METHODS = {"read_text", "write_text", "read_bytes", "write_bytes", "urlopen", "iterdir", "glob", "rglob"}
+COMPREHENSIONS = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
+SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
+FUNCS = (ast.FunctionDef, ast.AsyncFunctionDef)
+SMALL = 50
+LITERALS = (ast.List, ast.Tuple, ast.Set, ast.Dict)
+NONE: frozenset = frozenset()
+
+
+def _preorder(node):
+    stack = [node]
+    while stack:
+        n = stack.pop()
+        yield n
+        stack.extend(reversed(list(ast.iter_child_nodes(n))))
+
+
+def shape_of(node) -> tuple[str, str]:
+    """(hash, tokens) of a function's structure, in source order. Local names (arguments, variables) and the
+    docstring are blanked out, so a copy with renamed variables still matches; names it uses from outside (calls,
+    attributes) are kept, so two small functions that merely look alike don't. The tokens feed near-duplicate
+    detection; the hash, exact duplicates."""
+    body = list(node.body)
+    if (
+        body
+        and isinstance(body[0], ast.Expr)
+        and isinstance(body[0].value, ast.Constant)
+        and isinstance(body[0].value.value, str)
+    ):
+        body = body[1:]
+    nodes = [n for stmt in body for n in _preorder(stmt)]
+    local = {a.arg for a in ast.walk(node.args) if isinstance(a, ast.arg)}
+    local |= {n.id for n in nodes if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store)}
+    if len(nodes) < 15:  # a line or two (raise NotImplementedError, return self.x): alike by nature, not copies
+        return "", ""
+    parts = []
+    for n in nodes:
+        parts.append(type(n).__name__)
+        if hasattr(n, "op"):
+            parts.append(type(n.op).__name__)
+        elif isinstance(n, ast.Compare):
+            parts += [type(o).__name__ for o in n.ops]
+        elif isinstance(n, ast.Attribute):
+            parts.append(n.attr)
+        elif isinstance(n, ast.Name) and n.id not in local:
+            parts.append(n.id)
+        elif isinstance(n, ast.Constant) and isinstance(n.value, str):
+            # a string's words count: two functions differing only in their SQL or messages aren't copies
+            parts += [f"S:{w}" for w in n.value.split()[:24]]
+        elif isinstance(n, ast.Constant) and isinstance(n.value, (int, float)) and not isinstance(n.value, bool):
+            parts.append(f"N:{n.value}")
+    text = " ".join(parts)
+    return hashlib.sha1(text.encode("utf-8", "surrogatepass")).hexdigest()[:16], text
+
+
+def dotted(node: ast.AST) -> str | None:
+    parts = []
+    while isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        node = node.value
+    if isinstance(node, ast.Name):
+        parts.append(node.id)
+        return ".".join(reversed(parts))
+    return None
+
+
+def io_call(func: ast.AST, call: ast.Call | None = None) -> str | None:
+    """The I/O call's name ("cursor.execute"), or None. A SQL string starting with SELECT marks a read."""
+    full = dotted(func) or ""
+    last = func.attr if isinstance(func, ast.Attribute) else func.id if isinstance(func, ast.Name) else ""
+    head = full.split(".")[0]
+    sink = None
+    if isinstance(func, ast.Name) and last in ("open", "urlopen"):
+        sink = last
+    elif head in IO_MODULES or ".objects." in f".{full}." or full in ("time.sleep", "asyncio.sleep"):
+        sink = full
+    elif isinstance(func, ast.Attribute) and (last in DB_METHODS or last in FILE_METHODS):
+        sink = full or last
+    first = call.args[0] if call is not None and call.args else None
+    is_text = isinstance(first, ast.Constant) and isinstance(first.value, str)
+    if sink and is_text and first.value.lstrip().split(" ", 1)[0].upper() in ("SELECT", "WITH"):
+        sink += '("SELECT …")'
+    return sink
+
+
+def const_deps(e: ast.AST, local: set[str], maybe: set[str]) -> frozenset | None:
+    """A sequence whose length is fixed in the code (a literal, a module-level constant holding one, range(N) or
+    x[:N] with a small N, or one of those through .items()/sorted()/enumerate()…): the imported names that must turn
+    out to be constants for that to hold, or None if it isn't one."""
+    if isinstance(e, LITERALS):
+        return NONE
+    if isinstance(e, ast.Name):
+        return NONE if e.id in local else frozenset([e.id]) if e.id in maybe else None
+    if isinstance(e, ast.Attribute):
+        d = dotted(e) or ""
+        if e.attr in local or d in local:
+            return NONE
+        return frozenset([e.attr]) if e.attr in maybe else None
+    if isinstance(e, ast.Subscript) and isinstance(e.slice, ast.Slice):
+        up = e.slice.upper
+        return NONE if isinstance(up, ast.Constant) and isinstance(up.value, int) and up.value <= SMALL else None
+    if isinstance(e, ast.Call):
+        f = e.func
+        if isinstance(f, ast.Name) and f.id == "range" and e.args:
+            last = e.args[1] if len(e.args) > 1 else e.args[0]
+            return NONE if isinstance(last, ast.Constant) and isinstance(last.value, int) and last.value <= SMALL else None
+        if isinstance(f, ast.Name) and f.id in ("sorted", "reversed", "enumerate", "list", "tuple", "set", "zip") and e.args:
+            out = NONE
+            for a in e.args[:2]:
+                d = const_deps(a, local, maybe)
+                if d is None:
+                    return None
+                out |= d
+            return out
+        if isinstance(f, ast.Attribute) and f.attr in ("items", "keys", "values"):
+            return const_deps(f.value, local, maybe)
+    return None
+
+
+def _and(bounded: frozenset | None, d: frozenset | None) -> frozenset | None:
+    return None if bounded is None or d is None else bounded | d
+
+
+def walk_loops(nodes, local: set[str], maybe: set[str]):
+    """Every node under `nodes`, with whether it runs once per iteration of a loop (for/while/comprehension), whether
+    that's a for/while statement (where an await waits on each round in turn), and its boundedness (see the module
+    docstring; None outside loops). A nested def starts afresh."""
+    stack = [(n, False, False, NONE) for n in reversed(list(nodes))]
+    while stack:
+        n, loop, stmt, bounded = stack.pop()
+        yield n, loop, stmt, (bounded if loop else None)
+        if isinstance(n, (ast.For, ast.AsyncFor)):
+            inner = _and(bounded, const_deps(n.iter, local, maybe))
+            kids = [(n.target, loop, stmt, bounded), (n.iter, loop, stmt, bounded)]
+            kids += [(c, True, True, inner) for c in n.body + n.orelse]
+        elif isinstance(n, ast.While):
+            kids = [(n.test, True, True, None)] + [(c, True, True, None) for c in n.body + n.orelse]
+        elif isinstance(n, COMPREHENSIONS):
+            gens = n.generators
+            inner = bounded
+            for g in gens:
+                inner = _and(inner, const_deps(g.iter, local, maybe))
+            kids = [(gens[0].iter, loop, stmt, bounded)] + [
+                (c, True, stmt, inner) for c in ast.iter_child_nodes(n) if c is not gens[0]
+            ]
+            kids += [(c, True, stmt, inner) for c in ast.iter_child_nodes(gens[0]) if c is not gens[0].iter]
+        elif isinstance(n, SCOPES):
+            kids = [(c, False, False, NONE) for c in ast.iter_child_nodes(n)]
+        else:
+            kids = [(c, loop, stmt, bounded) for c in ast.iter_child_nodes(n)]
+        stack.extend(reversed(kids))
+
+
+def _type_checking(test: ast.AST) -> bool:
+    return (isinstance(test, ast.Name) and test.id == "TYPE_CHECKING") or (
+        isinstance(test, ast.Attribute) and test.attr == "TYPE_CHECKING"
+    )
+
+
+def _imports(tree: ast.Module):
+    """Every import, with whether it runs when the module loads. Imports inside functions (often placed there to
+    avoid an import loop) and under `if TYPE_CHECKING:` don't: they can't make a loop at load time."""
+    stack = [(n, True) for n in reversed(tree.body)]
+    while stack:
+        n, at_load = stack.pop()
+        if isinstance(n, (ast.Import, ast.ImportFrom)):
+            yield n, at_load
+            continue
+        if isinstance(n, ast.If) and _type_checking(n.test):
+            kids = [(c, False) for c in n.body] + [(c, at_load) for c in n.orelse]
+        elif isinstance(n, SCOPES):
+            kids = [(c, False) for c in ast.iter_child_nodes(n)]
+        else:
+            kids = [(c, at_load) for c in ast.iter_child_nodes(n)]
+        stack.extend(reversed(kids))
+
+
+class _Ctx:
+    """What one module can tell about its own names, to keep only references that could resolve."""
+
+    def __init__(self, tree: ast.Module, imports: list):
+        self.funcs = {n.name for n in tree.body if isinstance(n, FUNCS)}
+        self.classes = {n.name for n in tree.body if isinstance(n, ast.ClassDef)}
+        self.from_locals = {i[3] or i[2] for i in imports if i[0] == "from"}
+        self.import_heads = {(i[2] or i[1].split(".")[0]) for i in imports if i[0] == "import"} | {
+            i[1] for i in imports if i[0] == "import"
+        }
+        self.bases = {"self", "cls"} | self.classes | self.from_locals | self.import_heads
+        self.local_consts: set[str] = set()
+
+    def expr(self, node: ast.AST) -> list | None:
+        if isinstance(node, ast.Name):
+            return ["n", node.id] if node.id in self.funcs or node.id in self.classes or node.id in self.from_locals else None
+        if isinstance(node, ast.Attribute):
+            base = node.value.id if isinstance(node.value, ast.Name) else None
+            d = dotted(node)
+            head = d.split(".")[0] if d else None
+            if (base and base in self.bases) or (head and head in self.import_heads | self.from_locals):
+                return ["a", base, node.attr, d]
+        return None
+
+
+def events(nodes, ctx: _Ctx, sites: bool = True) -> list:
+    out: list = []
+    refs: list = []
+    call_funcs = set()
+    walked = list(walk_loops(nodes, ctx.local_consts, ctx.from_locals))
+    for n, loop, stmt, bounded in walked:
+        b = sorted(bounded) if bounded is not None else None
+        if isinstance(n, ast.Await) and stmt and sites:
+            out.append(["w", n.lineno, b])
+        if isinstance(n, ast.Call):
+            call_funcs.add(id(n.func))
+            f = n.func
+            if isinstance(f, (ast.Name, ast.Attribute)):
+                expr = ctx.expr(f)
+            elif isinstance(f, ast.Subscript):
+                root = f
+                while isinstance(root, ast.Subscript):
+                    root = root.value
+                expr = ["s", root.id] if isinstance(root, ast.Name) else None
+            else:
+                expr = None
+            attr = f.attr if isinstance(f, ast.Attribute) else None
+            out.append(["c", n.lineno, bool(loop), b, expr, io_call(f, n), attr])
+    for n, _, _, _ in walked:
+        if id(n) in call_funcs:
+            continue
+        if isinstance(n, (ast.Name, ast.Attribute)) and isinstance(n.ctx, ast.Load) and (e := ctx.expr(n)):
+            refs.append(["r", e])
+    return out + refs
+
+
+def parse_module(path: str, rel: str) -> dict | None:
+    """The per-file step: everything python.py needs from one file, or None if it isn't valid Python."""
+    try:
+        text = Path(path).read_text(encoding="utf-8", errors="replace")
+        tree = ast.parse(text, filename=rel)
+    except (SyntaxError, ValueError, OSError, RecursionError):
+        return None  # not valid for this Python: skip rather than fail the whole map
+    imports = []  # ["import", name, asname, at_load] / ["from", module, level, name, asname, at_load]
+    for node, at_load in _imports(tree):
+        if isinstance(node, ast.Import):
+            imports += [["import", a.name, a.asname, at_load] for a in node.names]
+        else:
+            imports += [["from", node.module, node.level, a.name, a.asname, at_load] for a in node.names]
+    # the ctx wants (kind, name, asname) shapes: normalise "from" entries to (kind, module, name, asname)
+    ctx = _Ctx(tree, [["import", i[1], i[2]] if i[0] == "import" else ["from", i[1], i[3], i[4]] for i in imports])
+    tables, consts = {}, []
+    for node in tree.body:
+        value = node.value if isinstance(node, (ast.Assign, ast.AnnAssign)) else None
+        if isinstance(value, LITERALS):
+            for t in node.targets if isinstance(node, ast.Assign) else [node.target]:
+                if isinstance(t, ast.Name):
+                    consts.append(t.id)
+                    tables[t.id] = [e for x in ast.walk(value) if isinstance(x, (ast.Name, ast.Attribute)) and (e := ctx.expr(x))]
+    ctx.local_consts = set(consts)
+    exports = []
+    for node in tree.body:
+        if (
+            isinstance(node, ast.Assign)
+            and any(isinstance(t, ast.Name) and t.id == "__all__" for t in node.targets)
+            and isinstance(node.value, (ast.List, ast.Tuple))
+        ):
+            exports += [e.value for e in node.value.elts if isinstance(e, ast.Constant)]
+    defs = []
+
+    def add(node, qualname: str, kind: str, cls: str | None) -> None:
+        shape, tokens = shape_of(node)
+        defs.append({
+            "qualname": qualname, "name": node.name, "line": node.lineno, "end": getattr(node, "end_lineno", node.lineno),
+            "kind": kind, "decorated": bool(node.decorator_list), "exported": node.name in exports or node.name == "main",
+            "shape": shape, "tokens": tokens, "cls": cls,
+            "deco": events(node.decorator_list, ctx, sites=False), "body": events(node.body, ctx),
+        })  # fmt: skip
+
+    top = []
+    for node in tree.body:
+        if isinstance(node, FUNCS):
+            add(node, node.name, "function", None)
+        elif isinstance(node, ast.ClassDef):
+            for item in node.body:
+                if isinstance(item, FUNCS):
+                    add(item, f"{node.name}.{item.name}", "method", node.name)
+            # the class body's own statements, its methods' decorators and its own decorators
+            stmts = [s for s in node.body if not isinstance(s, FUNCS)]
+            stmts += [d for s in node.body if isinstance(s, FUNCS) for d in s.decorator_list]
+            top.append([node.name, events(stmts + node.decorator_list, ctx)])
+        else:
+            top.append([None, events([node], ctx)])
+    return {
+        "loc": len(text.splitlines()),
+        "imports": imports,
+        "consts": consts,
+        "tables": tables,
+        "exports": exports,
+        "classes": sorted(ctx.classes),
+        "defs": defs,
+        "top": top,
+        "attrs": sorted({n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}),
+    }

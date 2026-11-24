@@ -11,6 +11,7 @@ cd codefactory
 python -m venv .venv && . .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -e .
 npm install -g typescript                          # so the TypeScript tests run
+pip install tree-sitter tree-sitter-language-pack  # so the Go/Java/Ruby tests run
 pip install ruff
 ```
 
@@ -43,12 +44,12 @@ CI runs the same on Linux and Windows with Python 3.11 and 3.13.
 
 | Path | What |
 |---|---|
-| `codefactory/analyzers/` | One analyzer per language, producing the graph |
+| `codefactory/analyzers/` | Python (`python_parse.py` per file, `python.py` linking), TypeScript (`ts_helper.js`), every other language (`treewalk.py`, `generic.py`), the parallel per-file runner (`parallel.py`) |
 | `codefactory/flags.py`, `similar.py`, `efficiency.py` | Checks on the graph |
 | `codefactory/checks.py`, `review.py` | Source-text and repository checks; the review |
 | `codefactory/plan.py`, `brief.py`, `sarif.py`, `trace.py`, `sqlgraph.py` | Outputs |
 | `codefactory/viewer/` | The HTML map: `template.html`, `factory.css`, `factory.js` |
-| `tests/fixtures/shop`, `tests/fixtures/tsapp` | Small Python and TypeScript apps with planted problems |
+| `tests/fixtures/shop`, `tsapp`, `polyglot` | Small Python, TypeScript and Go/Java/Ruby apps with planted problems |
 | `docs/` | Usage guide, design document, screenshots |
 
 ## Releasing

@@ -3,6 +3,32 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.9.0 · 2026-11-24
+
+Big codebases and many languages.
+
+### Added
+- **Every other language through tree-sitter** (optional: `pip install "codefactory[languages]"`): Go, Java, Kotlin,
+  Swift, Rust, C/C++, C#, Ruby, PHP, Scala, Dart, Lua, Elixir and more get the map, copies, calls and I/O in loops,
+  sizes and unused-code hints. Calls are matched by name, and the review says so. Without TypeScript installed,
+  TypeScript/JavaScript falls back to it instead of being skipped. The review's text checks (credentials, empty
+  catches, SQL built from strings, plain HTTP) now read these languages too.
+- **Parallel, incremental analysis:** files are parsed on every core (`CODEFACTORY_JOBS`) and cached one by one, so a
+  repeat run re-reads only what changed. On 1.7 million lines of Python: 287 s to 48 s for a first run, 21 s after
+  changing a file, 5 s when nothing changed; memory 3.2 GB to 1.2 GB.
+- `--lang other` limits the analysis to the tree-sitter languages.
+
+### Changed
+- Near-duplicate signatures use one-permutation MinHash (64 times cheaper), are cached, and pre-screen candidates.
+  The same pairs as before on a React Native app, and 0.2% more on 1.7 million lines.
+- Copies between per-platform versions of a file (`x_linux.go` / `x_darwin.go`) aren't duplicates.
+- Test files are recognised in more languages (`x_test.go`, `x_spec.rb`, `FooTest.java`).
+
+### Fixed
+- The review re-checked every function for each copy (quadratic): 31% of a review's time on large codebases.
+- Silencing comments were re-read for every finding in a file.
+- Minified JavaScript (`*.min.js`) is skipped, and function ids are unique whatever an analyzer produces.
+
 ## 0.8.1 · 2026-11-24
 
 ### Fixed (review false positives found on a real React Native app)

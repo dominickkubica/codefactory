@@ -158,6 +158,45 @@ exact module resolution the project uses (path aliases like `@/…`, `baseUrl`, 
 The helper prints the same graph JSON the Python analyzer produces. Paths are compared after resolving them, because
 TypeScript reports `/` and Node on Windows uses `\`.
 
+### Every other language (tree-sitter)
+
+`analyzers/generic.py` covers Go, Java, Kotlin, Swift, Rust, C/C++, C#, Ruby, PHP, Scala, Dart, Lua, Elixir and
+others through `tree-sitter-language-pack` (an optional install; grammars download on first use and are cached). One
+walker (`treewalk.py`) serves every grammar, because tree-sitter grammars name their nodes consistently
+(`function_declaration`, `method_definition`, `call_expression`, `for_statement`, `import_declaration`…): the
+patterns match those names. Its tags queries were tried first and dropped, because coverage varies (C and TypeScript
+have no call captures).
+
+- **Functions:** definitions with a body; qualified by enclosing classes, and by the receiver for Go methods.
+- **Calls are matched by name**, in order: the same file; for a call with no receiver, plain functions before
+  methods; the same folder (Go packages, Java packages); a file it imports; the only definition anywhere. Several
+  equally likely candidates aren't guessed at: up to three get a `ref`, and a name defined in more places (`String`,
+  `Error`, `Read`) marks all of them as possibly called through an interface. Names used as values (callbacks, table
+  entries) count as refs.
+- **Imports** are matched by path suffix: the longest one that names a file (C's `"net/socket.h"`, Java's
+  `a.b.Orders`), else a package folder, linked through one file of it (its namesake when there is one), the shallowest
+  folder winning. Go imports always name packages; linking every file of a package made Go's standard library look
+  like a 1,886-file import loop.
+- **Unused:** exported names (`public`, `pub`, a capitalised Go name) and names a runtime calls (`main`, `init`) are
+  API, never dead; methods of a class that extends or implements something may be called by a framework or through the
+  interface (Swift delegate methods), so they count as possibly called.
+- **Loops:** `for`/`while`/`loop`/`foreach` nodes, and blocks or closures handed to iteration helpers (`each`, `map`,
+  `forEach`…). **I/O** is recognised on calls nothing in the codebase defines, by receiver (`db.`, `conn.`, `client.`,
+  `$pdo->`…) or by name (`query`, `executeQuery`, `QueryRow`, `fetch`, `findById`…).
+- **Generated files** (`Code generated … DO NOT EDIT`, `@generated`) add no functions, so their copies and dead ends
+  aren't findings, but what they call counts as used.
+- **Structure tokens** keep field, type and called names and blank other identifiers, as the Python analyzer does.
+
+### Performance on big codebases
+
+Each analyzer has a per-file step and a linking step. The per-file step (Python: `python_parse.parse_module`;
+tree-sitter: `generic.parse_file`; the review's pattern scan: `checks._scan_one`) turns one file into plain data and
+runs on every core (`analyzers/parallel.py`), with results cached in `.codefactory/files-<name>.json` by size and
+modification time. The Python step keeps every reference as a small unresolved expression (`["a", "self", "save",
+…]`) so linking needs no syntax trees. That cut memory from 3.2 GB to 1.2 GB on 1.7 million lines, and a test checks
+that a pooled, a cached and a single-process run give the same graph. The TypeScript result is cached whole until a
+TypeScript or JavaScript file changes, because the type checker needs the whole program.
+
 ## Layers
 
 A layer (a zone on the floor) is, in order of precedence:
@@ -191,11 +230,16 @@ is the commonest source of false positives. A function reached only from test fi
 ### Duplicates and near-duplicates
 
 - **Exact duplicates:** functions of at least 6 lines (and 15 syntax nodes) with the same structure hash.
-- **Near-duplicates:** each function's tokens are cut into 4-token shingles. A 64-permutation MinHash signature, split
-  into 16 bands of 4 rows (locality-sensitive hashing), finds candidate pairs without comparing every pair. Candidates
-  are then confirmed with the exact Jaccard similarity of their shingle sets. A pair qualifies at 0.75 or more, if both
+- **Near-duplicates:** each function's tokens are cut into 4-token shingles. A 64-bin one-permutation MinHash
+  signature (each shingle hashed once into one of 64 bins, empty bins filled from the next; 64 times cheaper than 64
+  hash functions, with the same pairs found on the projects tested), split into 16 bands of 4 rows (locality-sensitive
+  hashing), finds candidate pairs without comparing every pair. Signatures are cached by a hash of the function's
+  tokens. A candidate whose signatures agree in fewer than (0.75 − 0.2) × 64 positions is dropped: the estimate's
+  standard deviation is about 0.054, so that margin is about 3.7 deviations. The rest are confirmed with the exact
+  Jaccard similarity of their shingle sets. A pair qualifies at 0.75 or more, if both
   have at least 40 tokens and their sizes are within 60% of each other; exact duplicates and a function paired with one
-  nested inside it are skipped, and so are buckets of more than 200 functions (boilerplate everyone shares). Pairs are
+  nested inside it are skipped, and so are buckets of more than 200 functions (boilerplate everyone shares). Copies between per-platform versions of one file
+  (`x_linux.go` / `x_darwin.go`, `io_win32.c`) are on purpose and skipped. Pairs are
   grouped into clusters with union–find. Clusters at 0.85 or more are `warn`, the rest `info`.
 
 The parameters were tuned on real code: with 5-token shingles at 0.80, a copy with one added line in seven fell
@@ -301,7 +345,9 @@ the page goes through an escape function.
 
 ## Caching
 
-`.codefactory/graph.json` holds the last analysis and a fingerprint: codefactory's version and the size and
+Two levels. Per file: each analyzer's per-file results, `.codefactory/files-<name>.json`, keyed by size and
+modification time, plus near-duplicate signatures (`minhash.json`) and the TypeScript result (`typescript.json`); a
+new or edited codefactory ignores them. Whole graph: `.codefactory/graph.json` holds the last analysis and a fingerprint: codefactory's version and the size and
 modification time of its own source files, plus the path, size and modification time of every analyzable file and
 of `factory.toml`, `tsconfig.json`, `jsconfig.json` and `pyproject.toml`. Any change re-analyzes. The folder contains
 its own `.gitignore`, so it never shows up in `git status`. Upgrading codefactory invalidates the cache automatically.
@@ -366,8 +412,8 @@ session from starting.
   different meaning can match; the 6-line and 15-node minimums keep this rare.
 - The review's security checks are patterns, not data-flow analysis: they find likely problems, and can't prove a
   value is or isn't attacker-controlled.
-- Only Python and TypeScript/JavaScript are analyzed; other languages in a repository are listed in the review's
-  limits.
+- Languages other than Python and TypeScript are matched by name, not by type: a call through an interface or to one of
+  several same-named functions can be missing or ambiguous. The review says so in its limits.
 - A whole-repository TypeScript analysis takes tens of seconds on large projects, because the type checker builds the
   full program; the cache makes repeat runs instant.
 
@@ -388,7 +434,8 @@ then a finding in `review.py` and a rule in `sarif.RULES`.
 
 ## Roadmap
 
-- **More languages** through tree-sitter: Go, Rust, Java, C#, Swift.
+- **Type-aware resolution for more languages**, where a language server or compiler API can be driven like the
+  TypeScript one (gopls, rust-analyzer).
 - **Graph diffs:** compare two commits and report what a change added (new loops, rule breaks, copies, files that grew).
 - **Safe automatic fixes** (`--fix`): merge exact duplicates and delete unused functions, always showing the diff first.
 - **Richer architecture rules:** allow-lists ("only `services/` may import `db/`"), limits, and must-go-through rules.
