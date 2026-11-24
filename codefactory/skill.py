@@ -51,9 +51,12 @@ def refresh_skill(repo: Path) -> bool:
         target = skill_path(repo)
         if not target.is_file():
             return False
-        current = STAMP.search(target.read_text(encoding="utf-8"))
+        text = target.read_text(encoding="utf-8")
+        current = STAMP.search(text)
         if current and current.group(1) == __version__:
             return False
+        if current and STAMP.sub("", text) == STAMP.sub("", skill_text()):
+            return False  # same instructions: don't leave a version-only diff in the repository
         target.write_text(skill_text(), encoding="utf-8")
         return True
     except OSError:

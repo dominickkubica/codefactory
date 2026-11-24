@@ -32,6 +32,8 @@ class SkillTest(unittest.TestCase):
         self.assertFalse(skill.refresh_skill(self.repo))  # current: left alone
         path = skill.skill_path(self.repo)
         path.write_text(path.read_text(encoding="utf-8").replace(__version__, "0.0.1"), encoding="utf-8")
+        self.assertFalse(skill.refresh_skill(self.repo))  # only the stamp differs: no churn in git
+        path.write_text(path.read_text(encoding="utf-8") + "an old rule\n", encoding="utf-8")
         self.assertTrue(skill.refresh_skill(self.repo))
         self.assertIn(f"skill {__version__} -->", path.read_text(encoding="utf-8"))
 
