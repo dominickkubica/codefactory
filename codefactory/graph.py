@@ -49,7 +49,7 @@ class Site:
     """A notable spot inside a function, for the efficiency checks."""
 
     fn: str  # function id
-    kind: str  # loop_call (a resolved call inside a loop) | loop_io | loop_await | loop_scan
+    kind: str  # loop_call (resolved call in a loop) | loop_io | loop_await | loop_scan | tx_call (call in a transaction)
     line: int
     target: str = ""  # loop_call: the function called
     detail: str = ""  # loop_io / loop_scan: what's called ("db.getAllAsync", "items.find")

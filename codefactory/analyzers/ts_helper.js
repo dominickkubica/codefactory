@@ -437,6 +437,7 @@ for (const sf of sources) {
       if (src && dst && dst !== src) {
         bump(calls, `${src.id}\u0000${dst.id}`);
         if (where.loop) sites.push({ fn: src.id, kind: "loop_call", line, target: dst.id, detail: "", bounded: where.bounded, tx: inTransaction(n) });
+        else if (inTransaction(n)) sites.push({ fn: src.id, kind: "tx_call", line, target: dst.id, detail: "", bounded: false, tx: true });
       } else if (!dst && ts.isCallExpression(n)) {
         if (ts.isPropertyAccessExpression(n.expression)) unresolvedProps.add(n.expression.name.text);
         const io = src && ioCall(n);

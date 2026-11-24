@@ -275,8 +275,9 @@ program operations, and reads/requests separately, and leaves loops over fixed l
 
 **Transactions.** A write in a loop is the advice "batch it or put it in one transaction"; when it's already inside
 one (`with db.session():`, `with transaction.atomic():`, `with conn:`; a callback given to `transaction(…)`), the
-advice is moot and it isn't reported. Only the enclosing block is seen: a function whose caller opens the
-transaction still is.
+advice is moot and it isn't reported. A function every call of which happens inside one (the analyzers record calls
+made in a transaction block or callback) counts as inside one too, one level deep; calling the transaction helper
+itself in a loop is the batching and isn't reported.
 
 ### Size, hubs and saved queries
 

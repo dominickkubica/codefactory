@@ -3,6 +3,15 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.9.4 · 2026-11-24
+
+### Fixed (clean-slate runs on a React Native app and a FastAPI app)
+- **Transactions opened by the caller count:** a function every call of which happens inside a transaction (`with
+  db.session(): insert_items(…)`, `transaction(db, () => insertItems(…))`) has its writes treated as batched. On the
+  React Native app, "writes inside loops" went from 4 to 1, and the one left is real.
+- **Calling the transaction helper once per batch** (`for (…) await transaction(db, …)`) is the batching, not a
+  write in a loop.
+
 ## 0.9.3 · 2026-11-24
 
 ### Fixed (a second pass over the same FastAPI + React app)

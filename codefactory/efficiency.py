@@ -107,6 +107,22 @@ def kind_through(sink: str, path: list[str]) -> str:
     return kind
 
 
+TX_WRAPPER = re.compile(r"transaction|atomic|withTransaction|writeTxn", re.I)
+
+
+def in_transaction(g: Graph) -> set[str]:
+    """Functions every call of which happens inside a transaction (the caller opened it): their writes are batched."""
+    tx_calls: dict[tuple[str, str], int] = defaultdict(int)
+    for s in g.sites:
+        if s.kind == "tx_call" or (s.kind == "loop_call" and s.tx):
+            tx_calls[(s.fn, s.target)] += 1
+    calls: dict[str, list[tuple[str, int]]] = defaultdict(list)
+    for e in g.edges:
+        if e.kind == "call":
+            calls[e.dst].append((e.src, e.count))
+    return {dst for dst, srcs in calls.items() if all(tx_calls.get((src, dst), 0) >= count for src, count in srcs)}
+
+
 def efficiency_flags(g: Graph) -> list[Flag]:
     """Test files are left out: a loop of setup calls in a test isn't a problem anyone ships."""
     by_id = {f.id: f for f in g.functions}
@@ -116,17 +132,20 @@ def efficiency_flags(g: Graph) -> list[Flag]:
     unbounded: set[tuple[str, str]] = set()  # (fn, what) with at least one loop whose length depends on data
     outside_tx: set[tuple[str, str]] = set()  # (fn, what) with at least one call not inside a transaction
     awaits: dict[str, list[int]] = defaultdict(list)
+    always_tx = in_transaction(g)
     for s in g.sites:
         if s.fn not in by_id or is_test(by_id[s.fn].file):
             continue
         if s.kind in ("loop_io", "loop_call"):
             key = (s.fn, s.detail if s.kind == "loop_io" else s.target)
-            if s.kind == "loop_call" and s.target not in reach:
-                continue
+            if s.kind == "loop_call" and (
+                s.target not in reach or TX_WRAPPER.search(by_id[s.target].name if s.target in by_id else "")
+            ):
+                continue  # nothing to reach, or the transaction helper itself (calling it per batch is the batching)
             loop_io[key].append(s.line)
             if not s.bounded:
                 unbounded.add(key)
-            if not getattr(s, "tx", False):
+            if not (s.tx or s.fn in always_tx):
                 outside_tx.add(key)
         elif s.kind == "loop_await" and not s.bounded:  # a few fixed rounds in turn cost nothing worth reporting
             awaits[s.fn].append(s.line)

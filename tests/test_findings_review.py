@@ -61,6 +61,30 @@ class FindingsTest(unittest.TestCase):
         flagged = {f.target.split("::")[-1] for f in build(self.root, cache=False).flags if f.kind == "io_in_loop"}
         self.assertEqual(flagged, {"save_each"})
 
+    def test_a_function_only_called_inside_a_transaction_counts_as_in_one(self):
+        write(self.root, {"app/__init__.py": "", "app/store.py": '''
+            def insert_items(conn, rows):
+                for r in rows:
+                    conn.execute("INSERT INTO items VALUES (?)", (r,))
+
+
+            def insert_logs(conn, rows):
+                for r in rows:
+                    conn.execute("INSERT INTO logs VALUES (?)", (r,))
+
+
+            def save_meal(db, rows):
+                with db.session() as conn:
+                    insert_items(conn, rows)
+                    insert_logs(conn, rows)
+
+
+            def quick_log(conn, rows):
+                insert_logs(conn, rows)  # this caller opens no transaction
+            '''})  # fmt: skip
+        flagged = {f.target.split("::")[-1] for f in build(self.root, cache=False).flags if f.kind == "io_in_loop"}
+        self.assertEqual(flagged, {"insert_logs"})
+
     def test_top_of_a_split_package_is_placed_by_its_imports(self):
         files = {"src/pkg/__init__.py": "", "src/pkg/config.py": "LEVEL = 1\n",
                  "src/pkg/cli.py": "from pkg.jobs import a\nfrom pkg.api import b\nfrom pkg.store import c\n"}  # fmt: skip
@@ -174,12 +198,20 @@ class TypeScriptTransactionTest(unittest.TestCase):
             root = Path(d)
             write(root, {"tsconfig.json": '{"compilerOptions": {"strict": true}}', "store.ts": """
                 declare const db: { runAsync(sql: string, ...args: unknown[]): Promise<void> };
-                declare function transaction(task: () => Promise<void>): Promise<void>;
+                async function transaction(task: () => Promise<void>): Promise<void> {
+                  await db.runAsync("BEGIN");
+                  await task();
+                  await db.runAsync("COMMIT");
+                }
 
                 export async function saveAll(rows: number[]) {
                   await transaction(async () => {
                     for (const r of rows) await db.runAsync("INSERT INTO t VALUES (?)", r);
                   });
+                }
+
+                export async function syncInBatches(batches: number[][]) {
+                  for (const b of batches) await transaction(async () => { await db.runAsync("INSERT …", b); });
                 }
 
                 export async function saveEach(rows: number[]) {

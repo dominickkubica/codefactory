@@ -201,6 +201,8 @@ def _link(
                     calls[(src_id, target)] += 1
                     if loop and sites is not None:
                         sites.append(Site(src_id, "loop_call", line, target=target, bounded=bounded, tx=tx))
+                    elif tx and sites is not None:  # called inside a transaction block
+                        sites.append(Site(src_id, "tx_call", line, target=target, tx=True))
             elif e and e[0] == "s":  # TABLE[key](…): one of the table's functions runs; link to all of them
                 for ref in mod.tables.get(e[1], ()):
                     fid = res.expr(mod, ref, cls)
