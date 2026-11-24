@@ -21,6 +21,7 @@ from .config import load_config
 from .coverage import measured
 from .paths import is_script, is_test
 from .plan import make_plan
+from .privacy import scan as privacy_scan
 from .security import SINK_KINDS, function_at, surface, writes
 
 SEV = ["Critical", "High", "Medium", "Low"]
@@ -84,6 +85,7 @@ class Review:
         self.scan = scan_sources(root, [f["id"] for f in g["files"]])
         extra, self.history_note = audit_scan(root, current_secrets(self.scan["secret"]))
         self.scan.update(extra)  # CI, Docker, mobile config and git history: same shape, same silencing
+        self.scan.update(privacy_scan(root, [f["id"] for f in g["files"]]))  # personal data, Apple privacy rules
         self.online, self.vulns, self.deps_note = online, [], ""
         self._apply_silence(load_config(root).silence)
         self.surface = surface(root, g, self.v)
@@ -210,8 +212,29 @@ class Review:
                     sev = self._by_reach(sev, hits)
                 self.add(title, sev, "Security", ev, impact, fix, _effort(len(hits), len({e.file for e in hits})), more)
         self.endpoints()
+        self.flows()
         self.config_findings()
         self.dependencies()
+
+    def flows(self) -> None:
+        """Proven data flows (Python): a request value traced, variable by variable, into a dangerous call."""
+        flows = self.by_kind["taint"]
+        if not flows:
+            return
+        worst = any(f.get("detail") in ("sql", "shell", "code") for f in flows)
+        self.add(
+            f"Request data reaches dangerous calls ({len(flows)} proven flows)",
+            "Critical" if worst else "High",
+            "Security",
+            [f"{self.where(f)}: {f['message'].split(': ', 1)[-1]}" for f in flows[:8]],
+            "Traced through the code, not guessed from a pattern: whoever sends the request controls what reaches the "
+            "call (injection into SQL or a shell, code execution, files outside the intended folder, requests to internal "
+            "hosts, redirects to any site).",
+            "Convert or validate the value where it enters (int(), an allow-list), or use the safe form of the call: bound "
+            "SQL parameters, a command as an argument list without a shell, a fixed base URL or folder.",
+            _effort(len(flows), len({self._file(f) for f in flows})),
+            max(0, len(flows) - 8),
+        )
 
     def config_findings(self) -> None:
         """Configuration, crypto, CI, containers, mobile settings and git history (the rest of a security audit)."""
@@ -1251,6 +1274,25 @@ CONFIG_CHECKS = [
     ("history_secret", "Credentials in git history (deleted, still leaked)", "High",
      "Anyone with a clone, a fork or an old CI log has them, even though the current files don't.",
      "Rotate each one now; rewriting history doesn't help once it has been pushed."),
+    ("ios_usage_missing", "iOS permission used without its usage description", "High",
+     "App Review rejects the app, and iOS terminates it the moment it asks for that permission.",
+     "Add the Info.plist key with a sentence saying why (in Expo: `ios.infoPlist` in app.json, or the library's config "
+     "plugin option)."),
+    ("ios_privacy_manifest", "Required-reason API without a privacy manifest", "High",
+     "Since May 2024 App Store Connect rejects uploads that use these APIs without declaring why.",
+     "Add PrivacyInfo.xcprivacy with NSPrivacyAccessedAPITypes and the approved reason codes (in Expo: "
+     "`ios.privacyManifests` in app.json)."),
+    ("privacy_analytics", "Personal data sent to analytics or crash reporting", "High",
+     "A third party receives it: it needs consent, a privacy-policy entry and App Store privacy labels, and it's hard to "
+     "take back.",
+     "Send an opaque id or a coarse value instead (age band, city), or drop the field."),
+    ("privacy_log", "Personal data written to logs", "Medium",
+     "Logs are copied to consoles, crash reports and log services, kept for long, and readable by more people than the "
+     "data itself.",
+     "Log an id or a redacted value instead (`***@domain`), or nothing."),
+    ("privacy_storage", "Personal data in unencrypted storage", "Medium",
+     "AsyncStorage, localStorage, UserDefaults and SharedPreferences are plain files, included in backups.",
+     "Keep it in the database you protect, or the platform's encrypted store."),
     ("secret_key_literal", "Signing key written in the code", "High",
      "Whoever reads the code can forge sessions, tokens or signed links.",
      "Load it from the environment or a secret store, and rotate the one that was committed."),

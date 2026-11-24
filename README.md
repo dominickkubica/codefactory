@@ -49,6 +49,8 @@ codefactory plan                 # what to fix first, ranked; then: codefactory 
   | Performance | Database or network calls once per item (N+1), searches inside loops over loaded data, writes outside a transaction |
   | Duplication | Identical and near-identical functions, merged into one task per group |
   | Structure | Import loops, layer-rule breaks, unused code, functions nobody tests, very long or complex functions |
+  | Data flow | Python: request values traced variable by variable, through helper functions, into SQL, shell commands, `eval`, file paths, outgoing URLs, redirects and templates, with sanitizers (`int()`, bound SQL parameters, `shlex.quote`…) respected |
+  | Privacy | Personal data (contact details, birth dates, location, health readings, device ids) in logs, analytics and unencrypted storage; iOS permissions without usage descriptions; required-reason APIs without a privacy manifest (App Store rejections) |
   | Security | Every HTTP endpoint and whether it checks who's asking; endpoints that change data without an auth check; risky lines (SQL built from strings, shell, `eval`, raw HTML) ranked by whether a request reaches them, with the route → … → line chain; leaked credentials, including ones deleted but still in git history; debug mode, CORS `*`, insecure cookies, unverified JWTs, weak crypto and random numbers; unsafe CI workflows, root containers, secrets in images; known-vulnerable dependencies (`--online`) |
   | Reliability | Swallowed errors, network calls without a timeout, missing error boundaries |
   | Delivery | No CI or CI without tests, floating dependency versions, no lockfile, no runtime pin |

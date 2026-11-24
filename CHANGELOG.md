@@ -3,6 +3,20 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.14.0 · 2026-11-24
+
+Data flow and privacy.
+
+### Added
+- **Data flow (taint) for Python:** request values traced through variables and helper functions into SQL, shell
+  commands, code execution, file paths, outgoing URLs, redirects and templates. Sanitizers, typed parameters, bound SQL
+  parameters, dependencies and database results are respected. Each finding shows the chain from the route to the
+  call. Critical for SQL, shell and code. 3.7 seconds on 1.7 million lines.
+- **Privacy:** personal data in logs, sent to analytics or crash reporting, or stored unencrypted; iOS permissions
+  used without a usage description; required-reason APIs without a privacy manifest. On a real Expo app it found the
+  watch extension's `UserDefaults` use without a manifest, which App Store Connect would flag.
+- Both in the review, SARIF and `diff`.
+
 ## 0.13.0 · 2026-11-24
 
 Pull requests and organisations.

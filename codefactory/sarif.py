@@ -289,6 +289,55 @@ RULES: dict[str, tuple] = {
         ["security"],
         "4.0",
     ),
+    "taint": (
+        "TaintedFlow",
+        "Request data reaches a dangerous call",
+        "Validate or convert the value (int(), an allow-list), or use the safe API (bound SQL parameters, argument lists, "
+        "an allow-listed URL or path).",
+        "high",
+        ["security"],
+        "9.1",
+    ),
+    "ios_usage_missing": (
+        "IosUsageDescriptionMissing",
+        "iOS permission used without a usage description",
+        "Add the Info.plist usage description.",
+        "high",
+        ["privacy", "security"],
+        "6.5",
+    ),
+    "ios_privacy_manifest": (
+        "IosPrivacyManifestMissing",
+        "Required-reason API without a privacy manifest",
+        "Add PrivacyInfo.xcprivacy with the reason codes.",
+        "high",
+        ["privacy"],
+        "6.0",
+    ),
+    "privacy_analytics": (
+        "PersonalDataToAnalytics",
+        "Personal data sent to analytics or crash reporting",
+        "Send an opaque id or a coarse value instead.",
+        "high",
+        ["privacy"],
+        "6.5",
+    ),
+    "privacy_log": (
+        "PersonalDataInLogs",
+        "Personal data written to logs",
+        "Log an id or a redacted value instead.",
+        "warn",
+        ["privacy"],
+        "5.0",
+    ),
+    "privacy_storage": (
+        "PersonalDataUnencrypted",
+        "Personal data in unencrypted storage",
+        "Keep it in a protected database or the platform's encrypted store.",
+        "warn",
+        ["privacy"],
+        "5.0",
+    ),
     "custom": ("CustomRule", "A custom rule from factory.toml matched", "See the rule's message.", "warn", ["custom"], None),
     "docker_latest": (
         "UnpinnedBaseImage",
@@ -426,6 +475,9 @@ def build_sarif(graph: dict, root: Path | None = None, new_keys: Counter | None 
 
         checks = scan_sources(root, [f["id"] for f in graph["files"]])
         checks.update(audit_scan(root, current_secrets(checks["secret"]))[0])
+        from .privacy import scan as privacy_scan
+
+        checks.update(privacy_scan(root, [f["id"] for f in graph["files"]]))
         for key, check in checks.items():
             if key not in RULES:
                 continue

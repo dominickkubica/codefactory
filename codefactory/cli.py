@@ -38,6 +38,10 @@ def build(root: Path, languages: list[str] | None = None, cache: bool = True) ->
     g = analyze(root, cfg.ignore, languages, cache)
     assign_layers(g, cfg)
     run_flags(g, cfg)
+    if any(f.id.endswith(".py") for f in g.files):
+        from .taint import taint_flags
+
+        g.flags += taint_flags(g, root)
     if cfg.rules:
         from .rules import custom_flags
 

@@ -100,8 +100,11 @@ def items(root: Path, graph: dict) -> list[Item]:
         out.append(Item(issue_key(graph, f, fns), f["kind"], f["severity"], fn["file"] if fn else f["target"],
                         f.get("line") or (fn["line"] if fn else 0), fn["qualname"] if fn and fn["kind"] != "module" else "",
                         f["message"]))  # fmt: skip
+    from .privacy import scan as privacy_scan
+
     checks = scan_sources(root, [f["id"] for f in graph["files"]])
     checks.update(scan_config(root))
+    checks.update(privacy_scan(root, [f["id"] for f in graph["files"]]))
     for kind, check in checks.items():
         if kind not in RULES:
             continue

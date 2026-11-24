@@ -231,6 +231,31 @@ The review uses it two ways:
 It's pattern-based: an auth check done elsewhere (a gateway, a proxy, a decorator with an unusual name) isn't seen,
 so "none found" is a question to answer. If the check exists, `codefactory accept` it with the reason.
 
+## Data flow (Python)
+
+The review's strongest security finding: **request data reaches dangerous calls**, traced through the code rather
+than matched by pattern. Sources are network requests only: FastAPI, Flask and Django handler parameters and
+`request.args`, `.form`, `.json`, `.GET`, `.POST`, `.headers`, `.cookies`… Sinks: SQL `execute` with a built string,
+shell commands (`os.system`, `subprocess` with `shell=True` or a built string), `eval`/`exec`/`pickle`/unsafe YAML,
+file paths, outgoing request URLs (SSRF), redirects and template strings. Each finding shows the chain: `parameter
+`name` of GET /users → users → find_user(name) → conn.execute()`.
+
+Not flows: a value passed through `int()`, `float()`, `uuid.UUID()`, `shlex.quote`, `secure_filename`,
+`html.escape` or similar; a handler parameter typed `int`, `UUID`, a date, an enum or a `Literal`; SQL with bound
+parameters (its text is a constant); a `Depends()` value; anything read back from a database (stored data used
+later, "second-order" injection, isn't followed). `sys.argv` and `input()` aren't sources either: whoever runs a
+program already has its rights. Severity: Critical for SQL, shell and code execution, High for the rest.
+
+## Privacy
+
+| Check | What it finds |
+|---|---|
+| Personal data in logs | Log and print calls whose arguments name personal data (email, phone number, names, birth dates, addresses, location coordinates, health readings, card numbers, device ids). Text in a string doesn't count, only values put into it. |
+| Personal data to analytics | The same, sent to analytics or crash reporting (Firebase, Segment, Mixpanel, Amplitude, PostHog, Sentry, Crashlytics, Bugsnag, Datadog). High: a third party gets it. |
+| Personal data in unencrypted storage | AsyncStorage, localStorage, UserDefaults, SharedPreferences, MMKV writes |
+| iOS usage descriptions | Code that uses the camera, photos, location, microphone, contacts, health data, calendars, Bluetooth, Face ID, motion or tracking without the matching `NS…UsageDescription`, in an Info.plist, in `app.json` `ios.infoPlist`, or added by the library's Expo config plugin |
+| iOS privacy manifest | Native code (Swift, Objective-C) using a required-reason API (UserDefaults, file timestamps, system boot time, disk space) without a `PrivacyInfo.xcprivacy` or `ios.privacyManifests` in `app.json`. App Store Connect rejects such uploads. |
+
 ## The rest of a security audit
 
 Beyond the attack surface, the review checks:

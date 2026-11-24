@@ -549,7 +549,7 @@
   }
 
   // ---- panels -------------------------------------------------------------------------------------------
-  const KIND = { cycle: "Import loops", layer_violation: "Layer violations", io_in_loop: "Calls in loops",
+  const KIND = { taint: "Request data in dangerous calls", custom: "Custom rules", cycle: "Import loops", layer_violation: "Layer violations", io_in_loop: "Calls in loops",
     duplicate: "Duplicates", similar: "Near-duplicates", unused: "Unused", quadratic_scan: "Searches in loops",
     sequential_await: "Awaits in loops", test_only: "Test only", hub: "Hubs", large_file: "Large files", long_function: "Long functions" };
   const shortTarget = (t) => t.includes("::") ? t.split("::")[1] + "  ·  " + t.split("::")[0] : t;

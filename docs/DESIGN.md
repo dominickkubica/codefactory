@@ -310,6 +310,32 @@ finding moves one severity level by whether any entry reaches it. "Changes data"
 (every `with db.session():` helper commits), and neither do migrations, which run on every open. Both rules came
 from a real FastAPI app where they made every endpoint look like it changed data.
 
+## Data flow (taint) for Python
+
+`taint.py` computes a summary per function: which parameters reach which sinks, which reach the return value, and
+which sources inside it reach a sink or the return. Summaries are combined across call edges with a worklist until
+nothing changes (a function is redone only when a callee's summary changed, and at most six times), so a request
+parameter handed to a helper that builds SQL is followed into the helper and reported at the `execute` line with the
+whole chain. Within a function it's flow-insensitive, and an unknown call with a tainted argument returns tainted data:
+generous, because the sinks are narrow.
+
+Scale comes from scoping before parsing: functions holding a source and functions holding a sink are found from their
+text; only those reachable from the first and able to reach the second along call edges are parsed and summarized. On
+1.7 million lines of Python (the standard library and installed packages) that takes 3.7 seconds. Two rules came
+from real code: a typed FastAPI parameter (`shot_id: int`) can't carry text, and a database result isn't tainted by the
+query's parameters. Both had made a safe file-serving endpoint look like a path traversal. A third came from the
+standard library, where every `sys.argv` → `open()` in a command-line tool showed up as a flow: arguments and typed
+input come from whoever runs the program, so only network requests are sources.
+
+## Privacy
+
+`privacy.py` looks for personal data by name in the arguments of log, analytics and storage calls (string text is
+removed first, keeping only interpolated values; "phone" in "On your phone" was a false positive on a real CLI, and
+so were generic words like `steps`, `sleep` and `location`, which are dropped). For iOS it compares the protected
+resources the code uses with the usage descriptions declared anywhere (Info.plist files, `app.json`, Expo config
+plugins that add them), and native uses of required-reason APIs with the presence of a privacy manifest. On a real
+Expo app it found its watch extension's `UserDefaults` use without a manifest.
+
 ## Configuration, CI, history and dependencies
 
 `audit.py` reads what surrounds the code: GitHub workflows (a `pull_request_target` trigger is only critical when the
