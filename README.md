@@ -145,6 +145,9 @@ Analysis is static: nothing is executed. Most of codefactory's accuracy came fro
 fixing what it got wrong: each false positive got a test before its fix, and snapshot tests of every finding on
 three sample apps make any change in output visible in CI.
 
+- **Precision and recall are measured** on a labeled corpus in eight languages, in CI: 91% precision and 84%
+  recall the first time it met code it hadn't been tuned on; 100% and 99% after fixing what that found. Details,
+  per check, in [Accuracy](docs/ACCURACY.md).
 - **Checked on real code** in each language family: two production apps (React Native, FastAPI), pip, Python's and
   Go's standard libraries, Apache commons-lang (Java), OkHttp (Kotlin) and Rack (Ruby).
 - **Hints are labelled as hints.** Calls through reflection or untyped objects can be missed, so "unused" and "no
@@ -184,6 +187,7 @@ is analyzed, and `review --online`, which sends package names and versions (noth
 
 - [Usage guide](docs/USAGE.md): every command, the viewer, every check, configuration, CI and Claude Code
 - [Design](docs/DESIGN.md): how it works and why, data model, algorithms, trade-offs and limits
+- [Accuracy](docs/ACCURACY.md): precision and recall per check, measured, and the real-code spot checks
 - [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
 
 ## Status and license

@@ -3,6 +3,35 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.16.0 · 2026-11-24
+
+Measured accuracy.
+
+### Added
+- **Accuracy benchmark:** a labeled corpus (Python, TypeScript, JavaScript, Go, Java, Kotlin, Swift, Ruby, CI and
+  Docker files) with real problems and look-alikes, a harness reporting precision and recall per check
+  (`python -m tests.bench`), and a CI gate that fails on any new false alarm or miss. Results in
+  [docs/ACCURACY.md](docs/ACCURACY.md): 91% precision and 84% recall on held-out code before tuning.
+- SQL built from strings in Java (`executeQuery`, `prepareStatement`, `createQuery`), Go (`Query`/`Exec`, including
+  `fmt.Sprintf` with `%s`), Ruby (`#{}` in `execute`, `where`, `find_by_sql`) and Kotlin/PHP/Dart (`$name`).
+  Numbers joined into SQL (`"… id = " + id` where `id` is an `int`) don't count.
+- Shell commands built from input in Ruby (`system("… #{}")`, backticks) and JavaScript (`exec("…" + x)`).
+- Weak hashes in Go (`md5.Sum`), Swift (`Insecure.MD5`) and Ruby (`Digest::MD5`); a password or token named by the
+  enclosing function counts as context (`def new_reset_token(): … random.choice(…)`).
+- Go's `http.Get`/`Post` (the default client never times out); broad multi-line `except: pass` in Python.
+- Rails N+1: `Model.find`/`where` inside a loop.
+
+### Fixed
+- Dockerfile findings pointed one line early after a blank line.
+- `exec()` in JavaScript was reported as code execution; it's `child_process`, so it's a shell command now.
+- A fixed `os.system("clear")` is no longer shell injection.
+- Swift `\(value)` and Kotlin `$value` in log calls are now seen as values.
+- Credentials assigned to names like `SLACK_TOKEN` or `stripeApiKey` were missed (the keyword had to start a word);
+  values without a digit (`token_type = 'content-transfer-encoding'`) no longer count.
+- `http://` URLs in doc comments (examples, not connections) are no longer reported: 133 of 411 such findings on
+  real code.
+- `size = int(request.args["size"])` and `",".join("?" * n)` placeholders are recognized as safe in SQL.
+
 ## 0.15.0 · 2026-11-24
 
 Apple platforms and typed calls.

@@ -67,10 +67,20 @@ def safe_names(lines: list[str], i: int, span: int = 25) -> set[str]:
                 name, src = (m.group(1), m.group(2)) if m.group(1) else (m.group(3), m.group(4))
                 if CONST_NAME.search(src) or _root(src.replace("Object.keys(", "")) in safe:
                     safe.add(name)
+            # typed as a number: `int id`, `for (Integer id : ids)`, `id: Int`, Go's `id int`
+            for m in re.finditer(
+                r"\b(?:int|long|short|Integer|Long|Short|int32|int64|uint\w*)\s+(\w+)\b|(\w+)\s*:\s*(?:Int|Long|Short|int|number)\b|"
+                r"\b(\w+)\s+(?:int|int32|int64|uint\w*)\b",
+                ln,
+            ):
+                safe.add(m.group(1) or m.group(2) or m.group(3))
             if (a := re.match(r"\s*(?:const|let|var)?\s*(\w+)\s*=\s*(.+)", ln)) and not a.group(2).startswith("="):
                 rhs = a.group(2)
-                if re.match(r"(?:Object\.(?:keys|values)\(\s*)?[A-Z][A-Z0-9_]{2,}\b", rhs) or (
-                    _root(rhs) in safe and _root(rhs) != a.group(1)
+                if (
+                    re.match(r"(?:Object\.(?:keys|values)\(\s*)?[A-Z][A-Z0-9_]{2,}\b", rhs)
+                    or (_root(rhs) in safe and _root(rhs) != a.group(1))
+                    or NUMERIC.match(rhs.strip().rstrip(";"))  # size = int(request.args["size"])
+                    or re.search(r"""\.join\(\s*\(?['"]\?['"]""", rhs)  # placeholders: ",".join("?" * len(ids))
                 ):
                     safe.add(a.group(1))
     return safe

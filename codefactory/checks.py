@@ -53,7 +53,9 @@ PATTERNS: dict[str, list[re.Pattern]] = {
         re.compile(r"\bxox[abpr]-[A-Za-z0-9-]{10,}"),
         re.compile(r"\bsk_live_[A-Za-z0-9]{16,}"),
         re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b"),
-        re.compile(r"""(?i)\b(?:api[_-]?key|secret|token|passw(?:or)?d|auth)\w*\s*[:=]\s*['"][A-Za-z0-9+/_\-]{20,}['"]"""),
+        re.compile(
+            r"""(?i)\b\w*(?:api[_-]?key|secret|token|passw(?:or)?d|auth)\w*\s*[:=]\s*['"](?=[^'"]*\d)[A-Za-z0-9+/_\-]{20,}['"]"""
+        ),
     ],
     "eval": [
         re.compile(r"(?<![\w.])eval\s*\("),
@@ -64,9 +66,12 @@ PATTERNS: dict[str, list[re.Pattern]] = {
     ],
     "shell": [
         re.compile(r"shell\s*=\s*True"),
-        re.compile(r"\bos\.system\s*\("),
+        re.compile(r"\bos\.system\s*\((?!\s*[\"'][^\"'{}%]*[\"']\s*\))"),  # not a fixed command: os.system("clear")
         re.compile(r"\bexecSync\s*\(\s*`[^`]*\$\{"),
         re.compile(r"\bchild_process\b.*\bexec\s*\("),
+        re.compile(r"(?<![\w.])(?:system|exec|spawn|IO\.popen|shell_exec|passthru)\s*\(?\s*\"[^\"]*(?:#|\$)\{"),
+        re.compile(r"`[^`]*#\{[^}]+\}[^`]*`|%x[({][^)}]*#\{"),
+        re.compile(r"(?<![\w.])exec(?:Sync)?\s*\(\s*(?:`[^`]*\$\{|[\"'][^\"']*[\"']\s*\+)"),  # child_process exec()
     ],
     "tls_off": [
         re.compile(r"verify\s*=\s*False"),
@@ -127,6 +132,7 @@ PATTERNS.update(
         "weak_hash": [
             re.compile(r"hashlib\.(?:md5|sha1)\(|createHash\(\s*['\"](?:md5|sha1)['\"]"),
             re.compile(r"MessageDigest\.getInstance\(\s*\"(?:MD5|SHA-?1)\""),
+            re.compile(r"\b(?:md5|sha1)\.(?:Sum|New)\(|\bInsecure\.(?:MD5|SHA1)\b|\bDigest::(?:MD5|SHA1)\b"),
         ],
         "weak_random": [
             re.compile(r"(?<![\w.])random\.(?:random|randint|choice|choices|getrandbits|randrange)\("),
@@ -145,6 +151,12 @@ PATTERNS.update(
         ],
     }
 )
+# Single patterns that mean something else in other languages: Python's exec() runs code; JavaScript's exec() is
+# child_process (a shell) and Ruby's and PHP's replace or start a process.
+ONLY_IN = {
+    PATTERNS["eval"][2]: (".py",),
+    PATTERNS["shell"][-1]: (".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"),
+}
 # Checks for built-ins only some languages have: Go's eval() or Java's exec() are ordinary functions.
 LANG_ONLY = {
     "eval": (".py", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".rb", ".php"),
@@ -171,7 +183,11 @@ CONTEXT = {
 }
 SQL_CALL = re.compile(
     r"(?:execute|executemany|executescript|query|raw|getAllAsync|getFirstAsync|runAsync|execAsync|"
-    r"prepareAsync|getAllSync|runSync)\s*\(\s*(f['\"]|`|['\"][^'\"]*['\"]\s*(?:%|\+|\.format))"
+    r"prepareAsync|getAllSync|runSync|executeQuery|executeUpdate|prepareStatement|createQuery|createNativeQuery|"
+    r"Query|QueryRow|QueryContext|QueryRowContext|Exec|ExecContext|find_by_sql|where|whereRaw|order|having|joins|"
+    r"exec_query|select_all|select_rows)\s*\(\s*"
+    r"(f['\"]|`|\"[^\"]*\"\s*(?:%|\+|\.format)|'[^']*'\s*(?:%|\+|\.format)|\"[^\"]*#\{|fmt\.Sprintf\(\s*[\"`][^\"`]*%[sv]|"
+    r"\"[^\"]*\$\{?[A-Za-z_])"
 )
 HOST = re.compile(r"""['"`]https?://([a-z0-9.-]+\.[a-z]{2,})(?::\d+)?[/'"`?]""", re.I)
 SQL_WORD = re.compile(r"\b(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|WHERE|FROM)\b", re.I)
@@ -191,7 +207,12 @@ def _group(pats: list[re.Pattern]) -> re.Pattern:
 
 
 ANY = {k: _group(pats) for k, pats in PATTERNS.items()}
-SQL_HINT = re.compile(r"execute|query|raw|Async|Sync\s*\(")
+SQL_HINT = re.compile(
+    r"execute|query|raw|Async|Sync\s*\(|Query|Exec|Statement|find_by_sql|\.(?:where|whereRaw|order|having|joins|select_all|select_rows)\s*\("
+)
+DOLLAR_LANGS = (".kt", ".kts", ".dart", ".php", ".groovy", ".scala")
+WEAK_CONTEXT_FROM_FUNCTION = ("weak_random", "weak_hash")  # a token made in new_reset_token() is about a token
+FUNC_HEADER = re.compile(r"^\s*(?:async\s+)?(?:def|func|function|fun|fn)\s+(\w+)|^\s*(?:export\s+)?(?:public|private|static)\b")
 
 
 def _excerpt(line: str) -> str:
@@ -266,9 +287,13 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
             if len(line) > 2000:  # minified or data
                 continue
             for key, pats in present.items():  # tests: only secrets (a test may do anything; a leaked key is leaked)
-                if any(p.search(line) for p in pats) and hit(key, i):
-                    if key in CONTEXT and not CONTEXT[key].search(line):
+                if any(p.search(line) and (p not in ONLY_IN or fid.endswith(ONLY_IN[p])) for p in pats) and hit(key, i):
+                    if key == "plain_http" and re.match(r"\s*(?:\*|//|#|/\*)", line):  # an example in a doc comment
                         continue
+                    if key in CONTEXT and not CONTEXT[key].search(line):
+                        header = next((h for h in reversed(lines[max(0, i - 7) : i - 1]) if FUNC_HEADER.match(h)), "")
+                        if key not in WEAK_CONTEXT_FROM_FUNCTION or not CONTEXT[key].search(header):
+                            continue
                     if key == "secret" and re.search(r"(?i)example|placeholder|dummy|xxxx|your[_-]|changeme|<", line):
                         continue
                     if key == "swallowed" and (why := swallow_intent(line, lines[i - 2] if i > 1 else "")):
@@ -278,15 +303,28 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
             if sql_here and (m := SQL_CALL.search(line)) and hit("sql_built", i):
                 stmt = " ".join(lines[i - 1 : i + 4])
                 if SQL_WORD.search(stmt):
-                    py_format = not m.group(1).startswith("`")  # {name} is interpolation only in Python strings
-                    body = stmt[m.end() : m.end() + 600]
+                    py_format = not m.group(1).startswith("`")  # {name}: Python f-strings (and Ruby's #{name})
+                    start = m.end() - 1 if m.group(1).endswith("#{") else m.end()  # keep Ruby's brace
+                    body = stmt[start : start + 600]
                     if not py_format:  # just this template literal, not the code after it
                         body = re.split(r"(?<!\\)`", body, maxsplit=1)[0]
                     names = [a or (b if py_format else "") for a, b in INTERP.findall(body)]
                     names = [n for n in names if n]
+                    if m.group(1).endswith("#{"):  # Ruby: #{params[:email]} (a colon is fine inside)
+                        names = re.findall(r"\{([^}]+)\}", body.split('"')[0])
+                    dollar = m.group(1).startswith('"') and "$" in m.group(1) and "#{" not in m.group(1)
+                    if dollar:  # "$name" is interpolation in Kotlin, Dart, PHP, Groovy and Scala, not elsewhere
+                        if not fid.endswith(DOLLAR_LANGS):
+                            continue
+                        names += re.findall(r"\$\{?([A-Za-z_][\w.]*)", stmt[m.start(1) : m.start(1) + 600].split('"')[1])
                     safe = safe_names(lines, i)
                     risky = [n for n in names if not CONSTANT.match(n.strip()) and not interp_safe(n, safe)]
-                    if risky or m.group(1).endswith(("%", "+")) or ".format" in m.group(1):
+                    sprintf = m.group(1).startswith("fmt.")  # %s / %v pasted in; %d can't carry SQL
+                    concat = m.group(1).endswith("+")
+                    if concat:  # "… id = " + id: risky unless every value joined in is a number
+                        joined = re.findall(r"(?:^|\+)\s*([A-Za-z_$][\w$.]*(?:\(\))?)\s*(?=\+|\)|,|$)", body.split(";")[0])
+                        concat = not joined or any(not interp_safe(n, safe) for n in joined)
+                    if risky or sprintf or concat or m.group(1).endswith("%") or ".format" in m.group(1):
                         out["sql_built"].hits.append(Evidence(fid, i, _excerpt(line)))
                         out["sql_built"].data.setdefault(f"{fid}:{i}", risky[:4])
             if hosts_here and "://" in line and not re.match(r"\s*(//|#|\*|/\*)", line):  # used, not just mentioned
@@ -305,8 +343,21 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
         ):
             ln = next(i for i, text in enumerate(lines, 1) if re.search(r"(?<![\w.])fetch\s*\(", text))
             out["fetch_no_timeout"].hits.append(Evidence(fid, ln, _excerpt(lines[ln - 1])))
+        if not test and fid.endswith(".go"):  # the default client never times out
+            for i, line in enumerate(lines, 1):
+                code = line.split("//", 1)[0]
+                if re.search(r"\bhttp\.(?:Get|Post|Head|PostForm)\(", code) and hit("fetch_no_timeout", i):
+                    out["fetch_no_timeout"].hits.append(Evidence(fid, i, _excerpt(line)))
         if not test and fid.endswith(".py"):
             for i, line in enumerate(lines, 1):
+                if (
+                    i < len(lines)
+                    and re.match(r"\s*except\s*(?:\(?\s*(?:Exception|BaseException)\b[^:#]*)?:\s*$", line)  # broad only
+                    and lines[i].strip() == "pass"
+                    and not swallow_intent(line + " " + lines[i], lines[i - 2] if i > 1 else "")
+                    and hit("swallowed", i)
+                ):
+                    out["swallowed"].hits.append(Evidence(fid, i, _excerpt(line + " " + lines[i].strip())))
                 if re.search(r"\brequests\.(get|post|put|patch|delete|head)\s*\(", line) and "timeout" not in " ".join(
                     lines[i - 1 : i + 3]
                 ):

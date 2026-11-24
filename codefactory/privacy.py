@@ -112,7 +112,8 @@ def _argument_text(line: str, call: re.Match) -> str:
     text = "".join(out)
 
     def values_only(m: re.Match) -> str:  # a string's fixed text isn't data; only what's interpolated into it is
-        return " ".join(re.findall(r"\$?\{([^{}]*)\}", m.group(0)))
+        found = re.findall(r"\$?\{([^{}]*)\}|\\\(([^()]*)\)|\$([A-Za-z_][\w.]*)", m.group(0))  # {x} ${x} \(x) $x
+        return " ".join(a or b or c for a, b, c in found)
 
     return re.sub(r"""(["'`])(?:(?!\1).)*\1""", values_only, text)
 

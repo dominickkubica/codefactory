@@ -26,9 +26,11 @@ UNTRUSTED = re.compile(
 USES = re.compile(r"^\s*-?\s*uses:\s*([\w.-]+/[\w./-]+)@([\w.-]+)", re.M)
 FIRST_PARTY = ("actions/", "github/")
 # Dockerfiles
-FROM = re.compile(r"^\s*FROM\s+(\S+)", re.I | re.M)
-USER = re.compile(r"^\s*USER\s+(\S+)", re.I | re.M)
-ENV_SECRET = re.compile(r"^\s*(?:ENV|ARG)\s+\w*(?:SECRET|PASSWORD|PASSWD|TOKEN|API_?KEY|PRIVATE_KEY)\w*[= ]\s*\S+", re.I | re.M)
+FROM = re.compile(r"^[ \t]*FROM\s+(\S+)", re.I | re.M)  # [ \t], not \s: \s would start on a blank line above
+USER = re.compile(r"^[ \t]*USER\s+(\S+)", re.I | re.M)
+ENV_SECRET = re.compile(
+    r"^[ \t]*(?:ENV|ARG)\s+\w*(?:SECRET|PASSWORD|PASSWD|TOKEN|API_?KEY|PRIVATE_KEY)\w*[= ]\s*\S+", re.I | re.M
+)
 # Mobile
 ATS = re.compile(r"NSAllowsArbitraryLoads[\"']?\s*(?::\s*true|</key>\s*<true\s*/>)", re.I)
 CLEARTEXT = re.compile(r"usesCleartextTraffic\s*[=:]\s*[\"']?true", re.I)

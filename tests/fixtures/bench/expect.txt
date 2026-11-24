@@ -1,0 +1,226 @@
+# Ground truth for the accuracy benchmark (tests/bench.py).
+#   file | kind | text on the line            a real problem that should be reported there
+#   file | ~kind | text on the line           a look-alike that must not be
+# The text must occur on exactly one line of the file. Any finding not listed as expected counts as a false positive,
+# whether or not it's listed as a look-alike; look-alikes are listed so the corpus says what it's testing.
+# Labels say what's true, not what codefactory does today: misses stay listed and lower recall.
+
+python/app.py | secret | AWS_ACCESS_KEY_ID =
+python/app.py | ~secret | api_key = os.environ
+python/app.py | ~secret | token_hint =
+python/app.py | secret_key_literal | SECRET_KEY = "dev-secret
+python/app.py | insecure_cookie | SESSION_COOKIE_SECURE = False
+python/app.py | ~insecure_cookie | SESSION_COOKIE_HTTPONLY = True
+python/app.py | cors_any | CORS(app)
+python/app.py | plain_http | PARTNER = "http://
+python/app.py | ~plain_http | LOCAL = "http://localhost
+python/app.py | sql_built | WHERE name = '{name}'
+python/app.py | taint | WHERE name = '{name}'
+python/app.py | ~taint | WHERE id = ?", (order_id,)
+python/app.py | ~sql_built | LIMIT {size}
+python/app.py | ~taint | LIMIT {size}
+python/app.py | shell | ping -c 1 {host}
+python/app.py | taint | ping -c 1 {host}
+python/app.py | ~shell | shell=False
+python/app.py | ~taint | shell=False
+python/app.py | taint | os.path.join("/srv/files", name)
+python/app.py | taint | requests.get(request.args["url"]
+python/app.py | eval | eval(request.form["expr"])
+python/app.py | taint | eval(request.form["expr"])
+python/app.py | eval | pickle.loads(blob)
+python/app.py | ~eval | Loader=yaml.SafeLoader
+python/app.py | eval | yaml.load(text)
+python/app.py | ~eval | model.eval()
+python/app.py | weak_hash | hashlib.md5(password.encode())
+python/app.py | ~weak_hash | hashlib.md5(body)
+python/app.py | weak_random | random.choice("abcdef0123456789")
+python/app.py | ~weak_random | random.choice(COLORS)
+python/app.py | jwt_unverified | "verify_signature": False
+python/app.py | ~jwt_unverified | algorithms=["HS256"]
+python/app.py | weak_cipher | AES.MODE_ECB
+python/app.py | ~weak_cipher | AES.MODE_GCM
+python/app.py | fetch_no_timeout | latest").json()
+python/app.py | ~fetch_no_timeout | latest", timeout=10)
+python/app.py | tls_off | verify=False
+python/app.py | swallowed | except Exception:
+python/app.py | ~swallowed | except FileNotFoundError:
+python/app.py | privacy_log | log.info("signup %s", user.email)
+python/app.py | ~privacy_log | Email sent to the new user
+python/app.py | ~privacy_log | log.info("user %s signed up", user.id)
+python/app.py | io_in_loop | totals[o.id] = conn.execute(
+python/app.py | ~io_in_loop | INSERT INTO roles
+python/app.py | ~sql_built | IN ({marks})
+python/app.py | debug_on | debug=True
+
+python/settings.py | ~debug_on | DEBUG = os.environ
+python/settings.py | cors_any | CORS_ALLOW_ALL_ORIGINS = True
+python/settings.py | ~secret_key_literal | SECRET_KEY = os.environ
+python/settings.py | ~insecure_cookie | CSRF_COOKIE_SECURE = True
+
+ts/server.ts | cors_any | app.use(cors());
+ts/server.ts | ~cors_any | cors({ origin
+ts/server.ts | tls_off | rejectUnauthorized: false
+ts/server.ts | ~tls_off | rejectUnauthorized: true
+ts/server.ts | eval | return eval(code);
+ts/server.ts | eval | new Function("x", src)
+ts/server.ts | shell | execSync(`git log ${branch}`)
+ts/server.ts | ~shell | execFileSync("git"
+ts/server.ts | shell | child_process.exec(cmd
+ts/server.ts | weak_hash | update(password)
+ts/server.ts | ~weak_hash | update(fileBuffer)
+ts/server.ts | weak_random | const sessionId = Math.random()
+ts/server.ts | ~weak_random | Math.random() * 360
+ts/server.ts | insecure_cookie | httpOnly: false
+ts/server.ts | ~insecure_cookie | httpOnly: true
+ts/server.ts | jwt_unverified | ignoreExpiration: true
+ts/server.ts | io_in_loop | rows.push(await db.getFirstAsync
+ts/server.ts | sql_built | WHERE name = '${name}'
+ts/server.ts | ~sql_built | LIMIT ${PAGE_SIZE}
+ts/server.ts | ~sql_built | WHERE id = ?`, [id]
+ts/server.ts | quadratic_scan | users.find((u)
+ts/server.ts | ~quadratic_scan | users.get(o.userId)
+ts/server.ts | swallowed | } catch (e) {}
+ts/server.ts | ~swallowed | } catch {
+ts/server.ts | swallowed | p.catch(() => {})
+
+ts/App.tsx | raw_html | dangerouslySetInnerHTML
+ts/App.tsx | raw_html | el.innerHTML = html;
+ts/App.tsx | ~raw_html | const text = el.innerHTML;
+ts/App.tsx | ~raw_html | el.innerHTML === ""
+ts/App.tsx | sensitive_storage | localStorage.setItem("authToken"
+ts/App.tsx | ~sensitive_storage | localStorage.setItem("theme"
+ts/App.tsx | privacy_storage | AsyncStorage.setItem("profile"
+ts/App.tsx | ~privacy_storage | AsyncStorage.setItem("onboarded"
+ts/App.tsx | privacy_analytics | logEvent("signup"
+ts/App.tsx | ~privacy_analytics | "screen_view"
+ts/App.tsx | privacy_log | console.log("signed in", user.email)
+ts/App.tsx | ~privacy_log | On your phone
+
+ts/client.ts | plain_http | http://api.weather-feed.io
+ts/client.ts | fetch_no_timeout | http://api.weather-feed.io
+ts/client.ts | ~plain_http | http://localhost:3000
+ts/client2.ts | ~fetch_no_timeout | AbortSignal.timeout
+
+go/store.go | secret | githubToken =
+go/store.go | plain_http | partnerURL =
+go/store.go | ~plain_http | devURL =
+go/store.go | io_in_loop | row := db.QueryRow(
+go/store.go | sql_built | fmt.Sprintf("SELECT
+go/store.go | ~sql_built | WHERE name = ?", name)
+go/store.go | weak_hash | md5.Sum([]byte(password))
+go/store.go | ~shell | exec.Command("ls", dir)
+go/store.go | ~eval | return eval(s)
+go/store.go | fetch_no_timeout | http.Get(url)
+
+java/UserRepo.java | plain_http | PARTNER = "http://
+java/UserRepo.java | ~plain_http | LOCAL = "http://localhost
+java/UserRepo.java | sql_built | WHERE name = '" + name
+java/UserRepo.java | io_in_loop | stmt.executeUpdate(
+java/UserRepo.java | ~sql_built | stmt.executeUpdate(
+java/UserRepo.java | weak_hash | digest(password.getBytes())
+java/UserRepo.java | ~weak_hash | digest(file)
+java/UserRepo.java | swallowed | } catch (Exception e) {}
+java/UserRepo.java | ~io_in_loop | n += id;
+
+kotlin/Sync.kt | secret | const val SLACK_TOKEN
+kotlin/Sync.kt | plain_http | const val FEED
+kotlin/Sync.kt | io_in_loop | jdbc.prepareStatement(
+kotlin/Sync.kt | swallowed | } catch (e: Exception) {}
+kotlin/Sync.kt | ~io_in_loop | n += v
+
+swift/ProfileViewController.swift | main_thread_io | let avatar = try? Data(contentsOf:
+swift/ProfileViewController.swift | ~main_thread_io | let data = try Data(contentsOf:
+swift/ProfileViewController.swift | swift_retain_cycle | model.$name.sink { name in
+swift/ProfileViewController.swift | ~swift_retain_cycle | [weak self] email
+swift/ProfileViewController.swift | ~swift_retain_cycle | [unowned self]
+swift/ProfileViewController.swift | swift_force | view as! ProfileCell
+swift/ProfileViewController.swift | swift_force | try! JSONDecoder()
+swift/ProfileViewController.swift | ~swift_force | try? JSONDecoder()
+swift/ProfileViewController.swift | privacy_log | print("profile for", model.user.email)
+swift/ProfileViewController.swift | ~privacy_log | Loaded the profile screen
+swift/ProfileViewController.swift | privacy_storage | UserDefaults.standard.set(model.user.email
+swift/ProfileViewController.swift | ios_privacy_manifest | UserDefaults.standard.set(model.user.email
+swift/ProfileViewController.swift | ~privacy_storage | seenProfile
+swift/App.entitlements | entitlement_weakened | allow-unsigned-executable-memory
+swift/App.entitlements | ~entitlement_weakened | disable-library-validation
+
+ruby/reports.rb | plain_http | WEBHOOK =
+ruby/reports.rb | sql_built | WHERE name = '#{name}'
+ruby/reports.rb | ~sql_built | Report.where(name:
+ruby/reports.rb | eval | eval(params[:expr])
+ruby/reports.rb | shell | system("convert #{params[:file]}
+ruby/reports.rb | ~shell | system("convert", params[:file]
+ruby/reports.rb | io_in_loop | Report.find(id).touch
+
+.github/workflows/ci.yml | gha_pr_target | pull_request_target:
+.github/workflows/ci.yml | gha_injection | github.event.issue.title
+.github/workflows/ci.yml | ~gha_injection | github.sha
+.github/workflows/ci.yml | gha_unpinned | some-org/some-action@main
+.github/workflows/ci.yml | ~gha_unpinned | actions/setup-node@
+.github/workflows/ci.yml | ~gha_unpinned | actions/checkout@v4
+Dockerfile | docker_latest | FROM node:latest
+Dockerfile | docker_root | FROM node:latest
+Dockerfile | docker_secret | ENV API_TOKEN=
+
+# ---- held out: written after the fixes above, measured once, not tuned against ----
+holdout/py/views.py | debug_on | DEBUG = True
+holdout/py/views.py | sql_built | LIKE '%s'" % q
+holdout/py/views.py | taint | LIKE '%s'" % q
+holdout/py/views.py | ~sql_built | WHERE id = %s", [pk]
+holdout/py/views.py | shell | du -sh
+holdout/py/views.py | ~shell | os.system("clear")
+holdout/py/views.py | fetch_no_timeout | requests.post(url, json=data)
+holdout/py/views.py | weak_hash | hashlib.sha1((password + salt)
+holdout/py/views.py | weak_random | otp = random.randint
+holdout/py/views.py | ~weak_random | secrets.token_hex
+holdout/py/views.py | swallowed | except: pass
+holdout/py/views.py | ~swallowed | except ValueError:
+holdout/py/views.py | io_in_loop | out.append(Profile.objects.get
+holdout/py/views.py | privacy_log | print(f"new user {user.email}")
+holdout/py/views.py | ~privacy_log | emailing {count} users
+
+holdout/js/api.js | cors_any | origin: "*"
+holdout/js/api.js | plain_http | internal-metrics.corp.net
+holdout/js/api.js | sql_built | WHERE id = " + req.params.id
+holdout/js/api.js | ~sql_built | WHERE id = $1", [req.params.id]
+holdout/js/api.js | insecure_cookie | secure: false
+holdout/js/api.js | shell | exec("tar -xf " + file)
+holdout/js/api.js | weak_hash | createHash("sha1").update(password)
+holdout/js/api.js | weak_random | const inviteCode = Math.random()
+holdout/js/api.js | ~weak_random | Math.random() * items.length
+holdout/js/api.js | io_in_loop | const row = await pool.query(
+holdout/js/api.js | io_in_loop | await db.query("UPDATE t SET seen
+holdout/js/api.js | swallowed | } catch (err) { }
+holdout/js/api.js | ~swallowed | logger.warn(err)
+
+holdout/go/handler.go | secret | awsKey =
+holdout/go/handler.go | sql_built | WHERE owner = '" + owner
+holdout/go/handler.go | ~sql_built | DELETE FROM items WHERE id = %d
+holdout/go/handler.go | io_in_loop | db.Exec("UPDATE items SET seen
+holdout/go/handler.go | ~fetch_no_timeout | client.Get(u)
+holdout/go/handler.go | fetch_no_timeout | http.Post(url
+holdout/go/handler.go | weak_hash | sha1.Sum([]byte(password))
+holdout/go/handler.go | ~weak_hash | md5.Sum(data)
+
+holdout/swift/FeedViewController.swift | main_thread_io | let items = try? String(contentsOf:
+holdout/swift/FeedViewController.swift | swift_retain_cycle | addObserver(forName:
+holdout/swift/FeedViewController.swift | ~swift_retain_cycle | [weak self] _ in
+holdout/swift/FeedViewController.swift | swift_force | dict["name"] as! String
+holdout/swift/FeedViewController.swift | ~swift_force | as? String else
+holdout/swift/FeedViewController.swift | privacy_log | logged in: \(user.email)
+
+holdout/kotlin/Repo.kt | privacy_log | "user email=" + user.email
+holdout/kotlin/Repo.kt | ~privacy_log | "login ok"
+holdout/kotlin/Repo.kt | weak_hash | getInstance("SHA-1").digest(password
+holdout/kotlin/Repo.kt | io_in_loop | db.rawQuery("SELECT * FROM t WHERE id = ?"
+holdout/kotlin/Repo.kt | sql_built | name = '$name'
+
+holdout/rb/users_controller.rb | sql_built | email = '#{params[:email]}'
+holdout/rb/users_controller.rb | ~sql_built | User.where(email: params[:email])
+holdout/rb/users_controller.rb | shell | `ls #{dir}`
+holdout/rb/users_controller.rb | io_in_loop | u.posts.count
+holdout/rb/users_controller.rb | weak_hash | Digest::MD5.hexdigest(password)
+
+holdout/Dockerfile | docker_latest | FROM gcr.io/distroless/static
+holdout/Dockerfile | ~docker_root | FROM gcr.io/distroless/static
+holdout/Dockerfile | ~docker_latest | FROM golang:1.22

@@ -1,0 +1,141 @@
+# Accuracy
+
+How often codefactory is right, measured rather than claimed. Two sources: a labeled benchmark that runs in CI, and
+spot checks on real repositories.
+
+## The benchmark
+
+`tests/fixtures/bench` is a corpus of small but realistic files in Python, TypeScript, JavaScript, Go, Java,
+Kotlin, Swift and Ruby, plus a GitHub workflow, Dockerfiles and an entitlements file. `expect.txt` labels every line
+where a real problem is (what *should* be reported, whether or not codefactory reports it) and the look-alikes
+placed next to them: `hashlib.md5()` for an ETag beside one for a password, `os.system("clear")` beside a shell
+command built from input, a parameterized query beside an interpolated one, `[weak self]` beside a strong capture.
+
+A finding counts as correct only when the file, the line and the check all match a label. Anything else reported is
+a false alarm, labeled look-alike or not. Run it with:
+
+    python -m tests.bench            # the tables, plus each miss and false alarm
+    python -m tests.bench --write    # also refresh the tables below
+
+`tests/test_bench.py` runs it in CI and fails on any new false alarm or miss, or if precision or recall drops below
+the floors in `floors.json`.
+
+### Two parts, and why
+
+The corpus has a **tuning** part, which the checks were fixed against, and a **held-out** part, written afterwards
+in different idioms (Django, plain Node, `fmt.Sprintf`, Kotlin string templates, Swift interpolation, Rails
+`where`) and measured once before any change. Numbers on a set you've tuned against flatter you; the held-out
+first measurement is the honest estimate of how codefactory does on code it hasn't seen.
+
+| | Precision | Recall |
+|---|--:|--:|
+| Tuning part, first measurement | 97% | 89% |
+| Held-out part, first measurement (untuned) | **91%** | **84%** |
+| Both, after fixing what the held-out part found | 100% | 99% |
+
+The held-out run found six real defects, since fixed: Dockerfile findings pointed one line early when a blank line
+came before `FROM`; JavaScript's `exec()` from `child_process` was reported as code execution instead of a shell
+command; a constant `os.system("clear")` was reported as shell injection; Swift's `\(value)` and Kotlin's `$value`
+interpolation weren't seen as values in log calls and SQL; Rails `where("… #{…}")` wasn't checked as SQL.
+
+One miss is kept on purpose: a Rails association counted per row (`users.map { |u| u.posts.count }`) is an N+1,
+but seeing it needs the model definitions. It's listed in `floors.json`.
+
+### Tuning part
+
+<!-- bench:tuning:start -->
+| Check | Found | Missed | False alarms | Look-alikes | Precision | Recall |
+|---|--:|--:|--:|--:|--:|--:|
+| `cors_any` | 3 | 0 | 0 | 1 | 100% | 100% |
+| `debug_on` | 1 | 0 | 0 | 1 | 100% | 100% |
+| `docker_latest` | 1 | 0 | 0 | 0 | 100% | 100% |
+| `docker_root` | 1 | 0 | 0 | 0 | 100% | 100% |
+| `docker_secret` | 1 | 0 | 0 | 0 | 100% | 100% |
+| `entitlement_weakened` | 1 | 0 | 0 | 1 | 100% | 100% |
+| `eval` | 6 | 0 | 0 | 3 | 100% | 100% |
+| `fetch_no_timeout` | 3 | 0 | 0 | 2 | 100% | 100% |
+| `gha_injection` | 1 | 0 | 0 | 1 | 100% | 100% |
+| `gha_pr_target` | 1 | 0 | 0 | 0 | 100% | 100% |
+| `gha_unpinned` | 1 | 0 | 0 | 2 | 100% | 100% |
+| `insecure_cookie` | 2 | 0 | 0 | 3 | 100% | 100% |
+| `io_in_loop` | 6 | 0 | 0 | 3 | 100% | 100% |
+| `ios_privacy_manifest` | 1 | 0 | 0 | 0 | 100% | 100% |
+| `jwt_unverified` | 2 | 0 | 0 | 1 | 100% | 100% |
+| `main_thread_io` | 1 | 0 | 0 | 1 | 100% | 100% |
+| `plain_http` | 6 | 0 | 0 | 4 | 100% | 100% |
+| `privacy_analytics` | 1 | 0 | 0 | 1 | 100% | 100% |
+| `privacy_log` | 3 | 0 | 0 | 4 | 100% | 100% |
+| `privacy_storage` | 2 | 0 | 0 | 2 | 100% | 100% |
+| `quadratic_scan` | 1 | 0 | 0 | 1 | 100% | 100% |
+| `raw_html` | 2 | 0 | 0 | 2 | 100% | 100% |
+| `secret` | 3 | 0 | 0 | 2 | 100% | 100% |
+| `secret_key_literal` | 1 | 0 | 0 | 1 | 100% | 100% |
+| `sensitive_storage` | 1 | 0 | 0 | 1 | 100% | 100% |
+| `shell` | 4 | 0 | 0 | 4 | 100% | 100% |
+| `sql_built` | 5 | 0 | 0 | 7 | 100% | 100% |
+| `swallowed` | 5 | 0 | 0 | 2 | 100% | 100% |
+| `swift_force` | 2 | 0 | 0 | 1 | 100% | 100% |
+| `swift_retain_cycle` | 1 | 0 | 0 | 2 | 100% | 100% |
+| `taint` | 5 | 0 | 0 | 3 | 100% | 100% |
+| `tls_off` | 2 | 0 | 0 | 1 | 100% | 100% |
+| `weak_cipher` | 1 | 0 | 0 | 1 | 100% | 100% |
+| `weak_hash` | 4 | 0 | 0 | 3 | 100% | 100% |
+| `weak_random` | 2 | 0 | 0 | 2 | 100% | 100% |
+| **All** | **83** | **0** | **0** | **63** | **100%** | **100%** |
+<!-- bench:tuning:end -->
+
+### Held-out part
+
+<!-- bench:holdout:start -->
+| Check | Found | Missed | False alarms | Look-alikes | Precision | Recall |
+|---|--:|--:|--:|--:|--:|--:|
+| `cors_any` | 1 | 0 | 0 | 0 | 100% | 100% |
+| `debug_on` | 1 | 0 | 0 | 0 | 100% | 100% |
+| `docker_latest` | 1 | 0 | 0 | 1 | 100% | 100% |
+| `docker_root` | 0 | 0 | 0 | 1 | – | – |
+| `fetch_no_timeout` | 2 | 0 | 0 | 1 | 100% | 100% |
+| `insecure_cookie` | 1 | 0 | 0 | 0 | 100% | 100% |
+| `io_in_loop` | 5 | 1 | 0 | 0 | 100% | 83% |
+| `main_thread_io` | 1 | 0 | 0 | 0 | 100% | 100% |
+| `plain_http` | 1 | 0 | 0 | 0 | 100% | 100% |
+| `privacy_log` | 3 | 0 | 0 | 2 | 100% | 100% |
+| `secret` | 1 | 0 | 0 | 0 | 100% | 100% |
+| `shell` | 3 | 0 | 0 | 1 | 100% | 100% |
+| `sql_built` | 5 | 0 | 0 | 4 | 100% | 100% |
+| `swallowed` | 2 | 0 | 0 | 2 | 100% | 100% |
+| `swift_force` | 1 | 0 | 0 | 1 | 100% | 100% |
+| `swift_retain_cycle` | 1 | 0 | 0 | 1 | 100% | 100% |
+| `taint` | 1 | 0 | 0 | 0 | 100% | 100% |
+| `weak_hash` | 5 | 0 | 0 | 1 | 100% | 100% |
+| `weak_random` | 2 | 0 | 0 | 2 | 100% | 100% |
+| **All** | **37** | **1** | **0** | **17** | **100%** | **97%** |
+<!-- bench:holdout:end -->
+
+### What it doesn't cover
+
+- Repository-level checks (missing CI, lockfiles, README, runtime pins), dependency vulnerabilities (they come from
+  OSV), git history secrets and the structural findings (duplicates, unused code, import loops, layer rules) aren't
+  in the corpus; their behavior is covered by unit tests and the golden snapshots in `tests/golden`.
+- A corpus is small next to real code. Each label is one idiom; real code has more. Treat the numbers as "the
+  idioms listed are handled", and the spot checks below as the evidence for real code.
+
+## Spot checks on real code
+
+Every check was run on real repositories and its findings read by hand; each false positive found became a fix and a
+test. Repositories: a 60k-line Expo/TypeScript app with a Swift watch extension, a Python/FastAPI trading tool,
+Apache Commons Lang (Java), a Kotlin library, a PHP framework, a Ruby gem, Go's standard library and 1.7 million
+lines of installed Python packages.
+
+| Finding | Before | After | What changed |
+|---|---|---|---|
+| Data flow (Python) | flows from typed parameters (`shot_id: int`), database results and `sys.argv` | none of those | typed parameters, database results and command-line input aren't sources of untrusted text |
+| Privacy | "phone" in "On your phone, open the app"; generic words (`steps`, `sleep`, `location`) | — | only interpolated values count; generic words dropped |
+| Code execution | Go functions named `eval`, Java methods named `exec` | — | built-ins checked only in languages that have them |
+| Secrets | PEM keys in Go's test data | — | in tests only real vendor key formats count |
+| Swallowed errors (Python) | — | 129 broad `except Exception: pass` / bare `except: pass` across 1.7M lines | multi-line form added, broad catches only: `except KeyError: pass` is deliberate and stays quiet |
+| Plaintext URLs | 411 on the real repositories, 133 of them examples in doc comments | 278 | comment lines skipped |
+| Secrets | `token_type = 'content-transfer-encoding'`, a Go string table; `SLACK_TOKEN = "…"` missed | caught, without those | a keyword may end a name; a credential has a digit |
+| Calls (Java, Kotlin, Swift) | `repo.find()` ambiguous between classes | resolved by the declared type | declared-type resolution |
+
+Findings are leads with the exact line. The review ranks them, and anything intended can be marked in the code
+(`codefactory: ignore <kind> — why`) or accepted with `codefactory accept`, with the reason kept.
