@@ -329,7 +329,7 @@ def cmd_diff(a) -> int:
     root = _repo(a.path)
     base = a.base or diff.default_base(root)
     result = diff.run(root, base, lambda p: load_graph(p, a.lang, not a.no_cache))
-    level = SEVERITY_ORDER.get(a.fail_on, 99)
+    level = SEVERITY_ORDER.get(a.fail_on, -1)  # "never": nothing blocks
     blocking = [i for i in result["new"] if SEVERITY_ORDER.get(i.severity, 2) <= level]
     if a.json:
         print(

@@ -75,6 +75,8 @@ class DiffTest(unittest.TestCase):
             self.assertEqual(new, {("sql_built", "")})  # moved code (total, main) isn't new
             self.assertIn(("duplicate", "total"), fixed)
             self.assertEqual(code, 1)  # sql_built is warn
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(main(["diff", d, "--base", "main"]), 0)  # --fail-on never (the default) never fails
             self.assertEqual(result["changed"], ["app.py"])
 
 
