@@ -1,0 +1,47 @@
+layers: api | shop app | core | db
+layer shop/__init__.py: shop app
+layer shop/api/__init__.py: api
+layer shop/api/reports.py: api
+layer shop/api/routes.py: api
+layer shop/core/__init__.py: core
+layer shop/core/pricing.py: core
+layer shop/core/tax.py: core
+layer shop/db/__init__.py: db
+layer shop/db/sql.py: db
+layer shop/db/store.py: db
+edge call shop/api/reports.py::import_lines -> shop/db/sql.py::save_line
+edge call shop/api/reports.py::order_report -> shop/db/sql.py::get_order
+edge call shop/api/routes.py::checkout -> shop/core/pricing.py::total
+edge call shop/api/routes.py::checkout -> shop/db/store.py::save_order
+edge call shop/api/routes.py::list_orders -> shop/db/store.py::load_orders
+edge call shop/core/pricing.py::total -> shop/core/tax.py::tax_for
+edge call shop/core/pricing.py::total_copy -> shop/core/tax.py::tax_for
+edge call shop/core/tax.py::preview -> shop/core/pricing.py::total
+edge call shop/db/store.py::<module> -> shop/db/store.py::Store.__init__
+edge import shop/api/reports.py -> shop/db/sql.py
+edge import shop/api/routes.py -> shop/core/pricing.py
+edge import shop/api/routes.py -> shop/db/store.py
+edge import shop/core/pricing.py -> shop/core/tax.py
+edge import shop/core/tax.py -> shop/core/pricing.py
+edge ref shop/db/store.py::save_order -> shop/db/store.py::Store.add
+flag high cycle shop/core/pricing.py:0 Import loop of 2 files: pricing.py → tax.py
+flag high cycle shop/core/tax.py:0 Import loop of 2 files: pricing.py → tax.py
+flag info io_in_loop shop/api/reports.py::import_lines:11 import_lines calls save_line() inside a loop (line 11), and that reaches conn.execute(): one write per item. Fine for a few inside one transaction; for many, batch them (one multi-row INSERT/UPDATE) and make sure they share a transaction.
+flag info unused shop/db/store.py::Store.unused_method:8 Store.unused_method has no callers found (it may be called through an instance or a framework)
+flag warn duplicate shop/core/pricing.py::apply_coupon:25 Same code as discount (shop/core/pricing.py)
+flag warn duplicate shop/core/pricing.py::discount:15 Same code as apply_coupon (shop/core/pricing.py)
+flag warn io_in_loop shop/api/reports.py::order_report:6 order_report calls get_order() inside a loop (line 6), and that reaches conn.execute("SELECT …"): one query per item (the N+1 pattern). Load them all with one query (WHERE id IN (…), a JOIN).
+flag warn similar shop/api/reports.py::freight_cost:24 85% similar to shipping_cost: likely a copy that was edited
+flag warn similar shop/api/reports.py::shipping_cost:14 85% similar to freight_cost: likely a copy that was edited
+flag warn unused shop/api/reports.py::freight_cost:24 freight_cost is never called or referenced
+flag warn unused shop/api/reports.py::import_lines:9 import_lines is never called or referenced
+flag warn unused shop/api/reports.py::order_report:4 order_report is never called or referenced
+flag warn unused shop/api/reports.py::shipping_cost:14 shipping_cost is never called or referenced
+flag warn unused shop/api/routes.py::checkout:6 checkout is never called or referenced
+flag warn unused shop/api/routes.py::legacy_export:16 legacy_export is never called or referenced
+flag warn unused shop/api/routes.py::list_orders:12 list_orders is never called or referenced
+flag warn unused shop/core/pricing.py::apply_coupon:25 apply_coupon is never called or referenced
+flag warn unused shop/core/pricing.py::discount:15 discount is never called or referenced
+flag warn unused shop/core/pricing.py::total_copy:9 total_copy is never called or referenced
+flag warn unused shop/core/tax.py::preview:10 preview is never called or referenced
+flag warn unused shop/db/sql.py::connect:4 connect is never called or referenced

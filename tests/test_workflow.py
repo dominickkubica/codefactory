@@ -105,7 +105,7 @@ class PlanTest(unittest.TestCase):
         self.assertIn("Merge 2 copies", merge["title"])
         self.assertEqual(len(merge["where"]), 2)
         batch = next(t for t in self.tasks if t["kind"] == "io_in_loop" and "order_report" in t["title"])
-        self.assertTrue(any("get_orderMany" in s for s in batch["steps"]))  # batching advice names the function
+        self.assertTrue(any("get_order_batch(ids)" in s for s in batch["steps"]))  # named in the code's own style
         self.assertEqual(sum(1 for t in self.tasks if t["kind"] == "unused"), 1)  # dead code is one cleanup task
 
     def test_prompt_is_self_contained(self):

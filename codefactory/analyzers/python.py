@@ -22,7 +22,8 @@ def iter_files(root: Path, ignore: list[str]) -> list[Path]:
     out = []
     for p in sorted(root.rglob("*.py")):
         rel = p.relative_to(root)
-        if any(part in skip or part.endswith(".egg-info") for part in rel.parts[:-1]):
+        # hidden folders (.claude, .github, .venv…) hold tooling and environments, not the product's code
+        if any(part in skip or part.endswith(".egg-info") or part.startswith(".") for part in rel.parts[:-1]):
             continue
         out.append(p)
     return out
@@ -105,6 +106,7 @@ def _functions(mod: _Module) -> list[tuple[Function, dict]]:
         f = Function(
             id=fid, file=mod.rel, name=d["name"], qualname=q, line=d["line"], end=d["end"], loc=d["end"] - d["line"] + 1,
             kind=d["kind"], decorated=d["decorated"], exported=d["exported"], shape=d["shape"], tokens=d["tokens"],
+            doc=d.get("doc", 0), branches=d.get("branches", 0),
         )  # fmt: skip
         mod.funcs.setdefault(q, f)
         out.append((f, d))
@@ -191,14 +193,14 @@ def _link(
             if sites is not None:
                 sites.append(Site(src_id, "loop_await", ev[1], bounded=ev[2] is not None and all(d in consts for d in ev[2])))
         elif kind == "c":
-            _, line, loop, deps, e, sink, attr = ev
+            _, line, loop, deps, e, sink, attr, tx = ev
             bounded = deps is not None and all(d in consts for d in deps)
             target = res.expr(mod, e, cls)
             if target:
                 if target != src_id:
                     calls[(src_id, target)] += 1
                     if loop and sites is not None:
-                        sites.append(Site(src_id, "loop_call", line, target=target, bounded=bounded))
+                        sites.append(Site(src_id, "loop_call", line, target=target, bounded=bounded, tx=tx))
             elif e and e[0] == "s":  # TABLE[key](…): one of the table's functions runs; link to all of them
                 for ref in mod.tables.get(e[1], ()):
                     fid = res.expr(mod, ref, cls)
@@ -208,7 +210,7 @@ def _link(
                 if sink and io is not None:
                     io.add(sink)
                     if loop and sites is not None:
-                        sites.append(Site(src_id, "loop_io", line, detail=sink, bounded=bounded))
+                        sites.append(Site(src_id, "loop_io", line, detail=sink, bounded=bounded, tx=tx))
                 if attr in res.unique_methods:
                     guess = res.unique_methods[attr]
                     if guess != src_id:
@@ -223,7 +225,7 @@ def analyze_python(root: Path, ignore: list[str], cache: bool = True) -> Graph:
     g = Graph(root=str(root), language="python")
     paths = [p.relative_to(root) for p in iter_files(root, ignore)]
     parsed = parallel.run(root, "python", [(rel.as_posix(), (str(root / rel), rel.as_posix())) for rel in paths], parse_module,
-                          tool="python-ir-1", cache=cache)  # fmt: skip
+                          tool="python-ir-2", cache=cache)  # fmt: skip
     modules: dict[str, _Module] = {}
     for rel in paths:
         data = parsed.get(rel.as_posix())

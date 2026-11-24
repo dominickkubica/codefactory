@@ -199,6 +199,10 @@ TypeScript or JavaScript file changes, because the type checker needs the whole 
 
 ## Layers
 
+Files directly at the top of a package that's split into zones are placed by their imports: more importers in the
+zones than imports out of them makes them "<package> shared" (config, logging, errors), otherwise "<package> app"
+(the CLI, the app object). Left together they made one zone that seemed to break the dependency order both ways.
+
 A layer (a zone on the floor) is, in order of precedence:
 
 1. a `[layers]` glob in `factory.toml`;
@@ -259,6 +263,11 @@ below the threshold; at 0.70, unrelated components that merely share JSX structu
 4. **Searches in loops** are reported at `info`, never in bounded loops.
 
 Test files are excluded: a setup loop in a test isn't a production problem.
+
+**Transactions.** A write in a loop is the advice "batch it or put it in one transaction"; when it's already inside
+one (`with db.session():`, `with transaction.atomic():`, `with conn:`; a callback given to `transaction(…)`), the
+advice is moot and it isn't reported. Only the enclosing block is seen: a function whose caller opens the
+transaction still is.
 
 ### Size, hubs and saved queries
 

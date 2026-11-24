@@ -26,6 +26,13 @@ BASE = {
 SCRIPT_EXT = (".js", ".mjs", ".cjs", ".jsx")
 
 
+def batch_name(name: str, file: str) -> str:
+    """The batched variant's name in the code's own style: get_order -> get_orders_batch(ids), getOrder -> getOrderMany(ids)."""
+    if "_" in name or name.islower() or file.endswith((".py", ".rb", ".rs", ".ex", ".exs")):
+        return f"{name}_batch(ids)"
+    return f"{name}Many(ids)"
+
+
 def _id(kind: str, parts: list[str]) -> str:
     return hashlib.sha1(f"{kind}|{'|'.join(sorted(parts))}".encode("utf-8", "surrogatepass")).hexdigest()[:6]
 
@@ -93,18 +100,36 @@ class Planner:
                 ),
             )
             others = [m for m in members if m is not home]
-            saved = sum(m["loc"] for m in members) - max(m["loc"] for m in members)
+            code = lambda m: max(1, m["loc"] - m.get("doc", 0))  # noqa: E731  docstrings aren't copied logic
+            saved = sum(code(m) for m in members) - max(code(m) for m in members)
+            # different names in one file: kept apart on purpose (separate entry points); share the body instead
+            # (each name used or exported: a copy nobody calls is just a copy to delete)
+            named_apart = (
+                len({m["file"] for m in members}) == 1
+                and len({m["name"] for m in members}) == len(members)
+                and all(self.v.callers[m["id"]] or m.get("exported") or m.get("public") for m in members)
+            )
             sim = "identical" if exact else f"{round(max(x.get('score', 0) for x in flags) * 100)}% similar"
-            steps = [
-                f"Keep `{home['qualname']}` in `{home['file']}:{home['line']}` as the one version "
-                f"(layer {self.v.file[home['file']]['layer']}, which the other copies' callers can import)."
-            ]
+            if named_apart:
+                names = ", ".join(f"`{m['qualname']}`" for m in members)
+                steps = [
+                    f"{names} in `{home['file']}` have the same body under different names, which usually means "
+                    "separate entry points kept on purpose: keep every name.",
+                    "Move the shared body into one private helper in the same file and make each of them a one-line "
+                    "call to it (keep their docstrings), so a fix to the body reaches all of them.",
+                    "If they're expected to diverge, silence it instead: `codefactory: ignore duplicate — <why>`.",
+                ]
+            else:
+                steps = [
+                    f"Keep `{home['qualname']}` in `{home['file']}:{home['line']}` as the one version "
+                    f"(layer {self.v.file[home['file']]['layer']}, which the other copies' callers can import)."
+                ]
             if not exact:
                 steps.append(
                     "The copies differ: compare them line by line, and fold each difference into a parameter "
                     "(or keep the variant every caller needs) before merging."
                 )
-            for m in others:
+            for m in [] if named_apart else others:
                 callers = self.callers_of(m["id"])
                 steps.append(
                     f"Replace `{m['qualname']}` in `{m['file']}:{m['line']}` with an import of the kept one; "
@@ -126,7 +151,9 @@ class Planner:
                     f["kind"],
                     [m["id"] for m in members],
                     score * self.weight(files),
-                    f"Merge {len(members)} copies of {home['qualname']} ({sim}, ~{saved} lines)",
+                    f"Share one body between {', '.join(sorted(m['name'] for m in members))} ({sim}, ~{saved} lines)"
+                    if named_apart
+                    else f"Merge {len(members)} copies of {home['qualname']} ({sim}, ~{saved} lines)",
                     f"The same logic lives in {len(members)} places ({sim}). A fix in one copy silently misses "
                     f"the others; merging saves ~{saved} lines.",
                     [self.at(m["id"]) for m in members],
@@ -160,8 +187,9 @@ class Planner:
                     c = self.v.fn[callee]
                     steps.append(
                         f"  The I/O happens in `{c['qualname']}` (`{c['file']}:{c['line']}`): add a batched variant "
-                        f"that takes all items at once (e.g. `{c['name']}Many(ids)`), call it once before the loop, "
-                        "and read results from a Map inside the loop."
+                        f"that takes all items at once (e.g. `{batch_name(c['name'], c['file'])}`), call it once before "
+                        f"the loop, and read results from a {'dict' if c['file'].endswith('.py') else 'Map'} inside "
+                        "the loop."
                     )
             if warn:
                 steps.append(

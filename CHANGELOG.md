@@ -3,6 +3,33 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.9.2 · 2026-11-24
+
+What a review of a 55,000-line FastAPI + React app showed could be better.
+
+### Changed
+- **Writes inside a transaction aren't reported**: loops in `with db.session():`, `with transaction.atomic():`,
+  `with conn:` (Python) or in a callback given to `transaction(…)` / `withTransactionAsync(…)` (TypeScript) are
+  batched already. On a React Native app this took "writes inside loops" from 28 to 7.
+- **Copy sizes count code, not docstrings**: three functions with long docstrings and a 3-line shared body were
+  "~29 lines" of copies; now ~12.
+- **Copies kept apart on purpose** (same file, different names, each used or public) get "share one body between
+  them" advice instead of "replace it with an import of the other".
+- **Long functions are ranked by decision points**, not length alone, and the count is shown: a 750-line table of
+  options no longer outranks a 90-line parser full of conditions.
+- **Batch suggestions use the code's naming style**: `get_order_batch(ids)` and a dict in Python, `getOrderMany(ids)`
+  and a Map in TypeScript.
+- **Top-level files of a package split into zones** are placed by how they're used: imported by the zones
+  ("pkg shared": config, logging) or importing them ("pkg app": the CLI). One mixed zone used to look like a layer
+  against the dependency order.
+- **Hidden folders** (`.claude`, `.github`…) are tooling, not product code, and aren't analyzed.
+- **Data stores from Python manifests**: dependencies in `pyproject.toml` and `requirements.txt` are read, and DuckDB,
+  Parquet, SQLAlchemy, MySQL, Elasticsearch and S3 are recognised.
+
+### Added
+- **Snapshot tests** of every finding on the three fixture apps (`tests/golden/`): any change in what codefactory
+  reports fails CI until it's reviewed (`CODEFACTORY_UPDATE_GOLDEN=1`).
+
 ## 0.9.1 · 2026-11-24
 
 ### Fixed (found reviewing a 55,000-line FastAPI + React app)

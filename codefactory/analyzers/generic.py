@@ -203,7 +203,7 @@ def analyze_generic(root: Path, ignore: list[str], include_js: bool = False, cac
         )
         return g
     items = [(rel, (str(root / rel), rel, lang)) for rel, lang in found]
-    parsed = parallel.run(root, "generic", items, parse_file, tool="treewalk-1", cache=cache)
+    parsed = parallel.run(root, "generic", items, parse_file, tool="treewalk-2", cache=cache)
     return link(g, parsed)
 
 
@@ -244,6 +244,7 @@ def link(g: Graph, parsed: dict[str, dict]) -> Graph:
                     exported=f["public"] or f["name"] in ENTRY_NAMES,
                     shape=f["shape"],
                     tokens=f["tokens"],
+                    branches=f.get("branches", 0),
                 )
             )
             defs[f["name"]].append(fid)

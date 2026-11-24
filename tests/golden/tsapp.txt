@@ -1,0 +1,59 @@
+layers: ui | state | util | data
+layer src/data/fixed.ts: data
+layer src/data/lazy.ts: data
+layer src/data/repo.ts: data
+layer src/data/store.ts: data
+layer src/state/useCart.ts: state
+layer src/ui/Boundary.tsx: ui
+layer src/ui/Button.tsx: ui
+layer src/ui/List.tsx: ui
+layer src/ui/Screen.tsx: ui
+layer src/util/format.ts: util
+layer src/util/math.ts: util
+edge call src/data/fixed.ts::dispatch -> src/data/fixed.ts::handleCreate
+edge call src/data/fixed.ts::report -> src/data/lazy.ts::buildReport
+edge call src/data/fixed.ts::report -> src/data/lazy.ts::buildSummary
+edge call src/state/useCart.ts::useCart.add -> src/data/store.ts::Store.save
+edge call src/state/useCart.ts::useCart.total -> src/data/store.ts::Store.all
+edge call src/state/useCart.ts::useCart.total -> src/util/math.ts::sum
+edge call src/ui/List.tsx::List -> src/data/repo.ts::loadAll
+edge call src/ui/List.tsx::List -> src/data/repo.ts::tagged
+edge call src/ui/List.tsx::List -> src/ui/Button.tsx::Button
+edge call src/ui/Screen.tsx::Screen -> src/state/useCart.ts::useCart
+edge call src/ui/Screen.tsx::Screen -> src/state/useCart.ts::useCart.add
+edge call src/ui/Screen.tsx::Screen -> src/state/useCart.ts::useCart.total
+edge call src/ui/Screen.tsx::Screen -> src/ui/Button.tsx::Button
+edge call src/util/format.ts::describe -> src/util/math.ts::sum
+edge call src/util/math.ts::unusedHelper -> src/util/format.ts::describe
+edge import src/state/useCart.ts -> src/data/store.ts
+edge import src/state/useCart.ts -> src/util/math.ts
+edge import src/ui/List.tsx -> src/data/repo.ts
+edge import src/ui/List.tsx -> src/ui/Button.tsx
+edge import src/ui/Screen.tsx -> src/state/useCart.ts
+edge import src/ui/Screen.tsx -> src/ui/Button.tsx
+edge import src/util/format.ts -> src/util/math.ts
+edge import src/util/math.ts -> src/util/format.ts
+edge ref src/data/fixed.ts::<module> -> src/data/fixed.ts::handleCreate
+edge ref src/data/fixed.ts::<module> -> src/data/fixed.ts::handleDelete
+edge ref src/data/fixed.ts::dispatch -> src/data/fixed.ts::handleDelete
+edge ref src/state/useCart.ts::<module> -> src/util/math.ts::sum
+edge ref src/state/useCart.ts::useCart -> src/state/useCart.ts::useCart.add
+edge ref src/state/useCart.ts::useCart -> src/state/useCart.ts::useCart.total
+edge ref src/ui/List.tsx::<module> -> src/data/repo.ts::loadAll
+edge ref src/ui/List.tsx::<module> -> src/data/repo.ts::tagged
+edge ref src/ui/List.tsx::<module> -> src/ui/Button.tsx::Button
+edge ref src/ui/Screen.tsx::<module> -> src/state/useCart.ts::useCart
+edge ref src/ui/Screen.tsx::<module> -> src/ui/Button.tsx::Button
+edge ref src/util/format.ts::<module> -> src/util/math.ts::sum
+edge ref src/util/math.ts::<module> -> src/util/format.ts::describe
+flag high cycle src/util/format.ts:0 Import loop of 2 files: format.ts → math.ts
+flag high cycle src/util/math.ts:0 Import loop of 2 files: format.ts → math.ts
+flag info io_in_loop src/data/fixed.ts::countTables:11 countTables calls db.getFirstAsync() inside a loop (line 11 and 2 more): one query per item (the N+1 pattern). Load them all with one query (WHERE id IN (…), a JOIN). It loops over a list fixed in the code, so the number of calls can't grow with the data: fine as is unless that list gets long.
+flag info io_in_loop src/data/fixed.ts::firstFive:20 firstFive calls db.getFirstAsync() inside a loop (line 20): one query per item (the N+1 pattern). Load them all with one query (WHERE id IN (…), a JOIN). It loops over a list fixed in the code, so the number of calls can't grow with the data: fine as is unless that list gets long.
+flag info quadratic_scan src/data/repo.ts::tagged:14 tagged calls picked.includes() on every round of a loop (line 14): fine for short lists, slow (O(n²)) for long ones. A Map or Set built once before the loop makes each lookup instant.
+flag warn duplicate src/util/math.ts::addUp:13 Same code as sum (src/util/math.ts)
+flag warn duplicate src/util/math.ts::sum:5 Same code as addUp (src/util/math.ts)
+flag warn io_in_loop src/data/repo.ts::loadAll:7 loadAll calls db.getFirstAsync() inside a loop (line 7): one query per item (the N+1 pattern). Load them all with one query (WHERE id IN (…), a JOIN).
+flag warn unused src/data/fixed.ts::require:2 require is never called or referenced
+flag warn unused src/util/math.ts::addUp:13 addUp is never called or referenced
+flag warn unused src/util/math.ts::unusedHelper:21 unusedHelper is never called or referenced

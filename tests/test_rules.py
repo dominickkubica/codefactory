@@ -123,7 +123,7 @@ class RulesTest(unittest.TestCase):
         layers = {f.id: f.layer for f in build(project(files)).files}
         self.assertEqual(layers["pkg/_internal/cli/m0.py"], "cli")
         self.assertEqual(layers["pkg/_internal/utils/m3.py"], "utils")
-        self.assertEqual(layers["pkg/main.py"], "pkg")
+        self.assertEqual(layers["pkg/main.py"], "pkg app")  # top-level glue goes by its imports
 
     def test_bad_syntax_is_skipped(self):
         root = project({"ok.py": "def f():\n    return 1\n", "broken.py": "def (:\n"})

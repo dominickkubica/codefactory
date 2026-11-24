@@ -14,7 +14,7 @@ const EXT = /\.(tsx?|jsx?|mjs|cjs|mts|cts)$/;
 const rel = (f) => path.relative(root, f).split(path.sep).join("/");
 const skipped = (f) => {
   const parts = rel(f).split("/");
-  return parts.slice(0, -1).some((p) => ignore.has(p)) || /\.d\.[mc]?ts$|\.min\.[mc]?js$/.test(f) || !EXT.test(f) || rel(f).startsWith("..");
+  return parts.slice(0, -1).some((p) => ignore.has(p) || (p.startsWith(".") && p !== "." && p !== "..")) || /\.d\.[mc]?ts$|\.min\.[mc]?js$/.test(f) || !EXT.test(f) || rel(f).startsWith("..");
 };
 
 function walkDir(dir, out) {
@@ -171,6 +171,36 @@ function boundedLoop(p) {
   return false; // while / do: can't tell
 }
 
+// Decision points in a function's own body (if, loops, case, catch, ?:, && || ??): how hard it is to follow, which
+// length alone doesn't say (a 700-line table of options is long and simple).
+function branchesOf(fnNode) {
+  let count = 0;
+  const visit = (x) => {
+    if (x !== fnNode && fnByNode.has(x)) return;
+    if (ts.isIfStatement(x) || ts.isForStatement(x) || ts.isForOfStatement(x) || ts.isForInStatement(x) || ts.isWhileStatement(x) ||
+      ts.isDoStatement(x) || ts.isCaseClause(x) || ts.isCatchClause(x) || ts.isConditionalExpression(x)) count++;
+    if (ts.isBinaryExpression(x) && [ts.SyntaxKind.AmpersandAmpersandToken, ts.SyntaxKind.BarBarToken,
+      ts.SyntaxKind.QuestionQuestionToken].includes(x.operatorToken.kind)) count++;
+    ts.forEachChild(x, visit);
+  };
+  visit(fnNode);
+  return count;
+}
+
+// A write inside a callback handed to transaction()/withTransactionAsync()/atomic(): batched into one transaction.
+const TX = /transaction|atomic|batch|writeTxn|serializ/i;
+function inTransaction(n) {
+  for (let p = n.parent; p; p = p.parent) {
+    if (ts.isSourceFile(p)) return false;
+    if (isFnLike(p)) {
+      const call = p.parent;
+      if (call && ts.isCallExpression(call) && call.arguments.includes(p) && TX.test(lastName(call.expression) || "")) return true;
+      if (fnByNode.has(p)) return false;
+    }
+  }
+  return false;
+}
+
 // { loop, stmt, bounded }: runs once per iteration of a loop (for/while, or an array callback like .map); stmt = a
 // for/while statement around it in the same function body (an await there waits on each round in turn); bounded =
 // every loop around it goes over a list fixed in the code, so the number of rounds can't grow with the data.
@@ -253,7 +283,7 @@ for (const sf of sources) {
         const fn = { id: fid, file: id, name, qualname: qual, line, end, loc: end - line + 1,
           kind: prefix && prefix === cls ? "method" : "function", decorated: !!(ts.canHaveDecorators(n) && ts.getDecorators(n)?.length),
           exported: !!asData || isDefaultExport(n) || (n.parent && ts.isVariableDeclaration(n.parent) && isDefaultExport(n.parent.parent.parent)),
-          ...shapeOf(n, sf), dynamic: false, public: isExported(n), io: [] };
+          ...shapeOf(n, sf), dynamic: false, public: isExported(n), io: [], branches: branchesOf(n) };
         functions.push(fn);
         fnByNode.set(n, fn);
         next = fn;
@@ -406,13 +436,13 @@ for (const sf of sources) {
       const line = lineOf(sf, n.getStart(sf));
       if (src && dst && dst !== src) {
         bump(calls, `${src.id}\u0000${dst.id}`);
-        if (where.loop) sites.push({ fn: src.id, kind: "loop_call", line, target: dst.id, detail: "", bounded: where.bounded });
+        if (where.loop) sites.push({ fn: src.id, kind: "loop_call", line, target: dst.id, detail: "", bounded: where.bounded, tx: inTransaction(n) });
       } else if (!dst && ts.isCallExpression(n)) {
         if (ts.isPropertyAccessExpression(n.expression)) unresolvedProps.add(n.expression.name.text);
         const io = src && ioCall(n);
         if (io) {
           (ioOf.get(src) || ioOf.set(src, new Set()).get(src)).add(io);
-          if (where.loop) sites.push({ fn: src.id, kind: "loop_io", line, target: "", detail: io, bounded: where.bounded });
+          if (where.loop) sites.push({ fn: src.id, kind: "loop_io", line, target: "", detail: io, bounded: where.bounded, tx: inTransaction(n) });
         } else if (src && where.loop && ts.isPropertyAccessExpression(n.expression) && SCAN.has(n.expression.name.text) &&
                    arrayish(n.expression.expression) && !constIterable(n.expression.expression)) { // [a, b].includes(x) is O(1)
           sites.push({ fn: src.id, kind: "loop_scan", line, target: "", detail: `${lastName(n.expression.expression) || "array"}.${n.expression.name.text}`, bounded: where.bounded });

@@ -16,7 +16,7 @@ TEST_DIRS = set(paths.TEST_DIRS)
 SOURCE_DIRS = {"src", "lib", "source"}
 
 
-def _inferred(paths: list[str]) -> dict[str, str]:
+def _inferred(paths: list[str], roots: set[str] | None = None) -> dict[str, str]:
     """Layer = the first folder after the folders every file shares (src/ and one top package are skipped)."""
     dirs = [PurePosixPath(p).parts[:-1] for p in paths]
     nontest = [d for d in dirs if not (set(d) & TEST_DIRS)] or dirs
@@ -39,10 +39,12 @@ def _inferred(paths: list[str]) -> dict[str, str]:
             continue
         out[p] = rest[0] if rest else (common[-1] if common else "root")
         deeper[p] = rest[1:]
-    return _split_dominant(out, deeper)
+        if not rest and common and roots is not None:
+            roots.add(p)  # at the top of the package every file shares: placed by how it's used (_place_roots)
+    return _split_dominant(out, deeper, roots if roots is not None else set())
 
 
-def _split_dominant(out: dict[str, str], deeper: dict[str, tuple[str, ...]]) -> dict[str, str]:
+def _split_dominant(out: dict[str, str], deeper: dict[str, tuple[str, ...]], roots: set[str]) -> dict[str, str]:
     """One zone holding most of the code (pip/_internal/…, app/core/…) says nothing: split it by the next folder level,
     as long as that gives several real zones. Files directly in the zone's folder keep its name."""
     counts = Counter(layer for layer in out.values() if layer != "tests")
@@ -56,7 +58,27 @@ def _split_dominant(out: dict[str, str], deeper: dict[str, tuple[str, ...]]) -> 
         for p in members:
             if deeper.get(p):
                 out[p] = deeper[p][0]
+            else:
+                roots.add(p)  # directly in the split zone's folder: placed by how it's used (_place_roots)
     return out
+
+
+def _place_roots(g: Graph, inferred: dict[str, str], roots: set[str]) -> None:
+    """Files left at the top of a split package mix two roles: things the zones below use (config, logging, errors)
+    and things that use them (the CLI, the app). One zone for both reads as a layer that depends on everything and
+    is depended on by everything, so each goes by its imports: more importers inside than imports out is "shared"."""
+    if not roots or len({inferred[p] for p in inferred if p not in roots and inferred[p] != "tests"}) < 2:
+        return  # no zones below them to be shared with or built on
+    into, out_of = Counter(), Counter()
+    for e in g.edges:
+        if e.kind == "import" and inferred.get(e.src) != "tests":
+            if e.dst in roots and e.src not in roots:
+                into[e.dst] += 1
+            if e.src in roots and e.dst not in roots:
+                out_of[e.src] += 1
+    for p in roots:
+        base = inferred[p]
+        inferred[p] = f"{base} shared" if into[p] > out_of[p] else f"{base} app"
 
 
 def _by_depth(g: Graph, ids: set[str]) -> dict[str, str]:
@@ -92,7 +114,9 @@ def _by_depth(g: Graph, ids: set[str]) -> dict[str, str]:
 
 def assign_layers(g: Graph, cfg: Config) -> None:
     paths = [f.id for f in g.files]
-    inferred = _inferred(paths)
+    roots: set[str] = set()
+    inferred = _inferred(paths, roots)
+    _place_roots(g, inferred, roots)
     main = {p for p, layer in inferred.items() if layer != "tests"}
     if not cfg.layers and len({inferred[p] for p in main}) == 1 and len(main) > 6:
         inferred.update(_by_depth(g, main))

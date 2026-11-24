@@ -335,13 +335,19 @@ class Review:
                 _effort(len(copies), len(copies) * 2),
                 max(0, len(copies) - 6),
             )
-        long = sorted((f for f in self.code_fns if f["loc"] > 80), key=lambda f: -f["loc"])
+        # the hardest to follow first: branches (decisions) weigh more than length, so a long but flat table of
+        # options or a big layout ranks below a shorter function full of conditions
+        long = sorted((f for f in self.code_fns if f["loc"] > 80), key=lambda f: -(f.get("branches", 0) * 4 + f["loc"] / 10))
         if long:
             self.add(
                 f"Very long functions ({_n(len(long), 'function')} over 80 lines)",
                 "Low",
                 "Maintainability",
-                [f"`{f['file']}:{f['line']}` {f['qualname']}: {f['loc']} lines" for f in long[:6]],
+                [
+                    f"`{f['file']}:{f['line']}` {f['qualname']}: {f['loc']} lines"
+                    + (f", {f['branches']} decision points" if f.get("branches") else "")
+                    for f in long[:6]
+                ],
                 "Hard to read, test and change safely; often several responsibilities in one place.",
                 "Extract the parts that have names of their own.",
                 "M",
@@ -552,6 +558,12 @@ class Review:
             out.append("SQLite")
         for pat, name in (
             (r"psycopg|asyncpg|pg\b", "PostgreSQL"),
+            (r"duckdb", "DuckDB"),
+            (r"pyarrow|fastparquet|\.parquet|to_parquet|read_parquet", "Parquet files"),
+            (r"sqlalchemy", "SQLAlchemy"),
+            (r"mysql|pymysql", "MySQL"),
+            (r"elasticsearch|opensearch", "Elasticsearch"),
+            (r"boto3|@aws-sdk/client-s3", "Amazon S3 / AWS"),
             (r"pymongo|mongoose", "MongoDB"),
             (r"redis", "Redis"),
             (r"AsyncStorage", "AsyncStorage"),

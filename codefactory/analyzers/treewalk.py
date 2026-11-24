@@ -64,6 +64,10 @@ STRINGY = re.compile(r"string|char_literal|heredoc")
 NUMBER = re.compile(r"number|integer|float|decimal|^int_literal|real_literal")
 COMMENT = re.compile(r"comment")
 PUBLIC = re.compile(r"^\s*(?:@\w+\s+)*(?:export|public|pub\b|open\b|def\b|module_function)")
+BRANCH = re.compile(
+    r"^(?:if|elif|else_if|elsif|unless|for|foreach|while|until|do|loop|case|when|catch|rescue|except|guard|match_arm|"
+    r"switch_case|switch_section|conditional|ternary)(?:_\w+)?$"
+)
 MAX_BYTES = 1_000_000  # bigger files are generated or data
 MAX_DEPTH = 400  # pathological nesting (generated code) is cut, not followed
 
@@ -180,6 +184,7 @@ def walk(source: bytes, parser, rel: str) -> dict:
                 "public": bool(PUBLIC.match(head)) or (name[:1].isupper() and rel.endswith(".go")) or name == "main",
                 "calls": [],
                 "refs": set(),
+                "branches": 0,
                 "tokens": [],
             }
             out["functions"].append(rec)
@@ -193,6 +198,8 @@ def walk(source: bytes, parser, rel: str) -> dict:
             for c in reversed(node.children):
                 stack.append((c, fn, (*classes, name) if name else classes, loops, depth + 1))
             continue
+        if fn is not None and (BRANCH.search(t) or t in ("&&", "||", "and", "or", "??", "orelse", "andalso")):
+            fn["branches"] += 1
         in_loop = loops
         if LOOP.search(t) and not NOT_LOOP.search(t) and node.named_children:
             in_loop = loops + 1

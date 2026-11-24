@@ -26,6 +26,10 @@ codefactory check .                          # codefactory finds nothing serious
 
 CI runs the same on Linux and Windows with Python 3.11 and 3.13.
 
+If a change alters findings on purpose, `tests/test_golden.py` fails: run
+`CODEFACTORY_UPDATE_GOLDEN=1 python -m unittest tests.test_golden` and check the diff in `tests/golden/` before
+committing it. An unexpected line there is a bug caught early.
+
 ## Standards
 
 - **No new runtime dependencies.** codefactory installs anywhere Python 3.11 does; keep it that way.

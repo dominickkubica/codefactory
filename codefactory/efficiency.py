@@ -78,6 +78,7 @@ def efficiency_flags(g: Graph) -> list[Flag]:
     out: list[Flag] = []
     loop_io: dict[tuple[str, str], list[int]] = defaultdict(list)  # (fn, what) -> lines
     unbounded: set[tuple[str, str]] = set()  # (fn, what) with at least one loop whose length depends on data
+    outside_tx: set[tuple[str, str]] = set()  # (fn, what) with at least one call not inside a transaction
     awaits: dict[str, list[int]] = defaultdict(list)
     for s in g.sites:
         if s.fn not in by_id or is_test(by_id[s.fn].file):
@@ -89,6 +90,8 @@ def efficiency_flags(g: Graph) -> list[Flag]:
             loop_io[key].append(s.line)
             if not s.bounded:
                 unbounded.add(key)
+            if not getattr(s, "tx", False):
+                outside_tx.add(key)
         elif s.kind == "loop_await" and not s.bounded:  # a few fixed rounds in turn cost nothing worth reporting
             awaits[s.fn].append(s.line)
         elif s.kind == "loop_scan" and not s.bounded:
@@ -122,6 +125,8 @@ def efficiency_flags(g: Graph) -> list[Flag]:
         where = f"line {lines[0]}" + (f" and {len(lines) - 1} more" if len(lines) > 1 else "")
         sink = reach[what][1] if what in by_id else what
         kind = kind_of(sink)
+        if kind == "write" and (fid, what) not in outside_tx:
+            continue  # writes batched inside one transaction: the advice would be to do what it already does
         sev = "warn" if kind in ("network", "read") else "info"
         fixed = (fid, what) not in unbounded
         migration = "migration" in fn.file.lower()

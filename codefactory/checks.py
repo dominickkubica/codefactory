@@ -261,6 +261,23 @@ LOCKS = [
 ]
 
 
+def _python_deps(pyproject: str) -> list[str]:
+    """Package names a pyproject.toml depends on (project and optional dependencies, Poetry's tables)."""
+    import tomllib
+
+    try:
+        data = tomllib.loads(pyproject)
+    except ValueError:
+        return []
+    project = data.get("project", {})
+    specs = list(project.get("dependencies", []))
+    for group in project.get("optional-dependencies", {}).values():
+        specs += group
+    poetry = data.get("tool", {}).get("poetry", {})
+    specs += list(poetry.get("dependencies", {})) + list(poetry.get("dev-dependencies", {}))
+    return [re.split(r"[\s<>=!~\[;@]", s, maxsplit=1)[0].lower() for s in specs if isinstance(s, str) and s]
+
+
 def scan_repo(root: Path) -> dict:
     info: dict = {
         "ci": [],
@@ -335,9 +352,12 @@ def scan_repo(root: Path) -> dict:
                 s = line.split("#")[0].strip()
                 if s and not s.startswith("-") and "==" not in s and "@" not in s:
                     info["unpinned_py"].append(s)
+                if s and not s.startswith("-"):
+                    info["deps"][re.split(r"[\s<>=!~\[;@]", s, maxsplit=1)[0].lower()] = ""
     if (root / "pyproject.toml").is_file():
         info["manifests"].append("pyproject.toml")
         t = (root / "pyproject.toml").read_text(encoding="utf-8", errors="replace")
+        info["deps"].update({name: "" for name in _python_deps(t)})
         for name, fw in (("django", "Django"), ("flask", "Flask"), ("fastapi", "FastAPI"), ("sqlalchemy", "SQLAlchemy")):
             if re.search(rf"\b{name}\b", t, re.I):
                 info["frameworks"].add(fw)

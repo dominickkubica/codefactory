@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import re
 from pathlib import Path
 
 DB_METHODS = {
@@ -149,32 +150,59 @@ def _and(bounded: frozenset | None, d: frozenset | None) -> frozenset | None:
 
 def walk_loops(nodes, local: set[str], maybe: set[str]):
     """Every node under `nodes`, with whether it runs once per iteration of a loop (for/while/comprehension), whether
-    that's a for/while statement (where an await waits on each round in turn), and its boundedness (see the module
-    docstring; None outside loops). A nested def starts afresh."""
-    stack = [(n, False, False, NONE) for n in reversed(list(nodes))]
+    that's a for/while statement (where an await waits on each round in turn), its boundedness (see the module
+    docstring; None outside loops), and whether it's inside a transaction block. A nested def starts afresh."""
+    stack = [(n, False, False, NONE, False) for n in reversed(list(nodes))]
     while stack:
-        n, loop, stmt, bounded = stack.pop()
-        yield n, loop, stmt, (bounded if loop else None)
-        if isinstance(n, (ast.For, ast.AsyncFor)):
+        n, loop, stmt, bounded, tx = stack.pop()
+        yield n, loop, stmt, (bounded if loop else None), tx
+        if isinstance(n, (ast.With, ast.AsyncWith)) and any(_is_tx(i.context_expr) for i in n.items):
+            kids = [(c, loop, stmt, bounded, True) for c in ast.iter_child_nodes(n)]
+        elif isinstance(n, (ast.For, ast.AsyncFor)):
             inner = _and(bounded, const_deps(n.iter, local, maybe))
-            kids = [(n.target, loop, stmt, bounded), (n.iter, loop, stmt, bounded)]
-            kids += [(c, True, True, inner) for c in n.body + n.orelse]
+            kids = [(n.target, loop, stmt, bounded, tx), (n.iter, loop, stmt, bounded, tx)]
+            kids += [(c, True, True, inner, tx) for c in n.body + n.orelse]
         elif isinstance(n, ast.While):
-            kids = [(n.test, True, True, None)] + [(c, True, True, None) for c in n.body + n.orelse]
+            kids = [(n.test, True, True, None, tx)] + [(c, True, True, None, tx) for c in n.body + n.orelse]
         elif isinstance(n, COMPREHENSIONS):
             gens = n.generators
             inner = bounded
             for g in gens:
                 inner = _and(inner, const_deps(g.iter, local, maybe))
-            kids = [(gens[0].iter, loop, stmt, bounded)] + [
-                (c, True, stmt, inner) for c in ast.iter_child_nodes(n) if c is not gens[0]
-            ]
-            kids += [(c, True, stmt, inner) for c in ast.iter_child_nodes(gens[0]) if c is not gens[0].iter]
+            kids = [(gens[0].iter, loop, stmt, bounded, tx)]
+            kids += [(c, True, stmt, inner, tx) for c in ast.iter_child_nodes(n) if c is not gens[0]]
+            kids += [(c, True, stmt, inner, tx) for c in ast.iter_child_nodes(gens[0]) if c is not gens[0].iter]
         elif isinstance(n, SCOPES):
-            kids = [(c, False, False, NONE) for c in ast.iter_child_nodes(n)]
+            kids = [(c, False, False, NONE, False) for c in ast.iter_child_nodes(n)]
         else:
-            kids = [(c, loop, stmt, bounded) for c in ast.iter_child_nodes(n)]
+            kids = [(c, loop, stmt, bounded, tx) for c in ast.iter_child_nodes(n)]
         stack.extend(reversed(kids))
+
+
+TX = re.compile(
+    r"(?:^|\.)(?:session|transaction|atomic|begin|begin_nested|connect|savepoint|batch|bulk_writer|cursor)$"
+    r"|^(?:conn|connection|db|tx|txn)$",
+    re.I,
+)
+
+
+def _is_tx(expr: ast.AST) -> bool:
+    """`with db.session(…):`, `with transaction.atomic():`, `with conn:` (a sqlite3 connection commits once at the end)."""
+    target = expr.func if isinstance(expr, ast.Call) else expr
+    return bool(TX.search(dotted(target) or ""))
+
+
+def branches(fn) -> int:
+    """Decision points in the function (if, loops, except, case, conditional expressions, and/or)."""
+    n = 0
+    for x in ast.walk(fn):
+        if isinstance(x, (ast.If, ast.For, ast.AsyncFor, ast.While, ast.ExceptHandler, ast.IfExp, ast.match_case)):
+            n += 1
+        elif isinstance(x, ast.BoolOp):
+            n += len(x.values) - 1
+        elif isinstance(x, ast.comprehension):
+            n += 1 + len(x.ifs)
+    return n
 
 
 def _type_checking(test: ast.AST) -> bool:
@@ -231,7 +259,7 @@ def events(nodes, ctx: _Ctx, sites: bool = True) -> list:
     refs: list = []
     call_funcs = set()
     walked = list(walk_loops(nodes, ctx.local_consts, ctx.from_locals))
-    for n, loop, stmt, bounded in walked:
+    for n, loop, stmt, bounded, tx in walked:
         b = sorted(bounded) if bounded is not None else None
         if isinstance(n, ast.Await) and stmt and sites:
             out.append(["w", n.lineno, b])
@@ -248,8 +276,8 @@ def events(nodes, ctx: _Ctx, sites: bool = True) -> list:
             else:
                 expr = None
             attr = f.attr if isinstance(f, ast.Attribute) else None
-            out.append(["c", n.lineno, bool(loop), b, expr, io_call(f, n), attr])
-    for n, _, _, _ in walked:
+            out.append(["c", n.lineno, bool(loop), b, expr, io_call(f, n), attr, tx])
+    for n, *_ in walked:
         if id(n) in call_funcs:
             continue
         if isinstance(n, (ast.Name, ast.Attribute)) and isinstance(n.ctx, ast.Load) and (e := ctx.expr(n)):
@@ -305,11 +333,18 @@ def parse_module(path: str, rel: str) -> dict | None:
 
     def add(node, qualname: str, kind: str, cls: str | None) -> None:
         shape, tokens = shape_of(node)
+        first = node.body[0] if node.body else None
+        doc = (
+            first.end_lineno - first.lineno + 1
+            if isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant) and isinstance(first.value.value, str)
+            else 0
+        )
         defs.append({
             "qualname": qualname, "name": node.name, "line": node.lineno, "end": getattr(node, "end_lineno", node.lineno),
             "kind": kind, "decorated": bool(node.decorator_list), "exported": node.name in exports or node.name == "main",
             "shape": shape, "tokens": tokens, "cls": cls,
-            "deco": events(node.decorator_list, ctx, sites=False), "body": events(node.body, ctx),
+            "deco": events(node.decorator_list, ctx, sites=False), "body": events(node.body, ctx), "doc": doc,
+            "branches": branches(node),
             "imports": _local_imports(node),
         })  # fmt: skip
 
