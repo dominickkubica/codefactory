@@ -3,6 +3,12 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.17.1 · 2026-11-24
+
+### Changed
+- Releases can publish to PyPI as **`codefactory-cli`** (`codefactory` on PyPI is an unrelated project). The command
+  and the import are still `codefactory`, and installs from git are unchanged.
+
 ## 0.17.0 · 2026-11-24
 
 Supply chain.

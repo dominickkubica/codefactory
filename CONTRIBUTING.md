@@ -67,6 +67,7 @@ committing it. An unexpected line there is a bug caught early.
 [release.yml](.github/workflows/release.yml) then checks the tag matches the version, runs the tests, builds the
 wheel and sdist reproducibly, writes the SBOM, attests provenance and the SBOM, creates the GitHub release with
 `SHA256SUMS`, and moves the major tag (`v0`) to it. With the repository variable `PYPI_PUBLISH` set to `true` and a
-[trusted publisher](https://docs.pypi.org/trusted-publishers/) configured on PyPI (workflow `release.yml`,
-environment `pypi`), it also publishes to PyPI; no token is stored anywhere. See [SECURITY.md](SECURITY.md) for how
+[trusted publisher](https://docs.pypi.org/trusted-publishers/) configured on PyPI (project `codefactory-cli`,
+workflow `release.yml`, environment `pypi`), it also publishes to PyPI as `codefactory-cli` (`codefactory` there is
+an unrelated project; the repository keeps the name so git installs and installed hooks keep working); no token is stored anywhere. See [SECURITY.md](SECURITY.md) for how
 users verify a release.
