@@ -181,9 +181,9 @@ Uncommitted work counts. Findings are matched by kind + file + function (graph f
 text (source checks), not by line number. A new finding in a file the change didn't touch (a function that became
 unused because its caller was deleted) is shown with that note.
 
-The repository is also a GitHub Action (`uses: dominickkubica/codefactory@v0`, which follows releases; pin a
-release tag or commit SHA to choose when to upgrade; inputs `base`, `fail-on`,
-`comment`, `languages`). It posts one comment per pull request and updates it on every push; check out with
+The repository is also a GitHub Action (`uses: dominickkubica/codefactory@main`; once releases are published,
+`@v0` follows them, and a release tag or commit SHA pins one; inputs `base`, `fail-on`, `comment`,
+`languages`). It posts one comment per pull request and updates it on every push; check out with
 `fetch-depth: 0` so the base commit is there.
 
 ## Software bill of materials: sbom

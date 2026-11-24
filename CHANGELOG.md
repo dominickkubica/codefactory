@@ -21,7 +21,7 @@ Supply chain.
   entitlement and git-history checks; they're now left out everywhere, as the analyzers already did.
 
 ### Changed
-- The Action pins `actions/setup-python` to a commit, and the docs use `@v0` instead of `@main`.
+- The Action pins `actions/setup-python` to a commit.
 - Package metadata uses an SPDX license expression (setuptools 77+).
 
 ## 0.16.0 · 2026-11-24
