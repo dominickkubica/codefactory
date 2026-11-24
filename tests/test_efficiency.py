@@ -1,4 +1,5 @@
 """Efficiency and near-duplicate checks, on the shop (Python) and tsapp (TypeScript) fixtures."""
+
 import unittest
 from pathlib import Path
 
@@ -46,7 +47,9 @@ class PythonEfficiencyTest(unittest.TestCase):
         self.assertFalse(any(f.tokens for f in self.g.functions))
 
     def test_fixed_python_loops(self):
-        root = project({"app/db.py": """
+        root = project(
+            {
+                "app/db.py": """
             TABLES = ("orders", "lines")
 
             def counts(conn):
@@ -59,11 +62,35 @@ class PythonEfficiencyTest(unittest.TestCase):
             def each(conn, ids):
                 for i in ids:
                     conn.execute("SELECT * FROM orders WHERE id = ?", (i,))
-        """})
+        """
+            }
+        )
         loops = flags_of(build(root), "io_in_loop")
         self.assertEqual(loops["app/db.py::counts"].severity, "info")
         self.assertEqual(loops["app/db.py::first"].severity, "info")
         self.assertEqual(loops["app/db.py::each"].severity, "warn")
+
+    def test_python_dispatch_table(self):
+        root = project(
+            {
+                "app/cli.py": """
+                def cmd_run(args):
+                    return 1
+
+                def cmd_stop(args):
+                    return 2
+
+                COMMANDS = {"run": (cmd_run, "start it"), "stop": (cmd_stop, "stop it")}
+
+                def main(name, args):
+                    return COMMANDS[name][0](args)
+            """,
+            }
+        )
+        g = build(root)
+        refs = {(e.src, e.dst) for e in g.edges if e.kind in ("call", "ref")}
+        self.assertIn(("app/cli.py::main", "app/cli.py::cmd_run"), refs)
+        self.assertIn(("app/cli.py::main", "app/cli.py::cmd_stop"), refs)
 
     def test_kinds(self):
         self.assertEqual(kind_of("fetch"), "network")
@@ -100,6 +127,14 @@ class TypeScriptEfficiencyTest(unittest.TestCase):
         calls = {(e.src, e.dst) for e in self.g.edges if e.kind == "call"}
         self.assertIn(("src/data/fixed.ts::report", "src/data/lazy.ts::buildReport"), calls)  # const { fn } = require(…)
         self.assertIn(("src/data/fixed.ts::report", "src/data/lazy.ts::buildSummary"), calls)  # m = require(…); m.fn()
+
+    def test_dispatch_table_and_literal_search(self):
+        refs = {(e.src, e.dst) for e in self.g.edges if e.kind in ("call", "ref")}
+        self.assertIn(("src/data/fixed.ts::dispatch", "src/data/fixed.ts::handleCreate"), refs)
+        self.assertIn(("src/data/fixed.ts::dispatch", "src/data/fixed.ts::handleDelete"), refs)
+        self.assertNotIn("src/data/fixed.ts::dispatch", flags_of(self.g, "quadratic_scan"))
+        unused = {f.target for f in self.g.flags if f.kind == "unused"}
+        self.assertNotIn("src/data/fixed.ts::handleCreate", unused)
 
     def test_scan_in_map(self):
         scans = flags_of(self.g, "quadratic_scan")

@@ -1,4 +1,5 @@
 """End-to-end checks against tests/fixtures/shop, a tiny app with known problems planted in it."""
+
 import json
 import tempfile
 import unittest

@@ -1,4 +1,5 @@
 """Installs the Claude Code skill that teaches an agent working in a repo when and how to use codefactory."""
+
 from __future__ import annotations
 
 from importlib.resources import files

@@ -352,6 +352,25 @@ function calleeOf(node) {
   }
   return null;
 }
+// TABLE[key](…): one of the table's functions runs (the type checker picks just one); link to all of them.
+function linkTable(n, src) {
+  let root = n.expression;
+  while (ts.isElementAccessExpression(root) || ts.isPropertyAccessExpression(root)) root = root.expression;
+  let sym = ts.isIdentifier(root) ? checker.getSymbolAtLocation(root) : null;
+  if (sym && sym.flags & ts.SymbolFlags.Alias) { try { sym = checker.getAliasedSymbol(sym); } catch { sym = null; } }
+  const decl = sym && sym.declarations && sym.declarations[0];
+  if (!decl || !ts.isVariableDeclaration(decl) || !decl.initializer) return;
+  const link = (f) => { if (f && f !== src) bump(refs, `${src.id}\u0000${f.id}`); };
+  const walk = (x) => {
+    if (isFnLike(x) && fnByNode.has(x)) return link(fnByNode.get(x)); // an inline function in the table
+    if (ts.isIdentifier(x) || ts.isPropertyAccessExpression(x)) {
+      link(fnForSymbol(checker.getSymbolAtLocation(ts.isPropertyAccessExpression(x) ? x.name : x)));
+      if (ts.isIdentifier(x)) return;
+    }
+    ts.forEachChild(x, walk);
+  };
+  walk(decl.initializer);
+}
 function ownerOf(n) {
   for (let p = n.parent; p; p = p.parent) if (fnByNode.has(p)) return fnByNode.get(p);
   return null;
@@ -376,10 +395,13 @@ for (const sf of sources) {
     }
     const isCall = ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isJsxOpeningElement(n) || ts.isJsxSelfClosingElement(n);
     if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === "require" && n.arguments[0] && ts.isStringLiteral(n.arguments[0])) {
+      // only a top-level require runs when the file loads; one inside a function is loaded on demand (no loop)
       const dst = resolveModule(n.arguments[0].text, sf);
-      if (dst && dst !== fileId) imports.add(`${fileId}\u0000${dst}`);
+      const owner = ownerOf(n);
+      if (dst && dst !== fileId && (!owner || owner.kind === "module")) imports.add(`${fileId}\u0000${dst}`);
     } else if (isCall) {
       const src = ownerOf(n), dst = calleeOf(n);
+      if (src && ts.isCallExpression(n) && ts.isElementAccessExpression(n.expression)) linkTable(n, src);
       const where = src && (ts.isCallExpression(n) || ts.isNewExpression(n)) ? loopState(n) : { loop: false };
       const line = lineOf(sf, n.getStart(sf));
       if (src && dst && dst !== src) {
@@ -392,7 +414,7 @@ for (const sf of sources) {
           (ioOf.get(src) || ioOf.set(src, new Set()).get(src)).add(io);
           if (where.loop) sites.push({ fn: src.id, kind: "loop_io", line, target: "", detail: io, bounded: where.bounded });
         } else if (src && where.loop && ts.isPropertyAccessExpression(n.expression) && SCAN.has(n.expression.name.text) &&
-                   arrayish(n.expression.expression)) {
+                   arrayish(n.expression.expression) && !constIterable(n.expression.expression)) { // [a, b].includes(x) is O(1)
           sites.push({ fn: src.id, kind: "loop_scan", line, target: "", detail: `${lastName(n.expression.expression) || "array"}.${n.expression.name.text}`, bounded: where.bounded });
         }
       }

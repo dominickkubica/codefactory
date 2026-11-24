@@ -1,4 +1,5 @@
 """TypeScript analyzer, against tests/fixtures/tsapp (needs Node and the typescript package; skipped otherwise)."""
+
 import shutil
 import unittest
 from pathlib import Path

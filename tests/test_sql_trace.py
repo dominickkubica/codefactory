@@ -1,4 +1,5 @@
 """SQL export, saved-query flags, trace and path."""
+
 import io
 import tempfile
 import unittest
@@ -31,7 +32,9 @@ class SqlTest(unittest.TestCase):
         self.assertEqual(rows[0][0], len(self.graph["files"]))
         _, rows = run_query(db, "SELECT qualname, fan_in, caller_files FROM function_stats WHERE qualname = 'total'")
         self.assertEqual(rows, [("total", 2, 2)])  # checkout and preview, from two files
-        _, rows = run_query(db, "SELECT calls FROM file_deps WHERE src_file = 'shop/api/routes.py' AND dst_file = 'shop/db/store.py'")
+        _, rows = run_query(
+            db, "SELECT calls FROM file_deps WHERE src_file = 'shop/api/routes.py' AND dst_file = 'shop/db/store.py'"
+        )
         self.assertEqual(rows, [(2,)])  # save_order and load_orders
         db.close()
 
@@ -46,17 +49,19 @@ class SqlTest(unittest.TestCase):
             run("query", str(SHOP), "SELECT nope FROM nowhere")
 
     def test_saved_query_becomes_flag(self):
-        root = project({
-            "factory.toml": """
+        root = project(
+            {
+                "factory.toml": """
 [[queries]]
 name = "too_many_params_proxy"
 severity = "high"
 message = "Function over 3 lines in core"
 sql = "SELECT id AS target, loc FROM functions WHERE file LIKE 'core/%' AND loc > 3"
 """,
-            "core/big.py": "def big(a):\n    x = a\n    y = x\n    return y\n",
-            "core/small.py": "def small():\n    return 1\n",
-        })
+                "core/big.py": "def big(a):\n    x = a\n    y = x\n    return y\n",
+                "core/small.py": "def small():\n    return 1\n",
+            }
+        )
         flags = [f for f in build(root).flags if f.kind == "too_many_params_proxy"]
         self.assertEqual([(f.target, f.severity) for f in flags], [("core/big.py::big", "high")])
         self.assertIn("loc 4", flags[0].message)
@@ -90,8 +95,10 @@ class TraceTest(unittest.TestCase):
         self.assertEqual(trace(g, "a.py::ping")["calls_back"], ["a.py::pong"])
 
     def test_path(self):
-        self.assertEqual(shortest_path(self.graph, "shop/api/routes.py::checkout", "shop/core/tax.py::tax_for"),
-                         ["shop/api/routes.py::checkout", "shop/core/pricing.py::total", "shop/core/tax.py::tax_for"])
+        self.assertEqual(
+            shortest_path(self.graph, "shop/api/routes.py::checkout", "shop/core/tax.py::tax_for"),
+            ["shop/api/routes.py::checkout", "shop/core/pricing.py::total", "shop/core/tax.py::tax_for"],
+        )
         self.assertIsNone(shortest_path(self.graph, "shop/core/tax.py::tax_for", "shop/api/routes.py::checkout"))
 
     def test_cli(self):

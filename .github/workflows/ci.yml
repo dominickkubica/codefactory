@@ -5,6 +5,17 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install ruff==0.17.6
+      - run: ruff check codefactory tests
+      - run: ruff format --check codefactory tests
+
   test:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -21,5 +32,9 @@ jobs:
           node-version: 22
       - run: npm install -g typescript@5.9.2
       - run: python -m unittest discover -s tests -t .
-      - name: Map itself (no high-severity issues allowed)
-        run: python -m codefactory flags . --fail-on high
+      - name: Install as a user would, and run the command
+        run: |
+          pip install .
+          codefactory --version
+      - name: codefactory finds nothing serious in itself
+        run: codefactory check .

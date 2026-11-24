@@ -1,4 +1,5 @@
 """SARIF 2.1.0 output and GitHub annotations."""
+
 import io
 import json
 import shutil
@@ -62,14 +63,22 @@ class SarifTest(unittest.TestCase):
             p = root / "shop" / "core" / "pricing.py"
             p.write_text("# a comment that moves every line down\n\n" + p.read_text(), encoding="utf-8")
             moved = build_sarif(build(root).to_dict(), root)["runs"][0]["results"]
+
         def fp_of(results, rule, uri):
-            return {r["partialFingerprints"]["codefactory/v1"] for r in results if r["ruleId"] == rule
-                    and r["locations"][0]["physicalLocation"]["artifactLocation"]["uri"] == uri}
-        self.assertEqual(fp_of(self.results, "duplicate", "shop/core/pricing.py"), fp_of(moved, "duplicate", "shop/core/pricing.py"))
+            return {
+                r["partialFingerprints"]["codefactory/v1"]
+                for r in results
+                if r["ruleId"] == rule and r["locations"][0]["physicalLocation"]["artifactLocation"]["uri"] == uri
+            }
+
+        self.assertEqual(
+            fp_of(self.results, "duplicate", "shop/core/pricing.py"), fp_of(moved, "duplicate", "shop/core/pricing.py")
+        )
 
     def test_source_checks_suppressions_and_baseline(self):
-        root = project({
-            "app/db.py": """
+        root = project(
+            {
+                "app/db.py": """
                 import subprocess
 
                 def backup(path):
@@ -78,7 +87,8 @@ class SarifTest(unittest.TestCase):
                 def old():  # codefactory: ignore unused — called by the CLI by name
                     return 1
             """,
-        })
+            }
+        )
         doc = build_sarif(build(root).to_dict(), root)
         res = doc["runs"][0]["results"]
         shell = next(r for r in res if r["ruleId"] == "shell")
@@ -92,8 +102,11 @@ class SarifTest(unittest.TestCase):
         self.assertEqual(run("baseline", str(root))[0], 0)
         (root / "app" / "more.py").write_text("def unused_too():\n    return 2\n", encoding="utf-8")
         code, out = run("sarif", str(root), "-o", str(root / "out.sarif"))
-        states = {r["locations"][0]["physicalLocation"]["artifactLocation"]["uri"]: r.get("baselineState")
-                  for r in json.loads((root / "out.sarif").read_text())["runs"][0]["results"] if r["ruleId"] == "unused"}
+        states = {
+            r["locations"][0]["physicalLocation"]["artifactLocation"]["uri"]: r.get("baselineState")
+            for r in json.loads((root / "out.sarif").read_text())["runs"][0]["results"]
+            if r["ruleId"] == "unused"
+        }
         self.assertEqual(states["app/more.py"], "new")
 
     def test_github_annotations(self):

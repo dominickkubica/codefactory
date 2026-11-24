@@ -1,28 +1,31 @@
 """codefactory command line: map a codebase, list its issues, query it with SQL, trace calls, brief an AI agent, or
 open the factory view."""
+
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
+import os
 import sys
 import webbrowser
 from pathlib import Path
 
 from . import __version__
 from .analyzers import ANALYZERS, analyze
+from .baseline import baseline_path, compare, read_baseline, write_baseline
 from .brief import brief_markdown, context_data, context_markdown
 from .cache import load_cached, save_cache
 from .config import load_config
 from .flags import SEVERITY_ORDER, run_flags
 from .graph import Flag, Graph
 from .layers import assign_layers
-from .baseline import baseline_path, compare, read_baseline, write_baseline
 from .plan import make_plan, plan_markdown
 from .review import review_markdown
 from .sarif import build_sarif, github_annotations
 from .skill import install_skill
-from .suppress import apply_suppressions
 from .sqlgraph import query_flags, run_query, to_sqlite
+from .suppress import apply_suppressions
 from .trace import find_function, shortest_path, trace
 from .viewer import render_html
 
@@ -60,19 +63,21 @@ def load_graph(path: Path, languages: list[str] | None = None, cache: bool = Tru
 def _table(cols: list[str], rows: list[tuple], limit: int = 200) -> str:
     rows = [tuple("" if v is None else str(v) for v in r) for r in rows[:limit]]
     widths = [min(60, max([len(c)] + [len(r[i]) for r in rows])) for i, c in enumerate(cols)]
-    line = lambda vals: "  ".join(v[:w].ljust(w) for v, w in zip(vals, widths))  # noqa: E731
+    line = lambda vals: "  ".join(v[:w].ljust(w) for v, w in zip(vals, widths, strict=True))  # noqa: E731
     return "\n".join([line(cols), line(["-" * w for w in widths]), *map(line, rows)])
 
 
 def _write(path: Path, text: str) -> None:
     """Writes an output file, or explains plainly why it can't (the folder doesn't exist, no permission)."""
     if not path.parent.exists():
-        raise SystemExit(f"codefactory: can't save {path}: the folder {path.parent} doesn't exist. "
-                         "Pick an existing folder with -o (on Windows, a OneDrive-synced Desktop is under OneDrive\\Desktop).")
+        raise SystemExit(
+            f"codefactory: can't save {path}: the folder {path.parent} doesn't exist. "
+            "Pick an existing folder with -o (on Windows, a OneDrive-synced Desktop is under OneDrive\\Desktop)."
+        )
     try:
         path.write_text(text, encoding="utf-8")
     except OSError as e:
-        raise SystemExit(f"codefactory: can't save {path}: {e.strerror or e}")
+        raise SystemExit(f"codefactory: can't save {path}: {e.strerror or e}") from None
 
 
 def _one_function(graph: dict, name: str) -> dict:
@@ -80,8 +85,9 @@ def _one_function(graph: dict, name: str) -> dict:
     if not hits:
         raise SystemExit(f"codefactory: no function matches {name!r}")
     if len(hits) > 1:
-        raise SystemExit(f"codefactory: {name!r} matches {len(hits)} functions; use the full id:\n  " +
-                         "\n  ".join(h["id"] for h in hits[:20]))
+        raise SystemExit(
+            f"codefactory: {name!r} matches {len(hits)} functions; use the full id:\n  " + "\n  ".join(h["id"] for h in hits[:20])
+        )
     return hits[0]
 
 
@@ -91,10 +97,8 @@ def _safe_stdout() -> None:
     out = sys.stdout
     if not hasattr(out, "reconfigure"):
         return
-    try:
+    with contextlib.suppress(ValueError, OSError):
         out.reconfigure(encoding="utf-8") if not out.isatty() else out.reconfigure(errors="replace")
-    except (ValueError, OSError):
-        pass
 
 
 def _split(values: list[str], wanted: int) -> tuple[str, list[str]]:
@@ -108,12 +112,19 @@ def _split(values: list[str], wanted: int) -> tuple[str, list[str]]:
 
 def _flag_dict(graph: dict, f: dict) -> dict:
     fn = next((x for x in graph["functions"] if x["id"] == f["target"]), None)
-    return {"severity": f["severity"], "kind": f["kind"], "file": fn["file"] if fn else f["target"],
-            "line": f.get("line") or (fn["line"] if fn else 0), "function": fn["qualname"] if fn else None,
-            "message": f["message"], "related": f.get("related", [])}
+    return {
+        "severity": f["severity"],
+        "kind": f["kind"],
+        "file": fn["file"] if fn else f["target"],
+        "line": f.get("line") or (fn["line"] if fn else 0),
+        "function": fn["qualname"] if fn else None,
+        "message": f["message"],
+        "related": f.get("related", []),
+    }
 
 
 # ---- commands ----------------------------------------------------------------------------------------------------
+
 
 def cmd_analyze(a) -> int:
     graph = load_graph(Path(a.path), a.lang, not a.no_cache)
@@ -156,9 +167,12 @@ def cmd_flags(a) -> int:
             print(f"      {f['message']}" + (f"\n      silenced: {f['reason']}" if a.silenced else ""))
         counts = {s: sum(1 for f in graph["flags"] if f["severity"] == s) for s in SEVERITY_ORDER}
         quiet = len(graph.get("silenced", []))
-        print(f"\n{len(graph['files'])} files · " + " · ".join(f"{n} {s}" for s, n in counts.items()) +
-              (f" · {quiet} silenced (--silenced lists them)" if quiet else "") +
-              (f" · showing {len(shown)} new since the baseline" if a.new else ""))
+        print(
+            f"\n{len(graph['files'])} files · "
+            + " · ".join(f"{n} {s}" for s, n in counts.items())
+            + (f" · {quiet} silenced (--silenced lists them)" if quiet else "")
+            + (f" · showing {len(shown)} new since the baseline" if a.new else "")
+        )
     fail = a.fail_on and any(SEVERITY_ORDER[f["severity"]] <= SEVERITY_ORDER[a.fail_on] for f in graph["flags"])
     return 1 if fail else 0
 
@@ -187,17 +201,18 @@ def cmd_query(a) -> int:
     path, (sql,) = _split(a.values, 1)
     if Path(path).suffix == ".db":  # a database written by `sql`
         import sqlite3
+
         db = sqlite3.connect(path)
     else:
         db = to_sqlite(load_graph(Path(path), a.lang, not a.no_cache))
     try:
         cols, rows = run_query(db, sql)
     except Exception as e:  # sqlite3.Error, shown plainly
-        raise SystemExit(f"codefactory: query failed: {e}")
+        raise SystemExit(f"codefactory: query failed: {e}") from None
     finally:
         db.close()
     if a.json:
-        print(json.dumps([dict(zip(cols, r)) for r in rows], indent=1))
+        print(json.dumps([dict(zip(cols, r, strict=True)) for r in rows], indent=1))
         return 0
     print(_table(cols, rows) if cols else "(no result)")
     if len(rows) > 200:
@@ -214,8 +229,7 @@ def cmd_trace(a) -> int:
         print(json.dumps(t, indent=1))
         return 0
     print(f"{fn['id']}  ({fn['loc']} lines)")
-    print(f"reaches {len(t['functions'])} functions in {len(t['files'])} files · depth {t['depth']} · "
-          f"{t['loc']} lines of code\n")
+    print(f"reaches {len(t['functions'])} functions in {len(t['files'])} files · depth {t['depth']} · {t['loc']} lines of code\n")
     for f in t["functions"]:
         print(f"{'  ' * f['depth']}{f['qualname']}  · {f['file']}:{f['line']}  ({f['loc']} lines)")
     if t["calls_back"]:
@@ -339,19 +353,24 @@ def cmd_sarif(a) -> int:
     base = read_baseline(baseline_path(_repo(a.path)))
     if base is not None:
         from collections import Counter
+
         from .baseline import issue_key
+
         fns = {f["id"]: f for f in graph["functions"]}
         new_keys = Counter(issue_key(graph, f, fns) for f in compare(graph, base)[0])
     doc = build_sarif(graph, path.resolve() if path.is_dir() and not a.no_source_checks else None, new_keys, a.min)
     if a.new and new_keys is not None:
-        doc["runs"][0]["results"] = [r for r in doc["runs"][0]["results"] if r.get("baselineState", "new") == "new"
-                                     and "suppressions" not in r]
+        doc["runs"][0]["results"] = [
+            r for r in doc["runs"][0]["results"] if r.get("baselineState", "new") == "new" and "suppressions" not in r
+        ]
     out = Path(a.output or "codefactory.sarif")
     _write(out, json.dumps(doc, indent=1))
     n = len(doc["runs"][0]["results"])
     quiet = sum(1 for r in doc["runs"][0]["results"] if "suppressions" in r)
-    print(f"Wrote {out}: {n} results ({quiet} silenced, shown as suppressed). Upload it to GitHub code scanning, or open "
-          "it in VS Code with the SARIF Viewer extension.")
+    print(
+        f"Wrote {out}: {n} results ({quiet} silenced, shown as suppressed). Upload it to GitHub code scanning, or open "
+        "it in VS Code with the SARIF Viewer extension."
+    )
     return 0
 
 
@@ -366,7 +385,7 @@ COMMANDS = {
     "flags": (cmd_flags, "list issues (file:line), or --json for tools"),
     "view": (cmd_view, "write the factory view (HTML) and open it"),
     "sql": (cmd_sql, "write the graph as a SQLite database (tables files, functions, edges, flags)"),
-    "query": (cmd_query, "run a SQL query on the graph: query [repo] \"SELECT …\""),
+    "query": (cmd_query, 'run a SQL query on the graph: query [repo] "SELECT …"'),
     "trace": (cmd_trace, "everything a function eventually calls (like SQL EXPLAIN): trace [repo] name"),
     "path": (cmd_path, "the shortest call path between two functions: path [repo] from to"),
     "brief": (cmd_brief, "a Markdown map of the repo for an AI agent: layers, hubs, issues by what to do"),
@@ -382,8 +401,21 @@ COMMANDS = {
 
 
 def parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="codefactory", description="See a codebase as a factory floor and find its issues.")
+    p = argparse.ArgumentParser(
+        prog="codefactory",
+        description="See a codebase as a factory floor, find its problems, and turn them into work.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""examples:
+  codefactory view                 open the factory view of this folder in your browser
+  codefactory review -o review.md  a technical review of this repository
+  codefactory plan                 ranked tasks; then: codefactory prompt 1
+  codefactory context <name>       before changing a function: callers, impact, tests
+  codefactory baseline && codefactory check     fail CI only on new issues
+
+Run `codefactory <command> --help` for a command's options.""",
+    )
     p.add_argument("--version", action="version", version=f"codefactory {__version__}")
+    p.add_argument("--debug", action="store_true", help="show full tracebacks (for reporting a bug)")
     sub = p.add_subparsers(dest="cmd", required=True)
     for name, (_, text) in COMMANDS.items():
         s = sub.add_parser(name, help=text, description=text)
@@ -412,10 +444,14 @@ def parser() -> argparse.ArgumentParser:
         if name == "sarif":
             s.add_argument("--min", choices=list(SEVERITY_ORDER), default="info", help="lowest severity to include")
             s.add_argument("--new", action="store_true", help="only results new since the baseline")
-            s.add_argument("--no-source-checks", action="store_true", help="only the graph's issues, not secrets/SQL/… line checks")
+            s.add_argument(
+                "--no-source-checks", action="store_true", help="only the graph's issues, not secrets/SQL/… line checks"
+            )
         if name == "check":
             s.add_argument("--github", action="store_true", help="also print GitHub Actions annotations for new issues")
-            s.add_argument("--fail-on", choices=list(SEVERITY_ORDER), default="warn", help="lowest new severity that fails (default warn)")
+            s.add_argument(
+                "--fail-on", choices=list(SEVERITY_ORDER), default="warn", help="lowest new severity that fails (default warn)"
+            )
         if name == "review":
             s.add_argument("--for-ai", action="store_true", help="append an evidence pack for an AI to finish the review")
         if name == "plan":
@@ -428,9 +464,30 @@ def parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Runs a command. Problems a user can fix (a bad factory.toml, a missing folder, TypeScript not installed) end
+    with a one-line message; anything unexpected says how to get the full traceback (--debug) to report it."""
     _safe_stdout()
     a = parser().parse_args(argv)
-    return COMMANDS[a.cmd][0](a)
+    debug = a.debug or bool(os.environ.get("CODEFACTORY_DEBUG"))
+    try:
+        return COMMANDS[a.cmd][0](a)
+    except KeyboardInterrupt:
+        print("codefactory: stopped.", file=sys.stderr)
+        return 130
+    except (ValueError, RuntimeError, OSError) as e:
+        if debug:
+            raise
+        print(f"codefactory: {e}", file=sys.stderr)
+        return 2
+    except Exception as e:  # a bug: say so plainly, and how to report it
+        if debug:
+            raise
+        print(
+            f"codefactory: unexpected error ({type(e).__name__}: {e}).\n"
+            "  Run the same command with --debug for the full traceback, and please report it.",
+            file=sys.stderr,
+        )
+        return 2
 
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+// codefactory: ignore-file raw_html — every value from the graph goes through esc() before it's inserted
 // The factory floor: layers are zones (left = depends on the others, right = depended on), files are machines
 // (size = lines), calls or imports are belts (thickness = how many), and flags are lights on the machines.
 (function () {
@@ -190,6 +191,23 @@
     const r = canvas.getBoundingClientRect();
     scale = Math.min(2, Math.max(0.02, Math.min((r.width - 40) / worldW, (r.height - 40) / worldH)));
     ox = (r.width - worldW * scale) / 2; oy = Math.max(20, (r.height - worldH * scale) / 2);
+  }
+  // Zoom to show these machines together (a trace), close enough to see them as machines.
+  // If they're too far apart to show as machines together, centre on `primary` (the function being traced).
+  function fitFiles(list, primary) {
+    const shown = list.filter((f) => f && !f.hidden);
+    if (!shown.length) return;
+    const r = canvas.getBoundingClientRect();
+    const x0 = Math.min(...shown.map((f) => f.x)), y0 = Math.min(...shown.map((f) => f.y));
+    const x1 = Math.max(...shown.map((f) => f.x + f.s)), y1 = Math.max(...shown.map((f) => f.y + f.s));
+    const fitScale = Math.min((r.width - 80) / Math.max(1, x1 - x0), (r.height - 80) / Math.max(1, y1 - y0));
+    if (fitScale < NEAR + 0.06 && primary && !primary.hidden) {
+      scale = Math.max(scale, NEAR + 0.2);
+      ox = r.width / 2 - (primary.x + primary.s / 2) * scale; oy = r.height / 2 - (primary.y + primary.s / 2) * scale;
+      return;
+    }
+    scale = Math.min(1.4, fitScale);
+    ox = r.width / 2 - ((x0 + x1) / 2) * scale; oy = r.height / 2 - ((y0 + y1) / 2) * scale;
   }
   function focusOn(f) {
     if (f.hidden) { showTests = true; testsBtn.setAttribute("aria-pressed", true); layout(); buildBelts(); }
@@ -574,6 +592,7 @@
   function select(f) {
     selected = f; traced = null; spot = null;
     const pane = $("#selected");
+    pane.scrollTop = 0;
     if (!f) { pane.innerHTML = `<p class="empty">Click a machine to see its functions, belts and issues.</p>`; return; }
     pane.innerHTML = `<h2>Machine</h2><div style="font:13px var(--mono);word-break:break-all">${esc(f.id)}</div>
       <div class="sub">layer ${esc(f.layer)} · ${f.loc} lines · ${f.fns.length} functions</div>` +
@@ -588,6 +607,8 @@
   function showTrace(id) {
     traced = traceFrom(id);
     const t = traced, pane = $("#selected");
+    pane.scrollTop = 0;
+    fitFiles([...t.files].map((fid) => fileById.get(fid)), fileById.get(t.start.file));
     pane.innerHTML = `<h2>Trace</h2><div style="font:13px var(--mono);word-break:break-all">${esc(t.start.qualname)}</div>
       <div class="sub">${esc(t.start.file)}:${t.start.line}</div>
       <p>Reaches <b>${t.fns.length}</b> ${t.fns.length === 1 ? "function" : "functions"} in <b>${t.files.size - 1}</b> other ${t.files.size === 2 ? "file" : "files"}, <b>${t.maxDepth}</b> ${t.maxDepth === 1 ? "call" : "calls"} deep,

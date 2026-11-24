@@ -1,4 +1,5 @@
 """Silencing, the baseline ratchet, and the plan with its fix prompts."""
+
 import io
 import json
 import shutil
@@ -23,9 +24,10 @@ def run(*args) -> tuple[int, str]:
 
 class SilenceTest(unittest.TestCase):
     def test_comment_forms_and_toml(self):
-        root = project({
-            "factory.toml": '[[silence]]\nkind = "unused"\nwhere = "app/legacy.py"\nreason = "kept for the old API"\n',
-            "app/a.py": """
+        root = project(
+            {
+                "factory.toml": '[[silence]]\nkind = "unused"\nwhere = "app/legacy.py"\nreason = "kept for the old API"\n',
+                "app/a.py": """
                 def dead_one():  # codefactory: ignore unused — called by the plugin loader
                     return 1
 
@@ -40,9 +42,10 @@ class SilenceTest(unittest.TestCase):
                 def dead_four():
                     return 4
             """,
-            "app/legacy.py": "def old():\n    return 0\n",
-            "app/gen.py": "# codefactory: ignore-file — generated\ndef made():\n    return 5\n",
-        })
+                "app/legacy.py": "def old():\n    return 0\n",
+                "app/gen.py": "# codefactory: ignore-file — generated\ndef made():\n    return 5\n",
+            }
+        )
         g = build(root)
         live = {f.target for f in g.flags if f.kind == "unused"}
         quiet = {f.target: f.reason for f in g.silenced}
@@ -70,7 +73,8 @@ class BaselineTest(unittest.TestCase):
             # a new copy-pasted N+1 appears
             (root / "shop" / "api" / "more.py").write_text(
                 "from shop.db.sql import get_order\n\n\ndef again(conn, ids):\n    return [get_order(conn, i) for i in ids]\n",
-                encoding="utf-8")
+                encoding="utf-8",
+            )
             code, out = run("check", str(root))
             self.assertEqual(code, 1)
             self.assertIn("shop/api/more.py:5", out)
@@ -78,8 +82,11 @@ class BaselineTest(unittest.TestCase):
             # fixing an old issue is reported, not failed
             (root / "shop" / "api" / "more.py").unlink()
             (root / "shop" / "api" / "routes.py").write_text(
-                (root / "shop" / "api" / "routes.py").read_text().replace('def legacy_export():\n    return "never called"\n', ""),
-                encoding="utf-8")
+                (root / "shop" / "api" / "routes.py")
+                .read_text()
+                .replace('def legacy_export():\n    return "never called"\n', ""),
+                encoding="utf-8",
+            )
             code, out = run("check", str(root))
             self.assertEqual(code, 0, out)
             self.assertIn("1 fixed since the baseline", out)
@@ -103,8 +110,15 @@ class PlanTest(unittest.TestCase):
 
     def test_prompt_is_self_contained(self):
         t = next(t for t in self.tasks if t["kind"] == "duplicate")
-        for part in ("Task (codefactory plan", "Why:", "Where:", "Steps:", "Constraints:", "Done when:",
-                     "`shop/core/pricing.py:"):
+        for part in (
+            "Task (codefactory plan",
+            "Why:",
+            "Where:",
+            "Steps:",
+            "Constraints:",
+            "Done when:",
+            "`shop/core/pricing.py:",
+        ):
             self.assertIn(part, t["prompt"])
 
     def test_cli(self):

@@ -1,4 +1,5 @@
 """codefactory review: findings, structure and the AI evidence pack, on a small project with planted problems."""
+
 import io
 import unittest
 from contextlib import redirect_stdout
@@ -13,10 +14,11 @@ SECRET = "Zq8vN3pL0aR7tY2uW5xC9bM4kD6fH1jS"  # codefactory: ignore secret — ma
 class ReviewTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.root = project({
-            "requirements.txt": "requests\nflask==3.0.0\n",
-            "app/config.py": f'API_KEY = "{SECRET}"\n',
-            "app/db.py": """
+        cls.root = project(
+            {
+                "requirements.txt": "requests\nflask==3.0.0\n",
+                "app/config.py": f'API_KEY = "{SECRET}"\n',
+                "app/db.py": """
                 import sqlite3
                 import subprocess
 
@@ -48,8 +50,9 @@ class ReviewTest(unittest.TestCase):
                         return True
                     return False
             """,
-            "app/views.py": "from app.db import find, ping\n\ndef page(conn, name):\n    ping()\n    return find(conn, name)\n",
-        })
+                "app/views.py": "from app.db import find, ping\n\ndef page(conn, name):\n    ping()\n    return find(conn, name)\n",
+            }
+        )
         r = Review(build(cls.root).to_dict(), cls.root)
         r.run()
         cls.r = r
@@ -75,10 +78,21 @@ class ReviewTest(unittest.TestCase):
 
     def test_report_structure_and_grade(self):
         text = self.r.markdown()
-        for part in ("# Technical review:", "## 1. Executive summary", "**Overall health: At risk.**", "Top 5 actions",
-                     "## 2. System map", "## 3. Findings", "### Critical", "### High", "## 4. What is working",
-                     "## 5. Testing and release gaps", "## 6. Open questions", "## Review limits",
-                     "api.example-service.io"):
+        for part in (
+            "# Technical review:",
+            "## 1. Executive summary",
+            "**Overall health: At risk.**",
+            "Top 5 actions",
+            "## 2. System map",
+            "## 3. Findings",
+            "### Critical",
+            "### High",
+            "## 4. What is working",
+            "## 5. Testing and release gaps",
+            "## 6. Open questions",
+            "## Review limits",
+            "api.example-service.io",
+        ):
             self.assertIn(part, text)
         self.assertNotIn("score", text.split("## 2.")[0].lower().replace("scores", ""))  # a grade, not a number
 

@@ -1,4 +1,5 @@
 """Which layer (factory zone) each file belongs to, and the zones' left-to-right order."""
+
 from __future__ import annotations
 
 import re
@@ -7,10 +8,11 @@ from collections import Counter
 from fnmatch import fnmatch
 from pathlib import PurePosixPath
 
+from . import paths
 from .config import Config
 from .graph import Graph
 
-TEST_DIRS = {"test", "tests", "testing", "__tests__", "__mocks__", "spec"}
+TEST_DIRS = set(paths.TEST_DIRS)
 SOURCE_DIRS = {"src", "lib", "source"}
 
 
@@ -20,20 +22,40 @@ def _inferred(paths: list[str]) -> dict[str, str]:
     nontest = [d for d in dirs if not (set(d) & TEST_DIRS)] or dirs
     common: list[str] = []
     if nontest:
-        for parts in zip(*nontest):
+        for parts in zip(*nontest, strict=False):  # up to the shortest path
             if len(set(parts)) != 1:
                 break
             common.append(parts[0])
-    out = {}
-    for p, d in zip(paths, dirs):
+    out: dict[str, str] = {}
+    deeper: dict[str, tuple[str, ...]] = {}  # the folders below each file's layer
+    for p, d in zip(paths, dirs, strict=True):
         if set(d) & TEST_DIRS:
             out[p] = "tests"
             continue
-        rest = d[len(common):] if tuple(d[: len(common)]) == tuple(common) else d
+        rest = d[len(common) :] if tuple(d[: len(common)]) == tuple(common) else d
         if rest and rest[0] in SOURCE_DIRS:  # src/app/x.ts -> "app"; files directly in src/ -> "src"
             out[p] = rest[1] if len(rest) > 1 else rest[0]
+            deeper[p] = rest[2:]
             continue
         out[p] = rest[0] if rest else (common[-1] if common else "root")
+        deeper[p] = rest[1:]
+    return _split_dominant(out, deeper)
+
+
+def _split_dominant(out: dict[str, str], deeper: dict[str, tuple[str, ...]]) -> dict[str, str]:
+    """One zone holding most of the code (pip/_internal/…, app/core/…) says nothing: split it by the next folder level,
+    as long as that gives several real zones. Files directly in the zone's folder keep its name."""
+    counts = Counter(layer for layer in out.values() if layer != "tests")
+    total = sum(counts.values())
+    if not counts:
+        return out
+    top, n = counts.most_common(1)[0]
+    members = [p for p, layer in out.items() if layer == top]
+    subs = Counter(deeper[p][0] for p in members if deeper.get(p))
+    if total >= 12 and n >= 0.7 * total and len([c for c in subs.values() if c >= 2]) >= 3:
+        for p in members:
+            if deeper.get(p):
+                out[p] = deeper[p][0]
     return out
 
 
@@ -75,8 +97,7 @@ def assign_layers(g: Graph, cfg: Config) -> None:
     if not cfg.layers and len({inferred[p] for p in main}) == 1 and len(main) > 6:
         inferred.update(_by_depth(g, main))
     for f in g.files:
-        f.layer = next((name for name, globs in cfg.layers.items() if any(fnmatch(f.id, gl) for gl in globs)),
-                       inferred[f.id])
+        f.layer = next((name for name, globs in cfg.layers.items() if any(fnmatch(f.id, gl) for gl in globs)), inferred[f.id])
     g.layers = order_layers(g)
     g.rules = [f"{a} -> {b}" for a, b in cfg.forbid]
 

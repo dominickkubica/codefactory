@@ -4,6 +4,7 @@ can be worked down at any pace; nothing new slips in.
 An issue's identity is its kind, file and function (not its line, which moves as code above it changes), counted:
 two io_in_loop issues in one function stay two.
 """
+
 from __future__ import annotations
 
 import json
@@ -28,8 +29,10 @@ def baseline_path(repo_or_file: Path) -> Path:
 def write_baseline(graph: dict, path: Path) -> int:
     fns = {f["id"]: f for f in graph["functions"]}
     counts = Counter(issue_key(graph, f, fns) for f in graph["flags"])
-    path.write_text(json.dumps({"version": 1, "created": date.today().isoformat(),
-                                "issues": dict(sorted(counts.items()))}, indent=1) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps({"version": 1, "created": date.today().isoformat(), "issues": dict(sorted(counts.items()))}, indent=1) + "\n",
+        encoding="utf-8",
+    )
     return sum(counts.values())
 
 

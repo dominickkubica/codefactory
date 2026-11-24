@@ -1,4 +1,5 @@
 """Language analyzers. Each reads a codebase and returns a Graph; add a language by adding a module here."""
+
 from __future__ import annotations
 
 import sys
@@ -18,7 +19,7 @@ def analyze(root: Path, ignore: list[str], languages: list[str] | None = None) -
             part = ANALYZERS[lang](root, ignore)
         except TypeScriptUnavailable as e:
             if languages:  # asked for explicitly: that's an error
-                raise SystemExit(f"codefactory: {e}")
+                raise SystemExit(f"codefactory: {e}") from None
             print(f"codefactory: skipping TypeScript/JavaScript. {e}", file=sys.stderr)
             continue
         if part.files:

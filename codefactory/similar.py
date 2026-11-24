@@ -4,6 +4,7 @@ Each function's structure tokens are cut into overlapping 4-token shingles; MinH
 pairs without comparing every pair, then the exact Jaccard similarity of the shingle sets decides. Pairs that are
 exact copies are left to the duplicate check; a function and one nested inside it aren't compared.
 """
+
 from __future__ import annotations
 
 import zlib
@@ -23,11 +24,11 @@ _B = [(i * 0xBF58476D1CE4E5B9 + 0x94D049BB133111EB) % PRIME for i in range(1, PE
 
 def shingles(tokens: str) -> set[int]:
     t = tokens.split()
-    return {zlib.crc32(" ".join(t[i:i + K]).encode()) for i in range(max(0, len(t) - K + 1))}
+    return {zlib.crc32(" ".join(t[i : i + K]).encode()) for i in range(max(0, len(t) - K + 1))}
 
 
 def signature(sh: set[int]) -> list[int]:
-    return [min((a * x + b) % PRIME for x in sh) for a, b in zip(_A, _B)]
+    return [min((a * x + b) % PRIME for x in sh) for a, b in zip(_A, _B, strict=True)]
 
 
 def jaccard(a: set[int], b: set[int]) -> float:
@@ -42,20 +43,22 @@ def similar_pairs(g: Graph, min_tokens: int = 40, threshold: float = 0.75) -> di
     for f in fns:
         sig = signature(sets[f.id])
         for band in range(BANDS):
-            buckets[(band, tuple(sig[band * ROWS:(band + 1) * ROWS]))].append(f.id)
+            buckets[(band, tuple(sig[band * ROWS : (band + 1) * ROWS]))].append(f.id)
     pairs: dict[tuple[str, str], float] = {}
     for ids in buckets.values():
         if len(ids) < 2 or len(ids) > 200:  # a giant bucket is boilerplate everyone shares, not copies
             continue
         for i, a in enumerate(ids):
-            for b in ids[i + 1:]:
+            for b in ids[i + 1 :]:
                 key = (a, b) if a < b else (b, a)
                 if key in pairs:
                     continue
                 fa, fb = by_id[a], by_id[b]
                 if fa.shape and fa.shape == fb.shape:
                     continue  # an exact copy: reported as a duplicate
-                if fa.file == fb.file and (fa.qualname.startswith(fb.qualname + ".") or fb.qualname.startswith(fa.qualname + ".")):
+                if fa.file == fb.file and (
+                    fa.qualname.startswith(fb.qualname + ".") or fb.qualname.startswith(fa.qualname + ".")
+                ):
                     continue  # one holds the other
                 na, nb = len(sets[a]), len(sets[b])
                 if min(na, nb) / max(na, nb) < 0.6:
@@ -99,6 +102,15 @@ def near_duplicates(g: Graph, cfg: Config) -> list[Flag]:
             names = ", ".join(by_id[o].qualname for o in others[:4]) + (" …" if len(others) > 4 else "")
             lo, hi = round(min(known) * 100), round(max(known) * 100)
             pct = f"{lo}–{hi}%" if lo != hi else f"{hi}%"
-            out.append(Flag("similar", "warn" if best[m] >= 0.85 else "info", m, f"{pct} similar to {names}: likely a copy that was edited",
-                            others, line=by_id[m].line, score=round(best[m], 3)))
+            out.append(
+                Flag(
+                    "similar",
+                    "warn" if best[m] >= 0.85 else "info",
+                    m,
+                    f"{pct} similar to {names}: likely a copy that was edited",
+                    others,
+                    line=by_id[m].line,
+                    score=round(best[m], 3),
+                )
+            )
     return out

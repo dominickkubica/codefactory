@@ -1,4 +1,5 @@
 """Issue detectors. They read only the Graph, so they work the same for every language."""
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -6,6 +7,7 @@ from collections import defaultdict
 from .config import Config
 from .efficiency import efficiency_flags
 from .graph import Flag, Graph
+from .paths import is_test
 from .similar import near_duplicates
 
 SEVERITY_ORDER = {"high": 0, "warn": 1, "info": 2}
@@ -13,35 +15,71 @@ SEVERITY_ORDER = {"high": 0, "warn": 1, "info": 2}
 
 # Methods a framework calls by name: React class components, web components, Angular, Django / DRF class-based views.
 FRAMEWORK_METHODS = {
-    "render", "componentDidMount", "componentDidUpdate", "componentWillUnmount", "shouldComponentUpdate",
-    "getSnapshotBeforeUpdate", "componentDidCatch", "getDerivedStateFromError", "getDerivedStateFromProps",
-    "UNSAFE_componentWillMount", "UNSAFE_componentWillReceiveProps", "UNSAFE_componentWillUpdate", "constructor",
-    "connectedCallback", "disconnectedCallback", "attributeChangedCallback", "adoptedCallback",
-    "ngOnInit", "ngOnDestroy", "ngOnChanges", "ngAfterViewInit", "ngAfterContentInit", "ngDoCheck",
-    "get", "post", "put", "patch", "delete", "head", "options", "dispatch", "get_queryset", "get_object",
-    "get_context_data", "get_serializer_class", "perform_create", "perform_update", "perform_destroy", "form_valid",
-    "form_invalid", "clean", "save", "run", "handle",
+    "render",
+    "componentDidMount",
+    "componentDidUpdate",
+    "componentWillUnmount",
+    "shouldComponentUpdate",
+    "getSnapshotBeforeUpdate",
+    "componentDidCatch",
+    "getDerivedStateFromError",
+    "getDerivedStateFromProps",
+    "UNSAFE_componentWillMount",
+    "UNSAFE_componentWillReceiveProps",
+    "UNSAFE_componentWillUpdate",
+    "constructor",
+    "connectedCallback",
+    "disconnectedCallback",
+    "attributeChangedCallback",
+    "adoptedCallback",
+    "ngOnInit",
+    "ngOnDestroy",
+    "ngOnChanges",
+    "ngAfterViewInit",
+    "ngAfterContentInit",
+    "ngDoCheck",
+    "get",
+    "post",
+    "put",
+    "patch",
+    "delete",
+    "head",
+    "options",
+    "dispatch",
+    "get_queryset",
+    "get_object",
+    "get_context_data",
+    "get_serializer_class",
+    "perform_create",
+    "perform_update",
+    "perform_destroy",
+    "form_valid",
+    "form_invalid",
+    "clean",
+    "save",
+    "run",
+    "handle",
 }
 
 
 def _is_entry(fn) -> bool:
     n = fn.name
-    return (fn.kind == "module" or fn.exported or fn.decorated or n.startswith("__") or n.startswith("test")
-            or (fn.kind == "method" and n in FRAMEWORK_METHODS)
-            or n in ("setUp", "tearDown", "setUpClass", "tearDownClass") or _is_test_file(fn.file))
-
-
-def _is_test_file(path: str) -> bool:
-    parts = path.split("/")
-    name = parts[-1]
-    return any(p in ("tests", "test", "__tests__", "__mocks__") for p in parts[:-1]) or name.startswith("test_") \
-        or ".test." in name or ".spec." in name or name.endswith("_test.py")
+    return (
+        fn.kind == "module"
+        or fn.exported
+        or fn.decorated
+        or n.startswith("__")
+        or n.startswith("test")
+        or (fn.kind == "method" and n in FRAMEWORK_METHODS)
+        or n in ("setUp", "tearDown", "setUpClass", "tearDownClass")
+        or is_test(fn.file)
+    )
 
 
 def dead_code(g: Graph) -> list[Flag]:
     file_of = {fn.id: fn.file for fn in g.functions}
     used = {e.dst for e in g.edges if e.kind in ("call", "ref")}
-    used_by_code = {e.dst for e in g.edges if e.kind in ("call", "ref") and not _is_test_file(file_of.get(e.src, ""))}
+    used_by_code = {e.dst for e in g.edges if e.kind in ("call", "ref") and not is_test(file_of.get(e.src, ""))}
     imported = {e.dst for e in g.edges if e.kind == "import"}
     out = []
     for fn in g.functions:
@@ -49,14 +87,20 @@ def dead_code(g: Graph) -> list[Flag]:
         if _is_entry(fn) or (fn.public and fn.file not in imported):
             continue
         if fn.id in used:
-            if fn.id not in used_by_code and not _is_test_file(fn.file):
+            if fn.id not in used_by_code and not is_test(fn.file):
                 out.append(Flag("test_only", "info", fn.id, f"{fn.qualname} is only called from tests"))
             continue
         if fn.kind == "method":  # often called through an instance or a framework: only a hint
             if fn.dynamic:
                 continue
-            out.append(Flag("unused", "info", fn.id, f"{fn.qualname} has no callers found (it may be called "
-                                                      "through an instance or a framework)"))
+            out.append(
+                Flag(
+                    "unused",
+                    "info",
+                    fn.id,
+                    f"{fn.qualname} has no callers found (it may be called through an instance or a framework)",
+                )
+            )
         else:
             out.append(Flag("unused", "warn", fn.id, f"{fn.qualname} is never called or referenced"))
     return out
@@ -75,8 +119,7 @@ def duplicates(g: Graph, cfg: Config) -> list[Flag]:
         for f in fns:
             others = [o for o in fns if o is not f]
             names = ", ".join(f"{o.qualname} ({o.file})" for o in others[:3]) + (" …" if len(others) > 3 else "")
-            out.append(Flag("duplicate", "warn", f.id, f"Same code as {names}",
-                            [i for i in ids if i != f.id]))
+            out.append(Flag("duplicate", "warn", f.id, f"Same code as {names}", [i for i in ids if i != f.id]))
     return out
 
 
@@ -150,8 +193,11 @@ def hubs(g: Graph, cfg: Config) -> list[Flag]:
         if e.kind == "call" and file_of.get(e.src) != file_of.get(e.dst):
             callers[e.dst].add(file_of.get(e.src))
     by_id = {fn.id: fn for fn in g.functions}
-    return [Flag("hub", "info", fid, f"{by_id[fid].qualname} is called from {len(files)} files")
-            for fid, files in callers.items() if len(files) >= cfg.hub_callers and fid in by_id]
+    return [
+        Flag("hub", "info", fid, f"{by_id[fid].qualname} is called from {len(files)} files")
+        for fid, files in callers.items()
+        if len(files) >= cfg.hub_callers and fid in by_id
+    ]
 
 
 def layer_violations(g: Graph, cfg: Config) -> list[Flag]:
@@ -165,14 +211,29 @@ def layer_violations(g: Graph, cfg: Config) -> list[Flag]:
             continue
         pair = (layer_of.get(e.src), layer_of.get(e.dst))
         if pair in forbidden:
-            out.append(Flag("layer_violation", "high", e.src, f"{e.src} ({pair[0]}) imports {e.dst} ({pair[1]}), "
-                                                             f"which factory.toml forbids", [e.dst]))
+            out.append(
+                Flag(
+                    "layer_violation",
+                    "high",
+                    e.src,
+                    f"{e.src} ({pair[0]}) imports {e.dst} ({pair[1]}), which factory.toml forbids",
+                    [e.dst],
+                )
+            )
     return out
 
 
 def run_flags(g: Graph, cfg: Config) -> None:
-    g.flags = [*import_cycles(g), *layer_violations(g, cfg), *duplicates(g, cfg), *near_duplicates(g, cfg),
-               *efficiency_flags(g), *dead_code(g), *hubs(g, cfg), *size_flags(g, cfg)]
+    g.flags = [
+        *import_cycles(g),
+        *layer_violations(g, cfg),
+        *duplicates(g, cfg),
+        *near_duplicates(g, cfg),
+        *efficiency_flags(g),
+        *dead_code(g),
+        *hubs(g, cfg),
+        *size_flags(g, cfg),
+    ]
     by_id = {fn.id: fn for fn in g.functions}
     for f in g.flags:  # every issue points at a line, for editors and for Claude Code
         if not f.line and f.target in by_id:

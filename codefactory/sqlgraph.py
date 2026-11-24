@@ -3,6 +3,7 @@
 Tables: files, functions, edges, flags. Views: function_stats (fan-in/out per function), file_deps (calls between
 files). Saved queries in factory.toml run against the same database and become flags.
 """
+
 from __future__ import annotations
 
 import sqlite3
@@ -36,15 +37,33 @@ def to_sqlite(graph: dict, path: str | Path = ":memory:") -> sqlite3.Connection:
         Path(path).unlink(missing_ok=True)
     db = sqlite3.connect(str(path))
     db.executescript(SCHEMA)
-    db.executemany("INSERT INTO files VALUES (?, ?, ?, ?)",
-                   [(f["id"], f["module"], f["loc"], f["layer"]) for f in graph["files"]])
-    db.executemany("INSERT INTO functions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                   [(f["id"], f["file"], f["name"], f["qualname"], f["line"], f["end"], f["loc"], f["kind"],
-                     int(f["decorated"]), int(f["exported"]), int(f.get("dynamic", False))) for f in graph["functions"]])
-    db.executemany("INSERT INTO edges VALUES (?, ?, ?, ?)",
-                   [(e["src"], e["dst"], e["kind"], e["count"]) for e in graph["edges"]])
-    db.executemany("INSERT INTO flags VALUES (?, ?, ?, ?, ?)",
-                   [(f["kind"], f["severity"], f["target"], f["message"], f.get("line", 0)) for f in graph["flags"]])
+    db.executemany(
+        "INSERT INTO files VALUES (?, ?, ?, ?)", [(f["id"], f["module"], f["loc"], f["layer"]) for f in graph["files"]]
+    )
+    db.executemany(
+        "INSERT INTO functions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+            (
+                f["id"],
+                f["file"],
+                f["name"],
+                f["qualname"],
+                f["line"],
+                f["end"],
+                f["loc"],
+                f["kind"],
+                int(f["decorated"]),
+                int(f["exported"]),
+                int(f.get("dynamic", False)),
+            )
+            for f in graph["functions"]
+        ],
+    )
+    db.executemany("INSERT INTO edges VALUES (?, ?, ?, ?)", [(e["src"], e["dst"], e["kind"], e["count"]) for e in graph["edges"]])
+    db.executemany(
+        "INSERT INTO flags VALUES (?, ?, ?, ?, ?)",
+        [(f["kind"], f["severity"], f["target"], f["message"], f.get("line", 0)) for f in graph["flags"]],
+    )
     db.commit()
     return db
 
@@ -70,13 +89,21 @@ def query_flags(graph: dict, queries: list[dict]) -> list[dict]:
 def _rows_to_flags(db: sqlite3.Connection, queries: list[dict]) -> list[dict]:
     out = []
     for q in queries:
+        # codefactory: ignore io_in_loop — one query per saved query in factory.toml, on an in-memory database
         cols, rows = run_query(db, q["sql"])
         if "target" not in cols:
             raise ValueError(f"Saved query {q['name']!r} must return a 'target' column")
         for row in rows:
-            r = dict(zip(cols, row))
+            r = dict(zip(cols, row, strict=True))
             extra = ", ".join(f"{k} {v}" for k, v in r.items() if k not in ("target", "message"))
             msg = r.get("message") or q.get("message") or q["name"]
-            out.append({"kind": q["name"], "severity": q.get("severity", "warn"), "target": str(r["target"]),
-                        "message": f"{msg} ({extra})" if extra else str(msg), "related": []})
+            out.append(
+                {
+                    "kind": q["name"],
+                    "severity": q.get("severity", "warn"),
+                    "target": str(r["target"]),
+                    "message": f"{msg} ({extra})" if extra else str(msg),
+                    "related": [],
+                }
+            )
     return out

@@ -1,6 +1,5 @@
 from shop.core import pricing  # loops back: pricing imports tax
 
-
 RATE = 0.08
 
 

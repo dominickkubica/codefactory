@@ -1,4 +1,5 @@
 """The language-neutral graph every analyzer produces and every other part (flags, viewer) reads."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
@@ -44,6 +45,7 @@ class Edge:
 @dataclass
 class Site:
     """A notable spot inside a function, for the efficiency checks."""
+
     fn: str  # function id
     kind: str  # loop_call (a resolved call inside a loop) | loop_io | loop_await | loop_scan
     line: int
@@ -80,7 +82,7 @@ class Graph:
     def to_dict(self) -> dict:
         return {"schema": SCHEMA_VERSION, **asdict(self)}
 
-    def merge(self, other: "Graph") -> None:
+    def merge(self, other: Graph) -> None:
         self.files += other.files
         self.functions += other.functions
         self.edges += other.edges

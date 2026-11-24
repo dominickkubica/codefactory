@@ -1,4 +1,5 @@
 """Optional per-repo settings from factory.toml: layer globs, forbidden layer pairs, thresholds, ignores."""
+
 from __future__ import annotations
 
 import tomllib
@@ -6,8 +7,24 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 DEFAULT_IGNORE = [
-    ".git", ".hg", "node_modules", ".venv", "venv", "env", "__pycache__", "build", "dist", ".tox",
-    ".mypy_cache", ".pytest_cache", ".ruff_cache", "site-packages", ".eggs", ".codefactory", ".expo", "coverage",
+    ".git",
+    ".hg",
+    "node_modules",
+    ".venv",
+    "venv",
+    "env",
+    "__pycache__",
+    "build",
+    "dist",
+    ".tox",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    "site-packages",
+    ".eggs",
+    ".codefactory",
+    ".expo",
+    "coverage",
 ]
 
 
@@ -37,7 +54,10 @@ def load_config(root: Path) -> Config:
     cfg = Config()
     if not path.is_file():
         return cfg
-    data = tomllib.loads(path.read_text(encoding="utf-8"))
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError as e:
+        raise ValueError(f"factory.toml isn't valid TOML: {e}") from None
     layers = data.get("layers", {})
     cfg.layers = {name: [globs] if isinstance(globs, str) else list(globs) for name, globs in layers.items()}
     cfg.forbid = [parse_rule(r) for r in data.get("rules", {}).get("forbid", [])]

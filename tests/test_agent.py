@@ -1,4 +1,5 @@
 """The commands an AI coding agent uses: brief, context, flags --json, the skill installer, and the cache."""
+
 import io
 import json
 import os
@@ -30,9 +31,16 @@ class AgentTest(unittest.TestCase):
 
     def test_brief(self):
         text = brief_markdown(self.graph)
-        for part in ("# Code map: shop", "## Layers", "| api |", "## Import loops and layer violations",
-                     "## Database, file or network calls inside loops", "## Copied code", "`shop/api/reports.py:6`",
-                     "codefactory context"):
+        for part in (
+            "# Code map: shop",
+            "## Layers",
+            "| api |",
+            "## Import loops and layer violations",
+            "## Database, file or network calls inside loops",
+            "## Copied code",
+            "`shop/api/reports.py:6`",
+            "codefactory context",
+        ):
             self.assertIn(part, text)
         self.assertIn("~", text.split("## Copied code")[1])  # lines saved by merging
 

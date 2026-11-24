@@ -1,5 +1,6 @@
 """EXPLAIN for a function: everything it eventually calls, how deep, and how much code that is; and the shortest
 call path from one function to another. Works on the graph dict, so also on a saved graph .json."""
+
 from __future__ import annotations
 
 from collections import defaultdict, deque

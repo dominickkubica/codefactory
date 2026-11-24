@@ -4,6 +4,7 @@
 Pattern checks read the source text (any comment style, both languages); repository checks read manifests and CI
 files. Each returns Evidence: where (file:line), what was seen, and a short excerpt, so a reader can verify it.
 """
+
 from __future__ import annotations
 
 import json
@@ -12,8 +13,10 @@ from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .brief import View, is_test
-from .suppress import MARK, _parse as parse_mark
+from .brief import View
+from .paths import is_test
+from .suppress import MARK
+from .suppress import _parse as parse_mark
 
 SRC_EXT = (".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts")
 
@@ -48,28 +51,45 @@ PATTERNS: dict[str, list[re.Pattern]] = {
         re.compile(r"""(?i)\b(?:api[_-]?key|secret|token|passw(?:or)?d|auth)\w*\s*[:=]\s*['"][A-Za-z0-9+/_\-]{20,}['"]"""),
     ],
     "eval": [
-        re.compile(r"(?<![\w.])eval\s*\("), re.compile(r"\bnew\s+Function\s*\("), re.compile(r"(?<![\w.])exec\s*\(\s*[^)]"),
-        re.compile(r"\bpickle\.loads?\s*\("), re.compile(r"\byaml\.load\s*\((?![^)]*SafeLoader)"),
+        re.compile(r"(?<![\w.])eval\s*\("),
+        re.compile(r"\bnew\s+Function\s*\("),
+        re.compile(r"(?<![\w.])exec\s*\(\s*[^)]"),
+        re.compile(r"\bpickle\.loads?\s*\("),
+        re.compile(r"\byaml\.load\s*\((?![^)]*SafeLoader)"),
     ],
     "shell": [
-        re.compile(r"shell\s*=\s*True"), re.compile(r"\bos\.system\s*\("), re.compile(r"\bexecSync\s*\(\s*`[^`]*\$\{"),
+        re.compile(r"shell\s*=\s*True"),
+        re.compile(r"\bos\.system\s*\("),
+        re.compile(r"\bexecSync\s*\(\s*`[^`]*\$\{"),
         re.compile(r"\bchild_process\b.*\bexec\s*\("),
     ],
     "tls_off": [
-        re.compile(r"verify\s*=\s*False"), re.compile(r"rejectUnauthorized\s*:\s*false"),
-        re.compile(r"NODE_TLS_REJECT_UNAUTHORIZED"), re.compile(r"ssl\._create_unverified_context"),
+        re.compile(r"verify\s*=\s*False"),
+        re.compile(r"rejectUnauthorized\s*:\s*false"),
+        re.compile(r"NODE_TLS_REJECT_UNAUTHORIZED"),
+        re.compile(r"ssl\._create_unverified_context"),
         re.compile(r"CERT_NONE"),
     ],
-    "raw_html": [re.compile(r"dangerouslySetInnerHTML"), re.compile(r"\.innerHTML\s*=(?!=)"), re.compile(r"\bv-html\b"),
-                 re.compile(r"\|\s*safe\b"), re.compile(r"\bmark_safe\s*\(")],
-    "plain_http": [re.compile(r"""['"`]http://(?!localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|schemas\.|www\.w3\.org|xmlns)[^'"`\s]+""")],
+    "raw_html": [
+        re.compile(r"dangerouslySetInnerHTML"),
+        re.compile(r"\.innerHTML\s*=(?!=)"),
+        re.compile(r"\bv-html\b"),
+        re.compile(r"\|\s*safe\b"),
+        re.compile(r"\bmark_safe\s*\("),
+    ],
+    "plain_http": [
+        re.compile(r"""['"`]http://(?!localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|schemas\.|www\.w3\.org|xmlns)[^'"`\s]+""")
+    ],
     "swallowed": [
-        re.compile(r"catch\s*(?:\([^)]*\))?\s*\{\s*\}"), re.compile(r"\.catch\(\s*\(\s*\)\s*=>\s*(?:\{\s*\}|undefined|null)\s*\)"),
+        re.compile(r"catch\s*(?:\([^)]*\))?\s*\{\s*\}"),
+        re.compile(r"\.catch\(\s*\(\s*\)\s*=>\s*(?:\{\s*\}|undefined|null)\s*\)"),
         re.compile(r"except(?:\s+[\w.(), ]+)?\s*:\s*pass\b"),
     ],
 }
-SQL_CALL = re.compile(r"(?:execute|executemany|executescript|query|raw|getAllAsync|getFirstAsync|runAsync|execAsync|"
-                      r"prepareAsync|getAllSync|runSync)\s*\(\s*(f['\"]|`|['\"][^'\"]*['\"]\s*(?:%|\+|\.format))")
+SQL_CALL = re.compile(
+    r"(?:execute|executemany|executescript|query|raw|getAllAsync|getFirstAsync|runAsync|execAsync|"
+    r"prepareAsync|getAllSync|runSync)\s*\(\s*(f['\"]|`|['\"][^'\"]*['\"]\s*(?:%|\+|\.format))"
+)
 HOST = re.compile(r"""['"`]https?://([a-z0-9.-]+\.[a-z]{2,})(?::\d+)?[/'"`?]""", re.I)
 SQL_WORD = re.compile(r"\b(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|WHERE|FROM)\b", re.I)
 INTERP = re.compile(r"\$\{([^}]+)\}|\{([^}:!]+)[^}]*\}")
@@ -106,7 +126,10 @@ def scan_sources(root: Path, files: list[str]) -> dict[str, Check]:
         lines = text.splitlines()
         marks = [parse_mark(m.group(2))[0] for ln in lines if (m := MARK.search(ln)) and m.group(1)]
         file_kinds = set().union(*marks) if marks and all(marks) else (set() if marks else None)
-        hit = lambda key, i: not _ignored(lines, i, key, file_kinds)  # noqa: E731
+
+        def hit(key: str, i: int, lines=lines, file_kinds=file_kinds) -> bool:  # bound to this file's lines
+            return not _ignored(lines, i, key, file_kinds)
+
         for i, line in enumerate(lines, 1):
             if len(line) > 2000:  # minified or data
                 continue
@@ -118,9 +141,9 @@ def scan_sources(root: Path, files: list[str]) -> dict[str, Check]:
                         continue
                     out[key].hits.append(Evidence(fid, i, _excerpt(line)))
             if not test and (m := SQL_CALL.search(line)) and hit("sql_built", i):
-                stmt = " ".join(lines[i - 1:i + 4])
+                stmt = " ".join(lines[i - 1 : i + 4])
                 if SQL_WORD.search(stmt):
-                    names = [a or b for a, b in INTERP.findall(stmt[m.start():m.start() + 600])]
+                    names = [a or b for a, b in INTERP.findall(stmt[m.start() : m.start() + 600])]
                     risky = [n for n in names if not CONSTANT.match(n.strip())]
                     if risky or m.group(1).endswith(("%", "+")) or ".format" in m.group(1):
                         out["sql_built"].hits.append(Evidence(fid, i, _excerpt(line)))
@@ -131,15 +154,25 @@ def scan_sources(root: Path, files: list[str]) -> dict[str, Check]:
                         out["hosts"].data[host] = f"{fid}:{i}"
             if re.search(r"ErrorBoundary|componentDidCatch|getDerivedStateFromError", line):
                 out["error_boundary"].hits.append(Evidence(fid, i, _excerpt(line)))
-            if not test and fid.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs")) and re.match(r"^(?:export\s+)?let\s+\w+", line) \
-                    and hit("module_state", i):
+            if (
+                not test
+                and fid.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs"))
+                and re.match(r"^(?:export\s+)?let\s+\w+", line)
+                and hit("module_state", i)
+            ):
                 out["module_state"].hits.append(Evidence(fid, i, _excerpt(line)))
-        if not test and re.search(r"(?<![\w.])fetch\s*\(", text) and not re.search(r"\bsignal\b|AbortSignal\.timeout|timeout", text):
-            ln = next(i for i, l in enumerate(lines, 1) if re.search(r"(?<![\w.])fetch\s*\(", l))
+        if (
+            not test
+            and re.search(r"(?<![\w.])fetch\s*\(", text)
+            and not re.search(r"\bsignal\b|AbortSignal\.timeout|timeout", text)
+        ):
+            ln = next(i for i, text in enumerate(lines, 1) if re.search(r"(?<![\w.])fetch\s*\(", text))
             out["fetch_no_timeout"].hits.append(Evidence(fid, ln, _excerpt(lines[ln - 1])))
         if not test and fid.endswith(".py"):
             for i, line in enumerate(lines, 1):
-                if re.search(r"\brequests\.(get|post|put|patch|delete|head)\s*\(", line) and "timeout" not in " ".join(lines[i - 1:i + 3]):
+                if re.search(r"\brequests\.(get|post|put|patch|delete|head)\s*\(", line) and "timeout" not in " ".join(
+                    lines[i - 1 : i + 3]
+                ):
                     out["fetch_no_timeout"].hits.append(Evidence(fid, i, _excerpt(line)))
                 if re.match(r"^\s+global\s+\w+", line):
                     out["module_state"].hits.append(Evidence(fid, i, _excerpt(line)))
@@ -148,16 +181,48 @@ def scan_sources(root: Path, files: list[str]) -> dict[str, Check]:
 
 # ---- repository ----------------------------------------------------------------------------------------------------
 
-CI_FILES = [".github/workflows", ".gitlab-ci.yml", ".circleci", "azure-pipelines.yml", "Jenkinsfile", ".travis.yml",
-            "bitbucket-pipelines.yml", ".buildkite"]
-LOCKS = ["package-lock.json", "yarn.lock", "pnpm-lock.yaml", "bun.lockb", "bun.lock", "poetry.lock", "uv.lock",
-         "Pipfile.lock", "requirements.lock", "Cargo.lock", "go.sum"]
+CI_FILES = [
+    ".github/workflows",
+    ".gitlab-ci.yml",
+    ".circleci",
+    "azure-pipelines.yml",
+    "Jenkinsfile",
+    ".travis.yml",
+    "bitbucket-pipelines.yml",
+    ".buildkite",
+]
+LOCKS = [
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "bun.lockb",
+    "bun.lock",
+    "poetry.lock",
+    "uv.lock",
+    "Pipfile.lock",
+    "requirements.lock",
+    "Cargo.lock",
+    "go.sum",
+]
 
 
 def scan_repo(root: Path) -> dict:
-    info: dict = {"ci": [], "ci_steps": set(), "ci_on_push": False, "locks": [], "manifests": [], "floating": [],
-                  "unpinned_py": [], "runtime_pin": [], "readme": None, "license": None, "env_files": [],
-                  "frameworks": set(), "deps": {}, "deploy": []}
+    info: dict = {
+        "ci": [],
+        "ci_steps": set(),
+        "ci_on_push": False,
+        "locks": [],
+        "manifests": [],
+        "floating": [],
+        "unpinned_py": [],
+        "runtime_pin": [],
+        "readme": None,
+        "license": None,
+        "env_files": [],
+        "frameworks": set(),
+        "deps": {},
+        "deploy": [],
+    }
     for c in CI_FILES:
         p = root / c
         if p.is_dir():
@@ -169,13 +234,17 @@ def scan_repo(root: Path) -> dict:
             t = (root / f).read_text(encoding="utf-8", errors="replace").lower()
         except OSError:
             continue
-        for step, words in {"tests": ["test", "pytest", "jest", "vitest", "unittest"], "lint": ["lint", "ruff", "flake8", "eslint"],
-                            "typecheck": ["tsc", "mypy", "pyright", "typecheck"], "build": ["build"]}.items():
+        for step, words in {
+            "tests": ["test", "pytest", "jest", "vitest", "unittest"],
+            "lint": ["lint", "ruff", "flake8", "eslint"],
+            "typecheck": ["tsc", "mypy", "pyright", "typecheck"],
+            "build": ["build"],
+        }.items():
             if any(w in t for w in words):
                 info["ci_steps"].add(step)
         if re.search(r"\bpush\s*:", t) or re.search(r"on:\s*\[?\s*push", t):
             info["ci_on_push"] = True
-    info["locks"] = [l for l in LOCKS if (root / l).exists()]
+    info["locks"] = [name for name in LOCKS if (root / name).exists()]
     pkg = root / "package.json"
     if pkg.is_file():
         info["manifests"].append("package.json")
@@ -185,11 +254,21 @@ def scan_repo(root: Path) -> dict:
             data = {}
         deps = {**data.get("dependencies", {}), **data.get("devDependencies", {})}
         info["deps"].update(deps)
-        info["floating"] = [f"{k}@{v}" for k, v in deps.items() if v in ("*", "latest", "") or v.startswith(("git", "http", "github:"))]
+        info["floating"] = [
+            f"{k}@{v}" for k, v in deps.items() if v in ("*", "latest", "") or v.startswith(("git", "http", "github:"))
+        ]
         if "engines" in data:
             info["runtime_pin"].append("package.json engines")
-        for name, fw in (("react-native", "React Native"), ("expo", "Expo"), ("react", "React"), ("next", "Next.js"),
-                         ("vue", "Vue"), ("express", "Express"), ("@nestjs/core", "NestJS"), ("svelte", "Svelte")):
+        for name, fw in (
+            ("react-native", "React Native"),
+            ("expo", "Expo"),
+            ("react", "React"),
+            ("next", "Next.js"),
+            ("vue", "Vue"),
+            ("express", "Express"),
+            ("@nestjs/core", "NestJS"),
+            ("svelte", "Svelte"),
+        ):
             if name in deps:
                 info["frameworks"].add(fw)
         info["deploy"] += [k for k in data.get("scripts", {}) if re.search(r"deploy|release|publish|ota", k)]
@@ -214,7 +293,9 @@ def scan_repo(root: Path) -> dict:
             info["runtime_pin"].append(f)
     info["readme"] = next((f for f in ("README.md", "README.rst", "README.txt", "README") if (root / f).exists()), None)
     info["license"] = next((f for f in ("LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING") if (root / f).exists()), None)
-    info["env_files"] = [p.name for p in root.glob(".env*") if p.is_file() and not p.name.endswith((".example", ".sample", ".template"))]
+    info["env_files"] = [
+        p.name for p in root.glob(".env*") if p.is_file() and not p.name.endswith((".example", ".sample", ".template"))
+    ]
     if info["readme"]:
         t = (root / info["readme"]).read_text(encoding="utf-8", errors="replace").lower()
         info["readme_run"] = bool(re.search(r"install|npm |pip |yarn |make |cargo |go run|docker", t))
@@ -222,6 +303,7 @@ def scan_repo(root: Path) -> dict:
 
 
 # ---- testing -------------------------------------------------------------------------------------------------------
+
 
 def test_reach(v: View) -> set[str]:
     """Functions a test calls or hands on (a callback), directly or through others."""

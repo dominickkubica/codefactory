@@ -26,3 +26,17 @@ export function report() {
   const lazy = require("@/data/lazy") as { buildSummary: () => string };
   return buildReport() + lazy.buildSummary();
 }
+
+// A dispatch table: HANDLERS[kind]() runs one of these.
+function handleCreate() {
+  return "create";
+}
+function handleDelete() {
+  return "delete";
+}
+const HANDLERS = { create: handleCreate, delete: handleDelete };
+
+export function dispatch(kinds: (keyof typeof HANDLERS)[]) {
+  // searching a two-item list written in the code is constant time, not O(n²)
+  return kinds.map((k) => (["create", "delete"].includes(k) ? HANDLERS[k]() : ""));
+}

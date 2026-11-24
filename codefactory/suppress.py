@@ -14,6 +14,7 @@ In factory.toml:
 
 Silenced issues leave the list but stay in the graph (Graph.silenced) with their reason, so nothing hides quietly.
 """
+
 from __future__ import annotations
 
 import re
