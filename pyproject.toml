@@ -10,9 +10,6 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = []
 
-[project.optional-dependencies]
-# Go, Java, Kotlin, Swift, Rust, C/C++, C#, Ruby, PHP, Scala, Dart, Lua, Elixir and more (grammars download on first use)
-languages = ["tree-sitter>=0.25", "tree-sitter-language-pack>=1.0,<2"]
 keywords = ["static analysis", "code review", "architecture", "call graph", "duplicate code", "refactoring", "sarif", "claude code"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -38,6 +35,10 @@ Homepage = "https://github.com/dominickkubica/codefactory"
 Documentation = "https://github.com/dominickkubica/codefactory/blob/main/docs/USAGE.md"
 Design = "https://github.com/dominickkubica/codefactory/blob/main/docs/DESIGN.md"
 Changelog = "https://github.com/dominickkubica/codefactory/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+# Go, Java, Kotlin, Swift, Rust, C/C++, C#, Ruby, PHP, Scala, Dart, Lua, Elixir and more (grammars download on first use)
+languages = ["tree-sitter>=0.25", "tree-sitter-language-pack>=1.0,<2"]
 
 [project.scripts]
 codefactory = "codefactory.cli:main"
