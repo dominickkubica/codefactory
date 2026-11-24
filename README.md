@@ -118,5 +118,4 @@ languages go through tree-sitter and match calls by name, so their call and unus
 
 ## Status
 
-Actively developed and used on real projects; at version 0.9. No license has been chosen yet, so all rights are
-reserved until one is.
+Actively developed and used on real projects; at version 0.10. [MIT licensed](LICENSE): use it, change it, share it.

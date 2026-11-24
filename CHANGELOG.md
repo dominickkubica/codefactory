@@ -6,6 +6,7 @@ change command-line output.
 ## 0.10.0 · 2026-11-24
 
 ### Added
+- **MIT license.**
 - **`codefactory accept`:** marks a finding as intended, with the reason, by writing a `[[silence]]` rule to
   `factory.toml`. It takes either a kind and a place (`accept sql_built src/db/x.ts --why "…"`) or a plan task, which
   covers every finding behind it. The review's own checks now honour these rules too.

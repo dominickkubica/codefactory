@@ -7,6 +7,7 @@ name = "codefactory"
 version = "0.10.0"
 description = "See a codebase as a factory floor, find what's wrong with it (copies, N+1 loops, dead code, import loops, security and reliability problems), and turn it into ranked work."
 readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.11"
 dependencies = []
 
@@ -15,6 +16,7 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
