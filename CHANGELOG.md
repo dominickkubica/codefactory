@@ -3,6 +3,23 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.17.0 · 2026-11-24
+
+Supply chain.
+
+### Added
+- **`codefactory sbom`:** a deterministic CycloneDX 1.5 SBOM of every pinned dependency, with package URLs, the
+  lockfile each came from, and development-only dependencies marked optional.
+- **Signed, reproducible releases:** a tag builds the wheel and sdist byte-for-byte reproducibly, attests build
+  provenance and the SBOM (Sigstore, verifiable with `gh attestation verify`), publishes `SHA256SUMS`, moves the
+  `v0` tag for the Action, and can publish to PyPI by trusted publishing. Every action in it is pinned to a commit.
+- [SECURITY.md](SECURITY.md): reporting, what codefactory does and doesn't do with your code, verifying a release.
+- Tests that the same code gives byte-identical graph, review and SARIF output.
+
+### Changed
+- The Action pins `actions/setup-python` to a commit, and the docs use `@v0` instead of `@main`.
+- Package metadata uses an SPDX license expression (setuptools 77+).
+
 ## 0.16.0 · 2026-11-24
 
 Measured accuracy.

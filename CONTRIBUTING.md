@@ -60,5 +60,13 @@ committing it. An unexpected line there is a bug caught early.
 ## Releasing
 
 1. Update `version` in `pyproject.toml` and `__version__` in `codefactory/__init__.py`.
-2. Add a section to `CHANGELOG.md`.
-3. Merge to `main` with CI green. `pip install --upgrade git+…` picks up the new version.
+2. Add a section to `CHANGELOG.md` (`## 1.2.3 · date`): the release notes are taken from it.
+3. Merge to `main` with CI green, then tag that commit and push the tag:
+   `git tag v1.2.3 && git push origin v1.2.3`.
+
+[release.yml](.github/workflows/release.yml) then checks the tag matches the version, runs the tests, builds the
+wheel and sdist reproducibly, writes the SBOM, attests provenance and the SBOM, creates the GitHub release with
+`SHA256SUMS`, and moves the major tag (`v0`) to it. With the repository variable `PYPI_PUBLISH` set to `true` and a
+[trusted publisher](https://docs.pypi.org/trusted-publishers/) configured on PyPI (workflow `release.yml`,
+environment `pypi`), it also publishes to PyPI; no token is stored anywhere. See [SECURITY.md](SECURITY.md) for how
+users verify a release.

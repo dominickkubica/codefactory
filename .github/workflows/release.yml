@@ -1,0 +1,104 @@
+# Publishes a release when a version tag (v1.2.3) is pushed:
+#   1. checks the tag matches the version in pyproject.toml, and that the tests pass
+#   2. builds the sdist and wheel reproducibly (SOURCE_DATE_EPOCH = the tagged commit's time)
+#   3. writes a CycloneDX SBOM with codefactory itself
+#   4. attests build provenance (SLSA) and the SBOM with GitHub's signing (Sigstore), verifiable with
+#      `gh attestation verify <file> --repo dominickkubica/codefactory`
+#   5. creates the GitHub release with the files and their SHA-256 sums, and moves the major tag (v0) to it,
+#      so `uses: dominickkubica/codefactory@v0` follows releases
+#   6. publishes to PyPI by trusted publishing (no token stored) when the repository variable PYPI_PUBLISH is "true"
+# Every action is pinned to a commit; the comment says which version it is.
+name: Release
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - name: The tag matches the package version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["project"]["version"])')"
+          test "v$version" = "$TAG" || { echo "::error::tag $TAG but pyproject.toml says $version"; exit 1; }
+      - name: Tests
+        run: python -m unittest discover -s tests -t .
+      - name: Build (reproducible)
+        run: |
+          export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+          pip install --quiet "build==1.2.2.post1"
+          python -m build
+          python tools/reproducible_sdist.py dist/*.tar.gz
+          pip install --quiet dist/*.whl
+          codefactory sbom . -o dist/codefactory.cdx.json
+          cd dist && sha256sum * > SHA256SUMS
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist/
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # the release and the major tag
+      id-token: write # signing the attestations
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist/
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: "dist/*.whl, dist/*.tar.gz"
+      - uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
+        with:
+          subject-path: "dist/*.whl"
+          sbom-path: dist/codefactory.cdx.json
+      - name: Release notes from the changelog
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="${TAG#v}"
+          awk -v v="$version" '$0 ~ "^## "v" " {on=1; next} on && /^## / {exit} on' CHANGELOG.md > notes.md
+          test -s notes.md || echo "See CHANGELOG.md." > notes.md
+      - name: Create the release and move the major tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" dist/* --title "codefactory $TAG" --notes-file notes.md --verify-tag
+          major="${TAG%%.*}"
+          git tag -f "$major" "$TAG^{commit}"
+          git push -f origin "refs/tags/$major"
+
+  pypi:
+    needs: build
+    if: vars.PYPI_PUBLISH == 'true'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write # trusted publishing: PyPI trusts this workflow, no token is stored
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist/
+      - run: rm dist/codefactory.cdx.json dist/SHA256SUMS
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3

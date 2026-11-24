@@ -181,9 +181,23 @@ Uncommitted work counts. Findings are matched by kind + file + function (graph f
 text (source checks), not by line number. A new finding in a file the change didn't touch (a function that became
 unused because its caller was deleted) is shown with that note.
 
-The repository is also a GitHub Action (`uses: dominickkubica/codefactory@main`, inputs `base`, `fail-on`,
+The repository is also a GitHub Action (`uses: dominickkubica/codefactory@v0`, which follows releases; pin a
+release tag or commit SHA to choose when to upgrade; inputs `base`, `fail-on`,
 `comment`, `languages`). It posts one comment per pull request and updates it on every push; check out with
 `fetch-depth: 0` so the base commit is there.
+
+## Software bill of materials: sbom
+
+```bash
+codefactory sbom -o sbom.cdx.json
+```
+
+A [CycloneDX](https://cyclonedx.org) 1.5 SBOM of every pinned dependency, from the same lockfiles the vulnerability
+check reads (npm, yarn, pnpm, Poetry, uv, Pipfile, pinned requirements, Cargo, Go, Bundler, Composer). Each
+component has its package URL (`pkg:npm/%40babel/core@7.24.0`), the lockfile it came from, and scope `optional` when
+it's development-only. Offline. The file is deterministic (sorted, a serial number derived from the content, a
+timestamp only when `SOURCE_DATE_EPOCH` is set), so the same lockfiles give the same bytes: it can be diffed in
+review, signed and attested (`actions/attest-sbom`).
 
 ## Teams and organisations
 

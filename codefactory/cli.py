@@ -532,6 +532,20 @@ def cmd_sarif(a) -> int:
     return 0
 
 
+def cmd_sbom(a) -> int:
+    """A CycloneDX software bill of materials from the lockfiles."""
+    from .sbom import write
+
+    root = _repo(a.path)
+    text = write(root, Path(a.output) if a.output else None)
+    if a.output:
+        count = len(json.loads(text)["components"])
+        print(f"Wrote {a.output} ({count} components)")
+    else:
+        print(text, end="")
+    return 0
+
+
 def cmd_skill(a) -> int:
     repo = Path(a.path)
     path = install_skill(repo)
@@ -576,6 +590,7 @@ COMMANDS = {
         "the attack surface: every HTTP endpoint, its auth check, and whether it changes data or reaches risky code",
     ),
     "accept": (cmd_accept, "mark a finding as intended, with the reason (writes a [[silence]] rule to factory.toml)"),
+    "sbom": (cmd_sbom, "a CycloneDX software bill of materials (every pinned dependency, with package URLs)"),
     "update": (cmd_update, "upgrade codefactory to the latest version (and refresh this repo's skill)"),
     "skill": (cmd_skill, "teach Claude Code in a repo to use codefactory (writes .claude/skills/codefactory/SKILL.md)"),
 }
@@ -620,7 +635,9 @@ Run `codefactory <command> --help` for a command's options.""",
             s.add_argument("--hook", action="store_true", help="also add a session-start hook that keeps codefactory current")
         if name == "update":
             s.add_argument("--source", default=SKILL_SOURCE, help="where to install from (default: the GitHub repository)")
-        if name not in ("skill", "update"):
+        if name == "sbom":
+            s.add_argument("-o", "--output", help="output file (default: print it)")
+        if name not in ("skill", "update", "sbom"):
             s.add_argument(
                 "--lang",
                 action="append",

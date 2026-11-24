@@ -129,7 +129,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: dominickkubica/codefactory@main
+      - uses: dominickkubica/codefactory@v0   # or a release tag / commit SHA
         with: { fail-on: high }
 ```
 
