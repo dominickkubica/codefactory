@@ -24,7 +24,7 @@ _B = [(i * 0xBF58476D1CE4E5B9 + 0x94D049BB133111EB) % PRIME for i in range(1, PE
 
 def shingles(tokens: str) -> set[int]:
     t = tokens.split()
-    return {zlib.crc32(" ".join(t[i : i + K]).encode()) for i in range(max(0, len(t) - K + 1))}
+    return {zlib.crc32(" ".join(t[i : i + K]).encode("utf-8", "surrogatepass")) for i in range(max(0, len(t) - K + 1))}
 
 
 def signature(sh: set[int]) -> list[int]:

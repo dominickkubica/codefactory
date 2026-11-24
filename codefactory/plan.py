@@ -27,7 +27,7 @@ SCRIPT_EXT = (".js", ".mjs", ".cjs", ".jsx")
 
 
 def _id(kind: str, parts: list[str]) -> str:
-    return hashlib.sha1(f"{kind}|{'|'.join(sorted(parts))}".encode()).hexdigest()[:6]
+    return hashlib.sha1(f"{kind}|{'|'.join(sorted(parts))}".encode("utf-8", "surrogatepass")).hexdigest()[:6]
 
 
 class Planner:

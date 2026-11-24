@@ -80,7 +80,7 @@ def shape_of(node) -> tuple[str, str]:
             elif isinstance(n, ast.Constant) and isinstance(n.value, (int, float)) and not isinstance(n.value, bool):
                 parts.append(f"N:{n.value}")
     text = " ".join(parts)
-    return hashlib.sha1(text.encode()).hexdigest()[:16], text
+    return hashlib.sha1(text.encode("utf-8", "surrogatepass")).hexdigest()[:16], text
 
 
 # Calls that leave the process: a database, files, the network, other programs. Matched on calls the analyzer

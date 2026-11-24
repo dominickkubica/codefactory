@@ -28,7 +28,7 @@ def _tool_stamp() -> str:
 
 def fingerprint(root: Path, ignore: list[str]) -> str:
     skip = set(ignore)
-    h = hashlib.sha1(_tool_stamp().encode())
+    h = hashlib.sha1(_tool_stamp().encode("utf-8", "surrogatepass"))
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = sorted(d for d in dirnames if d not in skip and not d.endswith(".egg-info"))
         for name in sorted(filenames):
@@ -38,7 +38,7 @@ def fingerprint(root: Path, ignore: list[str]) -> str:
                     st = os.stat(p)
                 except OSError:
                     continue
-                h.update(f"{os.path.relpath(p, root)}|{st.st_size}|{st.st_mtime_ns}\n".encode())
+                h.update(f"{os.path.relpath(p, root)}|{st.st_size}|{st.st_mtime_ns}\n".encode("utf-8", "surrogatepass"))
     return h.hexdigest()
 
 

@@ -20,6 +20,7 @@ change command-line output.
   usually deliberate variants.
 - **CI not on push** isn't reported when the workflow explains in a comment why it runs on pull requests only.
 - `http://*` (an origin wildcard) isn't a plain-HTTP URL.
+- A source file containing a lone surrogate character (e.g. `"\ud83d"` in a string) no longer stops the analysis.
 
 ## 0.8.0 · 2026-11-24
 

@@ -216,7 +216,7 @@ def _rule(rid: str) -> dict:
 
 
 def _fp(*parts: str) -> str:
-    return hashlib.sha256("|".join(parts).encode()).hexdigest()[:32]
+    return hashlib.sha256("|".join(parts).encode("utf-8", "surrogatepass")).hexdigest()[:32]
 
 
 def _loc(file: str, line: int, message: str | None = None, end: int | None = None) -> dict:
