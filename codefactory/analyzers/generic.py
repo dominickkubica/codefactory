@@ -82,7 +82,7 @@ JS_LANGS = {
 # defines, so the codebase's own functions are followed instead.
 IO_RECEIVER = re.compile(
     r"(?:^|[.:>])(?:db|database|conn|connection|cursor|session|repo|repository|dao|client|http|https|httpClient|api|"
-    r"redis|cache|store|em|entityManager|jdbc|mongo|collection|stmt|statement|pool|tx|s3|bucket|requests|"
+    r"redis|em|entityManager|jdbc|mongo|stmt|statement|pool|tx|s3|bucket|requests|"
     r"_db|_repo|_client|_http|\$db|\$pdo|pdo|DB|Http|HttpClient)\s*(?:\.|->|::)\s*\w+$",
     re.I,
 )
@@ -205,8 +205,29 @@ def analyze_generic(root: Path, ignore: list[str], include_js: bool = False, cac
         )
         return g
     items = [(rel, (str(root / rel), rel, lang)) for rel, lang in found]
-    parsed = parallel.run(root, "generic", items, parse_file, tool="treewalk-3", cache=cache)
+    parsed = parallel.run(root, "generic", items, parse_file, tool="treewalk-4", cache=cache)
     return link(g, parsed)
+
+
+def _typed(callee: str, src: str, types: dict[str, str], cands: list[str]) -> str | None:
+    """`repo.find` with `repo: Repo` declared → Repo.find; `self.find` / `this.find` → a method of the caller's class.
+    Only when exactly one candidate fits."""
+    parts = [p for p in re.split(r"\.|->|::|\?\.", callee) if p]
+    if len(parts) < 2:
+        return None
+    receiver = parts[-2].lstrip("$_") if parts[-2] not in ("self", "this", "$this") else None
+    if receiver is None:  # a method of the caller's own class
+        cls = src.split("::", 1)[-1].rsplit(".", 1)[0] if "." in src.split("::", 1)[-1] else ""
+        want = f"{cls}.{parts[-1]}" if cls else None
+    else:
+        typ = types.get(receiver) or types.get("_" + receiver) or (receiver if receiver[:1].isupper() else None)
+        want = f"{typ}.{parts[-1]}" if typ else None
+    if not want:
+        return None
+    # (overloads carry their line in the id: `Validate.isTrue@312`; several overloads fitting is still ambiguous)
+    qual = [re.sub(r"@\d+$", "", c.split("::", 1)[-1]) for c in cands]
+    fits = [c for c, q in zip(cands, qual, strict=True) if q == want or q.endswith("." + want)]
+    return fits[0] if len(fits) == 1 else None
 
 
 def link(g: Graph, parsed: dict[str, dict]) -> Graph:
@@ -260,8 +281,15 @@ def link(g: Graph, parsed: dict[str, dict]) -> Graph:
         here = rel.rsplit("/", 1)[0] if "/" in rel else ""
         owners = [(f"{rel}::<module>", d["top"])] + [(f["id"], f) for f in d["functions"]]
 
-        def resolve(name: str, src: str, bare: bool = False, rel: str = rel, here: str = here) -> tuple[str | None, list[str]]:
+        types = d.get("types", {})
+
+        def resolve(
+            name: str, src: str, bare: bool = False, callee: str = "", rel: str = rel, here: str = here, types: dict = types
+        ) -> tuple[str | None, list[str]]:
             cands = [c for c in defs.get(name, ()) if c != src]
+            typed = _typed(callee, src, types, cands)
+            if typed:
+                return typed, cands
             same = [c for c in cands if file_of[c] == rel]
             if len(same) == 1:
                 return same[0], cands
@@ -287,7 +315,7 @@ def link(g: Graph, parsed: dict[str, dict]) -> Graph:
                     for c in [target] if target else cands if len(cands) <= 3 else ():
                         refs[(src, c)] += 1
             for name, line, in_loop, callee in rec["calls"]:
-                target, cands = resolve(name, src, bare=not re.search(r"\.|->|::", callee))
+                target, cands = resolve(name, src, bare=not re.search(r"\.|->|::", callee), callee=callee)
                 if target:
                     calls[(src, target)] += 1
                     if in_loop:

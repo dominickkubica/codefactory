@@ -141,3 +141,30 @@ class RealCodeRulesTest(unittest.TestCase):
             "p/B.java": "package p;\nimport p.A;\npublic class B { public int b() { return 2; } }\n",
         })  # fmt: skip
         self.assertEqual({f.severity for f in g.flags if f.kind == "cycle"}, {"warn"})
+
+
+@unittest.skipUnless(available(), 'needs pip install "codefactory[languages]"')
+class TypedReceiversTest(unittest.TestCase):
+    """`repo.find(…)` goes to Repo.find when `repo` is declared a Repo, even though Cache.find exists too."""
+
+    SAMPLES = {
+        "kotlin": {"Repo.kt": "class Repo { fun find(id: Int): Int = id }\nclass Cache { fun find(id: Int): Int = id + 1 }\n",
+                   "Service.kt": "class Service(private val repo: Repo) {\n  fun load(id: Int): Int = repo.find(id)\n}\n"},
+        "java": {"Repo.java": "class Repo { int find(int id) { return id; } }\nclass Cache { int find(int id) { return id + 1; } }\n",
+                 "Service.java": "class Service {\n  private Repo repo;\n  int load(int id) { return repo.find(id); }\n}\n"},
+        "swift": {"Repo.swift": "class Repo { func find(_ id: Int) -> Int { return id } }\nclass Cache { func find(_ id: Int) -> Int { return id + 1 } }\n",
+                  "Service.swift": "class Service {\n  let repo: Repo\n  func load(_ id: Int) -> Int { return repo.find(id) }\n}\n"},
+    }  # fmt: skip
+
+    def test_declared_types_pick_the_method(self):
+        for lang, files in self.SAMPLES.items():
+            with self.subTest(lang):
+                tmp = tempfile.TemporaryDirectory()
+                root = Path(tmp.name)
+                for name, text in files.items():
+                    (root / name).write_text(text, encoding="utf-8")
+                g = build(root, cache=False)
+                calls = {(e.src.split("::")[-1], e.dst.split("::")[-1]) for e in g.edges if e.kind == "call"}
+                self.assertIn(("Service.load", "Repo.find"), calls)
+                self.assertNotIn(("Service.load", "Cache.find"), calls)
+                tmp.cleanup()

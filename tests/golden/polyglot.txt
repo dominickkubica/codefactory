@@ -21,6 +21,6 @@ flag info unused java/com/shop/Orders.java::Orders.unusedHelper:14 Orders.unused
 flag warn duplicate api/handlers.go::summarize:17 Same code as summarizeAgain (api/handlers.go)
 flag warn duplicate api/handlers.go::summarizeAgain:29 Same code as summarize (api/handlers.go)
 flag warn io_in_loop api/handlers.go::LoadAll:11 LoadAll calls db.conn.Query() inside a loop (line 11): one query per item (the N+1 pattern). Load them all with one query (WHERE id IN (…), a JOIN).
-flag warn io_in_loop tools.rb::Report.build:6 Report.build calls query() inside a loop (line 6): one query per item (the N+1 pattern). Load them all with one query (WHERE id IN (…), a JOIN).
+flag warn io_in_loop tools.rb::Report.build:6 Report.build calls DB.query() inside a loop (line 6): one query per item (the N+1 pattern). Load them all with one query (WHERE id IN (…), a JOIN).
 flag warn unused store/store.go::helperUnused:8 helperUnused is never called or referenced
 flag warn unused store/store.go::pick:18 pick is never called or referenced

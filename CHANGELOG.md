@@ -3,6 +3,22 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.15.0 · 2026-11-24
+
+Apple platforms and typed calls.
+
+### Added
+- **Apple platform checks (Swift):** disk or database work on the main thread (`viewDidLoad`, layout, SwiftUI
+  `body`), retain cycles in closures `self` keeps, `try!`/`as!`, and entitlements that turn off code-signing
+  protections. In the review, SARIF and `diff`.
+- **Declared-type call resolution** for the tree-sitter languages (Kotlin, Java, Swift, C#, Go, Rust, PHP, Ruby…):
+  `repo.find()` goes to `OrderRepo.find` when `repo` is declared an `OrderRepo`, instead of being ambiguous.
+
+### Fixed
+- Java, Ruby and PHP method calls lost their receiver, so `DB.query()` read as `query()`.
+- Overloaded methods (same name, several definitions) no longer stop a typed call from resolving.
+- `cache`, `store` and `collection` alone no longer mark a call as I/O (in-memory maps and Java collections).
+
 ## 0.14.0 · 2026-11-24
 
 Data flow and privacy.

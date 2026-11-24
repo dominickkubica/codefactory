@@ -338,6 +338,31 @@ RULES: dict[str, tuple] = {
         ["privacy"],
         "5.0",
     ),
+    "main_thread_io": (
+        "MainThreadIO",
+        "Disk or database work on the main thread",
+        "Move it off the main thread.",
+        "warn",
+        ["performance"],
+        None,
+    ),
+    "swift_retain_cycle": (
+        "RetainCycle",
+        "Closure kept by self captures self strongly",
+        "Capture [weak self].",
+        "warn",
+        ["reliability"],
+        None,
+    ),
+    "swift_force": ("ForceTryCast", "try! / as! crash on failure", "Use do/catch, try? or as?.", "info", ["reliability"], None),
+    "entitlement_weakened": (
+        "WeakenedEntitlement",
+        "Code-signing protection turned off",
+        "Remove the entitlement.",
+        "warn",
+        ["security"],
+        "5.0",
+    ),
     "custom": ("CustomRule", "A custom rule from factory.toml matched", "See the rule's message.", "warn", ["custom"], None),
     "docker_latest": (
         "UnpinnedBaseImage",
@@ -478,6 +503,9 @@ def build_sarif(graph: dict, root: Path | None = None, new_keys: Counter | None 
         from .privacy import scan as privacy_scan
 
         checks.update(privacy_scan(root, [f["id"] for f in graph["files"]]))
+        from .apple import scan as apple_scan
+
+        checks.update(apple_scan(root, [f["id"] for f in graph["files"]]))
         for key, check in checks.items():
             if key not in RULES:
                 continue

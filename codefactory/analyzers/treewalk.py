@@ -109,12 +109,16 @@ def _last_ident(node, depth: int = 0) -> str:
 
 
 def _callee_text(node) -> str:
-    fn = (
-        node.child_by_field_name("function") or node.child_by_field_name("method") or node.named_children[0]
-        if node.named_children
-        else None
-    )
-    text = (fn or node).text.decode("utf-8", "replace")
+    """`repo.find`: the callee as written. Java, Ruby and PHP keep the receiver and the method name in separate fields
+    (object/receiver + name/method); others have one function expression."""
+    receiver = node.child_by_field_name("object") or node.child_by_field_name("receiver")
+    method = node.child_by_field_name("name") or node.child_by_field_name("method")
+    if receiver is not None and method is not None:
+        text = receiver.text.decode("utf-8", "replace") + "." + method.text.decode("utf-8", "replace")
+    else:
+        fn = node.child_by_field_name("function") or node.child_by_field_name("method")
+        fn = fn or (node.named_children[0] if node.named_children else None)
+        text = (fn or node).text.decode("utf-8", "replace")
     return re.sub(r"\s+", "", text.split("(")[0])[:80]
 
 
@@ -167,6 +171,31 @@ def _public(head: str, name: str, rel: str) -> bool:
     if rel.endswith(".dart"):
         return not name.startswith("_")
     return rel.endswith(PUBLIC_BY_DEFAULT) and not PRIVATE.match(head)
+
+
+# Declared types, by name, from the text: `repo: Repo` (Swift, Kotlin, TypeScript, Rust, Python annotations),
+# `Repo repo` (Java, C#, C++), `val repo = Repo(…)` / `let repo = new Repo(…)`, Go's `repo *Repo` and `repo := &Repo{`.
+# File-wide, so two variables of one name with different types in one file stay ambiguous (both are dropped).
+TYPE_PATTERNS = (
+    re.compile(r"\b(\w+)\s*:\s*(?:&\s*)?(?:mut\s+)?(?:inout\s+)?([A-Z]\w*)\b"),
+    re.compile(r"\b([A-Z]\w*)(?:<[^<>]*>)?\s+(\w+)\s*[;=,)]"),
+    re.compile(r"\b(?:let|var|val|const|auto)\s+(\w+)\s*=\s*(?:new\s+)?([A-Z]\w*)\s*[({<]"),
+    re.compile(r"\b(\w+)\s+\*?([A-Z]\w*)\s*[,)]"),
+    re.compile(r"\b(\w+)\s*:=\s*&?([A-Z]\w*)\s*\{"),
+)
+NOT_TYPES = {"String", "Int", "Bool", "Double", "Float", "Long", "Integer", "Boolean", "Object", "Any", "Void", "None",
+             "Optional", "List", "Map", "Set", "Array", "Dictionary", "Self", "This", "True", "False", "Null",
+             "Error"}  # fmt: skip
+
+
+def declared_types(text: str) -> dict[str, str]:
+    seen: dict[str, set[str]] = {}
+    for i, pat in enumerate(TYPE_PATTERNS):
+        for m in pat.finditer(text):
+            name, typ = (m.group(2), m.group(1)) if i == 1 else (m.group(1), m.group(2))
+            if typ not in NOT_TYPES and name[:1].islower():
+                seen.setdefault(name, set()).add(typ)
+    return {name: next(iter(types)) for name, types in seen.items() if len(types) == 1}
 
 
 def walk(source: bytes, parser, rel: str) -> dict:
@@ -261,6 +290,7 @@ def walk(source: bytes, parser, rel: str) -> dict:
         for c in reversed(node.children):
             stack.append((c, fn, classes, in_loop, depth + 1))
     out["top"]["refs"] = sorted(out["top"]["refs"])
+    out["types"] = declared_types(source.decode("utf-8", "replace"))
     for rec in out["functions"]:
         rec["refs"] = sorted(rec["refs"])
         toks = rec.pop("tokens")

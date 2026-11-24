@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from fnmatch import fnmatch
 from pathlib import Path
 
+from .apple import scan as apple_scan
 from .audit import current_secrets
 from .audit import scan as audit_scan
 from .brief import View
@@ -86,6 +87,7 @@ class Review:
         extra, self.history_note = audit_scan(root, current_secrets(self.scan["secret"]))
         self.scan.update(extra)  # CI, Docker, mobile config and git history: same shape, same silencing
         self.scan.update(privacy_scan(root, [f["id"] for f in g["files"]]))  # personal data, Apple privacy rules
+        self.scan.update(apple_scan(root, [f["id"] for f in g["files"]]))  # Swift crashes, cycles, main-thread I/O
         self.online, self.vulns, self.deps_note = online, [], ""
         self._apply_silence(load_config(root).silence)
         self.surface = surface(root, g, self.v)
@@ -258,6 +260,11 @@ class Review:
             if hits:
                 ev, more = _ev(hits)
                 self.add(title, sev, "Security", ev, impact, fix, _effort(len(hits), len({e.file for e in hits})), more)
+        for key, title, sev, area, impact, fix in APPLE_CHECKS:
+            hits = s[key].hits
+            if hits:
+                ev, more = _ev(hits)
+                self.add(title, sev, area, ev, impact, fix, _effort(len(hits), len({e.file for e in hits})), more)
 
     def dependencies(self) -> None:
         if not self.online:
@@ -1268,6 +1275,22 @@ CI_HINT = [".github/workflows", ".gitlab-ci.yml", ".circleci", "Jenkinsfile"]
 SECURITY_KEYS = {"secret", "eval", "shell", "tls_off", "raw_html", "sql_built", "history_secret", "secret_key_literal",
                  "jwt_unverified", "weak_cipher", "weak_hash", "weak_random", "cors_any", "insecure_cookie", "debug_on",
                  "sensitive_storage", "docker_secret", "gha_injection"}  # fmt: skip
+
+APPLE_CHECKS = [
+    ("main_thread_io", "Disk or database work on the main thread (Swift)", "Medium", "Performance",
+     "The UI freezes while it runs; long enough and the watchdog kills the app.",
+     "Move it off the main thread (a Task, an actor, a background queue) and update the UI when it's done."),
+    ("swift_retain_cycle", "Possible retain cycles: closures kept by self that capture self strongly", "Medium", "Reliability",
+     "The object and its closure keep each other alive: memory grows, and observers or timers keep firing after the "
+     "screen is gone.",
+     "Capture `[weak self]` (or `[unowned self]` when the lifetime is certain) in closures self keeps."),
+    ("swift_force", "`try!` / `as!` that crash on failure (Swift)", "Low", "Reliability",
+     "An unexpected error or type ends the app instead of being handled.",
+     "Use `try` with `do/catch`, `try?` with a fallback, or `as?` with a guard."),
+    ("entitlement_weakened", "Code-signing protections turned off (entitlements)", "Medium", "Security",
+     "Library validation, executable-memory or debugging protections are off: easier to inject code into the app.",
+     "Remove the entitlement unless a dependency truly needs it, and keep get-task-allow out of release builds."),
+]  # fmt: skip
 
 # (check, title, severity, impact, fix) for the configuration, crypto, CI, container, mobile and history checks
 CONFIG_CHECKS = [

@@ -169,6 +169,11 @@ patterns match those names. Its tags queries were tried first and dropped, becau
 have no call captures).
 
 - **Functions:** definitions with a body; qualified by enclosing classes, and by the receiver for Go methods.
+- **Declared types first.** A call on a receiver whose type the file declares (`val repo: OrderRepo`,
+  `OrderRepo repo = …`, `let repo: OrderRepo`, a `self`/`this` method, or a capitalized type name) goes to that
+  type's method when exactly one matches, so `repo.find()` and `cache.find()` stop being ambiguous. This is
+  declared-type resolution, not a compiler's inference: a type that's only inferred (`let repo = makeRepo()`) falls
+  through to name matching. A Swift toolchain (SourceKit) would do better; it isn't needed or used.
 - **Calls are matched by name**, in order: the same file; for a call with no receiver, plain functions before
   methods; the same folder (Go packages, Java packages); a file it imports; the only definition anywhere. Several
   equally likely candidates aren't guessed at: up to three get a `ref`, and a name defined in more places (`String`,
@@ -335,6 +340,15 @@ so were generic words like `steps`, `sleep` and `location`, which are dropped). 
 resources the code uses with the usage descriptions declared anywhere (Info.plist files, `app.json`, Expo config
 plugins that add them), and native uses of required-reason APIs with the presence of a privacy manifest. On a real
 Expo app it found its watch extension's `UserDefaults` use without a manifest.
+
+## Apple platforms
+
+`apple.py` checks Swift for what crashes or stalls an app: `try!` and `as!`; closures that `self` keeps (Combine
+`sink`, `NotificationCenter` observers, repeating timers, `self.handler = { … }`) whose body uses `self` without
+`[weak self]` or `[unowned self]`; synchronous disk or database calls inside `viewDidLoad`, `viewWillAppear`, layout
+and drawing, or a SwiftUI `body`; and entitlements that turn off code-signing protections (library validation,
+unsigned executable memory, `get-task-allow`). Blocks are brace-matched, so a call in `reload()` doesn't count as
+main-thread work, and comments and test files are skipped. They're line checks: leads with the exact line.
 
 ## Configuration, CI, history and dependencies
 

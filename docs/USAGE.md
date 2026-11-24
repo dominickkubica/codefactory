@@ -256,6 +256,15 @@ program already has its rights. Severity: Critical for SQL, shell and code execu
 | iOS usage descriptions | Code that uses the camera, photos, location, microphone, contacts, health data, calendars, Bluetooth, Face ID, motion or tracking without the matching `NS…UsageDescription`, in an Info.plist, in `app.json` `ios.infoPlist`, or added by the library's Expo config plugin |
 | iOS privacy manifest | Native code (Swift, Objective-C) using a required-reason API (UserDefaults, file timestamps, system boot time, disk space) without a `PrivacyInfo.xcprivacy` or `ios.privacyManifests` in `app.json`. App Store Connect rejects such uploads. |
 
+## Apple platforms (Swift)
+
+| Check | What it finds |
+|---|---|
+| Main-thread I/O | `Data(contentsOf:)`, `String(contentsOf:)`, `FileManager` file operations, `.write(to:)` or SQLite calls inside `viewDidLoad`, `viewWillAppear`, `viewDidAppear`, layout or `draw`, or a SwiftUI `body`. Medium. |
+| Retain cycles | Closures self keeps (`.sink`, `.subscribe`, `addObserver(forName:)`, repeating `scheduledTimer`, `.observe`, `self.x = { … }`) that use `self` without `[weak self]`/`[unowned self]`. Medium. |
+| `try!` / `as!` | Force try and force cast, which crash on failure. Low. |
+| Weakened entitlements | `disable-library-validation`, `allow-unsigned-executable-memory`, `allow-dyld-environment-variables`, `disable-executable-page-protection`, `get-task-allow` set to true. Medium. |
+
 ## The rest of a security audit
 
 Beyond the attack surface, the review checks:

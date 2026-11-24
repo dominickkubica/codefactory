@@ -105,6 +105,9 @@ def items(root: Path, graph: dict) -> list[Item]:
     checks = scan_sources(root, [f["id"] for f in graph["files"]])
     checks.update(scan_config(root))
     checks.update(privacy_scan(root, [f["id"] for f in graph["files"]]))
+    from .apple import scan as apple_scan
+
+    checks.update(apple_scan(root, [f["id"] for f in graph["files"]]))
     for kind, check in checks.items():
         if kind not in RULES:
             continue
