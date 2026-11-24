@@ -83,7 +83,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
-          gh release create "$TAG" dist/* --title "codefactory $TAG" --notes-file notes.md --verify-tag
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # made on the website (which also made the tag): add the files and the notes to it
+            gh release upload "$TAG" dist/* --clobber
+            gh release edit "$TAG" --title "codefactory $TAG" --notes-file notes.md
+          else
+            gh release create "$TAG" dist/* --title "codefactory $TAG" --notes-file notes.md --verify-tag
+          fi
           major="${TAG%%.*}"
           git tag -f "$major" "$TAG^{commit}"
           git push -f origin "refs/tags/$major"
