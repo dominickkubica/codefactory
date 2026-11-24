@@ -257,6 +257,18 @@ def events(nodes, ctx: _Ctx, sites: bool = True) -> list:
     return out + refs
 
 
+def _local_imports(fn) -> list:
+    """Imports inside a function: they name things for that function only (two functions may import different
+    `summarize`s), so they're resolved per function as well as for the module."""
+    out = []
+    for n in ast.walk(fn):
+        if isinstance(n, ast.Import):
+            out += [["import", a.name, a.asname, False] for a in n.names]
+        elif isinstance(n, ast.ImportFrom):
+            out += [["from", n.module, n.level, a.name, a.asname, False] for a in n.names]
+    return out
+
+
 def parse_module(path: str, rel: str) -> dict | None:
     """The per-file step: everything python.py needs from one file, or None if it isn't valid Python."""
     try:
@@ -298,6 +310,7 @@ def parse_module(path: str, rel: str) -> dict | None:
             "kind": kind, "decorated": bool(node.decorator_list), "exported": node.name in exports or node.name == "main",
             "shape": shape, "tokens": tokens, "cls": cls,
             "deco": events(node.decorator_list, ctx, sites=False), "body": events(node.body, ctx),
+            "imports": _local_imports(node),
         })  # fmt: skip
 
     top = []

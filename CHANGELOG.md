@@ -3,6 +3,14 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.9.1 · 2026-11-24
+
+### Fixed (found reviewing a 55,000-line FastAPI + React app)
+- **Python imports inside a function now apply to that function only.** Two functions importing different
+  `summarize`s both linked to the last one, so the other looked unused and the loops calling it were missed.
+- "Network calls without a timeout" looks for `fetch()` only in JavaScript/TypeScript, where it's the web's fetch; in
+  Python a variable named `fetch` is anything.
+
 ## 0.9.0 · 2026-11-24
 
 Big codebases and many languages.

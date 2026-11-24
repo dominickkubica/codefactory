@@ -8,6 +8,7 @@ doesn't look dead.
 
 from __future__ import annotations
 
+import copy
 from collections import Counter
 from pathlib import Path
 
@@ -56,8 +57,22 @@ def _resolve_relative(mod: _Module, level: int, target: str | None) -> str:
     return ".".join([*base, target] if target else base)
 
 
+def _scoped(mod: _Module, imports: list, known: set[str]) -> _Module:
+    """The module as one function sees it: its own imports on top of the module's."""
+    if not imports:
+        return mod
+    view = copy.copy(mod)
+    view.aliases, view.symbols, view.load_imports = dict(mod.aliases), dict(mod.symbols), set()
+    _apply_imports(view, imports, known)
+    return view
+
+
 def _collect(mod: _Module, known: set[str]) -> None:
-    for imp in mod.data["imports"]:
+    _apply_imports(mod, mod.data["imports"], known)
+
+
+def _apply_imports(mod: _Module, imports: list, known: set[str]) -> None:
+    for imp in imports:
         if imp[0] == "import":
             _, name, asname, at_load = imp
             if asname:
@@ -239,7 +254,7 @@ def analyze_python(root: Path, ignore: list[str], cache: bool = True) -> Graph:
             g.functions.append(fn)
             fn_io: set[str] = set()
             _link(d["deco"], m, d["cls"], top.id, res, calls, refs, consts)
-            _link(d["body"], m, d["cls"], fn.id, res, calls, refs, consts, g.sites, fn_io)
+            _link(d["body"], _scoped(m, d.get("imports", []), known), d["cls"], fn.id, res, calls, refs, consts, g.sites, fn_io)
             fn.io = sorted(fn_io)
         top.io = sorted(top_io)
         for t in m.load_imports:

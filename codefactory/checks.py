@@ -217,6 +217,7 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                 out["module_state"].hits.append(Evidence(fid, i, _excerpt(line)))
         if (
             not test
+            and fid.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"))  # the web's fetch; elsewhere it's any name
             and re.search(r"(?<![\w.])fetch\s*\(", text)
             and not re.search(r"\bsignal\b|AbortSignal\.timeout|timeout", text)
         ):
