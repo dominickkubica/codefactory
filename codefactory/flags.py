@@ -11,9 +11,23 @@ from .similar import near_duplicates
 SEVERITY_ORDER = {"high": 0, "warn": 1, "info": 2}
 
 
+# Methods a framework calls by name: React class components, web components, Angular, Django / DRF class-based views.
+FRAMEWORK_METHODS = {
+    "render", "componentDidMount", "componentDidUpdate", "componentWillUnmount", "shouldComponentUpdate",
+    "getSnapshotBeforeUpdate", "componentDidCatch", "getDerivedStateFromError", "getDerivedStateFromProps",
+    "UNSAFE_componentWillMount", "UNSAFE_componentWillReceiveProps", "UNSAFE_componentWillUpdate", "constructor",
+    "connectedCallback", "disconnectedCallback", "attributeChangedCallback", "adoptedCallback",
+    "ngOnInit", "ngOnDestroy", "ngOnChanges", "ngAfterViewInit", "ngAfterContentInit", "ngDoCheck",
+    "get", "post", "put", "patch", "delete", "head", "options", "dispatch", "get_queryset", "get_object",
+    "get_context_data", "get_serializer_class", "perform_create", "perform_update", "perform_destroy", "form_valid",
+    "form_invalid", "clean", "save", "run", "handle",
+}
+
+
 def _is_entry(fn) -> bool:
     n = fn.name
     return (fn.kind == "module" or fn.exported or fn.decorated or n.startswith("__") or n.startswith("test")
+            or (fn.kind == "method" and n in FRAMEWORK_METHODS)
             or n in ("setUp", "tearDown", "setUpClass", "tearDownClass") or _is_test_file(fn.file))
 
 

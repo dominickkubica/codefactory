@@ -242,12 +242,12 @@ sql = "SELECT id AS target, loc, caller_files FROM function_stats WHERE loc > 40
 |---|---|---|
 | Import loop | high | Files that import each other in a circle (Tarjan's algorithm on the import graph) |
 | Layer violation | high | An import your `factory.toml` forbids, e.g. `ui -> db` |
-| Calls in loops (`io_in_loop`) | warn / info | A database, network or file call, or a call into the codebase that eventually makes one, runs once per loop iteration. Reads and network = warn (the N+1 pattern); writes and files = info |
+| Calls in loops (`io_in_loop`) | warn / info | A database, network or file call, or a call into the codebase that eventually makes one, runs once per loop iteration. Reads and network = warn (the N+1 pattern); writes and files = info. Loops over a list fixed in the code (a literal, a constant, `Object.entries(CONST)`, `range(5)`, `.slice(0, 10)`) and loops in migrations are info: they can't grow with the data |
 | Duplicate | warn | Functions with the same structure, even with renamed variables (≥ 6 lines, not one-liners) |
 | Near-duplicate (`similar`) | warn / info | Copies that were edited afterwards: 75%+ of their structure in common (MinHash over 4-token shingles); 85%+ = warn |
 | Searches in loops (`quadratic_scan`) | info | `find` / `filter` / `includes` / `indexOf`… on an array inside a loop or `.map`: O(n²) on long lists (TypeScript) |
 | Awaits in loops (`sequential_await`) | info | Each round waits for the last; independent ones could run together (not reported again where a call-in-loop already explains it) |
-| Unused | warn / info | Functions nothing calls or references. Methods are only "info", and skipped when their name is used as `obj.name` anywhere |
+| Unused | warn / info | Functions nothing calls or references. Methods are only "info", and skipped when their name is used as `obj.name` anywhere or a framework calls them by name (React lifecycle methods, web components, Angular hooks, Django/DRF views). Code loaded with `require()` / `import()` on demand counts as used |
 | Hub | info | A function called from 12+ files: change it carefully |
 | Test only | info | Code nothing but tests calls: dead in the product, still kept alive by its tests |
 | Large file / long function | info | Over 400 / 60 lines |

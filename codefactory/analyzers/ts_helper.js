@@ -127,13 +127,60 @@ const IO_VIA_RECEIVER = /^(query|execute|get|set|post|put|patch|delete|findMany|
 
 // { loop, stmt }: runs once per iteration of a loop (for/while, or an array callback like .map); stmt = a for/while
 // statement around it in the same function body (an await there waits on each round in turn).
+// A list whose length is fixed in the code: an array or object literal, a const holding one (also imported, and
+// through Object.keys/values/entries, .map, .filter…), an enum, or anything cut to a small .slice(0, N).
+const SMALL = 50;
+function constIterable(e, depth = 0) {
+  if (!e || depth > 5) return false;
+  while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isNonNullExpression(e) ||
+         (ts.isSatisfiesExpression && ts.isSatisfiesExpression(e))) e = e.expression;
+  if (ts.isArrayLiteralExpression(e) || ts.isObjectLiteralExpression(e)) return true;
+  if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression)) {
+    const name = e.expression.name.text, recv = e.expression.expression;
+    if (name === "slice" && e.arguments.length === 2 && ts.isNumericLiteral(e.arguments[1]) && Number(e.arguments[1].text) <= SMALL) return true;
+    if (ts.isIdentifier(recv) && recv.text === "Object" && ["keys", "values", "entries"].includes(name)) return constIterable(e.arguments[0], depth + 1);
+    if (["map", "filter", "flatMap", "slice", "concat", "toSorted", "toReversed"].includes(name)) return constIterable(recv, depth + 1);
+  }
+  if (ts.isIdentifier(e) || ts.isPropertyAccessExpression(e)) {
+    let sym = checker.getSymbolAtLocation(ts.isPropertyAccessExpression(e) ? e.name : e);
+    if (sym && sym.flags & ts.SymbolFlags.Alias) { try { sym = checker.getAliasedSymbol(sym); } catch { return false; } }
+    const d = sym && sym.declarations && sym.declarations[0];
+    if (!d) return false;
+    if (ts.isEnumDeclaration(d)) return true;
+    if (ts.isVariableDeclaration(d) && d.initializer && (ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const)) return constIterable(d.initializer, depth + 1);
+    if (ts.isPropertyAssignment(d)) return constIterable(d.initializer, depth + 1);
+    // const { tables } = PARTS[part]: a piece of a constant object is as fixed as the object
+    if (ts.isBindingElement(d) && ts.isVariableDeclaration(d.parent.parent)) return constRoot(d.parent.parent.initializer, depth + 1);
+  }
+  if (ts.isElementAccessExpression(e)) return constRoot(e, depth + 1);
+  return false;
+}
+// PARTS[part].tables, CONFIG.items: the object at the root of the access is a constant literal.
+function constRoot(e, depth) {
+  while (e && (ts.isElementAccessExpression(e) || ts.isPropertyAccessExpression(e) || ts.isParenthesizedExpression(e) ||
+               ts.isAsExpression(e) || ts.isNonNullExpression(e))) e = e.expression;
+  return !!e && ts.isIdentifier(e) && constIterable(e, depth);
+}
+function boundedLoop(p) {
+  if (ts.isForOfStatement(p) || ts.isForInStatement(p)) return constIterable(p.expression);
+  if (ts.isForStatement(p) && p.condition && ts.isBinaryExpression(p.condition)) {
+    const r = p.condition.right;
+    return (ts.isNumericLiteral(r) && Number(r.text) <= SMALL) ||
+      (ts.isPropertyAccessExpression(r) && r.name.text === "length" && constIterable(r.expression));
+  }
+  return false; // while / do: can't tell
+}
+
+// { loop, stmt, bounded }: runs once per iteration of a loop (for/while, or an array callback like .map); stmt = a
+// for/while statement around it in the same function body (an await there waits on each round in turn); bounded =
+// every loop around it goes over a list fixed in the code, so the number of rounds can't grow with the data.
 function loopState(n) {
-  let loop = false, stmt = false, crossed = false;
+  let loop = false, stmt = false, crossed = false, bounded = true;
   for (let c = n, p = n.parent; p; c = p, p = p.parent) {
     if (fnByNode.has(p) || ts.isSourceFile(p)) break;
     const statementLoop = ((ts.isForOfStatement(p) || ts.isForInStatement(p)) && c === p.statement) ||
       (ts.isForStatement(p) && c !== p.initializer) || ts.isWhileStatement(p) || ts.isDoStatement(p);
-    if (statementLoop) { loop = true; if (!crossed) stmt = true; }
+    if (statementLoop) { loop = true; if (!crossed) stmt = true; bounded = bounded && boundedLoop(p); }
     if (isFnLike(p)) {
       const call = p.parent;
       const iterating = call && ts.isCallExpression(call) && call.arguments.includes(p) && ts.isPropertyAccessExpression(call.expression) &&
@@ -142,9 +189,10 @@ function loopState(n) {
       if (!iterating) break;
       loop = true;
       crossed = true;
+      bounded = bounded && constIterable(call.expression.expression);
     }
   }
-  return { loop, stmt };
+  return { loop, stmt, bounded: loop && bounded };
 }
 function lastName(expr) {
   while (expr && (ts.isPropertyAccessExpression(expr) || ts.isCallExpression(expr) || ts.isNonNullExpression(expr))) {
@@ -247,6 +295,43 @@ function fnForSymbol(sym) {
   }
   return null;
 }
+// Code loaded on demand: const { fn } = require("./x") (also cast with `as`), const m = require("./x"); m.fn(),
+// require("./x").fn(), await import("./x"). The type checker can't see through these; the module's exports can.
+let exportsByFile = null;
+function exportsOf(fileId) {
+  if (!exportsByFile) {
+    exportsByFile = new Map();
+    for (const f of functions) {
+      if (f.kind === "module" || f.qualname.includes(".")) continue;
+      if (!exportsByFile.has(f.file)) exportsByFile.set(f.file, new Map());
+      exportsByFile.get(f.file).set(f.name, f);
+    }
+  }
+  return exportsByFile.get(fileId);
+}
+function requiredFile(init) {
+  while (init && (ts.isParenthesizedExpression(init) || ts.isAsExpression(init) || ts.isAwaitExpression(init) ||
+                  ts.isNonNullExpression(init) || (ts.isTypeAssertionExpression && ts.isTypeAssertionExpression(init)))) init = init.expression;
+  if (!init || !ts.isCallExpression(init) || !init.arguments[0] || !ts.isStringLiteral(init.arguments[0])) return null;
+  const isRequire = ts.isIdentifier(init.expression) && init.expression.text === "require";
+  if (!isRequire && init.expression.kind !== ts.SyntaxKind.ImportKeyword) return null;
+  return resolveModule(init.arguments[0].text, init.getSourceFile());
+}
+function fnViaRequire(sym, prop) {
+  for (const d of (sym && sym.declarations) || []) {
+    if (ts.isBindingElement(d) && ts.isObjectBindingPattern(d.parent) && ts.isVariableDeclaration(d.parent.parent)) {
+      const file = requiredFile(d.parent.parent.initializer);
+      const name = d.propertyName && ts.isIdentifier(d.propertyName) ? d.propertyName.text : ts.isIdentifier(d.name) ? d.name.text : "";
+      if (file) return (exportsOf(file) || new Map()).get(name) || null;
+    }
+    if (prop && ts.isVariableDeclaration(d) && ts.isIdentifier(d.name)) {
+      const file = requiredFile(d.initializer);
+      if (file) return (exportsOf(file) || new Map()).get(prop) || null;
+    }
+  }
+  return null;
+}
+
 function calleeOf(node) {
   try {
     const sig = checker.getResolvedSignature(node);
@@ -254,7 +339,18 @@ function calleeOf(node) {
     if (f) return f;
   } catch { /* fall back to the symbol */ }
   const target = ts.isCallExpression(node) || ts.isNewExpression(node) ? node.expression : node.tagName;
-  return fnForSymbol(checker.getSymbolAtLocation(ts.isPropertyAccessExpression(target) ? target.name : target));
+  const f = fnForSymbol(checker.getSymbolAtLocation(ts.isPropertyAccessExpression(target) ? target.name : target));
+  if (f) return f;
+  if (ts.isIdentifier(target)) return fnViaRequire(checker.getSymbolAtLocation(target), null);
+  if (ts.isPropertyAccessExpression(target)) {
+    if (ts.isIdentifier(target.expression)) {
+      const viaVar = fnViaRequire(checker.getSymbolAtLocation(target.expression), target.name.text);
+      if (viaVar) return viaVar;
+    }
+    const file = requiredFile(target.expression);
+    if (file) return (exportsOf(file) || new Map()).get(target.name.text) || null;
+  }
+  return null;
 }
 function ownerOf(n) {
   for (let p = n.parent; p; p = p.parent) if (fnByNode.has(p)) return fnByNode.get(p);
@@ -288,21 +384,22 @@ for (const sf of sources) {
       const line = lineOf(sf, n.getStart(sf));
       if (src && dst && dst !== src) {
         bump(calls, `${src.id}\u0000${dst.id}`);
-        if (where.loop) sites.push({ fn: src.id, kind: "loop_call", line, target: dst.id, detail: "" });
+        if (where.loop) sites.push({ fn: src.id, kind: "loop_call", line, target: dst.id, detail: "", bounded: where.bounded });
       } else if (!dst && ts.isCallExpression(n)) {
         if (ts.isPropertyAccessExpression(n.expression)) unresolvedProps.add(n.expression.name.text);
         const io = src && ioCall(n);
         if (io) {
           (ioOf.get(src) || ioOf.set(src, new Set()).get(src)).add(io);
-          if (where.loop) sites.push({ fn: src.id, kind: "loop_io", line, target: "", detail: io });
+          if (where.loop) sites.push({ fn: src.id, kind: "loop_io", line, target: "", detail: io, bounded: where.bounded });
         } else if (src && where.loop && ts.isPropertyAccessExpression(n.expression) && SCAN.has(n.expression.name.text) &&
                    arrayish(n.expression.expression)) {
-          sites.push({ fn: src.id, kind: "loop_scan", line, target: "", detail: `${lastName(n.expression.expression) || "array"}.${n.expression.name.text}` });
+          sites.push({ fn: src.id, kind: "loop_scan", line, target: "", detail: `${lastName(n.expression.expression) || "array"}.${n.expression.name.text}`, bounded: where.bounded });
         }
       }
     } else if (ts.isAwaitExpression(n)) {
       const src = ownerOf(n);
-      if (src && loopState(n).stmt) sites.push({ fn: src.id, kind: "loop_await", line: lineOf(sf, n.getStart(sf)), target: "", detail: "" });
+      const ls = src && loopState(n);
+      if (ls && ls.stmt) sites.push({ fn: src.id, kind: "loop_await", line: lineOf(sf, n.getStart(sf)), target: "", detail: "", bounded: ls.bounded });
     } else if (ts.isIdentifier(n)) {
       const p = n.parent;
       const callee = p && (ts.isCallExpression(p) || ts.isNewExpression(p)) && p.expression === n;
@@ -312,7 +409,7 @@ for (const sf of sources) {
       const memberCallee = p && ts.isPropertyAccessExpression(p) && p.name === n && p.parent && ts.isCallExpression(p.parent) && p.parent.expression === p;
       if (!callee && !tag && !declName && !memberCallee) {
         const sym = p && ts.isShorthandPropertyAssignment(p) ? checker.getShorthandAssignmentValueSymbol(p) : checker.getSymbolAtLocation(n);
-        const dst = fnForSymbol(sym);
+        const dst = fnForSymbol(sym) || fnViaRequire(sym, null);
         const src = ownerOf(n);
         if (src && dst && dst !== src) bump(refs, `${src.id}\u0000${dst.id}`);
       }

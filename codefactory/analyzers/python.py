@@ -115,26 +115,58 @@ COMPREHENSIONS = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
 SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
 
 
-def walk_loops(nodes):
-    """Every node under `nodes`, with whether it runs once per iteration of a loop (for/while/comprehension) and
-    whether that's a for/while statement (where an await waits on each round in turn). A nested def starts afresh."""
-    stack = [(n, False, False) for n in reversed(list(nodes))]
+SMALL = 50
+LITERALS = (ast.List, ast.Tuple, ast.Set, ast.Dict)
+
+
+def const_iterable(e: ast.AST, consts: set[str]) -> bool:
+    """A sequence whose length is fixed in the code: a literal, a module-level constant holding one, range(N) or
+    x[:N] with a small N, or one of those through .items()/.keys()/.values(), sorted(), enumerate(), …"""
+    if isinstance(e, LITERALS):
+        return True
+    if isinstance(e, ast.Name):
+        return e.id in consts
+    if isinstance(e, ast.Attribute):
+        return e.attr in consts or (_dotted(e) or "") in consts
+    if isinstance(e, ast.Subscript) and isinstance(e.slice, ast.Slice):
+        up = e.slice.upper
+        return isinstance(up, ast.Constant) and isinstance(up.value, int) and up.value <= SMALL
+    if isinstance(e, ast.Call):
+        f = e.func
+        if isinstance(f, ast.Name) and f.id == "range" and e.args:
+            last = e.args[1] if len(e.args) > 1 else e.args[0]
+            return isinstance(last, ast.Constant) and isinstance(last.value, int) and last.value <= SMALL
+        if isinstance(f, ast.Name) and f.id in ("sorted", "reversed", "enumerate", "list", "tuple", "set", "zip") and e.args:
+            return all(const_iterable(a, consts) for a in e.args[:2])
+        if isinstance(f, ast.Attribute) and f.attr in ("items", "keys", "values"):
+            return const_iterable(f.value, consts)
+    return False
+
+
+def walk_loops(nodes, consts: set[str] | None = None):
+    """Every node under `nodes`, with whether it runs once per iteration of a loop (for/while/comprehension), whether
+    that's a for/while statement (where an await waits on each round in turn), and whether every loop around it goes
+    over a list fixed in the code (so its rounds can't grow with the data). A nested def starts afresh."""
+    consts = consts or set()
+    stack = [(n, False, False, True) for n in reversed(list(nodes))]
     while stack:
-        n, loop, stmt = stack.pop()
-        yield n, loop, stmt
-        kids: list[tuple[ast.AST, bool, bool]] = []
+        n, loop, stmt, bounded = stack.pop()
+        yield n, loop, stmt, loop and bounded
         if isinstance(n, (ast.For, ast.AsyncFor)):
-            kids = [(n.target, loop, stmt), (n.iter, loop, stmt)] + [(c, True, True) for c in n.body + n.orelse]
+            inner = bounded and const_iterable(n.iter, consts)
+            kids = [(n.target, loop, stmt, bounded), (n.iter, loop, stmt, bounded)] + \
+                   [(c, True, True, inner) for c in n.body + n.orelse]
         elif isinstance(n, ast.While):
-            kids = [(n.test, True, True)] + [(c, True, True) for c in n.body + n.orelse]
+            kids = [(n.test, True, True, False)] + [(c, True, True, False) for c in n.body + n.orelse]
         elif isinstance(n, COMPREHENSIONS):
             gens = n.generators
-            kids = [(gens[0].iter, loop, stmt)] + [(c, True, stmt) for c in ast.iter_child_nodes(n) if c is not gens[0]]
-            kids += [(c, True, stmt) for c in ast.iter_child_nodes(gens[0]) if c is not gens[0].iter]
-        elif isinstance(n, SCOPES) and stack is not None:
-            kids = [(c, False, False) for c in ast.iter_child_nodes(n)]
+            inner = bounded and all(const_iterable(g.iter, consts) for g in gens)
+            kids = [(gens[0].iter, loop, stmt, bounded)] + [(c, True, stmt, inner) for c in ast.iter_child_nodes(n) if c is not gens[0]]
+            kids += [(c, True, stmt, inner) for c in ast.iter_child_nodes(gens[0]) if c is not gens[0].iter]
+        elif isinstance(n, SCOPES):
+            kids = [(c, False, False, True) for c in ast.iter_child_nodes(n)]
         else:
-            kids = [(c, loop, stmt) for c in ast.iter_child_nodes(n)]
+            kids = [(c, loop, stmt, bounded) for c in ast.iter_child_nodes(n)]
         stack.extend(reversed(kids))
 
 
@@ -146,6 +178,7 @@ class _Module:
         self.aliases: dict[str, str] = {}  # local name -> module name
         self.symbols: dict[str, tuple[str, str]] = {}  # local name -> (module name, symbol)
         self.exports: set[str] = set()
+        self.consts: set[str] = set()  # module-level names bound to a literal list / tuple / set / dict
 
 
 def _resolve_relative(mod: _Module, level: int, target: str | None) -> str:
@@ -156,6 +189,12 @@ def _resolve_relative(mod: _Module, level: int, target: str | None) -> str:
 
 
 def _collect(mod: _Module, known: set[str]) -> None:
+    for node in mod.tree.body:
+        value = node.value if isinstance(node, (ast.Assign, ast.AnnAssign)) else None
+        if isinstance(value, LITERALS):
+            for t in (node.targets if isinstance(node, ast.Assign) else [node.target]):
+                if isinstance(t, ast.Name):
+                    mod.consts.add(t.id)
     for node in ast.walk(mod.tree):
         if isinstance(node, ast.Import):
             for a in node.names:
@@ -285,10 +324,13 @@ def _dotted(node: ast.AST) -> str | None:
 def _edges_from(body_nodes, mod: _Module, cls: str | None, src_id: str, res: _Resolver, calls: Counter, refs: Counter,
                 sites: list | None = None, io: set | None = None):
     call_funcs = set()
-    walked = list(walk_loops(body_nodes))
-    for n, loop, stmt in walked:
+    # constants defined here, or imported by name from another module of the codebase
+    consts = mod.consts | {local for local, (src, name) in mod.symbols.items()
+                           if src in res.modules and name in res.modules[src].consts}
+    walked = list(walk_loops(body_nodes, consts))
+    for n, loop, stmt, bounded in walked:
         if isinstance(n, ast.Await) and stmt and sites is not None:
-            sites.append(Site(src_id, "loop_await", n.lineno))
+            sites.append(Site(src_id, "loop_await", n.lineno, bounded=bounded))
         if isinstance(n, ast.Call):
             call_funcs.add(id(n.func))
             target = res.name(mod, n.func.id) if isinstance(n.func, ast.Name) else (
@@ -296,18 +338,18 @@ def _edges_from(body_nodes, mod: _Module, cls: str | None, src_id: str, res: _Re
             if target and target != src_id:
                 calls[(src_id, target)] += 1
                 if loop and sites is not None:
-                    sites.append(Site(src_id, "loop_call", n.lineno, target=target))
+                    sites.append(Site(src_id, "loop_call", n.lineno, target=target, bounded=bounded))
             elif not target:
                 sink = io_call(n.func, n)
                 if sink and io is not None:
                     io.add(sink)
                     if loop and sites is not None:
-                        sites.append(Site(src_id, "loop_io", n.lineno, detail=sink))
+                        sites.append(Site(src_id, "loop_io", n.lineno, detail=sink, bounded=bounded))
                 if isinstance(n.func, ast.Attribute) and n.func.attr in res.unique_methods:
                     guess = res.unique_methods[n.func.attr]
                     if guess != src_id:
                         refs[(src_id, guess)] += 1
-    for n, _, _ in walked:
+    for n, _, _, _ in walked:
         if True:
             if id(n) in call_funcs:
                 continue

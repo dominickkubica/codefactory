@@ -49,6 +49,7 @@ class Site:
     line: int
     target: str = ""  # loop_call: the function called
     detail: str = ""  # loop_io / loop_scan: what's called ("db.getAllAsync", "items.find")
+    bounded: bool = False  # every loop around it goes over a list fixed in the code (a literal, a constant, range(5))
 
 
 @dataclass

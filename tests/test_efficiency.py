@@ -4,6 +4,7 @@ from pathlib import Path
 
 from codefactory.cli import build
 from codefactory.efficiency import kind_of
+from tests.test_rules import project
 from tests.test_typescript import available
 
 FIX = Path(__file__).parent / "fixtures"
@@ -44,6 +45,26 @@ class PythonEfficiencyTest(unittest.TestCase):
     def test_tokens_dropped_after_flags(self):
         self.assertFalse(any(f.tokens for f in self.g.functions))
 
+    def test_fixed_python_loops(self):
+        root = project({"app/db.py": """
+            TABLES = ("orders", "lines")
+
+            def counts(conn):
+                return {t: conn.execute("SELECT count(*) FROM orders").fetchone() for t in TABLES}
+
+            def first(conn):
+                for i in range(3):
+                    conn.execute("SELECT * FROM orders WHERE id = ?", (i,))
+
+            def each(conn, ids):
+                for i in ids:
+                    conn.execute("SELECT * FROM orders WHERE id = ?", (i,))
+        """})
+        loops = flags_of(build(root), "io_in_loop")
+        self.assertEqual(loops["app/db.py::counts"].severity, "info")
+        self.assertEqual(loops["app/db.py::first"].severity, "info")
+        self.assertEqual(loops["app/db.py::each"].severity, "warn")
+
     def test_kinds(self):
         self.assertEqual(kind_of("fetch"), "network")
         self.assertEqual(kind_of("db.getAllAsync"), "read")
@@ -64,6 +85,21 @@ class TypeScriptEfficiencyTest(unittest.TestCase):
         self.assertEqual(f.line, 7)
         self.assertNotIn("src/ui/List.tsx::List", loops)  # inside onPress={() => …} in a .map: runs on press
         self.assertNotIn("src/data/repo.ts::loadAll", flags_of(self.g, "sequential_await"))  # said once, above
+
+    def test_loops_over_fixed_lists_are_info(self):
+        loops = flags_of(self.g, "io_in_loop")
+        for fid in ("src/data/fixed.ts::countTables", "src/data/fixed.ts::firstFive"):
+            self.assertEqual(loops[fid].severity, "info", fid)
+            self.assertIn("fixed in the code", loops[fid].message)
+        self.assertEqual(loops["src/data/repo.ts::loadAll"].severity, "warn")  # loops over a parameter: can grow
+
+    def test_framework_methods_and_lazy_require_are_used(self):
+        unused = {f.target for f in self.g.flags if f.kind in ("unused", "test_only")}
+        for name in ("Boundary.getDerivedStateFromError", "Boundary.componentDidCatch", "Boundary.render"):
+            self.assertNotIn(f"src/ui/Boundary.tsx::{name}", unused)
+        calls = {(e.src, e.dst) for e in self.g.edges if e.kind == "call"}
+        self.assertIn(("src/data/fixed.ts::report", "src/data/lazy.ts::buildReport"), calls)  # const { fn } = require(…)
+        self.assertIn(("src/data/fixed.ts::report", "src/data/lazy.ts::buildSummary"), calls)  # m = require(…); m.fn()
 
     def test_scan_in_map(self):
         scans = flags_of(self.g, "quadratic_scan")
