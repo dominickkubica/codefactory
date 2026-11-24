@@ -97,7 +97,8 @@ def dockerfiles(root: Path, files: list[Path], out: dict[str, Check]) -> None:
 
 def mobile(root: Path, out: dict[str, Check]) -> None:
     names = ("app.json", "app.config.json", "Info.plist", "AndroidManifest.xml")
-    for path in sorted(p for name in names for p in root.rglob(name) if "node_modules" not in p.parts and ".git" not in p.parts):
+    found = (p for name in names for p in root.rglob(name) if not ({"node_modules", ".git", ".codefactory"} & set(p.parts)))
+    for path in sorted(found):
         rel = path.relative_to(root).as_posix()
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
@@ -156,12 +157,24 @@ def current_secrets(secret_check: Check) -> set[str]:
     return {m.group(0) for e in secret_check.hits for p in PATTERNS["secret"] if (m := p.search(e.text))}
 
 
-def scan(root: Path, current_secrets: set[str]) -> tuple[dict[str, Check], str]:
+def find_dockerfiles(root: Path) -> list[Path]:
+    skip = {"node_modules", ".git", ".venv", "venv", ".codefactory"}
+    return sorted(
+        p for p in root.rglob("*")
+        if p.is_file() and re.fullmatch(r"(?i)dockerfile(\..+)?|.+\.dockerfile", p.name) and not (skip & set(p.parts))
+    )  # fmt: skip
+
+
+def scan_config(root: Path) -> dict[str, Check]:
+    """Everything here but git history (which is the same on both sides of a diff)."""
     out = {k: Check(k) for k in KEYS}
     workflows(root, out)
-    dockers = [p for p in root.rglob("*") if p.is_file() and re.fullmatch(r"(?i)dockerfile(\..+)?|.+\.dockerfile", p.name)
-               and not ({"node_modules", ".git", ".venv", "venv"} & set(p.parts))]  # fmt: skip
-    dockerfiles(root, sorted(dockers), out)
+    dockerfiles(root, find_dockerfiles(root), out)
     mobile(root, out)
+    return out
+
+
+def scan(root: Path, current_secrets: set[str]) -> tuple[dict[str, Check], str]:
+    out = scan_config(root)
     note = history(root, current_secrets, out)
     return out, note

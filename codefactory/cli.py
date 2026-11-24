@@ -322,6 +322,30 @@ def cmd_plan(a) -> int:
     return 0
 
 
+def cmd_diff(a) -> int:
+    """What this change adds: new findings compared with the base branch (merge-base), for pull requests."""
+    from . import diff
+
+    root = _repo(a.path)
+    base = a.base or diff.default_base(root)
+    result = diff.run(root, base, lambda p: load_graph(p, a.lang, not a.no_cache))
+    level = SEVERITY_ORDER.get(a.fail_on, 99)
+    blocking = [i for i in result["new"] if SEVERITY_ORDER.get(i.severity, 2) <= level]
+    if a.json:
+        print(
+            json.dumps({**result, "new": [vars(i) for i in result["new"]], "fixed": [vars(i) for i in result["fixed"]]}, indent=1)
+        )
+    elif a.github:
+        for i in result["new"]:
+            kind = {"high": "error", "warn": "warning"}.get(i.severity, "notice")
+            print(f"::{kind} file={i.file},line={max(1, i.line)},title=codefactory {i.kind}::{i.message}")
+    else:
+        print(diff.markdown(result), end="")
+    if a.comment:
+        _write(Path(a.comment), diff.markdown(result))
+    return 1 if blocking else 0
+
+
 def cmd_surface(a) -> int:
     from .brief import View
     from .security import SINK_KINDS, function_at, surface, writes
@@ -495,6 +519,7 @@ COMMANDS = {
     "baseline": (cmd_baseline, "save today's issues (codefactory-baseline.json, commit it) so only new ones fail"),
     "check": (cmd_check, "for CI / pre-commit: fail on issues new since the baseline"),
     "sarif": (cmd_sarif, "write issues as SARIF 2.1.0 for GitHub code scanning, VS Code and CI tools"),
+    "diff": (cmd_diff, "what a change adds: new and fixed findings compared with the base branch (for pull requests)"),
     "surface": (
         cmd_surface,
         "the attack surface: every HTTP endpoint, its auth check, and whether it changes data or reaches risky code",
@@ -528,6 +553,12 @@ Run `codefactory <command> --help` for a command's options.""",
             s.add_argument("values", nargs="+", metavar="value")
         else:
             s.add_argument("path", nargs="?", default=".", help="the codebase folder (default: here), or a graph .json")
+        if name == "diff":
+            s.add_argument("--base", help="the branch, tag or commit to compare with (default: origin/HEAD, main or master)")
+            s.add_argument("--comment", metavar="FILE", help="also write the pull-request comment (Markdown) to FILE")
+            s.add_argument("--github", action="store_true", help="print GitHub Actions annotations for new findings")
+            s.add_argument("--fail-on", choices=["high", "warn", "info", "never"], default="never",
+                           help="exit 1 when new findings at this level or worse appear (default: never)")  # fmt: skip
         if name == "accept":
             s.add_argument("--why", required=True, help="why it's intended (kept with the rule, shown by flags --silenced)")
         if name == "skill":
@@ -542,7 +573,7 @@ Run `codefactory <command> --help` for a command's options.""",
                 help="only these analyzers (other = every language but Python and TypeScript)",
             )
             s.add_argument("--no-cache", action="store_true", help="analyze again even if nothing changed")
-        if name in ("flags", "query", "trace", "path", "context", "plan", "surface"):
+        if name in ("flags", "query", "trace", "path", "context", "plan", "surface", "diff"):
             s.add_argument("--json", action="store_true", help="machine-readable output")
         if name in ("trace", "path"):
             s.add_argument("--refs", action="store_true", help="also follow functions passed by name (callbacks)")

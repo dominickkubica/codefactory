@@ -43,3 +43,18 @@ jobs:
           codefactory --version
       - name: codefactory finds nothing serious in itself
         run: codefactory check .
+
+  diff:
+    # the pull-request action, run on codefactory itself: compares this commit with the one before
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: ./
+        with:
+          base: HEAD~1
+          comment: "false"
+      - name: The comment was written
+        run: test -s codefactory-comment.md && cat codefactory-comment.md
+

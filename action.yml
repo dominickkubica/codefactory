@@ -1,0 +1,67 @@
+name: codefactory
+description: Comment on a pull request with the findings it adds (and fixes), and optionally fail on new ones.
+branding:
+  icon: activity
+  color: orange
+inputs:
+  base:
+    description: Branch, tag or commit to compare with (default the pull request's base branch)
+    required: false
+    default: ""
+  fail-on:
+    description: Fail the check when new findings at this level or worse appear (high, warn, info or never)
+    required: false
+    default: never
+  comment:
+    description: Post (and keep updating) a pull-request comment with the result
+    required: false
+    default: "true"
+  languages:
+    description: Install the tree-sitter language pack (Go, Java, Kotlin, Swift, Rust, C/C++, Ruby, PHP…)
+    required: false
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: Install codefactory
+      shell: bash
+      env:
+        SOURCE: ${{ github.action_path }}
+      run: |
+        # the action's own files are codefactory at the version the workflow asked for
+        if [ "${{ inputs.languages }}" = "true" ]; then pip install --quiet "$SOURCE[languages]"; else pip install --quiet "$SOURCE"; fi
+    - name: Compare with the base
+      id: diff
+      shell: bash
+      env:
+        BASE_INPUT: ${{ inputs.base }}
+        BASE_REF: ${{ github.base_ref }}
+        FAIL_ON: ${{ inputs.fail-on }}
+      run: |
+        base="${BASE_INPUT:-${BASE_REF:+origin/$BASE_REF}}"
+        if [ -n "$BASE_REF" ]; then git fetch --no-tags --quiet origin "$BASE_REF"; fi
+        set +e
+        codefactory diff . ${base:+--base "$base"} --comment codefactory-comment.md --github --fail-on "$FAIL_ON"
+        echo "status=$?" >> "$GITHUB_OUTPUT"
+    - name: Comment on the pull request
+      if: inputs.comment == 'true' && github.event_name == 'pull_request'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        PR: ${{ github.event.pull_request.number }}
+        REPO: ${{ github.repository }}
+      run: |
+        marker="<!-- codefactory -->"
+        body="$(printf '%s\n%s' "$marker" "$(cat codefactory-comment.md)")"
+        id="$(gh api "repos/$REPO/issues/$PR/comments" --paginate --jq ".[] | select(.body | startswith(\"$marker\")) | .id" | head -1)"
+        if [ -n "$id" ]; then
+          gh api -X PATCH "repos/$REPO/issues/comments/$id" -f body="$body" > /dev/null
+        else
+          gh api "repos/$REPO/issues/$PR/comments" -f body="$body" > /dev/null
+        fi
+    - name: Result
+      shell: bash
+      run: exit ${{ steps.diff.outputs.status }}
