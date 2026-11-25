@@ -315,6 +315,29 @@ def _source(root: Path, files: list[str]) -> dict[str, str]:
     return out
 
 
+def _swift_files(root: Path, files: list[str]) -> list[str]:
+    """Swift files: from the graph, or from disk when Swift wasn't analyzed (no language pack installed)."""
+    found = [f for f in files if f.endswith(".swift")]
+    if found:
+        return found
+    out = []
+    for p in root.rglob("*.swift"):
+        rel = p.relative_to(root)
+        if not SKIP_DIRS & set(rel.parts):
+            out.append(rel.as_posix())
+            if len(out) >= 200:
+                break
+    return sorted(out)
+
+
+def _head(root: Path, rel: str, size: int = 4000) -> str:
+    try:
+        with open(root / rel, "rb") as fh:
+            return fh.read(size).decode("utf-8", errors="replace")
+    except OSError:
+        return ""
+
+
 def code_only(text: str) -> str:
     """The text without comments and string literals, line numbers unchanged."""
     return NOT_CODE.sub(lambda m: "\n" * m.group(0).count("\n"), text)
@@ -352,7 +375,9 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None) -> Pro
     wrapped_mobile: list[str] = []
     mobile = has("expo", "react-native") or (["pubspec.yaml (Flutter)"] if m["flutter"] else [])
     if not mobile:
-        apple = [f for f in files if f.endswith(".swift") and re.search(r"\bimport (?:SwiftUI|UIKit)\b", texts.get(f, ""))]
+        apple = [
+            f for f in _swift_files(root, files) if re.search(r"\bimport (?:SwiftUI|UIKit)\b", texts.get(f) or _head(root, f))
+        ]
         android = [
             p_.relative_to(root).as_posix()
             for p_ in root.glob("**/AndroidManifest.xml")
