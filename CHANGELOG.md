@@ -3,6 +3,29 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.18.2 · 2026-11-25
+
+Fixes from a second round of public repositories: Rails, Django, Kotlin Android, two Go services and a data pipeline
+(see docs/ACCURACY.md).
+
+### Fixed
+- Rails: auth inherited from a parent controller or added by an included concern is seen; `skip_before_action` and
+  helpers like `skip_authentication only:` open just those actions.
+- Django: each URL maps to one handler (nearest the urls.py, in the module it names), not every function of that name.
+- Data flow: redirects to a path the app builds (`reverse()`, `url_for()`, `"/…"`, plus a query string) and values
+  checked first by a validator (`if _allow_redirect(x):`, `url_has_allowed_host_and_scheme`) aren't open redirects.
+- Sign-in, sign-up, password-reset and magic-link endpoints aren't counted as unprotected writes.
+- Pattern checks skip comment lines (except credentials); clearing an element (`innerHTML = ""`) and `mark_safe` of a
+  settings value aren't raw HTML; a sentence about a PEM block isn't a key; "not-a-real", "fake", "redacted", "sample"
+  and "mock" mark placeholders.
+- A test server's bind address isn't evidence of where the product listens.
+- Personal data in logs or storage is ranked High for health and financial data only, not because an app has
+  passwords somewhere.
+- Profile: Room, SQLDelight, Realm, Hive and Drift are on-device storage; Gradle version catalogs are read; a data
+  pipeline with a few endpoints stays a data pipeline (running on the user's machine); contact fields in Rails
+  schemas, SQL and Prisma count.
+- Hotspots: files in one Go, Kotlin, Java, Swift or C# package aren't reported as unlinked coupling.
+
 ## 0.18.1 · 2026-11-25
 
 Fixes from assessing seven public repositories (see docs/ACCURACY.md).

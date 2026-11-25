@@ -51,7 +51,7 @@ GO_ROUTE = re.compile(
     r"\b\w+\.(HandleFunc|Handle|GET|POST|PUT|PATCH|DELETE|Get|Post|Put|Patch|Delete|Any)\(\s*\"(/[^\"]*)\"\s*,\s*([^\n]*)"
 )
 SINATRA = re.compile(r"^\s*(get|post|put|patch|delete)\s+['\"](/[^'\"]*)['\"]", re.M)
-RAILS_AUTH = re.compile(r"before_action\s+:(\w+)")
+RAILS_AUTH = re.compile(r"before_action\s+:(\w+[!?]?)")
 LOCAL = re.compile(r"""(?:host|bind|api_host|HOST)(?:\s*:\s*\w+)?\s*[=:]\s*['"](127\.0\.0\.1|localhost|::1)['"]""")
 OPEN = re.compile(r"""['"]0\.0\.0\.0['"]""")  # anywhere: a server that can listen on every interface
 # What shows a change: the SQL verb, or a call named for it. A bare commit/rollback only ends a transaction (every
@@ -115,12 +115,76 @@ def _signature(lines: list[str], line: int) -> str:
     return "\n".join(lines[line - 1 : line + 8]).split(":\n")[0]
 
 
+RAILS_CLASS = re.compile(r"^\s*class\s+([\w:]+)\s*<\s*([\w:]+)", re.M)
+RAILS_SKIP = re.compile(r"skip_before_action\s+:(\w+)(?:[^\n]*?only:\s*\[?([^\]\n]*))?")
+
+
+class _RailsControllers:
+    """Auth a Rails controller gets from the controllers it inherits from (`before_action :authenticate_user!` in
+    ApplicationController or an API base controller), and what it skips with `skip_before_action`."""
+
+    def __init__(self, root: Path, files: list[str], cache: dict):
+        self.own: dict[str, tuple[str, str]] = {}  # class short name -> (guard, parent short name)
+        self.concerns: dict[str, str] = {}  # concern module name -> the auth before_action its `included` block adds
+        for file in files:
+            text = "\n".join(_read(root, cache, file))
+            if "/concerns/" in file:
+                guard = next((a for a in RAILS_AUTH.findall(text) if AUTH.search(a)), "")
+                m = re.search(r"^\s*module\s+([\w:]+)", text, re.M)
+                if guard and m:
+                    self.concerns[m.group(1).split("::")[-1]] = guard
+        for file in files:
+            text = "\n".join(_read(root, cache, file))
+            m = RAILS_CLASS.search(text)
+            if m and "/concerns/" not in file:
+                self.own[m.group(1).split("::")[-1]] = (self._own(text), m.group(2).split("::")[-1])
+
+    def _own(self, text: str) -> str:
+        """The controller's own auth before_action, or one an included concern adds (`include Authentication`)."""
+        own = next((a for a in RAILS_AUTH.findall(text) if AUTH.search(a)), "")
+        if own:
+            return own
+        for line in re.findall(r"^\s*include\s+([^\n]+)", text, re.M):
+            for name in re.findall(r"[\w:]+", line):
+                if name.split("::")[-1] in self.concerns:
+                    return self.concerns[name.split("::")[-1]]
+        return ""
+
+    def guard(self, text: str) -> tuple[str, str]:
+        """(the auth before_action that applies, "from <Parent>" when inherited)."""
+        m = RAILS_CLASS.search(text)
+        own = self._own(text)
+        if own or not m:
+            return own, ""
+        parent, seen = m.group(2).split("::")[-1], set()
+        while parent in self.own and parent not in seen:
+            seen.add(parent)
+            guard, grand = self.own[parent]
+            if guard:
+                return guard, f"from {parent}"
+            parent = grand
+        return "", ""
+
+    @staticmethod
+    def skipped(text: str) -> set[str] | None:
+        """Actions an auth before_action is skipped for: None (not skipped), empty (all), or the `only:` ones."""
+        for m in RAILS_SKIP.finditer(text):
+            if AUTH.search(m.group(1)):
+                return set(re.findall(r"\w+", m.group(2) or ""))
+        # a concern's helper: `skip_authentication only: :new` (Rails 8's generator, and many apps)
+        for m in re.finditer(r"^\s*(?:skip_\w*auth\w*|allow_unauthenticated_access)\b([^\n]*)", text, re.M):
+            only = re.search(r"only:\s*\[?([^\]\n]*)", m.group(1))
+            return set(re.findall(r"\w+", only.group(1))) if only else set()
+        return None
+
+
 def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
     cache: dict[str, list[str]] = {}
     by_file: dict[str, list[dict]] = {}
     for f in g["functions"]:
         by_file.setdefault(f["file"], []).append(f)
     entries: list[Entry] = []
+    rails = _RailsControllers(root, [f for f in by_file if f.endswith("_controller.rb") or "controllers/concerns/" in f], cache)
     aliases = {}  # FastAPI: CurrentUser = Annotated[User, Depends(get_current_user)]
     for file in by_file:
         if file.endswith(".py"):
@@ -163,14 +227,23 @@ def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
                 )
                 entries.append(Entry(f["id"], verb, (prefix + path) if route else path, framework, file, f["line"], auth))
             if file.endswith("urls.py"):
+                here = file.rsplit("/", 1)[0] if "/" in file else ""
                 for m in DJANGO_PATH.finditer(text):
-                    target = m.group(2).split(".")[-1]
-                    for f in g["functions"]:
-                        if f["name"] == target or f["qualname"].split(".")[0] == target:
-                            deco = _above(_read(root, cache, f["file"]), f["line"])
-                            auth = PY_AUTH_DECORATOR.search(deco)
-                            entries.append(Entry(f["id"], "ANY", "/" + m.group(1), "Django", f["file"], f["line"],
-                                                 auth.group(0).strip() if auth else ""))  # fmt: skip
+                    dotted = m.group(2).split(".")
+                    target, module = dotted[-1], (dotted[-2] if len(dotted) > 1 else "views")
+                    # one handler per URL: the function (or class-based view) of that name, nearest the urls.py and
+                    # in the module it names; not every function called `index` in the project
+                    cands = [f for f in g["functions"] if f["name"] == target and f["kind"] != "module"] or [
+                        f for f in g["functions"] if f["qualname"].split(".")[0] == target and f["kind"] == "method"
+                    ]
+                    if not cands:
+                        continue
+                    f = min(cands, key=lambda c: (not c["file"].startswith(here + "/") if here else False,
+                                                  Path(c["file"]).stem != module, c["file"].count("/"), c["line"]))  # fmt: skip
+                    deco = _above(_read(root, cache, f["file"]), f["line"])
+                    auth = PY_AUTH_DECORATOR.search(deco)
+                    entries.append(Entry(f["id"], "ANY", "/" + m.group(1), "Django", f["file"], f["line"],
+                                         auth.group(0).strip() if auth else ""))  # fmt: skip
         elif file.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")):
             app_auth = next((m.group(1) for m in JS_APP_AUTH.finditer(text) if AUTH.search(m.group(1))), "")
             for i, ln in enumerate(lines, 1):
@@ -227,19 +300,23 @@ def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
                     entries.append(Entry(module["id"], m.group(1).upper(), m.group(2), "Sinatra", file, line))
             if re.search(r"(?:^|/)app/controllers/.*_controller\.rb$", file):
                 private_at = next((i for i, ln in enumerate(lines, 1) if re.match(r"\s*(private|protected)\s*$", ln)), 10**9)
-                guard = next((a for a in RAILS_AUTH.findall(text) if AUTH.search(a)), "")
+                guard, inherited = rails.guard(text)
+                skipped = rails.skipped(text)
                 for f in fns:
                     if f["kind"] == "method" and f["line"] < private_at:
                         action = f"{Path(file).stem.removesuffix('_controller')}#{f['name']}"
-                        entries.append(
-                            Entry(f["id"], "ANY", action, "Rails", file, f["line"], guard and f"before_action :{guard}")
-                        )
+                        open_here = skipped is not None and (not skipped or f["name"] in skipped)
+                        auth = "" if open_here else (f"before_action :{guard}" + (f" ({inherited})" if inherited else "")
+                                                     if guard else "")  # fmt: skip
+                        entries.append(Entry(f["id"], "ANY", action, "Rails", file, f["line"], auth))
     return entries
 
 
 def exposure(root: Path, files: list[str]) -> tuple[str, str]:
     local = opened = ""
     for file in files:
+        if is_test(file):  # a test's server on 0.0.0.0 says nothing about the product's
+            continue
         try:
             text = (root / file).read_text(encoding="utf-8", errors="replace")
         except OSError:

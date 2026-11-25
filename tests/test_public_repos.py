@@ -1,5 +1,6 @@
-"""Regressions found by assessing public repositories (Spring PetClinic, HTTPie, Actual Budget, the FastAPI full-stack
-template, LoopKit). Each test is the smallest copy of what the real repository did."""
+"""Regressions found by assessing public repositories. Round 1: Spring PetClinic, HTTPie, Actual Budget, the FastAPI
+full-stack template, LoopKit. Round 2: Maybe (Rails), Healthchecks (Django), Now in Android, PocketBase, Gotify, Our
+World in Data's ETL. Each test is the smallest copy of what the real repository did."""
 
 import json
 import subprocess
@@ -147,6 +148,123 @@ class TaintTest(unittest.TestCase):
             """})  # fmt: skip
         flows = taint_flags(build(root, cache=False), root)
         self.assertEqual([f.target.split("::")[-1] for f in flows], ["fetch"])  # the real one stays
+
+
+class RoundTwoTest(unittest.TestCase):
+    def test_django_url_maps_to_one_handler(self):
+        # Healthchecks: every function called `index` anywhere became a handler of each URL (932 "endpoints")
+        root = repo({
+            "hc/front/urls.py": "from django.urls import path\nfrom . import views\nurlpatterns = [path('', views.index)]\n",
+            "hc/front/views.py": "def index(request):\n    return None\n",
+            "hc/api/views.py": "def index(request):\n    return None\n",
+            "hc/other/views.py": "def index(request):\n    return None\n",
+        })  # fmt: skip
+        g = graph(root)
+        entries = surface(root, g, View(g)).entries
+        self.assertEqual([(e.path, e.file) for e in entries], [("/", "hc/front/views.py")])
+
+    @unittest.skipUnless(__import__("codefactory.analyzers.generic", fromlist=["available"]).available(), "needs tree-sitter")
+    def test_rails_auth_from_parent_and_concern(self):
+        # Maybe: API controllers inherit `before_action :authenticate_request!`; the rest get `authenticate_user!` from
+        # an `Authentication` concern included by ApplicationController; registration skips it on purpose
+        root = repo({
+            "app/controllers/concerns/authentication.rb": "module Authentication\n  extend ActiveSupport::Concern\n"
+                "  included do\n    before_action :authenticate_user!\n  end\nend\n",
+            "app/controllers/application_controller.rb": "class ApplicationController < ActionController::Base\n"
+                "  include Localize, Authentication\nend\n",
+            "app/controllers/categories_controller.rb": "class CategoriesController < ApplicationController\n"
+                "  def create\n    @category.save\n  end\nend\n",
+            "app/controllers/api/v1/base_controller.rb": "class Api::V1::BaseController < ApplicationController\n"
+                "  before_action :authenticate_request!\nend\n",
+            "app/controllers/api/v1/chats_controller.rb": "class Api::V1::ChatsController < Api::V1::BaseController\n"
+                "  def create\n    @chat.save\n  end\nend\n",
+            "app/controllers/registrations_controller.rb": "class RegistrationsController < ApplicationController\n"
+                "  skip_authentication only: :create\n  def create\n    @user.save\n  end\nend\n",
+        })  # fmt: skip
+        g = graph(root)
+        auth = {e.path: e.auth for e in surface(root, g, View(g)).entries}
+        self.assertEqual(auth["categories#create"], "before_action :authenticate_user! (from ApplicationController)")
+        self.assertTrue(auth["chats#create"].startswith("before_action :authenticate_request!"))
+        self.assertEqual(auth["registrations#create"], "")
+        p = detect(root, g)
+        self.assertEqual(p.users, "multi-user")
+
+    def test_android_room_and_pipelines(self):
+        # Now in Android: Room via the Gradle version catalog and @Database is on-device storage (local-first)
+        root = repo({
+            "gradle/libs.versions.toml": '[libraries]\nroom-runtime = { group = "androidx.room", name = "room-runtime" }\n',
+            "app/build.gradle.kts": "plugins { alias(libs.plugins.nowinandroid.android.application) }\n",
+            "core/db/NiaDatabase.kt": "@Database(entities = [Topic::class], version = 1)\nabstract class NiaDatabase\n",
+        })  # fmt: skip
+        p = detect(root, graph(root))
+        self.assertEqual((p.kind, p.deployment), ("mobile app", "local-first"))
+        # OWID's ETL: three FastAPI endpoints in an internal app don't make a pipeline repository a web service
+        root = repo({
+            "pyproject.toml": '[project]\nname = "etl"\ndependencies = ["pandas", "fastapi"]\n',
+            "apps/wizard/api.py": "from fastapi import FastAPI\napp = FastAPI()\n\n@app.get('/health')\ndef health():\n"
+                                  "    return 1\n",
+            "etl/steps.py": "import pandas as pd\n\ndef run():\n    return pd.DataFrame()\n",
+        })  # fmt: skip
+        p = detect(root, graph(root))
+        self.assertEqual((p.kind, p.deployment, p.users), ("data pipeline", "user's machine", "single user"))
+        self.assertIn("web service", p.also)
+
+    def test_contact_fields_in_a_rails_schema(self):
+        root = repo({"Gemfile": "gem 'rails'\n", "db/schema.rb": 'create_table "users" do |t|\n  t.string "email"\nend\n'})
+        self.assertIn("contact details", detect(root, graph(root)).sensitive)
+
+    def test_same_package_files_are_linked(self):
+        from codefactory.hotspots import _same_package
+
+        self.assertTrue(_same_package("config/config.go", "config/keys.go"))  # Gotify: one Go package, no imports needed
+        self.assertFalse(_same_package("config/config.go", "ui/src/config.ts"))
+
+    def test_redirects_this_app_builds(self):
+        # Healthchecks: a redirect to reverse(...) + "?query", and one checked by _allow_redirect(), aren't open redirects
+        root = repo({"hc/views.py": """
+            from django.shortcuts import redirect
+            from django.urls import reverse
+            from django.views.decorators.http import require_POST
+            from fastapi import FastAPI
+            app = FastAPI()
+
+            @app.get("/a")
+            def after_login(request):
+                nxt = request.GET.get("next")
+                if nxt and _allow_redirect(nxt):
+                    return redirect(nxt)
+                url = reverse("hc-checks")
+                url += "?" + request.headers.get("Referer", "")
+                return redirect(url)
+
+            @app.get("/b")
+            def go(request):
+                return redirect(request.GET.get("to"))
+            """})  # fmt: skip
+        flows = taint_flags(build(root, cache=False), root)
+        self.assertEqual([f.target.split("::")[-1] for f in flows], ["go"])
+
+    def test_placeholders_comments_and_cleared_html(self):
+        from codefactory.checks import _scan
+
+        root = repo({
+            "forms/apple.go": "// Usually wrapped within -----BEGIN PRIVATE KEY----- X -----END PRIVATE KEY-----.\n",
+            "tests/test_digest.py": 'TOKEN = "xoxb-not-a-real-token-1234567"\n',
+            "web/ui.js": 'el.innerHTML = "";\n// set innerHTML = html at the end\nbox.innerHTML = html;\n',
+            "hc/extras.py": "def e():\n    return mark_safe(''.join(f'&#{ord(c)};' for c in settings.SUPPORT_EMAIL))\n",
+        })  # fmt: skip
+        found = _scan(root, ["forms/apple.go", "tests/test_digest.py", "web/ui.js", "hc/extras.py"])
+        self.assertEqual(found["secret"].hits, [])
+        self.assertEqual([(e.file, e.line) for e in found["raw_html"].hits], [("web/ui.js", 3)])
+
+    def test_passwords_alone_dont_make_storage_findings_high(self):
+        from codefactory.profile import Profile
+        from codefactory.rerank import rerank
+        from codefactory.review import Finding
+
+        p = Profile(kind="web service", sensitive={"accounts and passwords": ["bcrypt"]})
+        f = Finding("Personal data in unencrypted storage", "Medium", "Security", [], "", "", "S")
+        self.assertEqual((rerank([f], p), f.severity), ([], "Medium"))  # PocketBase: a remembered test email
 
 
 if __name__ == "__main__":

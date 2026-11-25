@@ -118,6 +118,61 @@ def _sink(call: ast.Call) -> tuple[str, list[ast.AST]] | None:
     return None
 
 
+VALIDATOR = re.compile(r"allow|safe|valid|whitelist|allowlist|trusted|permitted|has_allowed_host", re.I)
+LOCAL_URL = {"reverse", "reverse_lazy", "url_for", "resolve_url", "url_path_for"}
+
+
+def _guards(func) -> dict[int, set[str]]:
+    """For each call, the names an enclosing `if` checked with a validator: `if x and _allow_redirect(x): call(x)`."""
+    out: dict[int, set[str]] = {}
+
+    def visit(node, checked: frozenset):
+        if isinstance(node, ast.If):
+            names = {
+                a.id
+                for c in ast.walk(node.test)
+                if isinstance(c, ast.Call) and VALIDATOR.search(_name(c.func))
+                for a in c.args
+                if isinstance(a, ast.Name)
+            }
+            for child in node.body:
+                visit(child, checked | names)
+            for child in node.orelse:
+                visit(child, checked)
+            return
+        if isinstance(node, ast.Call):
+            out[id(node)] = set(checked)
+        for child in ast.iter_child_nodes(node):
+            visit(child, checked)
+
+    visit(func, frozenset())
+    return out
+
+
+def _local_url(expr: ast.AST, body: list) -> bool:
+    """The expression is a path this app builds: reverse()/url_for(), "/x" (not "//x"), or a name only ever assigned
+    one of those (later `url += "?…"` keeps the prefix)."""
+
+    def local(e) -> bool:
+        if isinstance(e, ast.Call) and _name(e.func) in LOCAL_URL:
+            return True
+        if isinstance(e, ast.Constant) and isinstance(e.value, str):
+            return e.value.startswith("/") and not e.value.startswith("//")
+        if isinstance(e, ast.JoinedStr) and e.values and isinstance(e.values[0], ast.Constant):
+            return local(e.values[0])
+        if isinstance(e, ast.BinOp) and isinstance(e.op, ast.Add):
+            return local(e.left)
+        return False
+
+    if local(expr):
+        return True
+    if isinstance(expr, ast.Name):
+        values = [n.value for n in body if isinstance(n, ast.Assign)
+                  and any(isinstance(t, ast.Name) and t.id == expr.id for t in n.targets)]  # fmt: skip
+        return bool(values) and all(local(v) for v in values)
+    return False
+
+
 class _Function:
     """Taint inside one function, given which parameters are tainted and the callees' summaries."""
 
@@ -186,6 +241,7 @@ class _Function:
             if not changed:
                 break
         hits, calls, returns = [], [], set()
+        guards = _guards(self.node)
         for n in body:
             if isinstance(n, ast.Call):
                 sink = _sink(n)
@@ -194,6 +250,10 @@ class _Function:
                     for a in args:
                         if isinstance(a, ast.Constant):
                             continue  # a constant query or command: bound parameters, nothing to inject
+                        if isinstance(a, ast.Name) and a.id in guards.get(id(n), ()):
+                            continue  # inside `if is_safe(x):` / `if _allow_redirect(x):`: checked first
+                        if kind == "redirect" and _local_url(a, body):
+                            continue  # a path this app builds (reverse(), url_for(), "/…"): a query string can't leave it
                         for label in self.origins(a, env):
                             hits.append((label, kind, n.lineno, ast.unparse(n.func)[:50], "", self.fid))
                 summary = self.callees.get(_name(n.func))

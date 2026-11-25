@@ -33,6 +33,11 @@ def _heavy(p: Profile) -> list[str]:
     return [c for c in HEAVY if c in p.sensitive]
 
 
+def _special(p: Profile) -> list[str]:
+    """Health and financial data: special under GDPR, HIPAA, PCI. An app that merely has passwords isn't."""
+    return [c for c in ("health and fitness", "financial") if c in p.sensitive]
+
+
 def _data(p: Profile) -> str:
     cats = _heavy(p)
     return cats[0] if len(cats) == 1 else ", ".join(cats[:-1]) + " and " + cats[-1]
@@ -88,9 +93,9 @@ RULES = [
         "(GDPR special category) and, in the US, can be a reportable breach (FTC Health Breach Notification Rule).",
     ),
     Rule(
-        r"^Personal data (?:written to logs|in unencrypted storage)", lambda p: bool(_heavy(p)), "High",
-        lambda p: f"the app holds {_data(p)} data, which privacy law and the app stores treat as needing the most care; "
-        "logs and plain storage end up in backups, crash reports and support tickets.",
+        r"^Personal data (?:written to logs|in unencrypted storage)", lambda p: bool(_special(p)), "High",
+        lambda p: f"the app holds {', '.join(_special(p))} data, which privacy law treats as a special category and the "
+        "app stores as needing the most care; logs and plain storage end up in backups, crash reports and support tickets.",
     ),
     Rule(
         r"^Important code no test reaches", lambda p: p.local_first, "High",

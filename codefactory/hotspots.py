@@ -173,6 +173,14 @@ def hotspots(h: History, g: dict, limit: int = 10) -> list[Hotspot]:
     return [x for x in out if x.score >= 0.05][:limit]
 
 
+PACKAGE_LANGS = (".go", ".kt", ".java", ".scala", ".swift", ".cs")
+
+
+def _same_package(a: str, b: str) -> bool:
+    """Go, Kotlin, Java, Swift… files in one folder share a package (or module) and use each other without imports."""
+    return a.rsplit("/", 1)[0] == b.rsplit("/", 1)[0] and a.endswith(PACKAGE_LANGS) and b.endswith(PACKAGE_LANGS)
+
+
 def coupling(h: History, g: dict, limit: int = 8) -> list[Coupling]:
     """Pairs of files that keep changing in the same commits. Those with no import between them are hidden coupling:
     a change in one needs a change in the other, and nothing in the code says so."""
@@ -195,7 +203,7 @@ def coupling(h: History, g: dict, limit: int = 8) -> list[Coupling]:
         fewer = min(h.files[a].commits, h.files[b].commits)
         share = together / fewer if fewer else 0
         if share >= 0.6:
-            out.append(Coupling(a, b, together, round(share, 2), (a, b) in imports))
+            out.append(Coupling(a, b, together, round(share, 2), (a, b) in imports or _same_package(a, b)))
     out.sort(key=lambda c: (c.linked, -c.together, -c.share))
     return out[:limit]
 

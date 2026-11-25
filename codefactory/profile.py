@@ -85,6 +85,9 @@ LOCAL_DB = {
     "expo-sqlite": "expo-sqlite", "@op-engineering/op-sqlite": "op-sqlite", "react-native-sqlite-storage": "SQLite",
     "realm": "Realm", "@nozbe/watermelondb": "WatermelonDB", "@react-native-async-storage/async-storage": "AsyncStorage",
     "react-native-mmkv": "MMKV", "dexie": "IndexedDB (Dexie)", "idb": "IndexedDB", "localforage": "localForage",
+    "androidx.room": "Room", "room-runtime": "Room", "sqldelight": "SQLDelight", "app.cash.sqldelight": "SQLDelight",
+    "realm-kotlin": "Realm", "io.realm.kotlin": "Realm", "objectbox": "ObjectBox", "sqflite": "sqflite", "hive": "Hive",
+    "isar": "Isar", "drift": "Drift",
 }  # fmt: skip
 TEMPLATING = {"spring-boot-starter-thymeleaf", "thymeleaf", "jinja2", "django", "rails", "actionview", "ejs", "pug",
               "handlebars", "express-handlebars", "nunjucks", "freemarker", "twig",
@@ -231,6 +234,14 @@ def _manifests(root: Path) -> dict:
         for name in DEPLOY_FILES:
             if (d / name).is_file():
                 out["files"].add(f"{rel}{name}")
+    catalog = root / "gradle" / "libs.versions.toml"  # Gradle version catalogs: where Android projects list libraries
+    if catalog.is_file():
+        text = catalog.read_text(encoding="utf-8", errors="replace")
+        for group, name in re.findall(r'group\s*=\s*"([\w.-]+)"\s*,\s*name\s*=\s*"([\w.-]+)"', text) + re.findall(
+            r'module\s*=\s*"([\w.-]+):([\w.-]+)"', text
+        ):
+            out["deps"].setdefault(name.lower(), "gradle/libs.versions.toml")
+            out["deps"].setdefault(group.lower(), "gradle/libs.versions.toml")
     for p in (root / ".github" / "workflows").glob("*.y*ml"):
         text = p.read_text(encoding="utf-8", errors="replace")
         if re.search(r"docs|pages|site|storybook|book", p.stem, re.I) or "actions/deploy-pages" in text:
@@ -265,7 +276,7 @@ def _other_manifests(d: Path, rel: str, out: dict) -> None:
             gradle = read(d / name)
             for dep in re.findall(r"""['"]([\w.-]+):([\w.-]+):[^'"]*['"]""", gradle):
                 out["deps"].setdefault(dep[1].lower(), f"{rel}{name}")
-            if "com.android.application" in gradle:
+            if re.search(r"com\.android\.application|\bandroid\.application\b", gradle):
                 out["android"].append(f"{rel}{name} (com.android.application)")
             elif re.search(r"\bapplication\b\s*(?:\{|$)|mainClass|id\(?\s*['\"]application", gradle, re.M):
                 out["cli"].append(f"{rel}{name} application")
@@ -336,6 +347,28 @@ def _head(root: Path, rel: str, size: int = 4000) -> str:
             return fh.read(size).decode("utf-8", errors="replace")
     except OSError:
         return ""
+
+
+# contact fields declared in a schema, where their names are strings (Rails schema.rb, SQL, Prisma)
+SCHEMA_CONTACT = re.compile(
+    r"""t\.(?:string|citext|text)\s+["'](?:email|phone(?:_number)?|first_name|last_name|date_of_birth|address)["']|"""
+    r"CREATE TABLE[^;]{0,800}?\b(?:email|phone(?:_number)?|first_name|last_name|date_of_birth)\b|"
+    r"^\s*(?:email|phone|phoneNumber|firstName|lastName|dateOfBirth)\s+String\b",
+    re.I | re.M,
+)
+
+
+def _schema_contact(root: Path, texts: dict[str, str]) -> list[str]:
+    files = [f for f in texts if re.search(r"(?:^|/)(?:schema\.rb|structure\.sql)$|(?:^|/)migrations?/", f)]
+    extra = []
+    for pattern in ("**/schema.prisma", "db/*.sql", "**/migrations/*.sql", "schema.sql", "db/schema.rb", "*/db/schema.rb"):
+        extra += [p_.relative_to(root).as_posix() for p_ in root.glob(pattern) if not SKIP_DIRS & set(p_.relative_to(root).parts)]
+    for fid in files + sorted(set(extra))[:40]:
+        text = texts.get(fid) or _head(root, fid, MAX_READ)
+        if m := SCHEMA_CONTACT.search(text):
+            line_no = text.count("\n", 0, m.start()) + 1
+            return [f"`{fid}:{line_no}` {text.splitlines()[line_no - 1].strip()[:100]}"]
+    return []
 
 
 def code_only(text: str) -> str:
@@ -421,8 +454,10 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None) -> Pro
     if cli:
         roles.append(("command-line tool", cli[:2]))
     pipeline = has(*PIPELINE)
-    if pipeline and not endpoints and not mobile:
-        roles.append(("data pipeline", [f"{x} in {deps[x]}" for x in pipeline[:3]]))
+    if pipeline and len(endpoints) <= 5 and not mobile and not web_ui:
+        role = ("data pipeline", [f"{x} in {deps[x]}" for x in pipeline[:3]])
+        # a few endpoints (an internal tool, a status page) don't make a pipeline repository a web service
+        roles.insert(0, role) if roles and roles[0][0] == "web service" else roles.append(role)
     if not roles and (m["lib"] or m["py_lib"] or m["pkg_main"] or (not m["rust_bin"] and (root / "Cargo.toml").is_file())):
         roles.append(("library", (m["lib"] + m["pkg_main"])[:1] or ["a package manifest and no app or entry point"]))
     p.endpoints = len(endpoints)
@@ -433,7 +468,7 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None) -> Pro
         p.also = [r for r, _ in roles[1:] if r != p.kind]
 
     # what it keeps
-    p.stores = [name for dep, name in LOCAL_DB.items() if dep in deps]
+    p.stores = list(dict.fromkeys(name for dep, name in LOCAL_DB.items() if dep in deps))
     native_db = [
         f
         for f in files
@@ -441,10 +476,15 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None) -> Pro
     ]
     if native_db:
         p.stores.append("Core Data / SwiftData")
+    if "Room" not in p.stores and any(
+        f.endswith((".kt", ".java")) and re.search(r"@Database\s*\(|\bRoomDatabase\b", texts.get(f, "")) for f in files
+    ):
+        p.stores.append("Room")
 
     # where it runs, who reaches it
     deployed = sorted(m["files"])
-    if endpoints or (deployed and p.kind in ("web app", "web service")):
+    side_server = p.kind in ("data pipeline", "command-line tool", "library") and len(endpoints) <= 5
+    if (endpoints and not side_server) or (deployed and p.kind in ("web app", "web service")):
         if deployed:
             p.deployment = "deployed server"
             p.deployment_evidence = [f"{x} ({DEPLOY_FILES.get(x.split('/')[-1], 'CI deploy')})" for x in deployed[:3]]
@@ -474,7 +514,7 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None) -> Pro
         p.users_evidence = ([f"{auth_deps[0]} in {deps[auth_deps[0]]}"] if auth_deps else []) + (
             [f"{len(guarded)} of {len(endpoints)} endpoints check who's asking"] if guarded else []
         )
-    elif endpoints:
+    elif endpoints and not side_server:
         p.users = "no sign-in"
         p.users_evidence = ["no endpoint checks who's asking, and no sign-in library"]
     elif p.kind in ("mobile app", "desktop app") or p.deployment == "local-first":
@@ -486,9 +526,12 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None) -> Pro
 
     # what it holds
     code = {fid: code_only(text) for fid, text in texts.items()}
+    schema = _schema_contact(root, texts)
     for category, (strong, words, dep_names) in SENSITIVE.items():
         found = [f"{d} in {deps[d]}" for d in dep_names if d in deps][:2]
         found += _first(texts, code, strong) or _first(texts, code, words, min_files=2)
+        if category == "contact details" and not found and schema:
+            found = schema
         if found:
             p.sensitive[category] = found[:3]
 

@@ -154,8 +154,20 @@ wrong result was traced to its cause and fixed with a regression test (`tests/te
 | actualbudget/actual | web app (also desktop, CLI, mobile shell), deployed, multi-user, financial | manifests in `packages/*` not read; a native iOS shell taken as the main kind; the safe env-var pattern flagged as CI injection; a base-only `pull_request_target` checkout flagged as running fork code; a minified Yarn bundle as a leaked key; `on: pull_request_target` on one line missed entirely |
 | gothinkster/golang-gin-realworld-example-app | web service, multi-user, passwords | — |
 
-Of the review findings checked by hand on these repositories, four security findings were false (all four fixed)
-and the rest held. The hotspots matched what the projects' histories show: Actual's transactions table (40 changes,
+A second round covered other kinds of projects:
+
+| Repository | Profile after fixes | What it caught in codefactory |
+|---|---|---|
+| maybe-finance/maybe (Rails) | web app, deployed, multi-user, financial, contact details, passwords | auth inherited from a base controller or added by an included concern (`include Authentication`) not seen, so 14 endpoints looked open; `skip_authentication only:` not understood; emails declared in `db/schema.rb` missed |
+| healthchecks/healthchecks (Django) | web app, deployed, multi-user, passwords | each URL matched every function of that name in the project (932 "endpoints", now 147); five redirects reported as open redirects though each went to `reverse(...)` or was checked by `_allow_redirect()` first; sign-in and magic-link endpoints counted as unprotected writes; `mark_safe` of a settings value and a comment mentioning `mark_safe()` reported as raw HTML |
+| android/nowinandroid (Kotlin) | mobile app, local-first | Room (from the Gradle version catalog and `@Database`) not recognised as on-device storage |
+| pocketbase/pocketbase (Go) | web service, multi-user, passwords | a Go test file used as evidence of where the server listens; a comment describing a PEM block reported as a committed private key; a stored email ranked High only because the app also has passwords |
+| gotify/server (Go + React) | web app, deployed, multi-user, passwords | files in one Go package reported as "changing together without importing each other" (a package needs no imports) |
+| owid/etl (data pipeline) | data pipeline (also CLI, web service), user's machine | three FastAPI endpoints in an internal tool made it a "web service"; `xoxb-not-a-real-token` in a test reported as a Slack token |
+
+Of the review findings checked by hand on these repositories, the false ones were fixed (four security findings in
+round 1; in round 2, every Critical and High one) and the rest held: Loop's key in history, the FastAPI template's
+committed `.env`, PetClinic's unauthenticated write endpoints. The hotspots matched what the projects' histories show: Actual's transactions table (40 changes,
 710 decision points), Loop's status view controller, requests' `models.py`.
 
 Findings are leads with the exact line. The review ranks them, and anything intended can be marked in the code

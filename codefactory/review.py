@@ -71,6 +71,10 @@ def _ev(items, n: int = 6) -> tuple[list[str], int]:
     return shown, max(0, len(items) - n)
 
 
+# endpoints that have to work without being signed in: signing in, signing up, resetting a password, confirming an email
+SIGN_IN = re.compile(r"log_?in|log_?out|sign_?in|sign_?up|signup|regist(?:er|ration)|password|reset|forgot|confirm|"
+                     r"verify|webauthn|totp|two_?factor|2fa|oauth|callback|magic_?link|unsubscribe|check_token|login_link",
+                     re.I)  # fmt: skip
 CLIENT_APPS = {"React", "React Native", "Expo", "Vue", "Svelte"}  # a UI process serves one user
 
 
@@ -387,7 +391,7 @@ class Review:
         if not entries:
             return
         writing = self._writing_entries()
-        open_writes = [(e, w) for e, w in writing if not e.auth]
+        open_writes = [(e, w) for e, w in writing if not e.auth and not SIGN_IN.search(f"{e.path} {e.fn}")]
         if not open_writes:
             return
         authed = [e for e in entries if e.auth]

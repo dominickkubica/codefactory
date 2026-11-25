@@ -47,7 +47,8 @@ class Check:
 
 PATTERNS: dict[str, list[re.Pattern]] = {
     "secret": [
-        re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----"),
+        # a key block, not a sentence about one: no END marker on the same line ("wrapped within -----BEGIN … END-----")
+        re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----(?![^\n]*-----END)"),
         re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
         re.compile(r"\b(?:ghp|gho|ghu|ghs)_[A-Za-z0-9]{36}\b"),
         re.compile(r"\bxox[abpr]-[A-Za-z0-9-]{10,}"),
@@ -82,7 +83,7 @@ PATTERNS: dict[str, list[re.Pattern]] = {
     ],
     "raw_html": [
         re.compile(r"dangerouslySetInnerHTML"),
-        re.compile(r"\.innerHTML\s*=(?!=)"),
+        re.compile(r"\.innerHTML\s*=(?!=)(?!\s*(?:\"\"|''|``)\s*;?\s*$)"),  # not clearing it: `el.innerHTML = ""`
         re.compile(r"\bv-html\b"),
         re.compile(r"\|\s*safe\b"),
         re.compile(r"\bmark_safe\s*\("),
@@ -157,6 +158,9 @@ ONLY_IN = {
     PATTERNS["eval"][2]: (".py",),
     PATTERNS["shell"][-1]: (".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"),
 }
+COMMENT_LINE = re.compile(r"\s*(?:#|//|\*|/\*|<!--|--\s)")
+# words that say a credential-looking value isn't real ("xoxb-not-a-real-token", "sk_test_fake…", "<your key>")
+PLACEHOLDER = r"(?i)example|placeholder|dummy|xxxx|your[_-]|changeme|<|not[-_ ]?a[-_ ]?real|fake|redacted|sample|mock"
 # Checks for built-ins only some languages have: Go's eval() or Java's exec() are ordinary functions.
 LANG_ONLY = {
     "eval": (".py", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".rb", ".php"),
@@ -287,14 +291,18 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
             if len(line) > 2000:  # minified or data
                 continue
             for key, pats in present.items():  # tests: only secrets (a test may do anything; a leaked key is leaked)
+                if key != "secret" and COMMENT_LINE.match(line):
+                    continue  # prose about a pattern ("mark_safe() it at the end") isn't the code; a key is leaked anywhere
                 if any(p.search(line) and (p not in ONLY_IN or fid.endswith(ONLY_IN[p])) for p in pats) and hit(key, i):
+                    if key == "raw_html" and re.search(r"mark_safe\(.*\bsettings\.[A-Z_]+", line):
+                        continue  # the site's own configuration, not user data
                     if key == "plain_http" and re.match(r"\s*(?:\*|//|#|/\*)", line):  # an example in a doc comment
                         continue
                     if key in CONTEXT and not CONTEXT[key].search(line):
                         header = next((h for h in reversed(lines[max(0, i - 7) : i - 1]) if FUNC_HEADER.match(h)), "")
                         if key not in WEAK_CONTEXT_FROM_FUNCTION or not CONTEXT[key].search(header):
                             continue
-                    if key == "secret" and re.search(r"(?i)example|placeholder|dummy|xxxx|your[_-]|changeme|<", line):
+                    if key == "secret" and re.search(PLACEHOLDER, line):
                         continue
                     if key == "swallowed" and (why := swallow_intent(line, lines[i - 2] if i > 1 else "")):
                         out["swallowed_ok"].hits.append(Evidence(fid, i, why))  # deliberate: counted, not reported
