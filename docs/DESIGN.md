@@ -405,6 +405,37 @@ deleting a database or files (+6) or rows (+2), swallowed errors (+2, plus 1 eac
 reaching it (+2), transactions or concurrency (+1), and branching (+1 per 4 branches, up to +4). Comments are
 stripped before matching. The six highest-scoring functions with a score of 7 or more are included with their code.
 
+## Assessment: profile, re-ranking and hotspots
+
+Audits start with scoping; scanners mostly don't, and rank every finding the same in every project. codefactory does
+the scoping automatically.
+
+**Profile** (`profile.py`). Manifests at the root and one folder down give dependencies and entry points; the attack
+surface gives HTTP endpoints, where the server listens and which check auth. Kind is decided in order: mobile (Expo,
+React Native, Flutter, SwiftUI/UIKit, an Android application) before web app (endpoints and a UI library) before web
+service, desktop, front-end, command-line tool (console scripts, `bin`, click/typer, Go `package main`, Gradle
+`application`, gem executables), data pipeline and library; the rest become "also". Deployment: a deploy file or a
+deploy workflow means a deployed server, whatever the local bind address says; otherwise the bind address; a mobile
+app with a local database and no server is local-first. Sensitive data: libraries and platform APIs count once;
+plain words (`workouts`, `portfolio`) only in code with comments and strings removed, and in at least two files. On
+the first real runs, prose and patterns were the noise: a "diagnosis" in a Commons Lang comment, codefactory's own
+regular expressions. `[profile]` in factory.toml overrides any part, validated so a typo fails loudly.
+
+**Re-ranking** (`rerank.py`). Rules name a finding by title, a profile condition, the severity it gets and why. One
+rule per finding (the first that fits); rules move a finding only toward their target. Each change is shown with the
+default severity and the reason, in the profile section and on the finding. A test checks every rule still names a
+finding the review produces, so renaming one can't silently switch a rule off.
+
+**Hotspots** (`hotspots.py`). One `git log --numstat --no-merges --no-renames` over 12 months. Commits touching more
+than 50 files are skipped (sweeps). A file's score is (its commits / the most-changed file's) x (its decision points /
+the most complex file's), among files changed 3+ times; scores under 0.05 are dropped. Coupling counts pairs within
+commits of 2 to 30 files; a pair is reported at 4+ shared commits covering 60%+ of the rarer file's commits, without
+tests (they change with their code by design) or "magnet" files (15 lines or fewer, or in half of all commits:
+version files). An import between the two, either way, marks it as explained. Knowledge needs three people with
+three or more commits, a file with six or more changes, and one person at 85% or more. Bots are matched by name;
+AI assistants count for whoever commits as them. On epicfin, coupling found the front-end API client and the
+back-end schemas changing together in 14 commits with nothing linking them: the classic hand-kept contract.
+
 ## The plan
 
 `plan.py` groups issues into tasks and scores them:

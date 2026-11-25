@@ -42,6 +42,7 @@ class Config:
     queries: list[dict] = field(default_factory=list)  # saved SQL checks that become flags
     silence: list[dict] = field(default_factory=list)  # [[silence]] kind / where (glob) / reason (+ by, on)
     rules: list[dict] = field(default_factory=list)  # [[rule]] custom pattern checks: id, pattern, files, severity…
+    profile: dict = field(default_factory=dict)  # [profile] corrections to the detected project profile
 
 
 def parse_rule(rule: str) -> tuple[str, str]:
@@ -122,4 +123,35 @@ def load_config(root: Path) -> Config:
             "id": r["id"], "regex": regex, "files": [files] if isinstance(files, str) else list(files),
             "severity": r.get("severity", "warn"), "message": r.get("message", r["id"]), "fix": r.get("fix", ""),
         })  # fmt: skip
+    cfg.profile = _profile(data.get("profile", {}))
     return cfg
+
+
+PROFILE_KEYS = {
+    "kind": ("mobile app", "web app", "web service", "desktop app", "web front-end", "command-line tool",
+             "data pipeline", "library"),
+    "deployment": ("local-first", "client app", "local server", "LAN server", "network server", "deployed server",
+                   "user's machine", "browser"),
+    "users": ("single user", "multi-user", "no sign-in"),
+}  # fmt: skip
+
+
+def _profile(data: dict) -> dict:
+    """[profile] in factory.toml: what the detection got wrong. Values are checked so a typo can't silently do nothing."""
+    from .profile import SENSITIVE
+
+    out: dict = {}
+    for key, value in data.items():
+        if key == "sensitive":
+            values = [value] if isinstance(value, str) else list(value)
+            bad = [v for v in values if v not in SENSITIVE and v != "none"]
+            if bad:
+                raise ValueError(f'[profile] sensitive: {bad[0]!r} isn\'t one of {", ".join(SENSITIVE)} (or "none")')
+            out[key] = [v for v in values if v != "none"]
+        elif key in PROFILE_KEYS:
+            if value not in PROFILE_KEYS[key]:
+                raise ValueError(f"[profile] {key}: {value!r} isn't one of {', '.join(PROFILE_KEYS[key])}")
+            out[key] = value
+        else:
+            raise ValueError(f"[profile] has no setting {key!r} (kind, deployment, users, sensitive)")
+    return out

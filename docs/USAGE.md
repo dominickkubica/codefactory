@@ -121,12 +121,17 @@ The report has the structure of a principal engineer's review:
 1. **Executive summary:** what the system is (framework, size, layers, data stores, external services, test reach,
    CI), overall health as *Strong*, *Adequate*, *Fragile* or *At risk* with what drives the grade, and the top five
    actions with effort.
-2. **System map:** layers and how much they call each other, trust boundaries, most-depended-on code.
-3. **Findings** by severity (Critical, High, Medium, Low), each with `file:line` evidence, impact, a fix and an effort.
-4. **What is working.**
-5. **Testing and release gaps.**
-6. **Open questions** for the team.
-7. **Review limits:** what was and wasn't analyzed.
+2. **Project profile:** what kind of project it is, where it runs, who uses it and what sensitive data it holds,
+   each with evidence, and which findings were ranked differently for it, and why.
+3. **System map:** layers and how much they call each other, trust boundaries, most-depended-on code.
+4. **Where change happens:** hotspots from git history, files that change together without importing each other,
+   busy code only one person changes.
+5. **Findings** by severity (Critical, High, Medium, Low), each with `file:line` evidence, impact, a fix and an
+   effort; a finding in a hotspot says so and comes first in its severity.
+6. **What is working.**
+7. **Testing and release gaps.**
+8. **Open questions** for the team, shaped by the profile.
+9. **Review limits:** what was and wasn't analyzed.
 
 Besides everything in [What it flags](#what-it-flags), the review checks:
 
@@ -144,6 +149,69 @@ whole repository.
 
 The review can't judge intent, product context, or runtime and concurrency behaviour that no rule describes. The
 evidence pack exists to point an AI or a person at exactly that code.
+
+## Project profile: what kind of project this is
+
+```bash
+codefactory profile          # or --json
+```
+
+Before ranking anything, codefactory works out, with evidence for each:
+
+| | Values | From |
+|---|---|---|
+| Kind | mobile app, web app (UI + API), web service, desktop app, web front-end, command-line tool, data pipeline, library (and the other roles it also plays) | manifests (package.json, pyproject, Cargo, go.mod, Maven, Gradle, gemspec, composer, csproj, pubspec), the HTTP endpoints found, SwiftUI/UIKit and Android manifests |
+| Runs | local-first (data on the device), client app (talks to a backend), local server (this machine only), LAN server (bind address set at run time), network server, deployed server (Dockerfile, Vercel, Fly, a deploy workflow…), user's machine, browser | where the server listens, deploy files, local databases (expo-sqlite, Realm, Core Data…) |
+| Users | single user, multi-user (accounts and sign-in), no sign-in | auth libraries, endpoints that check who's asking |
+| Holds | health and fitness, financial, location, contact details, photos and camera, accounts and passwords | libraries (HealthKit, Stripe, expo-location…), platform APIs, and words in the code (not comments or strings), in at least two files |
+
+The review ranks findings for it. Each change is listed with its default severity and the reason:
+
+| For | Finding | Becomes | Why |
+|---|---|---|---|
+| Local-first, one user | SQL built from strings | Low | nobody else can send it input |
+| Local-first | Important code no test reaches (with writes) | High | the device holds the only copy of the data |
+| Mobile app | Plain-HTTP URLs | Medium | iOS and Android block them by default |
+| Mobile app | No error boundary | High | an uncaught error closes the app |
+| Health, financial or account data | Personal data in logs or plain storage | High | special category under privacy law and app-store rules |
+| Health data | Personal data sent to analytics | Critical | consent, and in the US a possible reportable breach |
+| Command-line tool | Shell commands / eval | Medium | runs with its own user's rights |
+| Server on this machine only | Request data reaches dangerous calls | High | whoever can send requests can already run code |
+| Deployed server | Endpoints that change data without auth | High | it runs where others can reach it |
+| Local or LAN server with open writes | CORS * | High | any web page the user opens can drive it |
+
+Detection can be wrong. Correct it in factory.toml and every review and pull-request check uses it:
+
+```toml
+[profile]
+kind = "web service"            # or mobile app, web app, desktop app, web front-end, command-line tool, data pipeline, library
+deployment = "deployed server"  # or local-first, client app, local server, LAN server, network server, user's machine, browser
+users = "multi-user"            # or single user, no sign-in
+sensitive = ["financial"]       # replaces what was detected; ["none"] for nothing
+```
+
+## Hotspots: where change happens
+
+```bash
+codefactory hotspots         # or --json
+```
+
+From the last 12 months of git history (at most 5,000 commits; merges and commits touching more than 50 files,
+like formatting sweeps, don't count):
+
+- **Hotspots:** source files that are both complex (decision points in their functions) and changed often, scored
+  relative to the repository. A long function nobody has touched in two years is a curiosity; one changed every week
+  is where bugs and slow reviews come from.
+- **Change coupling:** files that changed in the same commits most of the time with no import between them: a
+  change in one needs a change in the other, and nothing in the code says so. When one is front-end code and the
+  other back-end, it's an API contract kept by hand.
+- **Knowledge:** busy files (6+ changes) where one person made 85% or more of them, once the repository has at least
+  three regular committers. Bots (Dependabot, Renovate…) don't count as people.
+
+The review shows them in section 4, marks findings in hotspots and puts them first within their severity, orders
+long and untested functions by how often their file changes, and `plan` scores tasks in frequently changed files up
+to twice as high. CI checkouts are shallow by default: use `fetch-depth: 0` for the history (the review says when
+it's partial).
 
 ## From issues to fixes: plan and prompt
 

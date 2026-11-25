@@ -56,8 +56,15 @@ codefactory plan                 # what to fix first, ranked; then: codefactory 
   | Apple platforms | Swift: disk or database work on the main thread, retain cycles in stored closures, `try!`/`as!`; entitlements that weaken code signing |
   | Delivery | No CI or CI without tests, floating dependency versions, no lockfile, no runtime pin |
 
+- **Assess.** Before judging, it works out what the project is: a local-first mobile app, a deployed API with
+  accounts, a LAN tool, a command-line tool or a library; where it runs, who uses it, and whether it holds health,
+  financial or other sensitive data. Findings are ranked for that, each change with its reason: SQL built from
+  strings matters less in a single-user offline app; an untested write matters more when the phone holds the only
+  copy. Git history adds the other half: **hotspots** (complex code that changes every week, where debt costs the
+  most), files that always change together with nothing linking them, and code only one person knows.
 - **Review.** `codefactory review` writes a technical review in the shape a principal engineer would: summary,
-  health grade, system map, findings by severity with evidence, what's working, gaps and open questions. No AI needed.
+  project profile, system map, where change happens, findings by severity with evidence, what's working, gaps and
+  open questions. No AI needed.
 - **Fix.** `codefactory plan` turns findings into ranked tasks with steps and the tests to run. Each task becomes a
   self-contained prompt for Claude Code, and a baseline keeps new problems out in CI.
 

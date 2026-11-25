@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from fnmatch import fnmatch
 from pathlib import Path
 
+from . import hotspots, rerank
 from .apple import scan as apple_scan
 from .audit import current_secrets
 from .audit import scan as audit_scan
@@ -23,6 +24,8 @@ from .coverage import measured
 from .paths import is_script, is_test
 from .plan import make_plan
 from .privacy import scan as privacy_scan
+from .profile import detect as detect_profile
+from .profile import markdown as profile_markdown
 from .security import SINK_KINDS, function_at, surface, writes
 
 SEV = ["Critical", "High", "Medium", "Low"]
@@ -91,6 +94,10 @@ class Review:
         self.online, self.vulns, self.deps_note = online, [], ""
         self._apply_silence(load_config(root).silence)
         self.surface = surface(root, g, self.v)
+        self.profile = detect_profile(root, g, self.surface)  # what kind of project: findings are ranked for it
+        self.history = hotspots.analyze(root, g)  # where change happens: findings there are worth fixing first
+        self.hot = self.history.by_path()
+        self.rank_changes: list[rerank.Change] = []
         self.writers = writes(self.v)
         static = test_reach(self.v)
         self.coverage = measured(root, g["functions"])
@@ -99,7 +106,7 @@ class Review:
             self.reached = self.coverage.covered | {fid for fid in static if self.v.fn.get(fid, {}).get("file") not in seen}
         else:
             self.reached = static
-        self.tasks = make_plan(g)
+        self.tasks = make_plan(g, {path: fh.commits for path, fh in self.history.history.files.items()})
         self.findings: list[Finding] = []
         self.by_kind = defaultdict(list)
         for f in g["flags"]:
@@ -109,6 +116,15 @@ class Review:
 
     def add(self, *a, **k) -> None:
         self.findings.append(Finding(*a, **k))
+
+    def changes(self, path: str) -> int:
+        """Commits that changed this file in the last 12 months."""
+        fh = self.history.history.files.get(path)
+        return fh.commits if fh else 0
+
+    def _changed(self, path: str) -> str:
+        n = self.changes(path)
+        return f" · changed {n}× in 12 months" if n >= 3 else ""
 
     def where(self, flag: dict) -> str:
         fn = self.v.fn.get(flag["target"])
@@ -606,7 +622,11 @@ class Review:
             )
         # the hardest to follow first: branches (decisions) weigh more than length, so a long but flat table of
         # options or a big layout ranks below a shorter function full of conditions
-        long = sorted((f for f in self.code_fns if f["loc"] > 80), key=lambda f: -(f.get("branches", 0) * 4 + f["loc"] / 10))
+        # ...and among those, the ones in files that keep changing: a tangled function nobody touches costs little
+        long = sorted(
+            (f for f in self.code_fns if f["loc"] > 80),
+            key=lambda f: -(f.get("branches", 0) * 4 + f["loc"] / 10) * (1 + self.changes(f["file"]) / 4),
+        )
         if long:
             self.add(
                 f"Very long functions ({_n(len(long), 'function')} over 80 lines)",
@@ -615,6 +635,7 @@ class Review:
                 [
                     f"`{f['file']}:{f['line']}` {f['qualname']}: {f['loc']} lines"
                     + (f", {f['branches']} decision points" if f.get("branches") else "")
+                    + self._changed(f["file"])
                     for f in long[:6]
                 ],
                 "Hard to read, test and change safely; often several responsibilities in one place.",
@@ -673,7 +694,15 @@ class Review:
             for f in code
             if f["id"] not in self.reached and (f.get("io") or len(callers[f["id"]]) >= 8) and not is_script(f["file"])
         ]
-        risky.sort(key=lambda f: (-bool(f.get("io")), -len(callers[f["id"]])))
+        # writes first (a wrong one loses data), then I/O, then code that keeps changing, then the most depended-on
+        risky.sort(
+            key=lambda f: (
+                -bool(rerank.WRITE_WORDS.search(" ".join(f.get("io", [])))),
+                -bool(f.get("io")),
+                -min(self.changes(f["file"]), 10),
+                -len(callers[f["id"]]),
+            )
+        )
         if risky:
             self.add(
                 f"Important code no test reaches ({_n(len(risky), 'function')})",
@@ -683,6 +712,7 @@ class Review:
                     f"`{f['file']}:{f['line']}` {f['qualname']}"
                     + (f": does I/O ({', '.join(f['io'][:2])})" if f.get("io") else "")
                     + (f", called from {len(callers[f['id']])} files" if len(callers[f["id"]]) >= 2 else "")
+                    + self._changed(f["file"])
                     for f in risky[:8]
                 ],
                 f"Tests reach {pct}% of functions, but not these: code that talks to storage or the network, or that "
@@ -844,7 +874,15 @@ class Review:
         self.testing()
         self.delivery()
         self.custom()
-        self.findings.sort(key=lambda f: (SEV.index(f.severity), -len(f.evidence) - f.more))
+        if self.surface.entries:
+            self.profile.open_writes = sum(1 for e, _ in self._writing_entries() if not e.auth)
+        self.rank_changes = rerank.rerank(self.findings, self.profile)
+        for f in self.findings:  # findings in hotspots: the same severity, but worth doing first
+            hot = sorted({p for e in f.evidence for p in re.findall(r"`([^`\s]+?):\d+`", e) if p in self.hot},
+                         key=lambda p: -self.hot[p].score)  # fmt: skip
+            if hot:
+                f.data["hotspot"] = hot
+        self.findings.sort(key=lambda f: (SEV.index(f.severity), not f.data.get("hotspot"), -len(f.evidence) - f.more))
 
     def health(self) -> tuple[str, list[Finding]]:
         score = 100
@@ -911,6 +949,7 @@ class Review:
             f"- **What it is:** {article} {fw} codebase ({g['language']}): {len(code_files)} source files, "
             f"{lines_total:,} lines, in "
             f"{_n(len(layers), 'layer')} ({', '.join(f'{name} {n}' for name, n in sorted(layers, key=lambda x: -x[1])[:5])}).",
+            f"- **Profile:** {self.profile.summary()} (section 2; findings are ranked for it).",
             f"- **Entry points:** {len(entry)} files nothing imports (screens, routes, scripts, configs).",
             f"- **Data:** {', '.join(self.stores()) or 'no data store detected'}.",
             f"- **External services:** {', '.join(sorted(hosts)[:8]) or 'none found in the code'}"
@@ -935,7 +974,9 @@ class Review:
             action = re.split(r"[;:]\s|\.\s", f.fix)[0].rstrip(".")
             why = re.split(r"[;:]\s|\.\s", f.impact)[0].rstrip(".")
             out.append(f"| {i} | **{f.title}**: {action} | {f.effort} | {why} |")
-        out += ["", "## 2. System map", "", "| Layer | Files | Lines | Calls into |", "|---|---|---|---|"]
+        out += ["", "## 2. Project profile", ""] + profile_markdown(self.profile)
+        out += ["", "**Ranked for this project**", ""] + rerank.markdown(self.rank_changes)
+        out += ["## 3. System map", "", "| Layer | Files | Lines | Calls into |", "|---|---|---|---|"]
         layer_of = {f["id"]: f["layer"] for f in g["files"]}
         fn_file = {f["id"]: f["file"] for f in g["functions"]}
         deps = defaultdict(Counter)
@@ -976,7 +1017,12 @@ class Review:
             key=lambda f: -len({self.v.fn[e["src"]]["file"] for e in self.v.callers[f["id"]] if e["src"] in self.v.fn}),
         )[:5]
         out += ["**Most depended-on code:** " + ", ".join(f"`{f['file']}:{f['line']}` {f['qualname']}" for f in hub), ""]
-        out += ["## 3. Findings", ""]
+        by_file: dict[str, list[str]] = defaultdict(list)
+        for f in self.findings:
+            for path in f.data.get("hotspot", []):
+                by_file[path].append(f.title.split(" (")[0])
+        out += ["## 4. Where change happens", ""] + hotspots.markdown(self.history, by_file)
+        out += ["## 5. Findings", ""]
         for sev in SEV:
             group = [f for f in self.findings if f.severity == sev]
             out += [f"### {sev}", ""]
@@ -987,13 +1033,24 @@ class Review:
                 out += [f"**{f.title}** · {f.area} · effort {f.effort}", "", "- Evidence:"] + [f"  - {e}" for e in f.evidence]
                 if f.more:
                     out.append(f"  - … {f.more} more")
-                out += [f"- Impact: {f.impact}", f"- Fix: {f.fix}", ""]
+                out += [f"- Impact: {f.impact}", f"- Fix: {f.fix}"]
+                if ranked := f.data.get("ranked"):
+                    out.append(f"- Ranked {f.severity} for this project (default {ranked['from']}): {ranked['why']}")
+                if hot := f.data.get("hotspot"):
+                    x = self.hot[hot[0]]
+                    out.append(
+                        f"- In a hotspot: `{x.path}` changed {x.commits} times in 12 months"
+                        + (f" ({x.recent} in the last 3)" if x.recent and x.recent != x.commits else "")
+                        + (f", and {len(hot) - 1} more hotspot file{'s' if len(hot) > 2 else ''}" if len(hot) > 1 else "")
+                        + ": fixing it here pays off soonest."
+                    )
+                out.append("")
         out += self._by_owner()
-        out += ["## 4. What is working", ""] + [f"- {w}" for w in self.strengths()] + [""]
-        out += ["## 5. Testing and release gaps", ""]
+        out += ["## 6. What is working", ""] + [f"- {w}" for w in self.strengths()] + [""]
+        out += ["## 7. Testing and release gaps", ""]
         gaps = [f for f in self.findings if f.area in ("Testing", "Delivery", "Dependencies")]
         out += [f"- **{f.title}.** {f.fix}" for f in gaps] or ["- None found by these checks."]
-        out += ["", "## 6. Open questions", ""] + [f"- {q}" for q in self.questions()]
+        out += ["", "## 8. Open questions", ""] + [f"- {q}" for q in self.questions()]
         out += ["", "## Review limits", ""] + [f"- {x}" for x in self.limits()]
         if for_ai:
             out += ["", self.evidence_pack()]
@@ -1007,7 +1064,7 @@ class Review:
         return (
             f"Driven by {_n(len(crit), 'critical/high finding')}: {'; '.join(crit[:3])}"
             + (" …" if len(crit) > 3 else "")
-            + f". {good} things are working well (section 4)."
+            + f". {good} things are working well (section 6)."
         )
 
     def strengths(self) -> list[str]:
@@ -1047,10 +1104,21 @@ class Review:
         return out
 
     def questions(self) -> list[str]:
+        p = self.profile
         q = [
-            "What scale is this built for (users, data volume, requests per second), and what are the uptime or latency targets?",
-            "Which data is sensitive (personal, payment, health), and which compliance rules apply?",
+            "What scale is this built for (users, data volume, requests per second), and what are the uptime or latency targets?"
+            if p.server
+            else "How many people use it, and how much data does one of them build up over a year?",
+            (
+                f"It holds {', '.join(p.sensitive)} data: which rules apply (GDPR, HIPAA, PCI DSS, the app stores' privacy "
+                "labels), and is that data ever sent off the device or server?"
+            )
+            if p.sensitive
+            else "Is any of its data sensitive (personal, payment, health) in ways the code doesn't show?",
         ]
+        if p.kind == "unknown":
+            q.insert(0, "What kind of project is this (app, service, tool, library)? Set it in factory.toml `[profile]` "
+                     "so findings are ranked for it.")  # fmt: skip
         if self.scan["hosts"].data:
             q.append(
                 f"What should happen when {', '.join(sorted(self.scan['hosts'].data)[:3])} "
@@ -1215,12 +1283,18 @@ class Review:
             "## Evidence pack for an AI reviewer",
             "",
             "You are finishing this review. Everything above was produced by static rules. Your job:",
-            "1. For each Critical/High/Medium finding: confirm it from the cited lines (open only those), or reject it "
+            "1. Check the project profile (section 2) against the README: it decides how findings are ranked. If it's "
+            "wrong, say so and suggest the `[profile]` lines for factory.toml.",
+            "2. For each Critical/High/Medium finding: confirm it from the cited lines (open only those), or reject it "
             "with the reason. Adjust severity using what the code and README say about the product.",
-            "2. Read the risky functions below. For each, decide whether there's a real failure mode (data loss, a "
-            "user locked out, a race between writers, a misleading error) and add findings for the real ones.",
-            "3. Rewrite sections 1 and 3 with your conclusions. Keep file:line evidence. Don't read other files "
+            "3. Read the risky functions below. For each, decide whether there's a real failure mode (data loss, a "
+            "user locked out, a race between writers, a misleading error) and add findings for the real ones. Weigh "
+            "those in hotspots (section 4) higher: that code changes every week.",
+            "4. Rewrite sections 1 and 5 with your conclusions. Keep file:line evidence. Don't read other files "
             "unless a finding needs one more caller (`codefactory context <name>` lists them).",
+            "",
+            f"Profile: {self.profile.summary()}."
+            + (f" Hotspots: {', '.join(f'`{x.path}`' for x in self.history.hot[:5])}." if self.history.hot else ""),
             "",
             "### Riskiest code (deletes data, does I/O, untested, swallows errors)",
             "",

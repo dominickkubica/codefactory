@@ -83,13 +83,13 @@ class ReviewTest(unittest.TestCase):
             "## 1. Executive summary",
             "**Overall health: At risk.**",
             "Top 5 actions",
-            "## 2. System map",
-            "## 3. Findings",
+            "## 3. System map",
+            "## 5. Findings",
             "### Critical",
             "### High",
-            "## 4. What is working",
-            "## 5. Testing and release gaps",
-            "## 6. Open questions",
+            "## 6. What is working",
+            "## 7. Testing and release gaps",
+            "## 8. Open questions",
             "## Review limits",
             "api.example-service.io",
         ):
@@ -106,7 +106,7 @@ class ReviewTest(unittest.TestCase):
         buf = io.StringIO()
         with redirect_stdout(buf):
             self.assertEqual(main(["review", str(self.root), "--no-cache"]), 0)
-        self.assertIn("## 3. Findings", buf.getvalue())
+        self.assertIn("## 5. Findings", buf.getvalue())
 
 
 if __name__ == "__main__":

@@ -164,7 +164,7 @@ class FindingsTest(unittest.TestCase):
         text = review_markdown(build(self.root, cache=False).to_dict(), self.root)
         self.assertIn("Writes inside loops in 1 place", text)
         self.assertIn("File or program operations inside loops in 1 place", text)
-        self.assertNotIn("count_tables", text.split("## 4.")[0].split("Writes inside loops")[-1])
+        self.assertNotIn("count_tables", text.split("## 6.")[0].split("Writes inside loops")[-1])
 
     def test_loop_calls_are_classified_by_what_they_do(self):
         write(self.root, {"app.py": '''

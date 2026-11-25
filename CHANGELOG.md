@@ -3,6 +3,31 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.18.0 · 2026-11-25
+
+Assessment: findings ranked for the project they're in, and for where change happens.
+
+### Added
+- **Project profile** (`codefactory profile`, and section 2 of the review): kind (mobile app, web app, web service,
+  desktop, front-end, command-line tool, data pipeline, library), where it runs (local-first, client app, local, LAN,
+  network or deployed server, user's machine), users (single user, multi-user, no sign-in) and sensitive data
+  (health and fitness, financial, location, contact details, photos and camera, accounts and passwords), each with
+  evidence. Reads npm, Python, Cargo, Go, Maven, Gradle, RubyGems, Composer, .NET and Flutter manifests. `[profile]` in
+  factory.toml corrects it.
+- **Findings ranked for the profile**, each change shown with the default severity and the reason: an untested write
+  is High when the phone holds the only copy of the data; SQL built from strings is Low in a single-user offline app;
+  personal data in logs is High in an app with health or financial data; plain HTTP is Medium in a mobile app; open
+  write endpoints are High when the repository deploys a server.
+- **Hotspots** (`codefactory hotspots`, and section 4 of the review): from 12 months of git history, complex code
+  changed often, files that change together without importing each other (with a note when it's a front-end/back-end
+  contract), and busy code only one person changes. Findings in hotspots come first in their severity and say so;
+  long and untested functions are ordered by how often their file changes; `plan` scores tasks in busy files up to
+  twice as high.
+- The dashboard shows each repository's profile; open questions follow it; the AI evidence pack checks it first.
+
+### Changed
+- Review sections are renumbered: profile (2) and where change happens (4) are new.
+
 ## 0.17.2 · 2026-11-25
 
 ### Fixed

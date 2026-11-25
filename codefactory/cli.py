@@ -333,7 +333,11 @@ def cmd_check(a) -> int:
 
 
 def cmd_plan(a) -> int:
-    tasks = make_plan(load_graph(Path(a.path), a.lang, not a.no_cache))
+    from .hotspots import read as read_history
+
+    graph = load_graph(Path(a.path), a.lang, not a.no_cache)
+    root = _repo(a.path)
+    tasks = make_plan(graph, {path: fh.commits for path, fh in read_history(root).files.items()})
     if a.json:
         print(json.dumps(tasks[: a.top], indent=1))
     else:
@@ -546,6 +550,32 @@ def cmd_sbom(a) -> int:
     return 0
 
 
+def cmd_profile(a) -> int:
+    """What kind of project this is, where it runs, who uses it and what data it holds, with the evidence."""
+    from .profile import detect, markdown
+
+    root = _repo(a.path)
+    p = detect(root, load_graph(Path(a.path), a.lang, not a.no_cache))
+    print(json.dumps(p.to_dict(), indent=1) if a.json else "\n".join(markdown(p)))
+    return 0
+
+
+def cmd_hotspots(a) -> int:
+    """Where change happens: complex code changed often, files that change together, code one person owns."""
+    from . import hotspots
+
+    root = _repo(a.path)
+    s = hotspots.analyze(root, load_graph(Path(a.path), a.lang, not a.no_cache))
+    if a.json:
+        print(json.dumps({"commits": s.history.commits, "people": len(s.history.people), "note": s.history.note,
+                          "hotspots": [vars(x) for x in s.hot], "coupling": [vars(c) for c in s.coupled],
+                          "single_owner": [dict(zip(("file", "person", "share", "changes"), o, strict=True)) for o in s.owners]},
+                         indent=1))  # fmt: skip
+    else:
+        print("\n".join(hotspots.markdown(s)))
+    return 0
+
+
 def cmd_skill(a) -> int:
     repo = Path(a.path)
     path = install_skill(repo)
@@ -590,6 +620,11 @@ COMMANDS = {
         "the attack surface: every HTTP endpoint, its auth check, and whether it changes data or reaches risky code",
     ),
     "accept": (cmd_accept, "mark a finding as intended, with the reason (writes a [[silence]] rule to factory.toml)"),
+    "profile": (
+        cmd_profile,
+        "what kind of project this is (kind, where it runs, users, sensitive data): findings are ranked for it",
+    ),
+    "hotspots": (cmd_hotspots, "where change happens (git history): complex code changed often, files that change together"),
     "sbom": (cmd_sbom, "a CycloneDX software bill of materials (every pinned dependency, with package URLs)"),
     "update": (cmd_update, "upgrade codefactory to the latest version (and refresh this repo's skill)"),
     "skill": (cmd_skill, "teach Claude Code in a repo to use codefactory (writes .claude/skills/codefactory/SKILL.md)"),
@@ -645,7 +680,7 @@ Run `codefactory <command> --help` for a command's options.""",
                 help="only these analyzers (other = every language but Python and TypeScript)",
             )
             s.add_argument("--no-cache", action="store_true", help="analyze again even if nothing changed")
-        if name in ("flags", "query", "trace", "path", "context", "plan", "surface", "diff", "org"):
+        if name in ("flags", "query", "trace", "path", "context", "plan", "surface", "diff", "org", "profile", "hotspots"):
             s.add_argument("--json", action="store_true", help="machine-readable output")
         if name in ("trace", "path"):
             s.add_argument("--refs", action="store_true", help="also follow functions passed by name (callbacks)")

@@ -39,8 +39,9 @@ def _id(kind: str, parts: list[str]) -> str:
 
 
 class Planner:
-    def __init__(self, g: dict):
+    def __init__(self, g: dict, changes: dict[str, int] | None = None):
         self.g, self.v = g, View(g)
+        self.changes = changes or {}  # file -> commits in the last 12 months (hotspots.py)
         self.layer_rank = {name: i for i, name in enumerate(g["layers"])}  # right = more depended upon
         self.idx = {id(f): i for i, f in enumerate(g["flags"])}
         from .owners import load as load_owners
@@ -401,6 +402,12 @@ class Planner:
                 "UI, a load/save step) into separate functions; keep behaviour identical.",
             ],
         )
+        if self.changes:  # the same problem costs more where people keep working: up to twice the score
+            for task in tasks:
+                n = max((self.changes.get(w["file"], 0) for w in task["where"]), default=0)
+                if n >= 3:
+                    task["changes"] = n
+                    task["score"] = round(task["score"] * (1 + min(n, 20) / 20), 1)
         tasks.sort(key=lambda t: (-t["score"], t["title"]))
         return tasks
 
@@ -437,8 +444,9 @@ Done when:
 """
 
 
-def make_plan(g: dict) -> list[dict]:
-    return Planner(g).plan()
+def make_plan(g: dict, changes: dict[str, int] | None = None) -> list[dict]:
+    """Ranked tasks; with `changes` (commits per file), work in code that keeps changing ranks higher."""
+    return Planner(g, changes).plan()
 
 
 def plan_markdown(tasks: list[dict], top: int) -> str:
@@ -449,7 +457,8 @@ def plan_markdown(tasks: list[dict], top: int) -> str:
         "",
     ]
     for i, t in enumerate(tasks[:top], 1):
-        lines.append(f"## {i}. {t['title']}  `{t['id']}` · {t['severity']} · score {t['score']}")
+        hot = f" · changed {t['changes']}× in 12 months" if t.get("changes") else ""
+        lines.append(f"## {i}. {t['title']}  `{t['id']}` · {t['severity']} · score {t['score']}{hot}")
         lines.append(t["why"])
         lines += [""] + [f"- [ ] {s}" if not s.startswith("  ") else f"      {s.strip()}" for s in t["steps"][:12]]
         if len(t["steps"]) > 12:

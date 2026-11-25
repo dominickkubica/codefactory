@@ -32,6 +32,7 @@ def snapshot(root: Path, graph: dict) -> dict:
     code = [f for f in graph["files"]]
     return {
         "repo": root.name,
+        "profile": r.profile.summary(),
         "path": str(root),
         "date": date.today().isoformat(),
         "grade": grade,
@@ -88,8 +89,8 @@ def _row(s: dict, history: list[dict]) -> str:
     endpoints = str(s["endpoints"]) + (f" ({s['open_writes']} open writes)" if s["open_writes"] else "")
     reach = "" if s["tests_reach"] is None else f"{s['tests_reach']}%"
     cells = [
-        f'<td><b>{e(s["repo"])}</b><div class="muted">{e(s["languages"])} · {s["files"]:,} files · '
-        f"{s['lines']:,} lines</div></td>",
+        f'<td><b>{e(s["repo"])}</b><div class="muted">{e(s.get("profile", ""))}</div>'
+        f'<div class="muted">{e(s["languages"])} · {s["files"]:,} files · {s["lines"]:,} lines</div></td>',
         f'<td class="{grade_class}">{e(s["grade"])}</td>',
         *(f'<td class="num">{f[k]}</td>' for k in SEVS),
         f'<td class="num">{endpoints}</td>',
