@@ -3,6 +3,14 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.17.2 · 2026-11-25
+
+### Fixed
+- `diff` read none of the base commit's config files (app.json, Info.plist, Dockerfiles, entitlements, lockfiles),
+  because the base is unpacked inside `.codefactory/` and those checks skipped any path through that folder. Findings
+  on both sides showed as new on every pull request, and declared iOS permissions showed as fixed. Found on a real
+  pull request, where four "fixed" permission findings had never been there.
+
 ## 0.17.1 · 2026-11-24
 
 ### Changed

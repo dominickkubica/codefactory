@@ -166,7 +166,8 @@ def find_dockerfiles(root: Path) -> list[Path]:
     skip = {"node_modules", ".git", ".venv", "venv", ".codefactory"}
     return sorted(
         p for p in root.rglob("*")
-        if p.is_file() and re.fullmatch(r"(?i)dockerfile(\..+)?|.+\.dockerfile", p.name) and not (skip & set(p.relative_to(root).parts))
+        if p.is_file() and re.fullmatch(r"(?i)dockerfile(\..+)?|.+\.dockerfile", p.name)
+        and not (skip & set(p.relative_to(root).parts))  # relative: a diff's base lives in .codefactory/
     )  # fmt: skip
 
 
