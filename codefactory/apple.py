@@ -73,7 +73,9 @@ def scan(root: Path, files: list[str]) -> dict[str, Check]:
                     if SYNC_IO.search(code[j]) and "Task {" not in code[j] and "async" not in code[j]:
                         out["main_thread_io"].hits.append(Evidence(fid, j + 1, lines[j].strip()[:140]))
     for path in sorted(root.rglob("*.entitlements")):
-        if {"node_modules", ".git", "Pods", ".codefactory"} & set(path.parts):
+        if {"node_modules", ".git", "Pods", ".codefactory"} & set(
+            path.relative_to(root).parts
+        ):  # relative: a diff's base lives in .codefactory/
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
         for m in WEAK_ENTITLEMENTS.finditer(text):

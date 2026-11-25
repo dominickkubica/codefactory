@@ -100,7 +100,8 @@ def dockerfiles(root: Path, files: list[Path], out: dict[str, Check]) -> None:
 
 def mobile(root: Path, out: dict[str, Check]) -> None:
     names = ("app.json", "app.config.json", "Info.plist", "AndroidManifest.xml")
-    found = (p for name in names for p in root.rglob(name) if not ({"node_modules", ".git", ".codefactory"} & set(p.parts)))
+    skip = {"node_modules", ".git", ".codefactory"}  # checked on the relative path: a diff's base lives in .codefactory/
+    found = (p for name in names for p in root.rglob(name) if not (skip & set(p.relative_to(root).parts)))
     for path in sorted(found):
         rel = path.relative_to(root).as_posix()
         try:
@@ -165,7 +166,7 @@ def find_dockerfiles(root: Path) -> list[Path]:
     skip = {"node_modules", ".git", ".venv", "venv", ".codefactory"}
     return sorted(
         p for p in root.rglob("*")
-        if p.is_file() and re.fullmatch(r"(?i)dockerfile(\..+)?|.+\.dockerfile", p.name) and not (skip & set(p.parts))
+        if p.is_file() and re.fullmatch(r"(?i)dockerfile(\..+)?|.+\.dockerfile", p.name) and not (skip & set(p.relative_to(root).parts))
     )  # fmt: skip
 
 

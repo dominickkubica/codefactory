@@ -144,7 +144,7 @@ def _declared_keys(root: Path) -> tuple[set[str], set[str], bool]:
     keys, plugins, manifest = set(), set(), False
     skip = {"node_modules", ".git", ".codefactory", "Pods", "build"}
     for path in root.rglob("*"):
-        if skip & set(path.parts) or not path.is_file():
+        if skip & set(path.relative_to(root).parts) or not path.is_file():
             continue
         if path.name == "PrivacyInfo.xcprivacy":
             manifest = True

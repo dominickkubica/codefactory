@@ -79,6 +79,26 @@ class DiffTest(unittest.TestCase):
                 self.assertEqual(main(["diff", d, "--base", "main"]), 0)  # --fail-on never (the default) never fails
             self.assertEqual(result["changed"], ["app.py"])
 
+    def test_config_findings_on_both_sides_are_not_new(self):
+        # the base is unpacked inside .codefactory/: checks that skip that folder must still read the base's files
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            git = ["git", "-C", d, "-c", "user.name=t", "-c", "user.email=t@example.invalid"]
+            subprocess.run([*git, "init", "-q", "-b", "main"], check=True)
+            (root / "Dockerfile").write_text("FROM node:latest\nCMD node app.js\n", encoding="utf-8")
+            (root / "app.json").write_text(json.dumps({"expo": {"ios": {"infoPlist": {
+                "NSCameraUsageDescription": "Scan barcodes"}}}}), encoding="utf-8")  # fmt: skip
+            (root / "scan.ts").write_text("export const open = () => launchCameraAsync();\n", encoding="utf-8")
+            subprocess.run([*git, "add", "."], check=True)
+            subprocess.run([*git, "commit", "-qm", "base"], check=True)
+            (root / "scan.ts").write_text("export const open = () => launchCameraAsync({});\n", encoding="utf-8")
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
+                main(["diff", d, "--base", "main", "--json"])
+            result = json.loads(out.getvalue())
+            self.assertEqual([i["kind"] for i in result["new"]], [])  # docker findings exist on both sides
+            self.assertEqual([i["kind"] for i in result["fixed"]], [])  # the camera string was declared on both
+
 
 if __name__ == "__main__":
     unittest.main()

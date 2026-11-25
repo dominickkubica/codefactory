@@ -132,7 +132,7 @@ def packages(root: Path) -> list[Package]:
         sorted(root.glob("requirements*.txt")) + sorted(root.glob("requirements/*.txt")) + sorted(root.glob("constraints*.txt"))
     )
     for path in candidates:
-        if not path.is_file() or "node_modules" in path.parts:
+        if not path.is_file() or "node_modules" in path.relative_to(root).parts:
             continue
         reader = READERS.get(path.name, _requirements)
         try:
