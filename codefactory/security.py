@@ -19,6 +19,7 @@ from pathlib import Path
 
 from .brief import View
 from .efficiency import kind_of
+from .paths import is_test
 
 AUTH = re.compile(
     r"auth|login|logged|jwt|token|session|permission|current_?user|require_?user|verify|protect|guard|admin|"
@@ -28,7 +29,9 @@ AUTH = re.compile(
 SINK_KINDS = ("sql_built", "shell", "eval", "raw_html")
 METHODS = "get|post|put|patch|delete|head|options"
 
-PY_ROUTE = re.compile(rf"@\s*[\w.]+\.({METHODS}|api_route|route|websocket)\(\s*(?:path\s*=\s*)?[rf]?['\"]([^'\"]*)['\"]([^\n]*)")
+PY_ROUTE = re.compile(
+    rf"@\s*(?!mock\.|patch\.|unittest\.)[\w.]+\.({METHODS}|api_route|route|websocket)\(\s*(?:path\s*=\s*)?[rf]?['\"]([^'\"]*)['\"]([^\n]*)"
+)
 PY_METHODS = re.compile(r"methods\s*=\s*[\[(]([^\])]*)")
 DRF_VIEW = re.compile(r"@\s*api_view\(\s*\[?([^\])]*)")
 PY_AUTH_DECORATOR = re.compile(
@@ -124,6 +127,8 @@ def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
             for m in ALIAS.finditer("\n".join(_read(root, cache, file))):
                 aliases[m.group(1)] = m.group(2)
     for file, fns in by_file.items():
+        if is_test(file):  # a test's `@mock.patch(...)` or a fake server isn't the product's surface
+            continue
         lines = _read(root, cache, file)
         text = "\n".join(lines)
         module = next((f for f in fns if f["kind"] == "module"), None)
@@ -195,7 +200,9 @@ def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
             for f in fns:
                 if f["kind"] == "module":
                     continue
-                deco = _above(lines, f["line"])
+                # tree-sitter starts a Java/Kotlin method at its annotations: read them from the method's own lines
+                head = "\n".join(lines[f["line"] - 1 : f["line"] + 8]).split("{")[0]
+                deco = _above(lines, f["line"]) + "\n" + head
                 m = SPRING.search(deco)
                 if m:
                     auth = SPRING_AUTH.search(deco)

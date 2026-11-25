@@ -32,7 +32,8 @@ SUBPROCESS = {"run", "call", "check_call", "check_output", "Popen"}
 CODE = {"eval", "exec", "loads", "load", "compile"}  # loads/load: pickle, marshal, yaml (unsafe loader)
 PATHS = {"open", "send_file", "remove", "unlink", "rmtree", "FileResponse", "read_text", "write_text", "read_bytes"}
 NETWORK = {"get", "post", "put", "delete", "patch", "request", "urlopen", "head"}
-NETWORK_MODULES = {"requests", "httpx", "urllib", "aiohttp", "session", "client"}
+# not `session`: in SQLAlchemy / SQLModel code that's the database (`session.delete(user)`, `session.get(User, id)`)
+NETWORK_MODULES = {"requests", "httpx", "urllib", "aiohttp", "client", "http", "http_session", "http_client"}
 REDIRECT = {"redirect", "RedirectResponse", "HttpResponseRedirect"}
 TEMPLATE = {"render_template_string", "Markup", "mark_safe", "Template"}
 DB_RESULTS = {"fetchone", "fetchall", "fetchmany", "first", "one", "one_or_none", "scalar", "scalars", "all", "get_or_404"}
@@ -363,7 +364,8 @@ def _safe_annotation(ann: ast.AST | None) -> bool:
     """`int`, `uuid.UUID`, `Annotated[int, Path(...)]`, `Literal["a", "b"]`, an Enum-looking name…"""
     if ann is None:
         return False
-    names = {n.id for n in ast.walk(ann) if isinstance(n, ast.Name)} | {
+    modules = {id(n.value) for n in ast.walk(ann) if isinstance(n, ast.Attribute)}  # `uuid` in `uuid.UUID`
+    names = {n.id for n in ast.walk(ann) if isinstance(n, ast.Name) and id(n) not in modules} | {
         n.attr for n in ast.walk(ann) if isinstance(n, ast.Attribute)
     }
     names.discard("Annotated")

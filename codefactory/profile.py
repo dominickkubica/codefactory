@@ -39,7 +39,7 @@ SENSITIVE: dict[str, tuple[str, str, tuple[str, ...]]] = {
     "financial": (
         r"\bstripe\.\w+|\bStripe\(|\bplaid\w*\.\w+|\bpaymentIntent\w*|\bpayment_intent\w*|\bIBApi\b|\bib_insync\b",
         r"\bbrokerage\w*|\bbuying_?power\b|\baccount_?balance\w*|\bnet_?liquidation\w*|\bcard_?number\b|"
-        r"\brouting_?number\b|\biban\b|\bportfolio\w*|\btrades?_?(?:history|log)\b",
+        r"\brouting_?number\b|\biban\b|\bportfolio\w*|\btrades?_?(?:history|log)\b|\bpayees?\b|\bpayeeId\b",
         ("stripe", "@stripe/stripe-js", "@stripe/stripe-react-native", "plaid", "plaid-python", "react-plaid-link",
          "braintree", "paypalrestsdk", "alpaca-trade-api", "alpaca-py", "ib_insync", "ibapi", "robin_stocks",
          "schwab-py", "tda-api", "tastytrade", "ccxt", "coinbase", "yodlee"),
@@ -86,12 +86,20 @@ LOCAL_DB = {
     "realm": "Realm", "@nozbe/watermelondb": "WatermelonDB", "@react-native-async-storage/async-storage": "AsyncStorage",
     "react-native-mmkv": "MMKV", "dexie": "IndexedDB (Dexie)", "idb": "IndexedDB", "localforage": "localForage",
 }  # fmt: skip
+TEMPLATING = {"spring-boot-starter-thymeleaf", "thymeleaf", "jinja2", "django", "rails", "actionview", "ejs", "pug",
+              "handlebars", "express-handlebars", "nunjucks", "freemarker", "twig",
+              "spring-boot-starter-freemarker", "htmx"}  # fmt: skip
 WEB_UI = {"react", "vue", "svelte", "@angular/core", "solid-js", "preact", "next", "nuxt", "@sveltejs/kit", "astro"}
 DESKTOP = {"electron": "Electron", "@tauri-apps/api": "Tauri", "pyqt5": "PyQt", "pyqt6": "PyQt", "pyside6": "PySide",
            "wxpython": "wxPython", "kivy": "Kivy"}  # fmt: skip
 PIPELINE = {"pandas", "polars", "duckdb", "pyspark", "apache-airflow", "dagster", "prefect", "dbt-core", "luigi",
             "great-expectations"}  # fmt: skip
 CLI_LIBS = {"click", "typer", "fire", "docopt", "commander", "yargs", "oclif", "@oclif/core", "cac", "meow"}
+WORKSPACES = {"packages", "apps", "services", "libs", "modules", "projects", "crates", "plugins"}
+# what a deploy job runs: a cloud CLI or action, not just the word "deploy"
+DEPLOY_ACTIONS = (
+    r"aws-actions|google-github-actions|azure/|flyctl|vercel|netlify|wrangler|railway|kubectl|helm |docker push|heroku"
+)
 DEPLOY_FILES = {
     "Dockerfile": "Docker", "docker-compose.yml": "Docker Compose", "compose.yaml": "Docker Compose",
     "vercel.json": "Vercel", "netlify.toml": "Netlify", "fly.toml": "Fly.io", "render.yaml": "Render",
@@ -162,15 +170,14 @@ def _join(items: list[str]) -> str:
 
 
 def _manifests(root: Path) -> dict:
-    """Dependencies and entry points from every manifest at the root and one folder down (monorepos)."""
+    """Dependencies and entry points from every manifest at the root, one folder down, and inside workspace folders
+    (`packages/*`, `apps/*`, `services/*`…, where monorepos keep their parts)."""
     out: dict = {"deps": {}, "npm_bin": [], "py_scripts": [], "go_main": [], "rust_bin": False, "flutter": False,
                  "pkg_main": [], "py_lib": False, "files": set(), "lib": [], "cli": [], "android": []}  # fmt: skip
-    candidates = [
-        root,
-        *(p for p in sorted(root.iterdir()) if p.is_dir() and p.name not in SKIP_DIRS and not p.name.startswith(".")),
-    ]
-    for d in candidates:
-        rel = "" if d == root else f"{d.name}/"
+    top = [p for p in sorted(root.iterdir()) if p.is_dir() and p.name not in SKIP_DIRS and not p.name.startswith(".")]
+    nested = [c for d in top if d.name in WORKSPACES for c in sorted(d.iterdir()) if c.is_dir() and c.name not in SKIP_DIRS]
+    for d in [root, *top, *nested[:60]]:
+        rel = "" if d == root else d.relative_to(root).as_posix() + "/"
         pkg = d / "package.json"
         if pkg.is_file():
             try:
@@ -199,6 +206,10 @@ def _manifests(root: Path) -> dict:
             scripts = {**project.get("scripts", {}), **(data.get("tool", {}).get("poetry", {}).get("scripts", {}) or {})}
             out["py_scripts"] += [f"{rel}pyproject.toml [project.scripts] {name}" for name in list(scripts)[:3]]
             out["py_lib"] = out["py_lib"] or bool(project.get("name"))
+        for setup in ("setup.cfg", "setup.py"):  # older Python packaging: console_scripts entry points
+            if (d / setup).is_file() and re.search(r"console_scripts", (d / setup).read_text(encoding="utf-8", errors="replace")):
+                out["py_scripts"].append(f"{rel}{setup} console_scripts")
+                out["py_lib"] = True
         for req in sorted(d.glob("requirements*.txt")):
             for line in req.read_text(encoding="utf-8", errors="replace").splitlines():
                 s = line.split("#")[0].strip()
@@ -222,7 +233,18 @@ def _manifests(root: Path) -> dict:
                 out["files"].add(f"{rel}{name}")
     for p in (root / ".github" / "workflows").glob("*.y*ml"):
         text = p.read_text(encoding="utf-8", errors="replace")
-        if re.search(r"deploy|aws-actions|google-github-actions/deploy|azure/webapps|superfly|vercel|railway", text, re.I):
+        if re.search(r"docs|pages|site|storybook|book", p.stem, re.I) or "actions/deploy-pages" in text:
+            continue  # publishes documentation, not the product
+        if (
+            re.search(r"deploy|release|prod|publish", p.stem, re.I)
+            and re.search(DEPLOY_ACTIONS, text, re.I)
+            or re.search(
+                r"aws-actions/amazon-ecs-deploy|google-github-actions/deploy|azure/webapps-deploy|superfly/flyctl|"
+                r"amondnet/vercel-action|netlify/actions|cloudflare/wrangler-action|railwayapp|kubectl apply|helm upgrade",
+                text,
+                re.I,
+            )
+        ):
             out["files"].add(f".github/workflows/{p.name} (deploys)")
     return out
 
@@ -321,12 +343,13 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None) -> Pro
     deps = m["deps"]
     files = [f["id"] for f in g["files"]]
     texts = _source(root, files)
-    p = Profile(endpoints=len(surface.entries))
+    p = Profile()
     p.open_writes = 0
     has = lambda *names: [n for n in names if n in deps]  # noqa: E731
 
     # what it is
     roles: list[tuple[str, list[str]]] = []
+    wrapped_mobile: list[str] = []
     mobile = has("expo", "react-native") or (["pubspec.yaml (Flutter)"] if m["flutter"] else [])
     if not mobile:
         apple = [f for f in files if f.endswith(".swift") and re.search(r"\bimport (?:SwiftUI|UIKit)\b", texts.get(f, ""))]
@@ -336,22 +359,29 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None) -> Pro
             if not SKIP_DIRS & set(p_.relative_to(root).parts)
         ][:1]
         mobile = [f"{apple[0]} (SwiftUI/UIKit)"] if apple else (m["android"] or android)
+        wrapper = has("@capacitor/core", "@capacitor/ios", "cordova", "@ionic/core")
+        if mobile and (wrapper or (has(*WEB_UI) and len(apple) < 10)):  # a web app's thin native shell
+            wrapped_mobile = mobile
+            mobile = []
     if mobile:
         roles.append(("mobile app", [f"{x} in {deps[x]}" if x in deps else x for x in mobile]))
-    web_ui = has(*WEB_UI)
-    endpoints = surface.entries
+    web_ui = [f"{d} in {deps[d]}" for d in has(*WEB_UI)]
+    templates = [f"{d} in {deps[d]} (server-rendered pages)" for d in has(*TEMPLATING)]
+    # endpoints in top-level examples, docs or benchmarks show what a library can do, not what this project serves
+    # (only near the top: `org/springframework/samples/petclinic` is a Java package, not an examples folder)
+    endpoints = [
+        e for e in surface.entries if not re.match(r"(?:[^/]+/)?(?:examples?|samples?|demos?|docs?|benchmarks?)/", e.file)
+    ]
     frameworks = sorted({e.framework for e in endpoints})
-    if endpoints and web_ui and not mobile:
-        roles.append(
-            ("web app", [f"{len(endpoints)} HTTP endpoints ({', '.join(frameworks)})", f"{web_ui[0]} in {deps[web_ui[0]]}"])
-        )
+    if endpoints and (web_ui or templates) and not mobile:
+        roles.append(("web app", [f"{len(endpoints)} HTTP endpoints ({', '.join(frameworks)})", (web_ui or templates)[0]]))
     elif endpoints:
         roles.append(("web service", [f"{len(endpoints)} HTTP endpoints ({', '.join(frameworks)})"]))
     desktop = has(*DESKTOP)
     if desktop:
         roles.append(("desktop app", [f"{d} in {deps[d]}" for d in desktop[:2]]))
     if web_ui and not endpoints and not mobile and not desktop:
-        roles.append(("web front-end", [f"{web_ui[0]} in {deps[web_ui[0]]}"]))
+        roles.append(("web front-end", web_ui[:1]))
     cli = m["py_scripts"] + m["npm_bin"] + m["cli"] + [f"{c} in {deps[c]}" for c in has(*CLI_LIBS)]
     if m["rust_bin"] and has("clap", "structopt", "argh"):
         cli.append("Rust binary with clap")
@@ -370,6 +400,9 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None) -> Pro
         roles.append(("data pipeline", [f"{x} in {deps[x]}" for x in pipeline[:3]]))
     if not roles and (m["lib"] or m["py_lib"] or m["pkg_main"] or (not m["rust_bin"] and (root / "Cargo.toml").is_file())):
         roles.append(("library", (m["lib"] + m["pkg_main"])[:1] or ["a package manifest and no app or entry point"]))
+    p.endpoints = len(endpoints)
+    if wrapped_mobile:
+        roles.append(("mobile app", [f"{wrapped_mobile[0]}, a native shell around the web app"]))
     if roles:
         p.kind, p.kind_evidence = roles[0]
         p.also = [r for r, _ in roles[1:] if r != p.kind]

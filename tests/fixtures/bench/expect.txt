@@ -155,6 +155,7 @@ ruby/reports.rb | io_in_loop | Report.find(id).touch
 .github/workflows/ci.yml | gha_pr_target | pull_request_target:
 .github/workflows/ci.yml | gha_injection | github.event.issue.title
 .github/workflows/ci.yml | ~gha_injection | github.sha
+.github/workflows/ci.yml | ~gha_injection | PR_BODY: ${{
 .github/workflows/ci.yml | gha_unpinned | some-org/some-action@main
 .github/workflows/ci.yml | ~gha_unpinned | actions/setup-node@
 .github/workflows/ci.yml | ~gha_unpinned | actions/checkout@v4

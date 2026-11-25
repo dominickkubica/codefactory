@@ -85,7 +85,11 @@ def read(root: Path, months: int = MONTHS, max_commits: int = MAX_COMMITS, timeo
             return h
         if subprocess.run([*git, "rev-parse", "--is-shallow-repository"], capture_output=True, text=True,
                           timeout=10).stdout.strip() == "true":  # fmt: skip
-            h.note = "a shallow clone (CI checks out one commit by default): history is partial; `fetch-depth: 0` reads all"
+            # partial only if the clone stops inside the window (`--shallow-since` older than it is complete enough)
+            oldest = subprocess.run([*git, "log", "--reverse", "--format=%at", "--max-parents=0"], capture_output=True,
+                                    text=True, timeout=30).stdout.split()  # fmt: skip
+            if not oldest or int(oldest[0]) > time.time() - months * 30.5 * 86400:
+                h.note = "a shallow clone (CI checks out one commit by default): history is partial; `fetch-depth: 0` reads all"
         proc = subprocess.run(
             [*git, "log", "--no-merges", "--no-renames", "--numstat", f"--since={months}.months", f"-n{max_commits}",
              "--format=%x1e%aN%x1f%at"],
@@ -135,6 +139,17 @@ def read(root: Path, months: int = MONTHS, max_commits: int = MAX_COMMITS, timeo
     return h
 
 
+GENERATED = re.compile(
+    r"(?:^|/)(?:generated|__generated__|gen)/|\.(?:gen|generated|g|pb|pb\.gw)\.\w+$|_pb2(?:_grpc)?\.py$|\.pb\.go$|"
+    r"(?:^|/)(?:openapi|swagger)[\w.-]*\.(?:ts|js|py)$|\.min\.js$"
+)
+
+
+def generated(path: str) -> bool:
+    """Made by a tool: it changes when its source does, and nobody untangles it by hand."""
+    return bool(GENERATED.search(path))
+
+
 def hotspots(h: History, g: dict, limit: int = 10) -> list[Hotspot]:
     """Source files that are both complex and changed often, most costly first."""
     code = {f["id"]: f for f in g["files"] if not is_test(f["id"])}
@@ -142,7 +157,7 @@ def hotspots(h: History, g: dict, limit: int = 10) -> list[Hotspot]:
     for fn in g["functions"]:
         if fn["file"] in code and fn["kind"] != "module":
             complexity[fn["file"]] += max(1, fn.get("branches", 0))
-    rows = [(path, fh) for path, fh in h.files.items() if path in code and fh.commits >= 3]
+    rows = [(path, fh) for path, fh in h.files.items() if path in code and fh.commits >= 3 and not generated(path)]
     if not rows:
         return []
     top_commits = max(fh.commits for _, fh in rows)
@@ -175,7 +190,7 @@ def coupling(h: History, g: dict, limit: int = 8) -> list[Coupling]:
     for (a, b), together in h.pairs.items():
         if together < 4 or a not in known or b not in known:
             continue
-        if is_test(a) or is_test(b) or a in magnets or b in magnets:
+        if is_test(a) or is_test(b) or a in magnets or b in magnets or generated(a) or generated(b):
             continue  # tests change with their code by design; version files change with everything
         fewer = min(h.files[a].commits, h.files[b].commits)
         share = together / fewer if fewer else 0

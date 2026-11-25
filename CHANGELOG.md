@@ -3,6 +3,27 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.18.1 · 2026-11-25
+
+Fixes from assessing seven public repositories (see docs/ACCURACY.md).
+
+### Fixed
+- Spring endpoints were never found: tree-sitter starts a Java or Kotlin method at its annotation, and only the lines
+  above it were read.
+- `@mock.patch(...)` in tests was read as a Flask route; test files no longer contribute endpoints.
+- CI injection is only reported in what a shell or github-script runs (`run:`, `script:`), not in `env:` (the safe
+  pattern) or a checkout's `ref:`.
+- `pull_request_target` counts as checking out fork code only when a checkout's `ref:` (or a command) fetches the PR
+  head, not when the head sha is merely used; and `on: pull_request_target` written on one line is now seen.
+- Data flow: `uuid.UUID`-typed parameters are safe, and `session.get/delete` is a database session, not HTTP.
+- Git history: minified and vendored files (`.yarn/releases`, `dist/`, `vendor/`, `*.min.js`) aren't searched for keys.
+- Profile: monorepo workspaces (`packages/*`, `apps/*`…) are read; a native shell around a web app (Capacitor, a
+  few Swift files) no longer makes it a mobile app; `setup.cfg`/`setup.py` console scripts are read; server-rendered
+  pages (Thymeleaf, Jinja, Django, Rails…) make a web app; docs-publishing workflows aren't deployments; a deep
+  package path like `org/x/samples/` isn't an examples folder.
+- Hotspots: generated files (`*.gen.ts`, `_pb2.py`, `generated/`…) don't count; a `--shallow-since` clone that covers
+  the window isn't reported as partial.
+
 ## 0.18.0 · 2026-11-25
 
 Assessment: findings ranked for the project they're in, and for where change happens.

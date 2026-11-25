@@ -56,7 +56,7 @@ association) that must stay quiet.
 | `entitlement_weakened` | 1 | 0 | 0 | 1 | 100% | 100% |
 | `eval` | 6 | 0 | 0 | 3 | 100% | 100% |
 | `fetch_no_timeout` | 3 | 0 | 0 | 2 | 100% | 100% |
-| `gha_injection` | 1 | 0 | 0 | 1 | 100% | 100% |
+| `gha_injection` | 1 | 0 | 0 | 2 | 100% | 100% |
 | `gha_pr_target` | 1 | 0 | 0 | 0 | 100% | 100% |
 | `gha_unpinned` | 1 | 0 | 0 | 2 | 100% | 100% |
 | `insecure_cookie` | 2 | 0 | 0 | 3 | 100% | 100% |
@@ -83,7 +83,7 @@ association) that must stay quiet.
 | `weak_cipher` | 1 | 0 | 0 | 1 | 100% | 100% |
 | `weak_hash` | 4 | 0 | 0 | 3 | 100% | 100% |
 | `weak_random` | 2 | 0 | 0 | 2 | 100% | 100% |
-| **All** | **83** | **0** | **0** | **63** | **100%** | **100%** |
+| **All** | **83** | **0** | **0** | **64** | **100%** | **100%** |
 <!-- bench:tuning:end -->
 
 ### Held-out part
@@ -138,6 +138,25 @@ lines of installed Python packages.
 | Plaintext URLs | 411 on the real repositories, 133 of them examples in doc comments | 278 | comment lines skipped |
 | Secrets | `token_type = 'content-transfer-encoding'`, a Go string table; `SLACK_TOKEN = "…"` missed | caught, without those | a keyword may end a name; a credential has a digit |
 | Calls (Java, Kotlin, Swift) | `repo.find()` ambiguous between classes | resolved by the declared type | declared-type resolution |
+
+## Public repositories
+
+Seven public projects with a known answer were assessed with 0.18 (profile, hotspots and the full review), and every
+wrong result was traced to its cause and fixed with a regression test (`tests/test_public_repos.py`):
+
+| Repository | Profile after fixes | What it caught in codefactory |
+|---|---|---|
+| fastapi/full-stack-fastapi-template | web app, deployed, multi-user, contact details and passwords | a typed `uuid.UUID` parameter and an ORM `session.delete()` reported as a dangerous data flow; a checkout `ref:` reported as shell injection in CI; a generated API client as the top hotspot |
+| spring-projects/spring-petclinic | web app, deployed, no sign-in | Spring endpoints never found (tree-sitter starts a Java method at its annotation); a Java package named `samples` taken for an examples folder |
+| httpie/cli | command-line tool | `@mock.patch(...)` in tests read as Flask routes, so a CLI looked like a web service; `setup.cfg` console scripts not read; a docs-deploy workflow taken as deploying the product |
+| psf/requests | library | — |
+| LoopKit/Loop | mobile app, local-first, health data | — (its one history finding, an API key committed and later removed, is real) |
+| actualbudget/actual | web app (also desktop, CLI, mobile shell), deployed, multi-user, financial | manifests in `packages/*` not read; a native iOS shell taken as the main kind; the safe env-var pattern flagged as CI injection; a base-only `pull_request_target` checkout flagged as running fork code; a minified Yarn bundle as a leaked key; `on: pull_request_target` on one line missed entirely |
+| gothinkster/golang-gin-realworld-example-app | web service, multi-user, passwords | — |
+
+Of the review findings checked by hand on these repositories, four security findings were false (all four fixed)
+and the rest held. The hotspots matched what the projects' histories show: Actual's transactions table (40 changes,
+710 decision points), Loop's status view controller, requests' `models.py`.
 
 Findings are leads with the exact line. The review ranks them, and anything intended can be marked in the code
 (`codefactory: ignore <kind> — why`) or accepted with `codefactory accept`, with the reason kept.

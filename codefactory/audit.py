@@ -17,14 +17,22 @@ from .paths import drop_ignored, is_test
 from .suppress import MARK
 
 # GitHub Actions
-PR_TARGET = re.compile(r"^\s*pull_request_target\s*:?", re.M)
-HEAD_CHECKOUT = re.compile(r"github\.event\.pull_request\.head\.(?:sha|ref)|refs/pull/")
+PR_TARGET = re.compile(r"^(?!\s*#).*\bpull_request_target\b", re.M)  # also `on: pull_request_target`, `on: [push, …]`
+# checking out the PR's code: a checkout's `ref:` set to the head, or a command that fetches it. The head sha used
+# elsewhere (an env var for looking up artifacts) is just a string.
+HEAD_CHECKOUT = re.compile(
+    r"^\s*ref:\s*\$\{\{\s*(?:github\.event\.pull_request\.head\.(?:sha|ref)|github\.head_ref)|gh pr checkout|"
+    r"git (?:fetch|checkout)[^\n]*(?:refs/pull/|pull_request\.head|head_ref)",
+    re.M,
+)
+SCRIPT_KEY = re.compile(r"^(\s*)(?:-\s+)?(run|script):\s*(.*)$")
 UNTRUSTED = re.compile(
     r"\$\{\{\s*github\.(?:event\.(?:issue|pull_request|comment|review|review_comment|discussion|head_commit|commits|pages)"
     r"[\w.\[\]*]*\.(?:title|body|head_ref|label|message|name|email|ref)|head_ref)\s*\}\}"
 )
 USES = re.compile(r"^\s*-?\s*uses:\s*([\w.-]+/[\w./-]+)@([\w.-]+)", re.M)
 FIRST_PARTY = ("actions/", "github/")
+VENDORED = re.compile(r"(?:^|/)(?:\.yarn|vendor|node_modules|dist|build|third_party|bower_components)/|\.min\.(?:js|css)$")
 # Dockerfiles
 FROM = re.compile(r"^[ \t]*FROM\s+(\S+)", re.I | re.M)  # [ \t], not \s: \s would start on a blank line above
 USER = re.compile(r"^[ \t]*USER\s+(\S+)", re.I | re.M)
@@ -64,13 +72,31 @@ def workflows(root: Path, out: dict[str, Check]) -> None:
                 Evidence(rel, _line(text, m.start()), "pull_request_target" + (" + checks out the PR's code" if danger else ""))
             )
             out["gha_pr_target"].data[rel] = "checkout" if danger else "trigger"
-        for i, ln in enumerate(lines, 1):
-            if UNTRUSTED.search(ln) and not ln.strip().startswith(("#", "if:", "name:")):
-                out["gha_injection"].hits.append(Evidence(rel, i, _excerpt(ln)))
+        for i in _script_lines(lines):  # only text a shell (run:) or github-script (script:) executes
+            if UNTRUSTED.search(lines[i - 1]) and not lines[i - 1].strip().startswith("#"):
+                out["gha_injection"].hits.append(Evidence(rel, i, _excerpt(lines[i - 1])))
         for m in USES.finditer(text):
             action, ref = m.group(1), m.group(2)
             if not action.startswith(FIRST_PARTY) and not re.fullmatch(r"[0-9a-f]{40}", ref):
                 out["gha_unpinned"].hits.append(Evidence(rel, _line(text, m.start()), f"{action}@{ref}"))
+
+
+def _script_lines(lines: list[str]) -> list[int]:
+    """1-based numbers of the lines inside `run:` and `script:` values (inline or block)."""
+    out, block_indent = [], None
+    for i, ln in enumerate(lines, 1):
+        if block_indent is not None:
+            if not ln.strip() or len(ln) - len(ln.lstrip()) > block_indent:
+                out.append(i)
+                continue
+            block_indent = None
+        m = SCRIPT_KEY.match(ln)
+        if m:
+            if m.group(3).strip() in ("|", ">", "|-", ">-", "|+", ">+", ""):
+                block_indent = ln.find(m.group(2))  # the block is everything indented past the key itself
+            else:
+                out.append(i)
+    return out
 
 
 def dockerfiles(root: Path, files: list[Path], out: dict[str, Check]) -> None:
@@ -139,6 +165,8 @@ def history(root: Path, current: set[str], out: dict[str, Check], max_lines: int
                 file = raw[6:].strip() if raw.startswith("+++ b/") else ""
             elif raw.startswith("+") and not raw.startswith("+++") and file:
                 line = raw[1:]
+                if len(line) > 500 or VENDORED.search(file):
+                    continue  # minified or vendored code (a bundled yarn release, dist/, vendor/): not anyone's key
                 use = VENDOR_SECRETS if is_test(file) else pats  # test fixtures: only real credential formats
                 if len(line) < 2000 and any(p.search(line) for p in use):
                     value = next(m.group(0) for p in use if (m := p.search(line)))
