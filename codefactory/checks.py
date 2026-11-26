@@ -342,8 +342,9 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
             text = (root / fid).read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-        test = is_test(fid)
         lines = text.splitlines()
+        # generated code is checked like a test: only for vendor credentials (regenerate it, don't hand-fix it)
+        test = is_test(fid) or GENERATED.search("\n".join(lines[:12])) is not None
         marks = [parse_mark(m.group(2))[0] for ln in lines if (m := MARK.search(ln)) and m.group(1)]
         file_kinds = set().union(*marks) if marks and all(marks) else (set() if marks else None)
 
@@ -525,6 +526,11 @@ def _python_deps(pyproject: str) -> list[str]:
     return [re.split(r"[\s<>=!~\[;@]", s, maxsplit=1)[0].lower() for s in specs if isinstance(s, str) and s]
 
 
+PUBLIC_ENV = r"(?i)(?:VITE_|NEXT_PUBLIC_|REACT_APP_|EXPO_PUBLIC_|GATSBY_|NUXT_PUBLIC_|PUBLIC_|\w*PUBLIC_KEY\b)"
+# a generated file's own header says so (emscripten output, protobuf, `go generate`): its patterns are the generator's
+GENERATED = re.compile(r"@generated|Code generated .* DO NOT EDIT|\bDO NOT EDIT\b|auto-?generated|\bemscripten\b", re.I)
+
+
 def _holds_secret(env: Path) -> bool:
     """An env file with a real value for a secret-looking key (a template with `APP_KEY=` empty isn't a leak)."""
     try:
@@ -534,6 +540,8 @@ def _holds_secret(env: Path) -> bool:
     for m in re.finditer(
         r"^\s*(?:export\s+)?(\w*(?:KEY|SECRET|TOKEN|PASSWORD|PASSWD|PWD|CREDENTIAL)\w*)[ \t]*=[ \t]*(.*)$", text, re.M | re.I
     ):
+        if re.match(PUBLIC_ENV, m.group(1)):
+            continue  # bundled into the client by design (VITE_, NEXT_PUBLIC_…), or a public key
         value = m.group(2).strip().strip("'\"")
         if len(value) >= 6 and not re.search(PLACEHOLDER + r"|^\$\{?\w+|changethis|secret$|password$", value, re.I):
             return True

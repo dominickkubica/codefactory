@@ -8,7 +8,7 @@ from collections import defaultdict
 from .config import Config
 from .efficiency import efficiency_flags
 from .graph import Flag, Graph
-from .paths import is_test, platform_variants
+from .paths import is_doc_sample, is_test, platform_variants
 from .similar import near_duplicates
 
 SEVERITY_ORDER = {"high": 0, "warn": 1, "info": 2}
@@ -74,6 +74,7 @@ def _is_entry(fn) -> bool:
         or (fn.kind == "method" and n in FRAMEWORK_METHODS)
         or n in ("setUp", "tearDown", "setUpClass", "tearDownClass")
         or is_test(fn.file)
+        or is_doc_sample(fn.file)  # a tutorial's handler is there to be read and copied, not called
     )
 
 
@@ -126,7 +127,8 @@ def duplicates(g: Graph, cfg: Config) -> list[Flag]:
         if len(fns) < 2:
             continue
         ids = [f.id for f in fns]
-        in_tests = all(is_test(f.file) for f in fns)  # tests often repeat themselves on purpose: a lead, not a task
+        # tests, and tutorials shown in several variants, repeat themselves on purpose: a lead, not a task
+        in_tests = all(is_test(f.file) or is_doc_sample(f.file) for f in fns)
         for f in fns:
             others = [o for o in fns if o is not f]
             names = ", ".join(f"{o.qualname} ({o.file})" for o in others[:3]) + (" …" if len(others) > 3 else "")

@@ -551,6 +551,9 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None, source
         roles.append(("static website", [f"{pages[0]} and no server code" + (f" ({hosted[0]})" if hosted else "")]))
     if not roles and (m["lib"] or m["py_lib"] or m["pkg_main"] or (not m["rust_bin"] and (root / "Cargo.toml").is_file())):
         roles.append(("library", (m["lib"] + m["pkg_main"])[:1] or ["a package manifest and no app or entry point"]))
+    go_lib = (root / "go.mod").is_file() and not [f for f in go_main if not EXAMPLE_DIR.search(f)] and not m["rust_bin"]
+    if go_lib and not m["published_lib"]:
+        m["published_lib"].append("go.mod and no `package main`: a Go module others import")
     if m["published_lib"] and not m["files"] and not mobile and roles and roles[0][0] != "library":
         # (deploy files would say it also runs somewhere: then it's what it serves after all)
         roles.insert(0, ("library", m["published_lib"][:1]))

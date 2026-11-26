@@ -177,12 +177,13 @@ def near_duplicates(g: Graph, cfg: Config) -> list[Flag]:
         best[a] = max(best[a], sim)
         best[b] = max(best[b], sim)
     from .flags import TEST_COPY
-    from .paths import is_test
+    from .paths import is_doc_sample, is_test
 
     out = []
     for members in groups.values():
         members.sort()
-        in_tests = all(is_test(by_id[m].file) for m in members)  # repetition between tests is often on purpose
+        # repetition between tests, or between a tutorial's variants, is often on purpose
+        in_tests = all(is_test(by_id[m].file) or is_doc_sample(by_id[m].file) for m in members)
         for m in members:
             others = [o for o in members if o != m]
             sims = [pairs.get((m, o) if m < o else (o, m)) for o in others]

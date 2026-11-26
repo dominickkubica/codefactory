@@ -23,7 +23,7 @@ from .checks import CI_NAMES, scan_repo, scan_sources, source_files, test_reach
 from .config import load_config
 from .coverage import measured
 from .infra import scan as infra_scan
-from .paths import is_script, is_test, walk
+from .paths import is_doc_sample, is_script, is_test, walk
 from .plan import make_plan
 from .privacy import scan as privacy_scan
 from .profile import detect as detect_profile
@@ -86,6 +86,19 @@ def _n(n: int, word: str) -> str:
 
 def _effort(count: int, files: int) -> str:
     return "S" if count <= 3 and files <= 2 else "M" if count <= 15 and files <= 8 else "L"
+
+
+SEVERITIES = ["Low", "Medium", "High", "Critical"]
+
+
+def _lower(sev: str) -> str:
+    return SEVERITIES[max(0, SEVERITIES.index(sev) - 1)]
+
+
+def _sample_severity(sev: str, hits) -> str:
+    """A credential only in documentation or example code (a tutorial's sample SECRET_KEY, a docs site's public search
+    key) is there to be copied, not used: Low, so it's still checked that nothing real reuses it."""
+    return "Low" if hits and all(is_doc_sample(e.file) for e in hits) else sev
 
 
 class Review:
@@ -191,7 +204,7 @@ class Review:
             ev, more = _ev(s["secret"].hits, self.n(6))
             self.add(
                 "Credentials committed in source",
-                "Critical",
+                _sample_severity("Critical", s["secret"].hits),
                 "Security",
                 ev,
                 "Anyone with read access to the repository (or its history, forks and CI logs) can use them.",
@@ -278,6 +291,8 @@ class Review:
                 if key in SINK_KINDS:
                     ev = [line + self._reached_by(e) for line, e in zip(ev, hits, strict=False)]
                     sev = self._by_reach(sev, hits)
+                    if all(is_script(e.file) or is_test(e.file) for e in hits):
+                        sev = _lower(sev)  # release and build scripts, run by the people who write them
                 self.add(title, sev, "Security", ev, impact, fix, _effort(len(hits), len({e.file for e in hits})), more)
         self.endpoints()
         self.flows()
@@ -325,6 +340,7 @@ class Review:
             hits = s[key].hits
             if hits:
                 ev, more = _ev(hits, self.n(6))
+                sev = _sample_severity(sev, hits) if key == "secret_key_literal" else sev
                 self.add(title, sev, "Security", ev, impact, fix, _effort(len(hits), len({e.file for e in hits})), more)
         for key, title, sev, area, impact, fix in APPLE_CHECKS + INFRA_CHECKS:
             hits = s[key].hits

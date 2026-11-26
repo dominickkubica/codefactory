@@ -58,6 +58,15 @@ def is_vendored(path: str) -> bool:
     return bool(VENDORED.search(path.replace("\\", "/")))
 
 
+# documentation and example code: a top-level docs site or examples folder (docs/, dev-docs/, examples/), and tutorial
+# folders anywhere (docs_src/, tutorials/). Not `app/docs/`: a product can have a documents feature.
+DOC_SAMPLE = re.compile(r"^(?:[\w-]*docs?|documentation|examples?|samples?|website)/|(?:^|/)(?:docs_src|tutorials?)/", re.I)
+
+
+def is_doc_sample(path: str) -> bool:
+    return bool(DOC_SAMPLE.search(path.replace("\\", "/")))
+
+
 @functools.lru_cache(maxsize=65536)
 def is_test(path: str) -> bool:
     """tests/…, __tests__/…, test_*.py, *_test.py, *.test.ts, *.spec.js…"""
