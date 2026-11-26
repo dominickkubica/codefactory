@@ -28,6 +28,13 @@ def repo(files: dict[str, str]) -> Path:
     return root
 
 
+def _js_parser() -> bool:
+    """TypeScript's compiler (Node.js and the typescript package), or tree-sitter: Node.js alone isn't enough."""
+    from tests.test_typescript import available as typescript
+
+    return typescript() or __import__("codefactory.analyzers.generic", fromlist=["available"]).available()
+
+
 def graph(root: Path) -> dict:
     return build(root, cache=False).to_dict()
 
@@ -69,8 +76,7 @@ class SurfaceTest(unittest.TestCase):
 
 class ProfileTest(unittest.TestCase):
     @unittest.skipUnless(
-        __import__("shutil").which("node") or __import__("codefactory.analyzers.generic", fromlist=["available"]).available(),
-        "the server's routes need a JavaScript parser (Node.js or the language pack)",
+        _js_parser(), "the server's routes need a JavaScript parser (Node.js with TypeScript, or the language pack)"
     )
     def test_monorepo_workspaces_and_a_native_shell(self):
         # Actual Budget: manifests in packages/*, and an iOS folder that only wraps the web app
