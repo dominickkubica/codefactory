@@ -84,23 +84,34 @@ set -u
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
 
 SOURCE="__SOURCE__"
+STAMP="${HOME:-/tmp}/.cache/codefactory/last-update"
+mkdir -p "$(dirname "$STAMP")" 2>/dev/null
+stale() { [ -z "$(find "$STAMP" -mmin -1440 2>/dev/null)" ]; }
+limit() { if command -v timeout >/dev/null 2>&1; then timeout 180 "$@"; else "$@"; fi; }
+
+if [ ! -f ../codefactory/pyproject.toml ] && command -v codefactory >/dev/null 2>&1 && codefactory --version >/dev/null 2>&1; then
+  # already a command (pipx, uv tool, a virtualenv): upgrade it with its own Python, never touching python3 (on a Mac
+  # without developer tools that's a stub that opens an install dialog; Homebrew's refuses pip installs)
+  if stale; then limit codefactory update >/dev/null 2>&1 && touch "$STAMP"; fi
+  codefactory skill . >/dev/null 2>&1
+  echo "codefactory $(codefactory --version 2>/dev/null | cut -d' ' -f2) is installed: see .claude/skills/codefactory/SKILL.md"
+  exit 0
+fi
+
 PY=""
 for c in python3 python py; do # the first that really runs (Windows has a python3 stub that doesn't)
   if command -v "$c" >/dev/null 2>&1 && "$c" -c "" >/dev/null 2>&1; then PY="$c"; break; fi
 done
 [ -n "$PY" ] || exit 0
-STAMP="${HOME:-/tmp}/.cache/codefactory/last-update"
-mkdir -p "$(dirname "$STAMP")" 2>/dev/null
 
 install() { # $1: what to install
-  if command -v timeout >/dev/null 2>&1; then timeout 180 "$PY" -m pip install --quiet --upgrade "$1" >/dev/null 2>&1
-  else "$PY" -m pip install --quiet --upgrade "$1" >/dev/null 2>&1; fi
+  limit "$PY" -m pip install --quiet --upgrade "$@" >/dev/null 2>&1
 }
 
 if [ -f ../codefactory/pyproject.toml ]; then
   # a checkout of codefactory next to this repository (a cloud session with both attached): use it as is
   "$PY" -c "import codefactory" 2>/dev/null || install -e "../codefactory[languages]"
-elif ! "$PY" -c "import codefactory" 2>/dev/null || [ -z "$(find "$STAMP" -mmin -1440 2>/dev/null)" ]; then
+elif ! "$PY" -c "import codefactory" 2>/dev/null || stale; then
   "$PY" -c "from codefactory.skill import drop_git_install as d; d()" >/dev/null 2>&1 # an older install from GitHub
   install "$SOURCE" && touch "$STAMP"
 fi
@@ -145,11 +156,12 @@ def git_install() -> bool:
 
 
 def drop_git_install() -> bool:
-    """Uninstalls a GitHub install, which shares every file with codefactory-cli: with both installed, removing
-    either one later would break the other."""
+    """Uninstalls a GitHub install, which shares every file with codefactory-cli. codefactory-cli goes too when it's
+    also installed: uninstalling either deletes the shared files, and pip would then see codefactory-cli as already
+    installed and leave it broken. The caller installs codefactory-cli afresh."""
     if not git_install():
         return False
-    return subprocess.run([sys.executable, "-m", "pip", "uninstall", "--yes", "--quiet", "codefactory"],
+    return subprocess.run([sys.executable, "-m", "pip", "uninstall", "--yes", "--quiet", "codefactory", "codefactory-cli"],
                           capture_output=True).returncode == 0  # fmt: skip
 
 

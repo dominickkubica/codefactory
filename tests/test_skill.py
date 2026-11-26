@@ -77,6 +77,26 @@ class SkillTest(unittest.TestCase):
         proc = subprocess.run(["/bin/bash", str(hook)], env=env, capture_output=True, text=True)
         self.assertEqual(proc.returncode, 0)  # no Python at all: quietly does nothing
 
+    @unittest.skipIf(os.name == "nt", "bash script")
+    def test_hook_uses_an_installed_command_without_python(self):
+        # pipx on a Mac: `codefactory` is a command, python3 can't import it (and may be a stub that opens a dialog)
+        hook, _ = skill.install_hook(self.repo)
+        bin_dir, log = Path(self.tmp.name) / "bin", Path(self.tmp.name) / "log"
+        bin_dir.mkdir()
+        for name, body in (("codefactory", f'echo "codefactory $*" >> {log}; echo codefactory 9.9.9'),
+                           ("python3", f"echo python3 >> {log}; exit 1")):  # fmt: skip
+            (bin_dir / name).write_text(f"#!/bin/sh\n{body}\n", encoding="utf-8")
+            (bin_dir / name).chmod(0o755)
+        env = {**os.environ, "CLAUDE_PROJECT_DIR": str(self.repo), "HOME": self.tmp.name, "PATH": f"{bin_dir}:/usr/bin:/bin"}
+        for _ in range(2):
+            proc = subprocess.run(["/bin/bash", str(hook)], env=env, capture_output=True, text=True)
+            self.assertEqual(proc.returncode, 0)
+        calls = log.read_text(encoding="utf-8").splitlines()
+        self.assertNotIn("python3", calls)
+        self.assertEqual(calls.count("codefactory update"), 1)  # at most once a day
+        self.assertEqual(calls.count("codefactory skill ."), 2)
+        self.assertIn("9.9.9", proc.stdout)
+
     def test_update_reports_versions(self):
         ok = subprocess.CompletedProcess([], 0, stdout="9.9.9\n", stderr="")
         with mock.patch("subprocess.run", return_value=ok) as run:
@@ -111,6 +131,7 @@ class SkillTest(unittest.TestCase):
             skill.update()
         cmds = [c.args[0] for c in run.call_args_list]
         self.assertIn("uninstall", cmds[0])  # the GitHub install goes first, then PyPI's
+        self.assertIn("codefactory-cli", cmds[0])  # also uninstalled: pip would see it installed, with its files gone
         self.assertIn(skill.SOURCE, cmds[1])
         bad = subprocess.CompletedProcess([], 1, stdout="", stderr="no network")
         with (

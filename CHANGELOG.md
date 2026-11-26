@@ -3,12 +3,16 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
-## Unreleased
+## 0.20.2 · 2026-11-26
 
 - On PyPI: `pip install "codefactory-cli[languages]"` (`codefactory` on PyPI is an unrelated project; the command is
   still `codefactory`). `codefactory update` and the session hook now install from PyPI, so they get released
   versions rather than whatever is on the main branch, and first remove an install from GitHub: the two share
   every file, so removing either later would have broken the other.
+- The session hook uses an installed `codefactory` command when there is one (pipx, a virtualenv) and upgrades it
+  with that install's own Python. Before, a pipx install on a Mac was never found: the hook tried to reinstall with
+  `python3` on every session (Homebrew's Python refuses that; without developer tools, `python3` opens an install
+  dialog) and never upgraded.
 
 ## 0.20.1 · 2026-11-26
 

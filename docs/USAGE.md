@@ -19,6 +19,7 @@ Everything codefactory can do, how to read what it tells you, and how to fit it 
 
 ```bash
 pip install codefactory-cli     # or, from a clone: pip install -e .
+pipx install codefactory-cli    # on a Mac (brew install pipx): Homebrew's Python refuses pip installs
 codefactory --version
 ```
 
@@ -259,7 +260,7 @@ each finding points at its line in the new file. Graph findings (loops, copies, 
 repository: use `--base` for those. `--json`, `--github` and `--fail-on` work the same.
 
 The repository is also a GitHub Action (`uses: dominickkubica/codefactory@v0`, which follows releases; a
-release tag such as `@v0.20.1` or a commit SHA pins one; inputs `base`, `fail-on`, `comment`,
+release tag such as `@v0.20.2` or a commit SHA pins one; inputs `base`, `fail-on`, `comment`,
 `languages`). It posts one comment per pull request and updates it on every push; check out with
 `fetch-depth: 0` so the base commit is there.
 
@@ -503,7 +504,8 @@ codefactory skill --hook   # writes the skill and a session-start hook; commit .
 - The hook (`.claude/hooks/codefactory.sh`, added to `.claude/settings.json` without touching other settings) runs at
   each session start: it installs codefactory if missing, upgrades it at most once a day (stamp in
   `~/.cache/codefactory/`), and refreshes the skill. If a checkout of codefactory sits next to the repository, it
-  installs that instead. Failures (no network, no Python) are ignored; it never blocks a session. It is a bash script,
+  installs that instead. If `codefactory` is already a command (pipx, a virtualenv), it upgrades that with its own
+  Python and never runs `python3`. Failures (no network, no Python) are ignored; it never blocks a session. It is a bash script,
   which Claude Code runs on Windows through Git Bash.
 - `codefactory update` upgrades on demand (`--source` installs from somewhere else, e.g. a local checkout).
 

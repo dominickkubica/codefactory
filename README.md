@@ -35,6 +35,8 @@ codefactory hotspots             # where change happens: complex code that keeps
 - **The package is `codefactory-cli`** on PyPI (`codefactory` there is an unrelated project); the command is
   `codefactory`. Installed from GitHub before? `codefactory update` moves you over.
 - **Python 3.11 or newer.** On Windows, run the same commands in PowerShell; use `py -m pip` if `pip` isn't found.
+  On a Mac, `brew install pipx` and then `pipx install "codefactory-cli[languages]"` (Homebrew's Python refuses a
+  plain `pip install`, and the built-in `python3` is too old).
 - **TypeScript/JavaScript projects:** run `npm install` in the project first, because codefactory uses the project's
   own TypeScript compiler (needs [Node.js](https://nodejs.org)). Without it, those files are still analyzed, less
   precisely.
@@ -146,7 +148,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: dominickkubica/codefactory@v0   # follows releases; or pin v0.20.1 or a commit SHA
+      - uses: dominickkubica/codefactory@v0   # follows releases; or pin v0.20.2 or a commit SHA
         with: { fail-on: high }
 ```
 
