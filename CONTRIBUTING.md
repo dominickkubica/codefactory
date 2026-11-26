@@ -15,16 +15,27 @@ pip install tree-sitter tree-sitter-language-pack  # so the Go/Java/Ruby tests r
 pip install ruff
 ```
 
-## Before every change is merged
+## Before every push
 
 ```bash
-python -m unittest discover -s tests -t .   # all tests pass (TypeScript tests skip without Node + typescript)
-ruff check codefactory tests                 # no lint findings
-ruff format --check codefactory tests        # formatted
-codefactory check .                          # codefactory finds nothing serious in itself
+python tools/check.py
 ```
 
-CI runs the same on Linux and Windows with Python 3.11 and 3.13.
+It runs what CI runs, in parallel, in about a minute: lint and formatting with the pinned ruff, the tests on Python
+3.11 and 3.13 each without the optional language pack and with it, and `codefactory check .`. It skips a Python this
+machine doesn't have. Most failed pushes were a configuration nobody ran locally: a test that passed with the language
+pack installed and failed without it.
+
+CI also tests on Windows, which `tools/check.py` can't. Push changes to a branch and merge once CI is green there; a
+version bump on `main` publishes. These are what have broken on Windows before:
+
+- **Paths:** compare paths after `.resolve()` on both sides. Windows temp folders have short (`RUNNER~1`) and long
+  names for the same place.
+- **File times:** a file's ctime is its creation time, not its last change, and the clock ticks coarsely, so two quick
+  writes can share a modification time. Tests that need "changed since" patch `codefactory.paths.racy` instead of
+  sleeping.
+- **Shell tools:** no `sort -V`, `grep` or `sed` in tests. Use Python, or skip on Windows with the reason.
+- **Text:** open files with `encoding="utf-8"`. Windows' default encoding isn't UTF-8.
 
 If a change alters findings on purpose, `tests/test_golden.py` fails: run
 `CODEFACTORY_UPDATE_GOLDEN=1 python -m unittest tests.test_golden` and check the diff in `tests/golden/` before
