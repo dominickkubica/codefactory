@@ -67,6 +67,20 @@ DOC_SAMPLE = re.compile(
 )
 
 
+# example, sample, snippet and template code at any depth (packages/platform/examples/, connect-snippets/,
+# templates/simple-server-example/): what a project shows others how to build, not what it serves
+EXAMPLE_CODE = re.compile(r"(?:^|[-_/])(?:examples?|samples?|snippets?|demos?|templates?)(?:[-_/]|$)", re.I)
+
+
+def is_example_code(path: str) -> bool:
+    parts = path.replace("\\", "/").split("/")[:-1]
+    for i in range(len(parts) - 1):  # below src/main/ (Java, Kotlin, Scala) the folders are a package name:
+        if parts[i] == "src" and parts[i + 1] in ("main", "test"):  # org/springframework/samples/petclinic
+            parts = parts[:i]
+            break
+    return bool(EXAMPLE_CODE.search("/".join(parts)))
+
+
 def is_doc_sample(path: str) -> bool:
     return bool(DOC_SAMPLE.search(path.replace("\\", "/")))
 

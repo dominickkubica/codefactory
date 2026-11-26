@@ -22,7 +22,7 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .paths import NOT_SOURCE, is_test, walk
+from .paths import NOT_SOURCE, is_example_code, is_test, walk
 
 MAX_READ = 400_000  # bytes per file read for sensitive-data detection: past that it's data or generated
 # examples, demos, tests and end-to-end harnesses: they show or check the product, they aren't it
@@ -502,7 +502,9 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None, source
     # endpoints in top-level examples, docs or benchmarks show what a library can do, not what this project serves
     # (only near the top: `org/springframework/samples/petclinic` is a Java package, not an examples folder)
     endpoints = [
-        e for e in surface.entries if not re.match(r"(?:[^/]+/)?(?:examples?|samples?|demos?|docs?|benchmarks?)/", e.file)
+        e
+        for e in surface.entries
+        if not re.match(r"(?:[^/]+/)?(?:examples?|samples?|demos?|docs?|benchmarks?)/", e.file) and not is_example_code(e.file)
     ]
     wrapped_mobile: list[str] = []
     mobile = has("expo", "react-native") or (["pubspec.yaml (Flutter)"] if m["flutter"] else [])

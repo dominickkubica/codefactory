@@ -23,7 +23,7 @@ from .checks import CI_NAMES, scan_repo, scan_sources, source_files, test_reach
 from .config import load_config
 from .coverage import measured
 from .infra import scan as infra_scan
-from .paths import is_doc_sample, is_script, is_test, walk
+from .paths import is_doc_sample, is_example_code, is_script, is_test, walk
 from .plan import make_plan
 from .privacy import scan as privacy_scan
 from .profile import detect as detect_profile
@@ -219,9 +219,11 @@ class Review:
             )
         tracked = self._tracked(self.repo["env_files"])
         if tracked:
+            # only development settings (mastodon's .env.development): committed on purpose for contributors
+            dev_only = all(re.match(r"\.env\.(?:dev|development|local\.dev)$", f) for f in tracked)
             self.add(
                 "Environment files committed",
-                "High",
+                "Low" if dev_only else "High",
                 "Security",
                 [f"`{f}`" for f in tracked],
                 "Environment files usually hold secrets and per-machine settings.",
@@ -437,8 +439,8 @@ class Review:
         found, seen_routes = [], set()
         for entry in self.surface.entries:
             key = (entry.method, entry.path, entry.fn)
-            if key in seen_routes:
-                continue
+            if key in seen_routes or is_example_code(entry.file) or is_test(entry.file):
+                continue  # (an example server's routes show how to use the project; they aren't its own)
             seen_routes.add(key)
             seen, q = {entry.fn}, [entry.fn]
             while q:

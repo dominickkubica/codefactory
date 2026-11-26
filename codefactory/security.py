@@ -545,6 +545,8 @@ def writes(v: View) -> set[str]:
     for fid, f in v.fn.items():
         if "migrat" in f["name"].lower() or "migration" in f["file"].lower():
             continue  # schema setup runs on every open: not a change a request makes
+        if re.search(r"cache|metric|telemetry", f["qualname"], re.I):
+            continue  # a cache fill or a metrics counter (directus' trackRedisMetric): not the data a request changes
         for io in f.get("io", []):
             kind = kind_of(io)
             if kind == "process" or (kind in ("write", "file") and (CHANGES.search(io) or WRITE_CALL.search(io))):

@@ -300,6 +300,43 @@ class LargeRepoLessonsTest(unittest.TestCase):
         self.assertEqual(cycles.get("pkg/v2.py"), "warn")
         self.assertEqual(cycles.get("app/a.py"), "high")
 
+    def test_example_servers_and_cache_writes_arent_unprotected_endpoints(self):  # tldraw, cal.com, directus, outline
+        from codefactory.checks import scan_repo
+
+        root = repo({
+            "templates/simple-server-example/server.py": "from flask import Flask\napp = Flask(__name__)\n\n"
+                "@app.put('/uploads/<id>')\ndef upload(id):\n    open(id, 'w').write('x')\n",
+            "api/routes.py": "from flask import Flask\napp = Flask(__name__)\n\n"
+                "def track_metric(r):\n    r.set('hits', 1)\n\n@app.get('/items')\ndef items():\n    track_metric(redis)\n"
+                "    return []\n",
+            ".env.test": "DATABASE_PASSWORD=test-password-1234\n",
+            "jar.ts": "const c = { secure: typeof cookie.secure === 'boolean' ? cookie.secure : false };\n",
+        })  # fmt: skip
+        r = Review(build(root, cache=False).to_dict(), root)
+        self.assertEqual(r._writing_entries(), [])
+        self.assertEqual(scan_repo(root)["env_files"], [])
+        self.assertFalse(scan_sources(root, ["jar.ts"])["insecure_cookie"].hits)
+
+    def test_corpus_round_5_code_patterns(self):  # laravel, outline, actual, trpc
+        files = {
+            "src/Lock.php": "<?php\nreturn (bool) $this->redis->eval($script, 1, $name);\n",
+            "server/Converter.ts": "const data = yaml.load(match[1]);\n",
+            "server/load.py": "import yaml\ndata = yaml.load(f)\n",
+            "src/flush.ts": "void send('storage-flush').catch(() => undefined);\nawait fs.unlink(p).catch(() => undefined);\n",
+            "examples/chat/app.tsx": "try { go() } catch {}\n",
+        }
+        root = repo(files)
+        found = scan_sources(root, list(files))
+        self.assertEqual([e.file for e in found["eval"].hits], ["server/load.py"])
+        self.assertFalse([e for e in found["swallowed"].hits if e.file in ("src/flush.ts", "examples/chat/app.tsx")])
+
+    def test_local_development_defaults_in_an_env_file_arent_secrets(self):  # appwrite's .env
+        root = repo({".env": "_APP_REVIEWS_SECRET=reviews-secret-for-local-development\n"
+                             "_APP_VCS_GITHUB_PRIVATE_KEY=disabled\n_APP_OPENSSL_KEY_V1=your-secret-key\n"})  # fmt: skip
+        self.assertEqual(scan_repo(root)["env_files"], [])
+        (root / ".env").write_text("_APP_JOBS_SECRET=41a51c959d1027bd9f40e86217ddad\n", encoding="utf-8")
+        self.assertEqual(scan_repo(root)["env_files"], [".env"])
+
 
 if __name__ == "__main__":
     unittest.main()

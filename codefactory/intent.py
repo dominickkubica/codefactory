@@ -14,8 +14,9 @@ import re
 # Deleting is only "cleanup" for leftovers (a stored item, a file, a cache), never for the user's records.
 CLEANUP = re.compile(
     r"\b(?:(?:dismiss|cancel|unregister|unsubscribe|abort)\w*|(?:delete|remove|unlink|clear)\w*"
-    r"(?:Item|File|Folder|Dir|Temp|Cache|Database|Key)\w*)\s*\([^()]*(?:\([^()]*\)[^()]*)*\)\s*\.catch\("
-)
+    r"(?:Item|File|Folder|Dir|Temp|Cache|Database|Key)\w*|unlink|close|flush|return|dispose|destroy|disconnect|"
+    r"signOut|logout|kill|terminate|release|rm)\s*\([^()]*(?:\([^()]*\)[^()]*)*\)\s*\.catch\("
+)  # best-effort cleanup: closing, flushing or deleting what may already be gone
 # `const x = await load().catch(() => null)`: the failure becomes a value the next lines handle. (`() => {}` is an
 # empty body, not a value, so it isn't one.)
 FALLBACK = re.compile(
@@ -32,6 +33,8 @@ def swallow_intent(line: str, above: str) -> str | None:
         return "explained"
     if CLEANUP.search(line):
         return "cleanup"
+    if re.match(r"\s*void\s+\S.*\.catch\(", line):  # `void p.catch(…)`: fired off and deliberately not awaited
+        return "fire and forget"
     if FALLBACK.search(line):
         return "fallback"
     return None

@@ -17,7 +17,7 @@ from pathlib import Path
 
 from .brief import View
 from .intent import interp_safe, push_skip_explained, safe_names, swallow_intent
-from .paths import is_test, is_vendored, links_outside
+from .paths import is_doc_sample, is_test, is_vendored, links_outside
 from .suppress import MARK
 from .suppress import _parse as parse_mark
 
@@ -65,11 +65,11 @@ PATTERNS: dict[str, list[re.Pattern]] = {
         ),
     ],
     "eval": [
-        re.compile(r"(?<![\w.])eval\s*\("),
+        re.compile(r"(?<![\w.>])eval\s*\("),  # not a method (`$redis->eval(` runs a Lua script on Redis)
         re.compile(r"\bnew\s+Function\s*\("),
         re.compile(r"(?<![\w.])exec\s*\(\s*[^)]"),
         re.compile(r"\bpickle\.loads?\s*\("),
-        re.compile(r"\byaml\.load\s*\((?![^)]*SafeLoader)"),
+        re.compile(r"\byaml\.load\s*\((?![^)]*SafeLoader)"),  # Python's: js-yaml 4's load is safe (see ONLY_IN)
     ],
     "shell": [
         re.compile(r"shell\s*=\s*True"),
@@ -166,6 +166,7 @@ PATTERNS.update(
 # child_process (a shell) and Ruby's and PHP's replace or start a process.
 ONLY_IN = {
     PATTERNS["eval"][2]: (".py",),
+    PATTERNS["eval"][4]: (".py",),  # yaml.load: js-yaml 4 removed the unsafe loader, so in JavaScript it's safe
     PATTERNS["shell"][-2]: (".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"),
     PATTERNS["shell"][-1]: (".go",),
 }
@@ -447,8 +448,8 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
         except OSError:
             continue
         lines = text.splitlines()
-        # generated code is checked like a test: only for vendor credentials (regenerate it, don't hand-fix it)
-        test = is_test(fid) or GENERATED.search("\n".join(lines[:12])) is not None
+        # generated code, and examples and docs samples, are checked like a test: only for vendor credentials
+        test = is_test(fid) or is_doc_sample(fid) or GENERATED.search("\n".join(lines[:12])) is not None
         marks = [parse_mark(m.group(2))[0] for ln in lines if (m := MARK.search(ln)) and m.group(1)]
         file_kinds = set().union(*marks) if marks and all(marks) else (set() if marks else None)
 
@@ -473,6 +474,8 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                 if key != "secret" and (COMMENT_LINE.match(line) or i in prose):
                     continue  # prose about a pattern ("mark_safe() it at the end") isn't the code; a key is leaked anywhere
                 if any(p.search(line) and (p not in ONLY_IN or fid.endswith(ONLY_IN[p])) for p in pats) and hit(key, i):
+                    if key == "insecure_cookie" and re.search(r"\?\s*[\w.]+\s*:\s*false\b", line):
+                        continue  # copying another cookie's own flag (an HTTP client's cookie jar), not setting one
                     if key == "secret_key_literal" and re.search(r"\{\{|\{%|<%=|\$\{", line):
                         continue  # a project template's placeholder (`SECRET_KEY = "{{ secret_key }}"`), filled in later
                     if key == "jwt_unverified" and _token_question(lines, i, text):
@@ -662,7 +665,8 @@ def _holds_secret(env: Path) -> bool:
         if re.match(PUBLIC_ENV, m.group(1)):
             continue  # bundled into the client by design (VITE_, NEXT_PUBLIC_…), or a public key
         value = m.group(2).strip().strip("'\"")
-        if len(value) >= 6 and not re.search(PLACEHOLDER + r"|^\$\{?\w+|changethis|secret$|password$", value, re.I):
+        dev_value = r"|^disabled$|for[-_ ]local|local[-_ ]dev|[-_]development$"  # appwrite's local defaults
+        if len(value) >= 6 and not re.search(PLACEHOLDER + r"|^\$\{?\w+|changethis|secret$|password$" + dev_value, value, re.I):
             return True
     return False
 
@@ -777,6 +781,7 @@ def scan_repo(root: Path) -> dict:
         for p in root.glob(".env*")
         if p.is_file()
         and not p.name.endswith((".example", ".sample", ".template", ".dist"))
+        and not re.match(r"\.env\.(?:test|testing|ci)\b", p.name)  # the test suite's settings (outline's .env.test)
         and not links_outside(root, p.name)
         and _holds_secret(p)
     ]
