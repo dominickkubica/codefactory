@@ -1,6 +1,8 @@
 """Reuse the last analysis while no source file changed: <repo>/.codefactory/graph.json, keyed by a fingerprint of
-every analyzable file's path, size and modification time (plus factory.toml, tsconfig.json and codefactory's version).
-An AI agent asking for context many times in a row then waits once, not every time."""
+every analyzable file's path, size and modification time (every language an analyzer reads), the settings files,
+codefactory's own code, and which parsers are installed (installing the language pack or TypeScript later must
+re-analyze, or the languages they add would stay missing). An AI agent asking for context many times in a row then
+waits once, not every time."""
 
 from __future__ import annotations
 
@@ -11,7 +13,30 @@ from pathlib import Path
 
 from . import __version__
 
-SOURCE = (".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts")
+
+def _source_ext() -> tuple[str, ...]:
+    """Every extension an analyzer reads: Python, TypeScript/JavaScript, and each tree-sitter language."""
+    from .analyzers.generic import JS_LANGS, LANGS
+
+    return tuple(sorted({".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts", *LANGS, *JS_LANGS}))
+
+
+def _parsers() -> str:
+    """Which optional parsers this machine has: the language pack, Node.js, and a TypeScript package where codefactory
+    looks for one (cheap checks, no subprocess: this runs on every command)."""
+    import shutil
+
+    from .analyzers.generic import available
+
+    node = shutil.which("node") or ""
+    candidates = [os.environ.get("CODEFACTORY_TYPESCRIPT", "")]
+    if node:
+        bin_dir = Path(node).resolve().parent
+        candidates += [str(bin_dir.parent / "lib" / "node_modules" / "typescript"), str(bin_dir / "node_modules" / "typescript")]
+    ts = next((c for c in candidates if c and (Path(c) / "package.json").is_file()), "")
+    return f"pack={available()}|node={bool(node)}|ts={ts}"
+
+
 SETTINGS = ("factory.toml", "tsconfig.json", "jsconfig.json", "pyproject.toml")
 
 
@@ -28,11 +53,14 @@ def _tool_stamp() -> str:
 
 def fingerprint(root: Path, ignore: list[str]) -> str:
     skip = set(ignore)
-    h = hashlib.sha1(_tool_stamp().encode("utf-8", "surrogatepass"))
+    h = hashlib.sha1((_tool_stamp() + "\n" + _parsers()).encode("utf-8", "surrogatepass"))
+    source = _source_ext()
+    local_ts = root / "node_modules" / "typescript" / "package.json"  # a project-local compiler appearing counts too
+    h.update(f"local_ts={local_ts.is_file()}\n".encode())
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = sorted(d for d in dirnames if d not in skip and not d.endswith(".egg-info"))
         for name in sorted(filenames):
-            if name.endswith(SOURCE) or name in SETTINGS:
+            if name.endswith(source) or name in SETTINGS:
                 p = os.path.join(dirpath, name)
                 try:
                     st = os.stat(p)

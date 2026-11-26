@@ -9,6 +9,10 @@ change command-line output.
 - Line checks (credentials, SQL, shell, privacy, Swift) ran only on files an analyzer could parse: without Node.js's
   TypeScript or the language pack, JavaScript, TypeScript and other files got no line checks at all. They now run on
   every source file on disk, parsed or not; the profile reads them too, and hotspot coupling counts them.
+- The graph cache ignored changes to Go, Java, Kotlin, Swift, Rust, Ruby, PHP, C# and every other tree-sitter
+  language: editing such a file kept the old graph until `--no-cache`. It now covers every language an analyzer reads.
+- The graph cache didn't know which parsers were installed: installing the language pack or TypeScript after a first
+  run kept the graph without those languages. Parser availability is now part of the cache key.
 - CI also runs the tests on a bare machine (no TypeScript, no language pack), as the release build does: the v0.20.0
   release build failed there.
 
