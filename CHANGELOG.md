@@ -13,6 +13,10 @@ change command-line output.
   language: editing such a file kept the old graph until `--no-cache`. It now covers every language an analyzer reads.
 - The graph cache didn't know which parsers were installed: installing the language pack or TypeScript after a first
   run kept the graph without those languages. Parser availability is now part of the cache key.
+- A subfolder of a repository (a package in a monorepo) was mishandled by everything that reads git: `diff` compared
+  it with an empty base (every finding "new"), hotspots read the whole repository's history with paths that matched
+  nothing, the changed-files list and the history secret scan used the top-level paths. All are now scoped to the
+  folder analyzed, with paths relative to it.
 - CI also runs the tests on a bare machine (no TypeScript, no language pack), as the release build does: the v0.20.0
   release build failed there.
 

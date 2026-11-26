@@ -92,7 +92,7 @@ def read(root: Path, months: int = MONTHS, max_commits: int = MAX_COMMITS, timeo
                 h.note = "a shallow clone (CI checks out one commit by default): history is partial; `fetch-depth: 0` reads all"
         proc = subprocess.run(
             [*git, "log", "--no-merges", "--no-renames", "--numstat", f"--since={months}.months", f"-n{max_commits}",
-             "--format=%x1e%aN%x1f%at"],
+             "--format=%x1e%aN%x1f%at", "--relative", "--", "."],  # this folder's history, its paths relative to it
             capture_output=True, text=True, timeout=timeout, encoding="utf-8", errors="replace",
         )  # fmt: skip
     except (OSError, subprocess.SubprocessError):

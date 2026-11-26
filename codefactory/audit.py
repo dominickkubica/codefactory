@@ -142,11 +142,13 @@ def mobile(root: Path, out: dict[str, Check]) -> None:
 def history(root: Path, current: set[str], out: dict[str, Check], max_lines: int = 400_000, timeout: int = 60) -> str:
     """Secrets added in any commit (and branch) that aren't in the current files: deleted, but still leaked. Returns a
     note on how much history was read ("" when everything was)."""
-    if not (root / ".git").exists():
+    inside = subprocess.run(["git", "-C", str(root), "rev-parse", "--is-inside-work-tree"], capture_output=True, text=True)
+    if inside.stdout.strip() != "true":  # (a monorepo's subfolder has no .git of its own, but is in a repository)
         return "not a git repository: history not checked"
     try:
         proc = subprocess.Popen(
-            ["git", "-C", str(root), "log", "--all", "-p", "--no-color", "--no-ext-diff", "-U0", "--format=@@commit %h %as"],
+            ["git", "-C", str(root), "log", "--all", "-p", "--no-color", "--no-ext-diff", "-U0", "--format=@@commit %h %as",
+             "--relative", "--", "."],  # this folder only, paths relative to it (a monorepo package)
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace",
         )  # fmt: skip
     except OSError:
@@ -180,7 +182,8 @@ def history(root: Path, current: set[str], out: dict[str, Check], max_lines: int
         proc.kill()
         proc.stdout.close()
         proc.wait(timeout=timeout)
-    if (root / ".git" / "shallow").exists():
+    shallow = subprocess.run(["git", "-C", str(root), "rev-parse", "--is-shallow-repository"], capture_output=True, text=True)
+    if shallow.stdout.strip() == "true":
         note = (note + "; " if note else "") + "shallow clone: only part of the history was available"
     return note
 

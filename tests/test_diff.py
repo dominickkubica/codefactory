@@ -99,6 +99,31 @@ class DiffTest(unittest.TestCase):
             self.assertEqual([i["kind"] for i in result["new"]], [])  # docker findings exist on both sides
             self.assertEqual([i["kind"] for i in result["fixed"]], [])  # the camera string was declared on both
 
+    def test_a_subfolder_of_a_repository(self):
+        # a package in a monorepo: git reports paths from the top, and `git archive` reads `sha:path` relative to the
+        # folder it runs in; both made the base empty and every finding "new"
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            git = ["git", "-C", d, "-c", "user.name=t", "-c", "user.email=t@example.invalid"]
+            subprocess.run([*git, "init", "-q", "-b", "main"], check=True)
+            (root / "packages" / "core").mkdir(parents=True)
+            (root / "packages" / "core" / "app.py").write_text(BASE, encoding="utf-8")
+            (root / "packages" / "other.py").write_text("import os\nos.system(f'rm {x}')\n", encoding="utf-8")
+            subprocess.run([*git, "add", "."], check=True)
+            subprocess.run([*git, "commit", "-qm", "base"], check=True)
+            (root / "packages" / "core" / "app.py").write_text(HEAD, encoding="utf-8")
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
+                main(["diff", str(root / "packages" / "core"), "--base", "main", "--json"])
+            result = json.loads(out.getvalue())
+            self.assertEqual({(i["kind"], i["file"]) for i in result["new"]}, {("sql_built", "app.py")})
+            self.assertEqual(result["changed"], ["app.py"])
+
+            from codefactory.hotspots import read
+
+            history = read(root / "packages" / "core")
+            self.assertEqual(sorted(history.files), ["app.py"])  # its own history, paths relative to it
+
 
 if __name__ == "__main__":
     unittest.main()

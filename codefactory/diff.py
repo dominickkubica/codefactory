@@ -66,7 +66,10 @@ def extract(root: Path, sha: str) -> Path:
     target.mkdir(parents=True)
     with tempfile.TemporaryDirectory() as tmp:
         archive = Path(tmp) / "base.tar"
-        git(root, "archive", "--format=tar", "-o", str(archive), sha)
+        # the analyzed folder only, with paths relative to it (a subfolder of a monorepo is compared with itself)
+        prefix = git(root, "rev-parse", "--show-prefix").rstrip("/")
+        top = git(root, "rev-parse", "--show-toplevel")  # run there: from a subfolder, `sha:path` is read relative to it
+        git(Path(top), "archive", "--format=tar", "-o", str(archive), f"{sha}:{prefix}" if prefix else sha)
         with tarfile.open(archive) as tar:
             try:  # the data filter refuses absolute paths, links out of the folder and special files
                 tar.extractall(target, filter="data")
@@ -81,7 +84,7 @@ def extract(root: Path, sha: str) -> Path:
 
 
 def changed_files(root: Path, sha: str) -> set[str]:
-    out = git(root, "diff", "--name-only", sha)  # committed and uncommitted changes since the base
+    out = git(root, "diff", "--name-only", "--relative", sha)  # committed and uncommitted changes, this folder only
     untracked = git(root, "ls-files", "--others", "--exclude-standard")
     return {p for p in (out + "\n" + untracked).splitlines() if p}
 
