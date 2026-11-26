@@ -31,7 +31,13 @@ def analyze(root: Path, ignore: list[str], languages: list[str] | None = None, c
             except TypeScriptUnavailable as e:
                 if languages and "other" not in languages:  # asked for explicitly: that's an error
                     raise SystemExit(f"codefactory: {e}") from None
-                print(f"codefactory: {e} Using the general analyzer for TypeScript/JavaScript instead.", file=sys.stderr)
+                from .generic import available
+
+                if available():
+                    print(f"codefactory: {e} Using the general analyzer for TypeScript/JavaScript instead.", file=sys.stderr)
+                else:  # nothing will read them: say so, loudly (a review of nothing once graded "Strong")
+                    print(f"codefactory: {e} The language pack isn't installed either, so TypeScript/JavaScript files "
+                          "are NOT analyzed (line checks only).", file=sys.stderr)  # fmt: skip
                 js_fallback = True
                 continue
         elif lang == "other":

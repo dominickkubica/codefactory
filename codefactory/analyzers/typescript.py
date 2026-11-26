@@ -58,6 +58,39 @@ def has_api(folder) -> bool:
     return (Path(folder) / "lib" / "typescript.js").is_file()
 
 
+TS_PIN = "5.9.3"  # the TypeScript codefactory installs for itself when there's none (the same as the GitHub Action's)
+
+
+def own_typescript_dir() -> Path:
+    base = os.environ.get("CODEFACTORY_CACHE") or str(Path.home() / ".cache" / "codefactory")
+    return Path(base) / f"typescript-{TS_PIN}"
+
+
+def _provision() -> str:
+    """A pinned TypeScript in codefactory's own cache folder, installed once with npm when there's no other: a
+    TypeScript project then just works, without a global install and without running the project's own compiler.
+    "" when there's no npm, no network, or CODEFACTORY_NO_TS_INSTALL is set."""
+    if os.environ.get("CODEFACTORY_NO_TS_INSTALL"):
+        return ""
+    folder = own_typescript_dir()
+    ts = folder / "node_modules" / "typescript"
+    if has_api(ts):
+        return str(ts)
+    npm = shutil.which("npm")
+    if not npm:
+        return ""
+    print(f"codefactory: installing TypeScript {TS_PIN} for itself, once (into {folder}; it never runs the project's "
+          "own compiler)…", file=sys.stderr)  # fmt: skip
+    try:
+        folder.mkdir(parents=True, exist_ok=True)
+        subprocess.run([npm, "install", "--prefix", str(folder), "--no-save", "--ignore-scripts", "--no-audit", "--no-fund",
+                        "--silent", f"typescript@{TS_PIN}"], capture_output=True, timeout=300, cwd=str(Path.home()),
+                       shell=sys.platform == "win32")  # fmt: skip
+    except (OSError, subprocess.SubprocessError, RuntimeError):
+        return ""
+    return str(ts) if has_api(ts) else ""
+
+
 def _outside(folder: Path, root: Path) -> bool:
     """Not inside the analyzed repository (a global install can't be the repository's own code)."""
     try:
@@ -85,9 +118,12 @@ def find_typescript(root: Path, node: str) -> str:
             candidates.append(Path(npm_root) / "typescript")
     except (OSError, subprocess.SubprocessError, RuntimeError):  # (RuntimeError: no home folder)
         pass
+    candidates.insert(0, own_typescript_dir() / "node_modules" / "typescript")  # (installed by an earlier run)
     for c in candidates:
         if has_api(c) and _outside(c, root):
             return str(c)
+    if own := _provision():
+        return own
     raise TypeScriptUnavailable(
         "TypeScript files found, but no TypeScript compiler of your own is installed: `npm install -g typescript@5` (or "
         "set CODEFACTORY_TYPESCRIPT to its folder). codefactory never runs the one in the repository's node_modules: "

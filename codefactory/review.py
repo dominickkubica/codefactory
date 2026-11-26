@@ -97,6 +97,7 @@ class Review:
         try:
             history = pool.submit(hotspots.analyze, root, g)
             sources = source_files(root, g)  # parsed or not: line checks need no parser
+            self.sources = sources
             self.scan = scan_sources(root, sources)
             extra, self.history_note = audit_scan(root, current_secrets(self.scan["secret"], root))
             self.scan.update(extra)  # CI, Docker, mobile config and git history: same shape, same silencing
@@ -729,7 +730,11 @@ class Review:
             )
 
     def testing(self) -> None:
-        tests = [f for f in self.g["files"] if is_test(f["id"])] or (self.g.get("tests") or {}).get("files", [])
+        tests = (
+            [f for f in self.g["files"] if is_test(f["id"])]
+            or (self.g.get("tests") or {}).get("files", [])
+            or [f for f in getattr(self, "sources", []) if is_test(f)]  # on disk, though not analyzed: tests all the same
+        )
         code = [f for f in self.code_fns]
         if not tests:
             self.add(
@@ -943,7 +948,20 @@ class Review:
                 f.data["hotspot"] = hot
         self.findings.sort(key=lambda f: (SEV.index(f.severity), not f.data.get("hotspot"), -len(f.evidence) - f.more))
 
+    def _test_files(self) -> int:
+        on_disk = sum(1 for f in getattr(self, "sources", []) if is_test(f))
+        return max(sum(1 for f in self.g["files"] if is_test(f["id"])), on_disk)
+
+    def unanalyzed(self) -> list[str]:
+        """Source files on disk the analyzers couldn't read (TypeScript without a compiler, other languages without the
+        language pack): the line checks ran on them, the call graph and its findings didn't."""
+        seen = {f["id"] for f in self.g["files"]}
+        return [f for f in getattr(self, "sources", []) if f not in seen and not is_test(f)]
+
     def health(self) -> tuple[str, list[Finding]]:
+        missing, code = self.unanalyzed(), [f for f in getattr(self, "sources", []) if not is_test(f)]
+        if code and len(missing) * 2 > len(code):  # most of the code wasn't analyzed: a grade would be about nothing
+            return "Not assessed", [f for f in self.findings if f.severity in ("Critical", "High")]
         score = 100
         for sev in SEV:
             pts = sum(POINTS[sev] for f in self.findings if f.severity == sev)
@@ -1015,7 +1033,7 @@ class Review:
             + (f" (+{len(hosts) - 8} more)" if len(hosts) > 8 else "")
             + ".",
             *([line] if (line := self.surface_line()) else []),
-            f"- **Tests:** {len([f for f in g['files'] if is_test(f['id'])])} test files"
+            f"- **Tests:** {self._test_files()} test files"
             + (f", reaching {self.test_pct}% of functions" if self.test_pct is not None else "")
             + ".",
             f"- **CI:** {', '.join(r['ci']) if r['ci'] else 'none'}"
@@ -1116,6 +1134,10 @@ class Review:
         return "\n".join(out) + "\n"
 
     def _justify(self, grade: str, drivers: list[Finding]) -> str:
+        if grade == "Not assessed":
+            missing = self.unanalyzed()
+            return (f"{len(missing):,} of the source files weren't analyzed, so this review can't grade the code: "
+                    + _how_to_analyze(missing) + " Then run it again.")  # fmt: skip
         crit = [f.title for f in drivers]
         good = len(self.strengths())
         if not crit:
@@ -1400,6 +1422,18 @@ class Review:
         from . import __version__
 
         return __version__
+
+
+def _how_to_analyze(files: list[str]) -> str:
+    js = sum(f.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts")) for f in files)
+    other = len(files) - js
+    parts = []
+    if js:
+        parts.append(f"{js:,} TypeScript/JavaScript files need a TypeScript compiler (`npm install -g typescript@5`; "
+                     "codefactory never runs the project's own)")  # fmt: skip
+    if other:
+        parts.append(f'{other:,} files need the language pack (`pip install "codefactory-cli[languages]"`)')
+    return "; ".join(parts) + "."
 
 
 # a composition root: where the program is wired together, so importing every layer is its job

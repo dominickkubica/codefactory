@@ -3,6 +3,21 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## Unreleased
+
+From a review that analyzed nothing and graded it "Strong": a TypeScript app on a Windows PC with no TypeScript
+compiler installed (0.20.3 stopped running the project's own) and no language pack.
+
+- **codefactory installs its own TypeScript when there's none**: a pinned 5.9.3, once, into its cache folder
+  (`~/.cache/codefactory`, or `CODEFACTORY_CACHE`), with npm run from the home folder. A TypeScript project now just
+  works with Node.js present, without a global install and without running the project's compiler.
+  `CODEFACTORY_NO_TS_INSTALL=1` turns it off.
+- **A review never grades code it didn't analyze**: when most source files couldn't be read, the grade is "Not
+  assessed" and the summary says what's missing and the command that fixes it.
+- **Tests are counted from the disk** when they weren't analyzed: no more "No automated tests" over hundreds of them.
+- **No silent empty analysis**: without a TypeScript compiler and without the language pack, codefactory says the
+  TypeScript/JavaScript files are NOT analyzed, instead of "using the general analyzer" that wasn't there.
+
 ## 0.21.1 · 2026-11-26
 
 - **`codefactory update` works for a pipx or uv install** (how the README says to install on a Mac): their

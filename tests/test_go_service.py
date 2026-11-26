@@ -146,5 +146,35 @@ class GoAnalysisTest(unittest.TestCase):
         self.assertIn("internal/store/store.go::Chunks.BulkUpdateMembers", r.reached)
 
 
+class NothingAnalyzedTest(unittest.TestCase):
+    """A TypeScript repository on a machine without a TypeScript compiler or the language pack: nothing was analyzed,
+    and the review graded it "Strong" and said there were no tests (there were hundreds)."""
+
+    def test_a_review_of_unanalyzed_code_isnt_graded(self):
+        import contextlib
+        import io
+        from unittest import mock
+
+        from codefactory.analyzers.typescript import TypeScriptUnavailable
+
+        root = Path(tempfile.mkdtemp())
+        (root / "src").mkdir()
+        (root / "src" / "store.ts").write_text("export function save(db: any) { return db.run('x'); }\n", encoding="utf-8")
+        (root / "src" / "store.test.ts").write_text("import { save } from './store';\ntest('s', () => save({}));\n")
+        with mock.patch("codefactory.analyzers.analyze_typescript", side_effect=TypeScriptUnavailable("no compiler.")), \
+             mock.patch("codefactory.analyzers.generic.available", return_value=False), \
+             contextlib.redirect_stderr(io.StringIO()) as err:  # fmt: skip
+            g = build(root, cache=False).to_dict()
+            r = Review(g, root)
+            r.run()
+            text = r.markdown()
+        self.assertEqual(g["files"], [])
+        self.assertIn("NOT analyzed", err.getvalue())
+        self.assertEqual(r.health()[0], "Not assessed")
+        self.assertIn("npm install -g typescript@5", text)
+        self.assertNotIn("No automated tests", [f.title for f in r.findings])  # the test file is on disk
+        self.assertIn("**Tests:** 1 test files", text)
+
+
 if __name__ == "__main__":
     unittest.main()

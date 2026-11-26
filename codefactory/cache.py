@@ -30,7 +30,9 @@ def _parsers() -> str:
     from .analyzers.generic import available
 
     node = shutil.which("node") or ""
-    candidates = [os.environ.get("CODEFACTORY_TYPESCRIPT", "")]
+    from .analyzers.typescript import own_typescript_dir
+
+    candidates = [os.environ.get("CODEFACTORY_TYPESCRIPT", ""), str(own_typescript_dir() / "node_modules" / "typescript")]
     if node:
         bin_dir = Path(node).resolve().parent
         candidates += [str(bin_dir.parent / "lib" / "node_modules" / "typescript"), str(bin_dir / "node_modules" / "typescript")]

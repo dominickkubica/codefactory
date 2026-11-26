@@ -119,6 +119,25 @@ class ProjectTypeScriptTest(unittest.TestCase):
                     os.chdir(cwd)
             self.assertFalse(found.startswith(str(root.resolve())) or found.startswith(str(root)), found)
 
+    def test_codefactory_installs_its_own_typescript_when_there_is_none(self):
+        from codefactory.analyzers import typescript as tsmod
+
+        with tempfile.TemporaryDirectory() as cache:
+
+            def npm(cmd, **kw):  # what `npm install --prefix <folder> typescript@5.9.3` leaves behind
+                fake_ts(Path(cmd[cmd.index("--prefix") + 1]) / "node_modules" / "typescript")
+                return subprocess.CompletedProcess(cmd, 0)
+
+            env = {"CODEFACTORY_CACHE": cache}
+            with mock.patch.dict(os.environ, env), mock.patch("shutil.which", return_value="/usr/bin/npm"), \
+                 mock.patch("subprocess.run", side_effect=npm) as run, contextlib.redirect_stderr(io.StringIO()):  # fmt: skip
+                got = tsmod._provision()
+            self.assertTrue(got.startswith(cache) and got.endswith("typescript"))
+            self.assertIn(f"typescript@{tsmod.TS_PIN}", run.call_args.args[0])
+            self.assertEqual(run.call_args.kwargs["cwd"], str(Path.home()))  # not the project's folder (.npmrc)
+            with mock.patch.dict(os.environ, {**env, "CODEFACTORY_NO_TS_INSTALL": "1", "CODEFACTORY_CACHE": cache + "x"}):
+                self.assertEqual(tsmod._provision(), "")  # can be switched off
+
     def test_typescript_7_has_no_api_to_run(self):
         with tempfile.TemporaryDirectory() as d:
             ts = Path(d) / "typescript"
