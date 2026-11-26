@@ -28,6 +28,7 @@ cd path/to/your/repo
 codefactory review -o review.md  # a technical review of the repository (--online: also vulnerable dependencies)
 codefactory view                 # the interactive map, in your browser
 codefactory plan                 # what to fix first, ranked; then: codefactory prompt 1
+codefactory export               # every finding as one audit file: give it to Claude to triage into fixes
 codefactory profile              # what kind of project it thinks this is (findings are ranked for it)
 codefactory hotspots             # where change happens: complex code that keeps changing
 ```
@@ -103,6 +104,7 @@ For the by-name languages, call, impact and unused-code findings are leads to co
 | `diff` | What a change adds and fixes, compared with the base branch: a pull-request comment, annotations or JSON; `--patch file.diff` checks a patch on its own, no repository needed |
 | `profile` | What kind of project this is (mobile app, web service, CLI, library…), where it runs, who uses it, what sensitive data it holds, with evidence; the review ranks findings for it |
 | `hotspots` | From git history: complex code that changes often, files that change together without importing each other, code only one person knows |
+| `export` | Every finding as one audit file (Markdown, or `--json`): ids, severity, complexity, confidence, every location, impact, fix, how to verify, and ready-made fixes; opens with instructions for an AI to triage it into fixes |
 | `sbom` | A CycloneDX software bill of materials of every pinned dependency |
 | `org` | A dashboard across many repositories: health, findings, trends, and findings per owning team |
 | `surface` | The attack surface: every HTTP endpoint, its auth check, and whether it changes data or reaches risky code |

@@ -89,7 +89,8 @@ def _effort(count: int, files: int) -> str:
 
 
 class Review:
-    def __init__(self, g: dict, root: Path, online: bool = False):
+    def __init__(self, g: dict, root: Path, online: bool = False, full: bool = False):
+        self.full = full  # every location of every finding (the audit export), not the first few (the report)
         self.g, self.root, self.v = g, root, View(g)
         self.repo = scan_repo(root)
         pool = ThreadPoolExecutor(max_workers=1)  # git log runs while the checks below read files
@@ -129,6 +130,10 @@ class Review:
         self.code_fns = [f for f in g["functions"] if f["kind"] != "module" and not is_test(f["file"])]
         self._strengths: list[str] | None = None
 
+    def n(self, shown: int) -> int:
+        """How many locations a finding lists: a few in the report, all of them in the export."""
+        return 1_000_000 if self.full else shown
+
     def add(self, *a, **k) -> None:
         self.findings.append(Finding(*a, **k))
 
@@ -153,7 +158,7 @@ class Review:
     def security(self) -> None:
         s = self.scan
         if s["secret"].hits:
-            ev, more = _ev(s["secret"].hits)
+            ev, more = _ev(s["secret"].hits, self.n(6))
             self.add(
                 "Credentials committed in source",
                 "Critical",
@@ -185,7 +190,7 @@ class Review:
                     else ""
                 )
                 + self._reached_by(e)
-                for e in s["sql_built"].hits[:6]
+                for e in s["sql_built"].hits[: self.n(6)]
             ]
             self.add(
                 "SQL assembled from strings",
@@ -197,7 +202,7 @@ class Review:
                 "Pass values as bound parameters (`?` / `%s`); for table or column names, check them against a fixed "
                 "list right where the SQL is built.",
                 _effort(len(s["sql_built"].hits), len({e.file for e in s["sql_built"].hits})),
-                max(0, len(s["sql_built"].hits) - 6),
+                max(0, len(s["sql_built"].hits) - self.n(6)),
             )
         for key, title, sev, impact, fix in [
             (
@@ -239,7 +244,7 @@ class Review:
         ]:
             hits = s[key].hits
             if hits:
-                ev, more = _ev(hits)
+                ev, more = _ev(hits, self.n(6))
                 if key in SINK_KINDS:
                     ev = [line + self._reached_by(e) for line, e in zip(ev, hits, strict=False)]
                     sev = self._by_reach(sev, hits)
@@ -259,14 +264,14 @@ class Review:
             f"Request data reaches dangerous calls ({len(flows)} proven flows)",
             "Critical" if worst else "High",
             "Security",
-            [f"{self.where(f)}: {f['message'].split(': ', 1)[-1]}" for f in flows[:8]],
+            [f"{self.where(f)}: {f['message'].split(': ', 1)[-1]}" for f in flows[: self.n(8)]],
             "Traced through the code, not guessed from a pattern: whoever sends the request controls what reaches the "
             "call (injection into SQL or a shell, code execution, files outside the intended folder, requests to internal "
             "hosts, redirects to any site).",
             "Convert or validate the value where it enters (int(), an allow-list), or use the safe form of the call: bound "
             "SQL parameters, a command as an argument list without a shell, a fixed base URL or folder.",
             _effort(len(flows), len({self._file(f) for f in flows})),
-            max(0, len(flows) - 8),
+            max(0, len(flows) - self.n(8)),
         )
 
     def config_findings(self) -> None:
@@ -289,12 +294,12 @@ class Review:
         for key, title, sev, impact, fix in CONFIG_CHECKS:
             hits = s[key].hits
             if hits:
-                ev, more = _ev(hits)
+                ev, more = _ev(hits, self.n(6))
                 self.add(title, sev, "Security", ev, impact, fix, _effort(len(hits), len({e.file for e in hits})), more)
         for key, title, sev, area, impact, fix in APPLE_CHECKS + INFRA_CHECKS:
             hits = s[key].hits
             if hits:
-                ev, more = _ev(hits)
+                ev, more = _ev(hits, self.n(6))
                 self.add(title, sev, area, ev, impact, fix, _effort(len(hits), len({e.file for e in hits})), more)
 
     def dependencies(self) -> None:
@@ -345,13 +350,13 @@ class Review:
             + ")",
             sev,
             "Security",
-            [line(p, vs) for p, vs in ordered[:8]],
+            [line(p, vs) for p, vs in ordered[: self.n(8)]],
             "Published vulnerabilities in the exact versions installed. Whether each is exploitable depends on how the "
             "package is used, but attackers scan for these first.",
             "Upgrade to a fixed version (`npm audit fix`, `pip install -U`, `cargo update`…); where there's no fix, "
             "check whether the vulnerable feature is used.",
             _effort(len(by_pkg), len(by_pkg)),
-            max(0, len(by_pkg) - 8),
+            max(0, len(by_pkg) - self.n(8)),
         )
 
     # -- the attack surface --------------------------------------------------------------------------------------
@@ -447,13 +452,13 @@ class Review:
             [
                 f"`{e.method} {e.path}` (`{e.file}:{e.line}`) → changes data in `{self.v.fn[w]['qualname']}` "
                 f"(`{', '.join(self.v.fn[w]['io'][:2])}`)"
-                for e, w in open_writes[:8]
+                for e, w in open_writes[: self.n(8)]
             ],
             impact + " Pattern-based: an auth check done elsewhere (a gateway, a proxy, an unusual decorator) isn't seen.",
             "Require authentication on each (a dependency, decorator or middleware), or document why it's open and "
             "`codefactory accept` it.",
             _effort(len(open_writes), len({e.file for e, _ in open_writes})),
-            max(0, len(open_writes) - 8),
+            max(0, len(open_writes) - self.n(8)),
         )
 
     def surface_line(self) -> str:
@@ -478,7 +483,7 @@ class Review:
         s = self.scan
         sw = s["swallowed"].hits
         if len(sw) >= 3:
-            ev, more = _ev(sw)
+            ev, more = _ev(sw, self.n(6))
             self.add(
                 f"{_n(len(sw), 'error')} silently swallowed",
                 "High" if len(sw) >= 10 else "Medium",
@@ -505,7 +510,7 @@ class Review:
         nt = [e for e in s["fetch_no_timeout"].hits if not is_script(e.file)]
         if nt:
             s["fetch_no_timeout"].hits = nt
-            ev, more = _ev(nt)
+            ev, more = _ev(nt, self.n(6))
             self.add(
                 "Network calls without a timeout",
                 "Medium",
@@ -520,7 +525,7 @@ class Review:
         if fw & CLIENT_APPS:  # one user per process: module singletons are a normal design; exported mutable bindings aren't
             ms = s["module_state"].hits = [e for e in ms if e.text.startswith("export")]
         if len(ms) >= 3:
-            ev, more = _ev(ms)
+            ev, more = _ev(ms, self.n(6))
             self.add(
                 f"Module-level mutable state ({len(ms)} places)",
                 "Medium" if len(ms) >= 6 else "Low",
@@ -539,12 +544,12 @@ class Review:
                 f"Queries or requests inside loops (N+1) in {_n(len(reads), 'place')}",
                 "Medium",
                 "Performance",
-                [f"{self.where(f)}: {f['message'].split(':')[0]}" for f in reads[:6]],
+                [f"{self.where(f)}: {f['message'].split(':')[0]}" for f in reads[: self.n(6)]],
                 "Cost grows with the data: one round trip per item instead of one for all.",
                 "Load everything a loop needs with one batched query (WHERE id IN (…), a JOIN) or request before the "
                 "loop (`codefactory plan` lists each with steps).",
                 _effort(len(reads), len(reads)),
-                max(0, len(reads) - 6),
+                max(0, len(reads) - self.n(6)),
             )
         product = [f for f in self.by_kind["io_in_loop"] if not self._script(f) and not is_test(self._file(f))]
         writes = [f for f in product if f.get("detail") == "write"]  # loops that can grow; fixed ones are fine as is
@@ -554,24 +559,24 @@ class Review:
                 f"Writes inside loops in {_n(len(writes), 'place')}",
                 "Low",
                 "Performance",
-                [self.where(f) for f in writes[:6]],
+                [self.where(f) for f in writes[: self.n(6)]],
                 "One write per item: fine for a few, slow for many, and partial if it fails halfway outside a transaction.",
                 "Wrap each loop in one transaction (or have the caller do so); for loops that can grow, write all rows "
                 "with one multi-row INSERT/UPDATE.",
                 "M",
-                max(0, len(writes) - 6),
+                max(0, len(writes) - self.n(6)),
             )
         if files:
             self.add(
                 f"File or program operations inside loops in {_n(len(files), 'place')}",
                 "Low",
                 "Performance",
-                [self.where(f) for f in files[:6]],
+                [self.where(f) for f in files[: self.n(6)]],
                 "One file read, write, copy or directory walk (or program run) per item: normal when each item is its "
                 "own file, slow when it's the same file or folder every time.",
                 "Where it's the same file or folder each round, read it once before the loop and look items up in memory.",
                 "S",
-                max(0, len(files) - 6),
+                max(0, len(files) - self.n(6)),
             )
 
     def architecture(self) -> None:
@@ -583,7 +588,7 @@ class Review:
                 f"{'Import' if load_order else 'Dependency'} loops ({len(cycles)})",
                 ("High" if biggest >= 3 else "Medium") if load_order else ("Medium" if biggest >= 3 else "Low"),
                 "Architecture",
-                [" → ".join(sorted(c)) for c in list(cycles)[:4]],
+                [" → ".join(sorted(c)) for c in list(cycles)[: self.n(4)]],
                 "Files in a loop load in a fragile order and can't be understood, tested or moved alone."
                 if load_order
                 else "Classes in a loop work at runtime, but can't be understood, tested, reused or moved apart.",
@@ -596,11 +601,11 @@ class Review:
                 f"Layer rule violations ({len(lv)})",
                 "High",
                 "Architecture",
-                [f["message"] for f in lv[:6]],
+                [f["message"] for f in lv[: self.n(6)]],
                 "The architecture factory.toml describes isn't the one the code has.",
                 "Move the code into an allowed layer or invert the dependency.",
                 _effort(len(lv), len(lv)),
-                max(0, len(lv) - 6),
+                max(0, len(lv) - self.n(6)),
             )
         rank = {name: i for i, name in enumerate(self.g["layers"])}
         layer_of = {f["id"]: f["layer"] for f in self.g["files"]}
@@ -628,12 +633,15 @@ class Review:
                 f"Copied logic in {_n(len(copies), 'group')} (~{saved} lines)",
                 "Medium" if len(copies) >= 3 else "Low",
                 "Maintainability",
-                [f"{t['title']}: " + ", ".join(f"`{w['file']}:{w['line']}`" for w in t["where"][:3]) for t in copies[:6]],
+                [
+                    f"{t['title']}: " + ", ".join(f"`{w['file']}:{w['line']}`" for w in t["where"][: self.n(3)])
+                    for t in copies[: self.n(6)]
+                ],
                 "A fix applied to one copy silently misses the others.",
                 "Merge each group into one function in the lowest layer its callers share (`codefactory plan` has "
                 "per-group steps).",
                 _effort(len(copies), len(copies) * 2),
-                max(0, len(copies) - 6),
+                max(0, len(copies) - self.n(6)),
             )
         # the hardest to follow first: branches (decisions) weigh more than length, so a long but flat table of
         # options or a big layout ranks below a shorter function full of conditions
@@ -651,12 +659,12 @@ class Review:
                     f"`{f['file']}:{f['line']}` {f['qualname']}: {f['loc']} lines"
                     + (f", {f['branches']} decision points" if f.get("branches") else "")
                     + self._changed(f["file"])
-                    for f in long[:6]
+                    for f in long[: self.n(6)]
                 ],
                 "Hard to read, test and change safely; often several responsibilities in one place.",
                 "Extract the parts that have names of their own.",
                 "M",
-                max(0, len(long) - 6),
+                max(0, len(long) - self.n(6)),
             )
         unused = [f for f in self.by_kind["unused"] if not is_test(self._file(f))]
         if unused:
@@ -664,11 +672,11 @@ class Review:
                 f"Unused code ({_n(len(unused), 'function')})",
                 "Low",
                 "Maintainability",
-                [self.where(f) for f in unused[:6]],
+                [self.where(f) for f in unused[: self.n(6)]],
                 "Dead code costs reading time and keeps dependencies alive.",
                 "Verify (frameworks may call by name), then delete.",
                 "S",
-                max(0, len(unused) - 6),
+                max(0, len(unused) - self.n(6)),
             )
         # only where the lists plausibly grow: the function loads data itself or through what it calls. A search in
         # a loop over a handful of UI items or a fixed table costs nothing, and listing 50 of them hides the few
@@ -680,11 +688,11 @@ class Review:
                 f"Array searches inside loops over loaded data ({len(scans)})",
                 "Low",
                 "Performance",
-                [self.where(f) for f in scans[:5]],
+                [self.where(f) for f in scans[: self.n(5)]],
                 "O(n²) on data that comes from storage or the network: fine at today's size, slow as it grows.",
                 "Build a Map/Set (dict/set) from the list once before the loop, and look items up in it.",
                 "M",
-                max(0, len(scans) - 5),
+                max(0, len(scans) - self.n(5)),
             )
 
     def testing(self) -> None:
@@ -728,13 +736,13 @@ class Review:
                     + (f": does I/O ({', '.join(f['io'][:2])})" if f.get("io") else "")
                     + (f", called from {len(callers[f['id']])} files" if len(callers[f["id"]]) >= 2 else "")
                     + self._changed(f["file"])
-                    for f in risky[:8]
+                    for f in risky[: self.n(8)]
                 ],
                 f"Tests reach {pct}% of functions, but not these: code that talks to storage or the network, or that "
                 "much of the app depends on." + self._coverage_note(),
                 "Add tests that call these (against a real or in-memory store), starting with the ones that write data.",
                 _effort(len(risky), len({f["file"] for f in risky})),
-                max(0, len(risky) - 8),
+                max(0, len(risky) - self.n(8)),
             )
         if self.repo["ci"] and "tests" not in self.repo["ci_steps"]:
             self.add(
@@ -757,9 +765,9 @@ class Review:
                 min((f["severity"] for f in flags), key=["high", "warn", "info"].index)
             ]
             message = flags[0]["message"].split("] ", 1)[-1]
-            self.add(f"Custom rule {rule} ({len(flags)})", sev, "Custom", [self.where(f) for f in flags[:6]], message,
+            self.add(f"Custom rule {rule} ({len(flags)})", sev, "Custom", [self.where(f) for f in flags[: self.n(6)]], message,
                      "See the rule in factory.toml.", _effort(len(flags), len({self._file(f) for f in flags})),
-                     max(0, len(flags) - 6))  # fmt: skip
+                     max(0, len(flags) - self.n(6)))  # fmt: skip
 
     def _by_owner(self) -> list[str]:
         """Findings per owning team, from CODEOWNERS: who has the most to act on."""
@@ -817,7 +825,7 @@ class Review:
                 "Dependencies on moving targets",
                 "Medium",
                 "Dependencies",
-                r["floating"][:8],
+                r["floating"][: self.n(8)],
                 "`*`, `latest` or a git branch changes under you without a code change.",
                 "Pin versions (or commits).",
                 "S",
@@ -827,7 +835,7 @@ class Review:
                 "Unpinned Python requirements",
                 "Medium",
                 "Dependencies",
-                r["unpinned_py"][:8],
+                r["unpinned_py"][: self.n(8)],
                 "Installs drift over time.",
                 "Pin with == (or use a lock tool: uv, pip-tools, poetry).",
                 "S",

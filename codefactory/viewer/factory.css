@@ -32,7 +32,7 @@ aside { width: 360px; max-width: 45vw; background: var(--panel); border-left: 1p
   flex-direction: column; min-height: 0; }
 aside header { padding: 14px 16px 10px; border-bottom: 1px solid var(--line); }
 aside h1 { font-size: 15px; margin: 0 0 4px; }
-aside .sub { color: var(--muted); font: 12px var(--mono); word-break: break-all; }
+aside .sub { color: var(--muted); font: 12px var(--mono); overflow-wrap: anywhere; }
 .tabs { display: flex; gap: 4px; padding: 8px 12px 0; }
 .tabs button { font: inherit; background: none; border: 0; border-bottom: 2px solid transparent; color: var(--muted);
   padding: 6px 8px; cursor: pointer; }
@@ -45,7 +45,8 @@ aside .sub { color: var(--muted); font: 12px var(--mono); word-break: break-all;
 .flag { border-left: 3px solid var(--info); padding: 6px 8px; margin: 6px 0; cursor: pointer; border-radius: 0 4px 4px 0; }
 .flag:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .flag.high { border-color: var(--high); } .flag.warn { border-color: var(--warn); }
-.flag b { font-weight: 600; } .flag .where { color: var(--muted); font: 11.5px var(--mono); word-break: break-all; }
+.flag { overflow-wrap: anywhere; }
+.flag b { font-weight: 600; } .flag .where { color: var(--muted); font: 11.5px var(--mono); overflow-wrap: anywhere; }
 table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
 th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { color: var(--muted); font-weight: 500; }
@@ -59,3 +60,18 @@ button:focus-visible, input:focus-visible, .flag:focus-visible { outline: 2px so
 .fixbtn:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
 #toast { position: absolute; bottom: 64px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--panel);
   padding: 8px 14px; border-radius: 6px; font-size: 13px; }
+.actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.actions button { font: 12px var(--sans); padding: 5px 11px; border-radius: 6px; border: 1px solid var(--accent); cursor: pointer;
+  background: var(--accent); color: var(--panel); }
+.actions button + button { background: none; color: var(--accent); }
+/* phones and narrow windows: the map on top, the panel below it, both full width */
+@media (max-width: 760px) {
+  body { flex-direction: column; overflow: auto; height: auto; min-height: 100%; }
+  #stage { flex: none; height: 58vh; min-height: 320px; }
+  aside { width: 100%; max-width: none; border-left: 0; border-top: 1px solid var(--line); min-height: 42vh; }
+  .pane { overflow: visible; }
+  #hud { top: 8px; left: 8px; right: 8px; gap: 4px; }
+  #hud button, #hud select { padding: 5px 8px; }
+  #hud input { width: 0; flex: 1 1 120px; min-width: 110px; }
+  #legend { left: 8px; right: 8px; bottom: 8px; gap: 8px; padding: 6px 8px; font-size: 11px; }
+}

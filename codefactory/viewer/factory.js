@@ -298,17 +298,23 @@
       if (room < 46) { // too narrow for a card: the name, written up the hall
         ctx.save(); ctx.translate(h.x + h.w / 2 + 4, h.y + h.h - 10); ctx.rotate(-Math.PI / 2);
         ctx.fillStyle = C.ink; ctx.font = "700 12px Inter, system-ui, sans-serif";
-        ctx.fillText(fitText(`${z.name.toUpperCase()} · ${z.count}`, h.h - 20), 0, 0); ctx.restore();
+        const full = `${z.name.toUpperCase()} · ${z.count}`, room = h.h - 20; // drop the count before cutting the name
+        ctx.fillText(fitText(ctx.measureText(full).width <= room ? full : z.name.toUpperCase(), room), 0, 0); ctx.restore();
         return;
       }
-      const big = Math.max(11, Math.min(22, room / 6.5));
+      // the name: shrink it to fit before cutting it ("OPTS…" says nothing); narrow halls drop the capitals first
+      let big = Math.max(11, Math.min(22, room / 6.5)), name = z.name.toUpperCase();
+      ctx.font = `700 ${big}px Inter, system-ui, sans-serif`;
+      if (ctx.measureText(name).width > room) name = z.name;
+      while (big > 9 && ctx.measureText(name).width > room) { big -= 0.5; ctx.font = `700 ${big}px Inter, system-ui, sans-serif`; }
       let y = h.y + pad + big;
-      ctx.fillStyle = C.ink; ctx.font = `700 ${big}px Inter, system-ui, sans-serif`;
-      ctx.fillText(fitText(z.name.toUpperCase(), room), h.x + pad, y);
+      ctx.fillStyle = C.ink; ctx.fillText(fitText(name, room), h.x + pad, y);
       const small = Math.max(10, Math.min(13, room / 11));
       ctx.font = `400 ${small}px Inter, system-ui, sans-serif`; ctx.fillStyle = C.muted;
-      for (const line of [`${fmt(z.count)} files`, `${fmt(z.fns)} functions`, `${fmt(z.loc)} lines`]) {
-        y += small * 1.5; ctx.fillText(fitText(line, room), h.x + pad, y);
+      const short = (n) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : `${n}`);
+      for (const [long, brief] of [[`${fmt(z.count)} files`, `${short(z.count)} files`], [`${fmt(z.fns)} functions`, `${short(z.fns)} fns`],
+        [`${fmt(z.loc)} lines`, `${short(z.loc)} lines`]]) {
+        y += small * 1.5; ctx.fillText(fitText(ctx.measureText(long).width <= room ? long : brief, room), h.x + pad, y);
       }
       // issue pills
       y += small * 1.2;
@@ -333,7 +339,7 @@
         y -= small * 1.4;
       }
       // most-used files
-      if (z.top.length && y + small * 7 < h.y + h.h) {
+      if (z.top.length && room >= 80 && y + small * 7 < h.y + h.h) { // (too narrow: file names would be cut to nothing)
         y += small * 3.2; ctx.fillStyle = C.muted; ctx.font = `600 ${small}px Inter, system-ui, sans-serif`;
         ctx.fillText(fitText("MOST USED", room), h.x + pad, y);
         ctx.font = `400 ${small}px JetBrains Mono, ui-monospace, monospace`; ctx.fillStyle = C.ink;
@@ -343,7 +349,8 @@
     // hint
     ctx.font = "12px Inter, system-ui, sans-serif"; ctx.fillStyle = C.muted; ctx.textAlign = "center";
     const r = canvas.getBoundingClientRect();
-    ctx.fillText("Click a hall or zoom in to see its files", r.width / 2, Math.min(r.height - 60, bottom + 120));
+    const above = ($("#legend")?.offsetHeight || 40) + 28; // (above the legend, which wraps to two lines on a phone)
+    ctx.fillText("Click a hall or zoom in to see its files", r.width / 2, Math.min(r.height - above, bottom + 120));
     ctx.textAlign = "left";
     ctx.restore();
   }
@@ -525,8 +532,8 @@
   // Every issue belongs to a task of `codefactory plan`; its prompt is ready to paste into Claude Code.
   const taskOfFlag = new Map();
   for (const t of D.tasks || []) for (const i of t.flags) taskOfFlag.set(i, t);
-  function copyText(text) {
-    const done = () => toast("Prompt copied. Paste it into Claude Code.");
+  function copyText(text, message = "Prompt copied. Paste it into Claude Code.") {
+    const done = () => toast(message);
     if (navigator.clipboard && window.isSecureContext !== false) {
       navigator.clipboard.writeText(text).then(done, () => fallback());
     } else fallback();
@@ -661,5 +668,17 @@
   $("#title").textContent = D.root.split(/[\\/]/).filter(Boolean).pop() || D.root;
   const quiet = (D.silenced || []).length;
   $("#meta").textContent = `${D.language} · ${files.length} files · ${D.functions.filter((f) => f.kind !== "module").length} functions · ${sev.high} high · ${sev.warn} warn · ${sev.info} info${quiet ? ` · ${quiet} silenced` : ""}`;
+  // ---- the audit export: every finding (security and reliability ones too, not only the map's), for an AI to triage
+  if (window.AUDIT) {
+    $("#actions").hidden = false;
+    const name = `${($("#title").textContent || "codebase").replace(/[^\w.-]+/g, "-")}-audit.md`;
+    $("#export").onclick = () => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([window.AUDIT], { type: "text/markdown" })); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      toast(`Saved ${name}: give it to Claude to triage into fixes.`);
+    };
+    $("#copy-audit").onclick = () => copyText(window.AUDIT, "Audit copied. Paste it into Claude and ask it to triage the findings.");
+  }
   resize(); fit(); renderIssues(); select(null); tab("issues"); requestAnimationFrame(draw);
 })();

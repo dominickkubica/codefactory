@@ -232,7 +232,12 @@ def cmd_view(a) -> int:
     graph = load_graph(Path(a.path), a.lang, not a.no_cache)
     graph = {**graph, "tasks": [{k: t[k] for k in ("id", "title", "prompt", "flags", "score")} for t in make_plan(graph)]}
     out = Path(a.output or "factory.html")
-    _write(out, render_html(graph))
+    audit = None
+    if Path(a.path).is_dir() and not a.no_audit:  # the page's "Export audit" button: every finding, to triage
+        from .export import export
+
+        audit = export(graph, Path(a.path).resolve())
+    _write(out, render_html(graph, audit))
     print(f"Wrote {out}: {len(graph['files'])} machines, {len(graph['flags'])} issues")
     if not a.no_open:
         webbrowser.open(out.resolve().as_uri())
@@ -532,6 +537,23 @@ def cmd_prompt(a) -> int:
     return 0
 
 
+def cmd_export(a) -> int:
+    from .export import export
+
+    path = Path(a.path)
+    if not path.is_dir():
+        raise SystemExit("codefactory: export needs the repository folder (it reads manifests, CI files and source text)")
+    text = export(load_graph(path, a.lang, not a.no_cache), path.resolve(), a.json, a.online)
+    out = a.output or ("codefactory-audit.json" if a.json else "codefactory-audit.md")
+    if out == "-":
+        print(text, end="")
+        return 0
+    _write(Path(out), text)
+    print(f"Wrote {out}: give it to Claude with \"analyze every finding in this audit and triage them into individual "
+          "fixes sorted by severity, then complexity\".")  # fmt: skip
+    return 0
+
+
 def cmd_review(a) -> int:
     path = Path(a.path)
     if not path.is_dir():
@@ -644,6 +666,7 @@ COMMANDS = {
     "path": (cmd_path, "the shortest call path between two functions: path [repo] from to"),
     "brief": (cmd_brief, "a Markdown map of the repo for an AI agent: layers, hubs, issues by what to do"),
     "context": (cmd_context, "before changing a file or function: callers, calls, impact, tests: context [repo] name"),
+    "export": (cmd_export, "every finding as one audit file (Markdown or --json) for an AI to triage into fixes"),
     "review": (cmd_review, "a full technical review (summary, system map, findings by severity, gaps), no AI needed"),
     "plan": (cmd_plan, "ranked tasks with steps, tests and a fix prompt each: the work list"),
     "prompt": (cmd_prompt, "a ready-to-paste Claude Code prompt for one task: prompt [repo] <id or rank>"),
@@ -721,12 +744,27 @@ Run `codefactory <command> --help` for a command's options.""",
             s.add_argument("--no-cache", action="store_true", help="analyze again even if nothing changed")
             s.add_argument("--no-tests", action="store_true",
                            help="leave test code out of findings, the plan and the map (still counted for coverage)")  # fmt: skip
-        if name in ("flags", "query", "trace", "path", "context", "plan", "surface", "diff", "org", "profile", "hotspots"):
+        if name in (
+            "flags",
+            "query",
+            "trace",
+            "path",
+            "context",
+            "plan",
+            "surface",
+            "diff",
+            "org",
+            "profile",
+            "hotspots",
+            "export",
+        ):
             s.add_argument("--json", action="store_true", help="machine-readable output")
         if name in ("trace", "path"):
             s.add_argument("--refs", action="store_true", help="also follow functions passed by name (callbacks)")
         if name in ("analyze", "view", "brief", "baseline", "review", "sarif"):
             s.add_argument("-o", "--output", help="output file")
+        if name == "export":
+            s.add_argument("-o", "--output", help="output file (default codefactory-audit.md, or .json; - prints it)")
         if name in ("brief", "context"):
             s.add_argument("--limit", type=int, default=12 if name == "brief" else 20, help="items per list")
         if name == "flags":
@@ -747,6 +785,12 @@ Run `codefactory <command> --help` for a command's options.""",
             s.add_argument(
                 "--fail-on", choices=list(SEVERITY_ORDER), default="warn", help="lowest new severity that fails (default warn)"
             )
+        if name == "export":
+            s.add_argument(
+                "--online",
+                action="store_true",
+                help="also check dependencies for known vulnerabilities at OSV.dev (sends package names and versions only)",
+            )
         if name == "review":
             s.add_argument("--for-ai", action="store_true", help="append an evidence pack for an AI to finish the review")
             s.add_argument(
@@ -758,6 +802,7 @@ Run `codefactory <command> --help` for a command's options.""",
             s.add_argument("--top", type=int, default=10, help="how many tasks (default 10)")
         if name == "view":
             s.add_argument("--no-open", action="store_true", help="don't open the browser")
+            s.add_argument("--no-audit", action="store_true", help="no Export audit button (it runs the review)")
         if name == "sql":
             s.add_argument("-o", "--output", default="codefactory.db", help="database file (default: codefactory.db)")
     return p

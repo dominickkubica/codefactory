@@ -102,7 +102,7 @@ class PlanTest(unittest.TestCase):
         self.assertEqual(kinds[0], "cycle")  # the import loop first
         self.assertEqual(kinds.count("cycle"), 1)  # one loop of two files = one task
         merge = next(t for t in self.tasks if t["kind"] == "duplicate")
-        self.assertIn("Merge 2 copies", merge["title"])
+        self.assertIn("Merge apply_coupon, discount", merge["title"])  # every name, not "2 copies of" one of them
         self.assertEqual(len(merge["where"]), 2)
         batch = next(t for t in self.tasks if t["kind"] == "io_in_loop" and "order_report" in t["title"])
         self.assertTrue(any("get_order_batch(ids)" in s for s in batch["steps"]))  # named in the code's own style

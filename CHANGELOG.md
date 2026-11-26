@@ -69,6 +69,24 @@ Each has a regression test (`tests/test_security_audit.py`).
   fail outright. A compiler without the API is skipped for the next one (a global TypeScript 5), and with none the
   review says how to get one.
 
+### Audit export
+- **`codefactory export`**: every finding as one audit file, Markdown or `--json`, made to be handed to Claude with
+  "triage these into individual fixes sorted by severity, then complexity" (it opens with those instructions).
+  Each finding has a stable id, severity, complexity, confidence (exact, likely or lead), every location with its
+  line of code (marked when it's a script or a test), impact, fix, what settles it, and the plan's ready-made fixes
+  for exactly those locations. Shaped by a trial: a fresh Claude triaged a 77k-line repository from it, and its
+  critique (no code shown, three quarters fix boilerplate, a confidence label that read backwards, counts that didn't
+  match) halved the file and changed the format.
+- **Copy-group titles name every function** ("Merge down_days, up_days"), not "2 copies of" one of them.
+- **The factory view has Export audit and Copy for Claude buttons** with the same file, so its security and
+  reliability findings are a click away (the map's panel lists the structural ones).
+
+### Factory view
+- **Phones and narrow windows**: the map on top and the panel below, both full width (the panel took half the
+  screen and pushed the map into slivers); finding text wraps instead of running off the edge.
+- **Hall names fit**: shrunk before they're cut ("OPTS…" said nothing), stats in short form when narrow ("6.2k
+  lines"), and the most-used list left out of halls too narrow to show a name in it; the header wraps between words.
+
 ### Test code
 From a Go repository whose early tests (written before table-driven tests were its standard) filled the plan with
 "share one body" tasks:

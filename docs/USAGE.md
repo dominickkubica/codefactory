@@ -155,6 +155,33 @@ whole repository.
 The review can't judge intent, product context, or runtime and concurrency behaviour that no rule describes. The
 evidence pack exists to point an AI or a person at exactly that code.
 
+## An audit to hand over: export
+
+```bash
+codefactory export                 # codefactory-audit.md
+codefactory export --json          # codefactory-audit.json
+codefactory export -o - | pbcopy   # print it (here: to the clipboard on a Mac)
+```
+
+Every finding of the review in one file, made to be given to Claude (or another AI, or a person) with: *"analyze
+every finding in this audit and triage them into individual fixes sorted by severity, then complexity"*. It opens
+with those instructions, so pasting the file alone works too. Each finding has:
+
+- a **stable id** (`CF-SECU-98ec`: the area and the finding, not its count, so it keeps its id from run to run),
+- **severity** (ranked for the project, with the reason when a rule changed it), **complexity** (S under an hour in
+  one place, M a few hours, L a day or more) and **confidence**: *exact* (a fact read from the files: a key, a
+  missing CI file), *likely* (a call chain was followed, not the conditions on it) or *lead* (rests on what static
+  reading can't see: callers by name, tests through HTTP, auth done elsewhere; expect false positives),
+- **every location** with its line of code, marked *(script)* or *(test)* when it isn't shipped code, the impact, the
+  suggested fix and **what settles it** (specific to the finding: for an endpoint without auth, whether it really
+  writes on that path and whether a check sits elsewhere), and
+- the **ready-made fixes** from `codefactory plan` for exactly those locations, one line each (`codefactory prompt
+  <task>` has the steps and tests).
+
+Sorted by severity, then complexity, with a summary table first and what the audit didn't check last. The factory
+view has the same file behind its **Export audit** and **Copy for Claude** buttons (building it runs the review,
+about 2 s on 40k lines; `view --no-audit` skips the buttons and stays instant).
+
 ## Project profile: what kind of project this is
 
 ```bash

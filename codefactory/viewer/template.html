@@ -33,7 +33,12 @@
   </div>
 </div>
 <aside>
-  <header><h1 id="title"></h1><div class="sub" id="meta"></div></header>
+  <header><h1 id="title"></h1><div class="sub" id="meta"></div>
+    <div class="actions" id="actions" hidden>
+      <button id="export" title="Every finding, with locations, impact, fix and how to verify, as one Markdown file">Export audit</button>
+      <button id="copy-audit" title="The same, to paste into Claude">Copy for Claude</button>
+    </div>
+  </header>
   <div class="tabs" role="tablist">
     <button data-tab="issues" role="tab">Issues</button>
     <button data-tab="selected" role="tab">Selected</button>
@@ -41,7 +46,7 @@
   <div class="pane" id="issues"></div>
   <div class="pane" id="selected" hidden></div>
 </aside>
-<script>window.FACTORY = __DATA__;</script>
+<script>window.FACTORY = __DATA__; window.AUDIT = __AUDIT__;</script>
 <script>/*JS*/</script>
 </body>
 </html>

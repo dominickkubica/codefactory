@@ -162,7 +162,9 @@ class Planner:
                     score * self.weight(files),
                     f"Share one body between {', '.join(sorted(m['name'] for m in members))} ({sim}, ~{saved} lines)"
                     if named_apart
-                    else f"Merge {len(members)} copies of {home['qualname']} ({sim}, ~{saved} lines)",
+                    else f"Merge {len(members)} copies of {home['qualname']} ({sim}, ~{saved} lines)"
+                    if len({m["qualname"] for m in members}) == 1
+                    else f"Merge {', '.join(sorted({m['qualname'] for m in members}))} ({sim}, ~{saved} lines)",  # (not "×2")
                     f"The same logic lives in {len(members)} places ({sim}). A fix in one copy silently misses "
                     f"the others; merging saves ~{saved} lines.",
                     [self.at(m["id"]) for m in members],
