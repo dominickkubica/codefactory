@@ -3,8 +3,41 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
-## Unreleased
+## 0.20.3 · 2026-11-26
 
+### Security
+From an audit of codefactory itself: what a repository being analyzed, or a pull request to it, could make it do.
+Each has a regression test (`tests/test_security_audit.py`).
+
+- **A `.codefactory/` that is a symbolic link or committed to git is never used.** A pull request could point it
+  elsewhere, and the diff's clean-up of old bases (which deletes folders) would have followed it; or commit a fake
+  "base" that made its own findings look old. Nothing is cached then. Links inside the folder are removed, never
+  followed, and a diff's base leaves out `.codefactory/` and anything linking outside (a planted link used to stop
+  the diff with an error).
+- **The project's own TypeScript compiler is never run when committed to the repository**, and
+  `CODEFACTORY_PROJECT_TYPESCRIPT=0` turns it off. The Action uses its own pinned TypeScript 5.9.3 unless its new
+  `project-typescript` input is set. SECURITY.md said codefactory never runs the analyzed code; it now says exactly
+  when it does.
+- **Secrets are reported cut to their first 4 characters** (`AKIA…`) in the review, PR comments, SARIF and
+  annotations; keys found only in git history were being re-published in full.
+- **`diff --github` escapes its workflow commands**: a newline in a finding could have started a command of its own,
+  and a comma or colon in a file name ended the property early (annotations from `sarif --github` now escape file
+  names too).
+- **Saved queries in `factory.toml` can only read** (no ATTACH, which creates a file anywhere, no writes or PRAGMA)
+  and stop after 30 seconds. `codefactory query` runs read-only the same way.
+- **The Action works on pull requests from forks**: the comment step (which failed on their read-only token) runs
+  only for the same repository, and the result also goes to the job summary.
+- **The Action installs only exact, hash-checked versions** of tree-sitter and the language pack
+  (`action-requirements.txt`), and runs codefactory from its own files instead of installing it.
+- **The caches notice a file copied with its old modification time** (cp -p, tar, rsync -t): stamps include the
+  change time, and a file changed within two seconds of being stamped isn't trusted (git's "racy" rule).
+
+### Fixed
+- **Projects on TypeScript 7** (the native rewrite, which ships no JavaScript API yet) made the TypeScript analyzer
+  fail outright. A compiler without the API is skipped for the next one (a global TypeScript 5), and with none the
+  review says how to get one.
+
+### Profiles
 From running on a set of personal repositories (18: apps, sites, class projects, scripts):
 
 - Streamlit, Gradio, Dash and Panel apps are profiled as web apps (with where each listens by default: Streamlit on

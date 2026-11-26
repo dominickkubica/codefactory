@@ -96,7 +96,7 @@ class Review:
         history = pool.submit(hotspots.analyze, root, g)
         sources = source_files(root, g)  # parsed or not: line checks need no parser
         self.scan = scan_sources(root, sources)
-        extra, self.history_note = audit_scan(root, current_secrets(self.scan["secret"]))
+        extra, self.history_note = audit_scan(root, current_secrets(self.scan["secret"], root))
         self.scan.update(extra)  # CI, Docker, mobile config and git history: same shape, same silencing
         self.scan.update(privacy_scan(root, sources))  # personal data, Apple privacy rules
         self.scan.update(apple_scan(root, sources))  # Swift crashes, cycles, main-thread I/O

@@ -591,7 +591,7 @@ def build_sarif(graph: dict, root: Path | None = None, new_keys: Counter | None 
 
         sources = source_files(root, graph)  # parsed or not: line checks need no parser
         checks = scan_sources(root, sources)
-        checks.update(audit_scan(root, current_secrets(checks["secret"]))[0])
+        checks.update(audit_scan(root, current_secrets(checks["secret"], root))[0])
         from .privacy import scan as privacy_scan
 
         checks.update(privacy_scan(root, sources))
@@ -644,6 +644,20 @@ def build_sarif(graph: dict, root: Path | None = None, new_keys: Counter | None 
     }
 
 
+def gha_data(text: str) -> str:
+    """A GitHub workflow command's message, escaped: a newline can't start a command of its own."""
+    return str(text).replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+
+def gha_prop(text: str) -> str:
+    """A workflow command's property value (file=, title=), escaped: `,` and `:` can't end it early."""
+    return gha_data(text).replace(":", "%3A").replace(",", "%2C")
+
+
+def gha_command(kind: str, file: str, line: int, title: str, message: str) -> str:
+    return f"::{kind} file={gha_prop(file)},line={int(line)},title={gha_prop(title)}::{gha_data(message)}"
+
+
 def github_annotations(graph: dict, flags: list[dict], limit: int = 50) -> str:
     """GitHub Actions workflow commands: each issue becomes an annotation on its line in the pull request."""
     fns = {f["id"]: f for f in graph["functions"]}
@@ -653,9 +667,7 @@ def github_annotations(graph: dict, flags: list[dict], limit: int = 50) -> str:
         fn = fns.get(f["target"])
         file = fn["file"] if fn else f["target"]
         line = f.get("line") or (fn["line"] if fn else 1)
-        msg = f["message"].replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
-        title = f"codefactory {f['kind']}".replace(",", " ").replace("::", " ")
-        out.append(f"::{cmd[f['severity']]} file={file},line={line},title={title}::{msg}")
+        out.append(gha_command(cmd[f["severity"]], file, line, f"codefactory {f['kind']}", f["message"]))
     if len(flags) > limit:
         out.append(f"::notice title=codefactory::{len(flags) - limit} more issues not annotated (codefactory flags lists all)")
     return "\n".join(out)

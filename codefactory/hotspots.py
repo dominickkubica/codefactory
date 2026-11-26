@@ -84,7 +84,11 @@ def read(root: Path, months: int = MONTHS, max_commits: int = MAX_COMMITS, timeo
     except (OSError, subprocess.SubprocessError):
         head = []
     key = f"{'/'.join(head)}|{months}|{max_commits}|{time.strftime('%Y-%m-%d')}" if head else ""  # a day later, the window moves
-    path = root / ".codefactory" / "history.json"
+    from .paths import cache_dir
+
+    folder = cache_dir(root)
+    key = key if folder else ""  # an untrusted cache folder: read git each time
+    path = folder / "history.json" if folder else None
     if key:
         try:
             data = json.loads(path.read_text(encoding="utf-8"))

@@ -20,34 +20,57 @@ inputs:
     description: Install the tree-sitter language pack (Go, Java, Kotlin, Swift, Rust, C/C++, Ruby, PHP…)
     required: false
     default: "true"
+  project-typescript:
+    description: >-
+      Run the TypeScript compiler from the project's own node_modules (more precise, but it's the pull request's
+      code: leave off for pull requests from people you don't trust). Off: a pinned TypeScript the action installs.
+    required: false
+    default: "false"
 runs:
   using: composite
   steps:
     - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
       with:
         python-version: "3.12"
-    - name: Install codefactory
+    - name: Install the language pack and TypeScript (pinned)
       shell: bash
       env:
         SOURCE: ${{ github.action_path }}
+        LANGUAGES: ${{ inputs.languages }}
       run: |
-        # the action's own files are codefactory at the version the workflow asked for
-        if [ "${{ inputs.languages }}" = "true" ]; then pip install --quiet "$SOURCE[languages]"; else pip install --quiet "$SOURCE"; fi
+        # codefactory itself runs from the action's own files (no dependencies): nothing is fetched for it
+        if [ "$LANGUAGES" = "true" ]; then
+          pip install --quiet --no-deps --require-hashes -r "$SOURCE/action-requirements.txt"
+        fi
+        if command -v npm > /dev/null; then  # exact version: the registry never changes a published one
+          npm install --silent --no-save --ignore-scripts --prefix "$RUNNER_TEMP/codefactory-ts" typescript@5.9.3
+        fi
     - name: Compare with the base
       id: diff
       shell: bash
       env:
+        PYTHONPATH: ${{ github.action_path }}
         BASE_INPUT: ${{ inputs.base }}
         BASE_REF: ${{ github.base_ref }}
         FAIL_ON: ${{ inputs.fail-on }}
+        PROJECT_TS: ${{ inputs.project-typescript }}
       run: |
+        if [ "$PROJECT_TS" != "true" ]; then
+          export CODEFACTORY_PROJECT_TYPESCRIPT=0
+          ts="$RUNNER_TEMP/codefactory-ts/node_modules/typescript"
+          if [ -f "$ts/package.json" ]; then export CODEFACTORY_TYPESCRIPT="$ts"; fi
+        fi
         base="${BASE_INPUT:-${BASE_REF:+origin/$BASE_REF}}"
         if [ -n "$BASE_REF" ]; then git fetch --no-tags --quiet origin "$BASE_REF"; fi
         set +e
-        codefactory diff . ${base:+--base "$base"} --comment codefactory-comment.md --github --fail-on "$FAIL_ON"
+        python -m codefactory diff . ${base:+--base "$base"} --comment codefactory-comment.md --github --fail-on "$FAIL_ON"
         echo "status=$?" >> "$GITHUB_OUTPUT"
+        cat codefactory-comment.md >> "$GITHUB_STEP_SUMMARY" 2> /dev/null
     - name: Comment on the pull request
-      if: inputs.comment == 'true' && github.event_name == 'pull_request'
+      # a pull request from a fork gets a read-only token: its result is in the job summary instead
+      if: >-
+        inputs.comment == 'true' && github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name == github.repository
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
@@ -56,12 +79,12 @@ runs:
       run: |
         marker="<!-- codefactory -->"
         body="$(printf '%s\n%s' "$marker" "$(cat codefactory-comment.md)")"
-        id="$(gh api "repos/$REPO/issues/$PR/comments" --paginate --jq ".[] | select(.body | startswith(\"$marker\")) | .id" | head -1)"
+        id="$(gh api "repos/$REPO/issues/$PR/comments" --paginate --jq ".[] | select(.body | startswith(\"$marker\")) | .id" | head -1)" || id=""
         if [ -n "$id" ]; then
           gh api -X PATCH "repos/$REPO/issues/comments/$id" -f body="$body" > /dev/null
         else
           gh api "repos/$REPO/issues/$PR/comments" -f body="$body" > /dev/null
-        fi
+        fi || echo "::warning title=codefactory::couldn't post the comment (the token needs pull-requests: write); the result is in the job summary"
     - name: Result
       shell: bash
       run: exit ${{ steps.diff.outputs.status }}

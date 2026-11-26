@@ -69,11 +69,12 @@ def signatures(g: Graph, fns: list) -> dict[str, list[int]]:
     of its tokens) and computed on every core for the rest."""
     import hashlib
     import json
-    from pathlib import Path
 
     from .analyzers.parallel import MIN_PARALLEL, workers
+    from .paths import cache_dir
 
-    path = Path(g.root) / ".codefactory" / "minhash.json" if g.root else None
+    folder = cache_dir(g.root) if g.root else None
+    path = folder / "minhash.json" if folder else None
     try:
         old = json.loads(path.read_text(encoding="utf-8")) if path else {}
         old = old if old.get("v") == 1 else {}

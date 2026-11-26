@@ -12,7 +12,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from .checks import ANY, PATTERNS, PLACEHOLDER, VENDOR_SECRETS, Check, Evidence
+from .checks import ANY, PATTERNS, PLACEHOLDER, VENDOR_SECRETS, Check, Evidence, redact
 from .paths import drop_ignored, is_test, walk
 from .suppress import MARK
 
@@ -121,7 +121,7 @@ def dockerfiles(root: Path, files: list[Path], out: dict[str, Check]) -> None:
                 out["docker_latest"].hits.append(Evidence(rel, _line(text, m.start()), f"FROM {image}"))
         for m in ENV_SECRET.finditer(text):
             if not re.search(r"\$\{?\w+|changeme|example|<", m.group(0), re.I):
-                out["docker_secret"].hits.append(Evidence(rel, _line(text, m.start()), _excerpt(m.group(0))))
+                out["docker_secret"].hits.append(Evidence(rel, _line(text, m.start()), redact(_excerpt(m.group(0)))))
 
 
 def mobile(root: Path, out: dict[str, Check]) -> None:
@@ -190,7 +190,7 @@ def history(root: Path, current: set[str], out: dict[str, Check], max_lines: int
                     if value in current or (file, value) in seen or value in _now(root, file, texts):
                         continue  # still in the code: the current-files check reports it (or it was marked as intended)
                     seen.add((file, value))
-                    out["history_secret"].hits.append(Evidence(file, 0, f"commit {commit}: {_excerpt(line)}"))
+                    out["history_secret"].hits.append(Evidence(file, 0, f"commit {commit}: {redact(_excerpt(line))}"))
     finally:
         proc.kill()
         proc.stdout.close()
@@ -201,9 +201,16 @@ def history(root: Path, current: set[str], out: dict[str, Check], max_lines: int
     return note
 
 
-def current_secrets(secret_check: Check) -> set[str]:
-    """The secret values in today's files (history only reports the ones that are gone)."""
-    return {m.group(0) for e in secret_check.hits for p in PATTERNS["secret"] if (m := p.search(e.text))}
+def current_secrets(secret_check: Check, root: Path | None = None) -> set[str]:
+    """The secret values in today's files (history only reports the ones that are gone). Reported text is redacted,
+    so the values are read again from each reported line."""
+    lines = []
+    for e in secret_check.hits:
+        try:
+            lines.append((root / e.file).read_text(encoding="utf-8", errors="replace").splitlines()[e.line - 1])
+        except (OSError, IndexError, TypeError):
+            lines.append(e.text)
+    return {m.group(0) for line in lines for p in PATTERNS["secret"] if (m := p.search(line))}
 
 
 def find_dockerfiles(root: Path) -> list[Path]:

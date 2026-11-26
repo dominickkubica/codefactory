@@ -9,6 +9,7 @@ import time
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 from codefactory.brief import brief_markdown, context_data, context_markdown
 from codefactory.cache import fingerprint, load_cached
@@ -87,6 +88,9 @@ class AgentTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d) / "shop"
             shutil.copytree(SHOP, root, ignore=shutil.ignore_patterns(".codefactory"))
+            racy = mock.patch("codefactory.paths.RACY_NS", 0)  # files just copied: trust their stamps (tested apart)
+            racy.start()
+            self.addCleanup(racy.stop)
             first = load_graph(root)
             self.assertIsNotNone(load_cached(root, [".codefactory"]))
             self.assertTrue((root / ".codefactory" / ".gitignore").is_file())

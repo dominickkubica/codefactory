@@ -112,7 +112,8 @@ class RepositoryChecksTest(unittest.TestCase):
         subprocess.run([*git, "commit", "-qam", "use the environment"], check=True)
         out, note = scan(root, set())
         self.assertEqual([e.file for e in out["history_secret"].hits], ["config.py"])
-        self.assertIn("sk_live_", out["history_secret"].hits[0].text)
+        self.assertIn('STRIPE = "sk_l…"', out["history_secret"].hits[0].text)  # found, but never re-published
+        self.assertNotIn("4eC39Hq", out["history_secret"].hits[0].text)
         self.assertEqual(note, "")
 
 

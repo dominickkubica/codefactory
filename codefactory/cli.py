@@ -24,7 +24,7 @@ from .graph import Flag, Graph
 from .layers import assign_layers
 from .plan import make_plan, plan_markdown
 from .review import review_markdown
-from .sarif import build_sarif, github_annotations
+from .sarif import build_sarif, gha_command, github_annotations
 from .skill import SOURCE as SKILL_SOURCE
 from .skill import install_hook, install_skill, refresh_skill, skill_outdated, update
 from .sqlgraph import query_flags, run_query, to_sqlite
@@ -413,7 +413,7 @@ def cmd_diff(a) -> int:
     elif a.github:
         for i in result["new"]:
             kind = {"high": "error", "warn": "warning"}.get(i.severity, "notice")
-            print(f"::{kind} file={i.file},line={max(1, i.line)},title=codefactory {i.kind}::{i.message}")
+            print(gha_command(kind, i.file, max(1, i.line), f"codefactory {i.kind}", i.message))
     else:
         print(diff.markdown(result, owners=_owners(root.resolve())), end="")
     if a.comment:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import functools
 import re
+from pathlib import Path
 
 TEST_DIRS = ("tests", "test", "testing", "__tests__", "__mocks__", "spec")
 SCRIPT_DIRS = ("scripts", "script", "tools", "bin")
@@ -91,3 +92,49 @@ def platform_variants(a: str, b: str) -> bool:
         return False
     sa, sb = PLATFORM.sub("", na.rsplit(".", 1)[0]), PLATFORM.sub("", nb.rsplit(".", 1)[0])
     return sa == sb and (sa != na.rsplit(".", 1)[0] or sb != nb.rsplit(".", 1)[0])
+
+
+def cache_dir(root) -> Path | None:
+    """The repository's cache folder (`.codefactory/`), or None when it can't be trusted: a symbolic link (writes and
+    the diff's cleanup would land wherever it points) or committed to git (a pull request could plant results that
+    hide its findings). Then nothing is cached: every run analyzes in full."""
+    found = _cache_dir(str(Path(root).resolve()))
+    return Path(found) if found else None
+
+
+@functools.lru_cache(maxsize=64)
+def _cache_dir(root: str) -> str | None:
+    import subprocess
+    import sys
+
+    d = Path(root) / ".codefactory"
+    why = ""
+    if d.is_symlink() or (d.exists() and not d.is_dir()):
+        why = "is a symbolic link or a file"
+    else:
+        try:
+            out = subprocess.run(["git", "-C", root, "ls-files", "-z", "--", ".codefactory"], capture_output=True,
+                                 text=True, timeout=60)  # fmt: skip
+            if out.returncode == 0 and out.stdout.strip("\0"):
+                why = "is committed to git"
+        except (OSError, subprocess.TimeoutExpired):
+            pass  # no git: nothing can be committed
+    if why:
+        print(f"codefactory: {d} {why}, so it isn't used as a cache (a repository could use it to redirect writes or "
+              "plant results); analyzing in full.", file=sys.stderr)  # fmt: skip
+        return None
+    return str(d)
+
+
+# A file's stamp, for the caches: size, modification time and change time. The change time catches a copy that keeps
+# the old modification time (cp -p, tar, rsync -t); a file changed within RACY_NS of the stamp being taken isn't
+# trusted at all, since a second same-size edit in the same clock tick would look unchanged (git's "racy" rule).
+RACY_NS = 2_000_000_000
+
+
+def file_stamp(st) -> str:
+    return f"{st.st_size}|{st.st_mtime_ns}|{st.st_ctime_ns}"
+
+
+def racy(st, now_ns: int) -> bool:
+    return max(st.st_mtime_ns, st.st_ctime_ns) >= now_ns - RACY_NS

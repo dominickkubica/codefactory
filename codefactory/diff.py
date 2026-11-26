@@ -17,6 +17,7 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
+from .analyzers.typescript import project_typescript
 from .baseline import issue_key
 
 SEV_RANK = {"high": 0, "warn": 1, "info": 2}
@@ -57,11 +58,30 @@ def merge_base(root: Path, ref: str) -> str:
         return git(root, "rev-parse", ref)  # unrelated or shallow history: compare with the ref itself
 
 
-def extract(root: Path, sha: str) -> Path:
-    """The tree at `sha`, extracted once (git archive) into the cache folder."""
-    target = root / ".codefactory" / "diff" / sha[:12]
-    if (target / ".complete").exists():
-        return target
+def _keep(name: str) -> bool:
+    return name.lstrip("./").split("/")[0] != ".codefactory"  # a cache, never part of the code (and could be planted)
+
+
+def _base_member(member: tarfile.TarInfo, dest: str) -> tarfile.TarInfo | None:
+    """tarfile's data filter, leaving out what it refuses (a link out of the folder) instead of failing the diff."""
+    if not _keep(member.name):
+        return None
+    try:
+        return tarfile.data_filter(member, dest)
+    except tarfile.FilterError:
+        return None
+
+
+def extract(root: Path, sha: str, into: Path) -> Path:
+    """The tree at `sha`, extracted once (git archive) into `into/<sha>`: the cache folder, or a temporary one."""
+    target = into / sha[:12]
+    try:  # only our own marker, naming this commit: anything else is re-extracted
+        if (target / ".complete").read_text(encoding="utf-8") == sha and not target.is_symlink():
+            return target
+    except OSError:
+        pass
+    if target.is_symlink():
+        target.unlink()
     shutil.rmtree(target, ignore_errors=True)
     target.mkdir(parents=True)
     with tempfile.TemporaryDirectory() as tmp:
@@ -72,14 +92,18 @@ def extract(root: Path, sha: str) -> Path:
         git(Path(top), "archive", "--format=tar", "-o", str(archive), f"{sha}:{prefix}" if prefix else sha)
         with tarfile.open(archive) as tar:
             try:  # the data filter refuses absolute paths, links out of the folder and special files
-                tar.extractall(target, filter="data")
-            except TypeError:  # Python 3.11 before 3.11.4 has no filters: our own git archive, so still safe
-                tar.extractall(target)  # noqa: S202
+                tar.extractall(target, filter=_base_member)
+            except TypeError:  # Python 3.11 before 3.11.4 has no filters: leave out every link instead
+                safe = [m for m in tar.getmembers() if _keep(m.name) and (m.isfile() or m.isdir())]
+                tar.extractall(target, members=safe)  # noqa: S202
     (target / ".complete").write_text(sha, encoding="utf-8")
-    # older bases don't keep more than three around
-    olds = sorted((p for p in target.parent.iterdir() if p != target), key=lambda p: p.stat().st_mtime)
+    # older bases: keep three at most (real folders only: a link is removed, never followed)
+    olds = sorted((p for p in into.iterdir() if p != target), key=lambda p: p.lstat().st_mtime)
     for old in olds[:-2]:
-        shutil.rmtree(old, ignore_errors=True)
+        if old.is_symlink() or not old.is_dir():
+            old.unlink(missing_ok=True)
+        else:
+            shutil.rmtree(old, ignore_errors=True)
     return target
 
 
@@ -148,12 +172,19 @@ def run(root: Path, base_ref: str, load) -> dict:
     """load(path) -> graph. Returns base sha, changed files, new and fixed findings."""
     root = root.resolve()
     sha = merge_base(root, base_ref)
-    base_dir = extract(root, sha)
-    if (root / "node_modules" / "typescript").is_dir() and not os.environ.get("CODEFACTORY_TYPESCRIPT"):
-        # the base has no node_modules: use the same compiler for both sides, so only the code differs
-        os.environ["CODEFACTORY_TYPESCRIPT"] = str(root / "node_modules" / "typescript")
-    head_items = items(root, load(root))
-    base_items = items(base_dir, load(base_dir))
+    from .paths import cache_dir
+
+    cache = cache_dir(root)
+    if cache and (cache / "diff").is_symlink():
+        (cache / "diff").unlink()  # never extract (or clean up) through a link
+    with tempfile.TemporaryDirectory() as tmp:  # no trusted cache folder: the base lives only for this run
+        base_dir = extract(root, sha, cache / "diff" if cache else Path(tmp))
+        project_ts = project_typescript(root)
+        if project_ts and not os.environ.get("CODEFACTORY_TYPESCRIPT"):
+            # the base has no node_modules: use the same compiler for both sides, so only the code differs
+            os.environ["CODEFACTORY_TYPESCRIPT"] = str(project_ts)
+        head_items = items(root, load(root))
+        base_items = items(base_dir, load(base_dir))
     new, gone = compare(base_items, head_items)
     changed = changed_files(root, sha)
     order = lambda i: (SEV_RANK.get(i.severity, 3), i.file, i.line)  # noqa: E731

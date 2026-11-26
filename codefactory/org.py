@@ -52,7 +52,12 @@ def snapshot(root: Path, graph: dict) -> dict:
 
 def record(root: Path, snap: dict) -> list[dict]:
     """Append today's snapshot to the repository's history; return the history (oldest first)."""
-    path = root / ".codefactory" / "history.jsonl"
+    from .paths import cache_dir
+
+    folder = cache_dir(root)
+    if folder is None:
+        return [{k: snap[k] for k in ("date", "grade", "findings", "flags")}]  # untrusted folder: no history kept
+    path = folder / "history.jsonl"
     rows = []
     try:
         rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]

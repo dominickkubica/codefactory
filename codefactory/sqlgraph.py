@@ -68,10 +68,29 @@ def to_sqlite(graph: dict, path: str | Path = ":memory:") -> sqlite3.Connection:
     return db
 
 
-def run_query(db: sqlite3.Connection, sql: str) -> tuple[list[str], list[tuple]]:
-    cur = db.execute(sql)
-    cols = [d[0] for d in cur.description or []]
-    return cols, cur.fetchall()
+# what a query may do: read. Not write, ATTACH a file (that creates it anywhere the user can write), or PRAGMA: saved
+# queries come from the analyzed repository's factory.toml, so they're the repository's code, not the user's
+_READ = {sqlite3.SQLITE_SELECT, sqlite3.SQLITE_READ, sqlite3.SQLITE_FUNCTION, getattr(sqlite3, "SQLITE_RECURSIVE", 33)}
+
+
+def _read_only(action: int, *_: object) -> int:
+    return sqlite3.SQLITE_OK if action in _READ else sqlite3.SQLITE_DENY
+
+
+def run_query(db: sqlite3.Connection, sql: str, seconds: float = 30) -> tuple[list[str], list[tuple]]:
+    """One read-only statement, stopped after `seconds` (a recursive query can run forever)."""
+    import time
+
+    deadline = time.monotonic() + seconds
+    db.set_authorizer(_read_only)
+    db.set_progress_handler(lambda: int(time.monotonic() > deadline), 10_000)
+    try:
+        cur = db.execute(sql)
+        cols = [d[0] for d in cur.description or []]
+        return cols, cur.fetchall()
+    finally:
+        db.set_authorizer(None)
+        db.set_progress_handler(None, 0)
 
 
 def query_flags(graph: dict, queries: list[dict]) -> list[dict]:
@@ -89,8 +108,10 @@ def query_flags(graph: dict, queries: list[dict]) -> list[dict]:
 def _rows_to_flags(db: sqlite3.Connection, queries: list[dict]) -> list[dict]:
     out = []
     for q in queries:
-        # codefactory: ignore io_in_loop — one query per saved query in factory.toml, on an in-memory database
-        cols, rows = run_query(db, q["sql"])
+        try:  # codefactory: ignore io_in_loop — one query per saved query in factory.toml, on an in-memory database
+            cols, rows = run_query(db, q["sql"])
+        except sqlite3.Error as e:  # refused (not a read) or broken: say which saved query
+            raise ValueError(f"Saved query {q['name']!r} in factory.toml failed: {e} (queries can only read)") from None
         if "target" not in cols:
             raise ValueError(f"Saved query {q['name']!r} must return a 'target' column")
         for row in rows:

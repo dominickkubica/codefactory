@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import time
 from pathlib import Path
 
 from . import __version__
@@ -33,7 +34,7 @@ def _parsers() -> str:
     if node:
         bin_dir = Path(node).resolve().parent
         candidates += [str(bin_dir.parent / "lib" / "node_modules" / "typescript"), str(bin_dir / "node_modules" / "typescript")]
-    ts = next((c for c in candidates if c and (Path(c) / "package.json").is_file()), "")
+    ts = next((c for c in candidates if c and (Path(c) / "lib" / "typescript.js").is_file()), "")
     return f"pack={available()}|node={bool(node)}|ts={ts}"
 
 
@@ -51,11 +52,15 @@ def _tool_stamp() -> str:
     return "\n".join(parts)
 
 
-def fingerprint(root: Path, ignore: list[str]) -> str:
+def fingerprint(root: Path, ignore: list[str], recent: list | None = None) -> str:
+    """Every source file's stamp. `recent` (if given) gets True when a file changed too recently to trust."""
+    from .paths import file_stamp, racy
+
+    now_ns = time.time_ns()
     skip = set(ignore)
     h = hashlib.sha1((_tool_stamp() + "\n" + _parsers()).encode("utf-8", "surrogatepass"))
     source = _source_ext()
-    local_ts = root / "node_modules" / "typescript" / "package.json"  # a project-local compiler appearing counts too
+    local_ts = root / "node_modules" / "typescript" / "lib" / "typescript.js"  # a project-local compiler appearing counts too
     h.update(f"local_ts={local_ts.is_file()}\n".encode())
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = sorted(d for d in dirnames if d not in skip and not d.endswith(".egg-info"))
@@ -66,16 +71,23 @@ def fingerprint(root: Path, ignore: list[str]) -> str:
                     st = os.stat(p)
                 except OSError:
                     continue
-                h.update(f"{os.path.relpath(p, root)}|{st.st_size}|{st.st_mtime_ns}\n".encode("utf-8", "surrogatepass"))
+                if recent is not None and not recent and racy(st, now_ns):
+                    recent.append(True)
+                h.update(f"{os.path.relpath(p, root)}|{file_stamp(st)}\n".encode("utf-8", "surrogatepass"))
     return h.hexdigest()
 
 
-def _dir(root: Path) -> Path:
-    return root / ".codefactory"
+def _dir(root: Path) -> Path | None:
+    from .paths import cache_dir
+
+    return cache_dir(root)
 
 
 def load_cached(root: Path, ignore: list[str]) -> dict | None:
-    path = _dir(root) / "graph.json"
+    d = _dir(root)
+    if d is None:
+        return None
+    path = d / "graph.json"
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -85,9 +97,15 @@ def load_cached(root: Path, ignore: list[str]) -> dict | None:
 
 def save_cache(root: Path, ignore: list[str], graph: dict) -> None:
     d = _dir(root)
+    if d is None:
+        return  # untrusted cache folder: analyze in full each time
+    recent: list = []
+    stamp = fingerprint(root, ignore, recent)
+    if recent:
+        return  # a file changed in the last moments: a same-size edit in the same tick would look unchanged
     try:
         d.mkdir(exist_ok=True)
         (d / ".gitignore").write_text("# codefactory's cache: never committed\n*\n", encoding="utf-8")
-        (d / "graph.json").write_text(json.dumps({"fingerprint": fingerprint(root, ignore), "graph": graph}), encoding="utf-8")
+        (d / "graph.json").write_text(json.dumps({"fingerprint": stamp, "graph": graph}), encoding="utf-8")
     except OSError:
         pass  # read-only checkout: just analyze each time

@@ -229,6 +229,26 @@ WEAK_CONTEXT_FROM_FUNCTION = ("weak_random", "weak_hash")  # a token made in new
 FUNC_HEADER = re.compile(r"^\s*(?:async\s+)?(?:def|func|function|fun|fn)\s+(\w+)|^\s*(?:export\s+)?(?:public|private|static)\b")
 
 
+# the value part of a secret, wherever it's reported (PR comments, SARIF, annotations, the review): enough to find it
+# (its first 4 characters), never enough to use it
+_VENDOR_KEY = re.compile(
+    r"\b(?:AKIA[0-9A-Z]{16}|(?:ghp|gho|ghu|ghs)_[A-Za-z0-9]{36}|xox[abpr]-[A-Za-z0-9-]{10,}|sk_live_[A-Za-z0-9]{16,}|"
+    r"AIza[0-9A-Za-z_-]{35})"
+)
+_NAMED_VALUE = re.compile(
+    r"""(?i)(\b[\w.-]*(?:key|secret|token|passw|pwd|auth|credential|private)[\w.-]*["']?\s*[:=]\s*["']?)"""
+    r"""([^\s"',;}]{4})[^\s"',;}]{2,}"""
+)
+_PEM_BODY = re.compile(r"(PRIVATE KEY-----(?:\\r)?(?:\\n)?)[A-Za-z0-9+/=]{8,}")
+
+
+def redact(text: str) -> str:
+    """The text with secret values cut to their first 4 characters: `AKIA…`, `API_KEY = "sk_l…"`."""
+    text = _VENDOR_KEY.sub(lambda m: m.group(0)[:4] + "…", text)
+    text = _NAMED_VALUE.sub(lambda m: m.group(1) + m.group(2) + "…", text)
+    return _PEM_BODY.sub(lambda m: m.group(1) + "…", text)
+
+
 def _excerpt(line: str) -> str:
     t = line.strip()
     return t if len(t) <= 140 else t[:137] + "…"
@@ -352,7 +372,7 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                     if key == "swallowed" and (why := swallow_intent(line, lines[i - 2] if i > 1 else "")):
                         out["swallowed_ok"].hits.append(Evidence(fid, i, why))  # deliberate: counted, not reported
                         continue
-                    out[key].hits.append(Evidence(fid, i, _excerpt(line)))
+                    out[key].hits.append(Evidence(fid, i, redact(_excerpt(line)) if key == "secret" else _excerpt(line)))
             if sql_here and (m := SQL_CALL.search(line)) and hit("sql_built", i):
                 stmt = " ".join(lines[i - 1 : i + 4])
                 if SQL_WORD.search(stmt):

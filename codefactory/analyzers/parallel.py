@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
@@ -28,29 +29,41 @@ def workers() -> int:
     return max(1, min(32, (os.cpu_count() or 1)))
 
 
-def _stamp(path: Path) -> str:
+def _stamp(path: Path, now_ns: int = 0) -> str:
+    """The file's stamp; "" (never matches) when it changed too recently to trust (see paths.racy)."""
+    from ..paths import file_stamp, racy
+
     st = path.stat()
-    return f"{st.st_size}:{st.st_mtime_ns}"
+    return "" if now_ns and racy(st, now_ns) else file_stamp(st)
 
 
-def _cache_file(root: Path, name: str) -> Path:
-    return root / ".codefactory" / f"files-{name}.json"
+def _cache_file(root: Path, name: str) -> Path | None:
+    from ..paths import cache_dir
+
+    d = cache_dir(root)
+    return d / f"files-{name}.json" if d else None
 
 
 def _load(root: Path, name: str, tool: str) -> dict:
+    path = _cache_file(root, name)
+    if path is None:
+        return {}
     try:
-        data = json.loads(_cache_file(root, name).read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
     return data.get("files", {}) if data.get("tool") == tool else {}
 
 
 def _save(root: Path, name: str, tool: str, files: dict) -> None:
+    path = _cache_file(root, name)
+    if path is None:
+        return  # untrusted cache folder
     try:
-        d = root / ".codefactory"
+        d = path.parent
         d.mkdir(exist_ok=True)
         (d / ".gitignore").write_text("# codefactory's cache: never committed\n*\n", encoding="utf-8")
-        _cache_file(root, name).write_text(json.dumps({"tool": tool, "files": files}), encoding="utf-8")
+        path.write_text(json.dumps({"tool": tool, "files": files}), encoding="utf-8")
     except OSError:
         pass  # a read-only checkout: analyze in full each time
 
@@ -70,13 +83,14 @@ def run(
     out: dict[str, dict] = {}
     stamps: dict[str, str] = {}
     todo: list[tuple[str, tuple]] = []
+    now_ns = time.time_ns()
     for rel, args in items:
         try:
-            stamps[rel] = _stamp(root / rel)
+            stamps[rel] = _stamp(root / rel, now_ns)
         except OSError:
             continue
         hit = old.get(rel)
-        if hit and hit[0] == stamps[rel]:
+        if hit and stamps[rel] and hit[0] == stamps[rel]:
             if hit[1] is not None:
                 out[rel] = hit[1]
         else:
