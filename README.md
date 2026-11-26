@@ -25,7 +25,7 @@ the number of calls it carries. Dashed orange conveyors run backwards, from a lo
 pip install "codefactory-cli[languages]"
 cd path/to/your/repo
 
-codefactory review -o review.md  # a technical review of the repository (--online: also vulnerable dependencies)
+codefactory review               # a technical review, saved as codefactory-review-<date>.md (--online: also vulnerable dependencies)
 codefactory view                 # the interactive map, in your browser
 codefactory plan                 # what to fix first, ranked; then: codefactory prompt 1
 codefactory export               # every finding as one audit file: give it to Claude to triage into fixes

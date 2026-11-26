@@ -77,6 +77,10 @@ Each has a regression test (`tests/test_security_audit.py`).
   for exactly those locations. Shaped by a trial: a fresh Claude triaged a 77k-line repository from it, and its
   critique (no code shown, three quarters fix boilerplate, a confidence label that read backwards, counts that didn't
   match) halved the file and changed the format.
+- **Files say what they are and when**: `review` at a terminal saves `codefactory-review-<date>.md` instead of
+  scrolling a whole report past (a pipe or Claude Code still gets the text; `-o -` prints it), and `export` saves
+  `codefactory-audit-<date>.md`. Neither overwrites the last one. Plain `codefactory` says where to start instead
+  of reporting a usage error. (From a tester who didn't read three lines further.)
 - **Copy-group titles name every function** ("Merge down_days, up_days"), not "2 copies of" one of them.
 - **The factory view has Export audit and Copy for Claude buttons** with the same file, so its security and
   reliability findings are a click away (the map's panel lists the structural ones).

@@ -32,7 +32,7 @@ an option is rejected, run `codefactory update` (it also refreshes this file to 
 | Checking a patch or proposed change without the repository | `codefactory diff --patch change.diff` (or `-` for stdin): the line checks on the lines it adds |
 | Dependency inventory or supply-chain questions | `codefactory sbom -o sbom.cdx.json` (CycloneDX, every pinned dependency with its package URL; offline) |
 | A finding is intended (confirmed safe, deliberate) | `codefactory accept <kind> <file> --why "…"` or `codefactory accept <plan task id> --why "…"` (writes a rule to `factory.toml`; the user decides whether to commit it) |
-| Handing the findings to someone (or another session) to triage | `codefactory export` (writes codefactory-audit.md: every finding with id, severity, complexity, every location, fix, how to verify, and ready-made fixes; `--json` for tools) |
+| Handing the findings to someone (or another session) to triage | `codefactory export -o -` to read it here, or `codefactory export` to save codefactory-audit-<date>.md ( every finding with id, severity, complexity, every location, fix, how to verify, and ready-made fixes; `--json` for tools) |
 | Showing the human | `codefactory view -o <file>.html` (an interactive factory-floor map; lenses for duplication, efficiency, size) |
 
 ## Working rules

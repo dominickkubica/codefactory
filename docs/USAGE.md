@@ -117,8 +117,9 @@ codefactory flags --silenced               # what's been silenced, and why
 ## The technical review
 
 ```bash
-codefactory review -o review.md
-codefactory review --for-ai -o review-for-ai.md
+codefactory review                  # saved as codefactory-review-2026-11-26-0915.md
+codefactory review --for-ai         # the same, with an evidence pack for an AI to finish the review
+codefactory review -o -             # print it instead (what a pipe or Claude Code gets anyway)
 ```
 
 The report has the structure of a principal engineer's review:
@@ -158,8 +159,8 @@ evidence pack exists to point an AI or a person at exactly that code.
 ## An audit to hand over: export
 
 ```bash
-codefactory export                 # codefactory-audit.md
-codefactory export --json          # codefactory-audit.json
+codefactory export                 # codefactory-audit-2026-11-26-0915.md
+codefactory export --json          # codefactory-audit-2026-11-26-0915.json
 codefactory export -o - | pbcopy   # print it (here: to the clipboard on a Mac)
 ```
 

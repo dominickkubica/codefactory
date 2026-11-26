@@ -89,6 +89,32 @@ class ExportTest(unittest.TestCase):
         loops = lambda d: next(x["id"] for x in d["findings"] if "inside loops" in x["title"])  # noqa: E731
         self.assertEqual(loops(doc), loops(again))  # 9 places or 10: the same finding, the same id
 
+    def test_default_files_are_named_and_dated(self):
+        import os
+        from unittest import mock
+
+        root, cwd = project(), os.getcwd()
+        here = tempfile.mkdtemp()
+        os.chdir(here)
+        try:
+            with contextlib.redirect_stdout(io.StringIO()) as printed, contextlib.redirect_stderr(io.StringIO()):
+                main(["export", str(root)])
+                with mock.patch("sys.stdout.isatty", return_value=True):
+                    main(["review", str(root)])
+            names = sorted(os.listdir(here))
+            self.assertRegex(names[0], r"^codefactory-audit-\d{4}-\d{2}-\d{2}-\d{4}\.md$")
+            self.assertRegex(names[1], r"^codefactory-review-\d{4}-\d{2}-\d{2}-\d{4}\.md$")
+            self.assertNotIn(":", "".join(names))  # Windows can't have one in a file name
+            self.assertIn("Wrote codefactory-review-", printed.getvalue())
+            with contextlib.redirect_stdout(io.StringIO()) as piped, contextlib.redirect_stderr(io.StringIO()):
+                main(["review", str(root)])  # not a terminal (a pipe, Claude Code): the text, as before
+            self.assertTrue(piped.getvalue().startswith("# Technical review"))
+            with contextlib.redirect_stdout(io.StringIO()) as start:
+                self.assertEqual(main([]), 0)
+            self.assertIn("codefactory review", start.getvalue())
+        finally:
+            os.chdir(cwd)
+
     def test_cli_and_viewer_button(self):
         root = project()
         out = Path(tempfile.mkdtemp()) / "audit.md"

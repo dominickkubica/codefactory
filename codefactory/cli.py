@@ -10,6 +10,7 @@ import json
 import os
 import sys
 import webbrowser
+from datetime import datetime
 from pathlib import Path
 
 from . import __version__
@@ -544,7 +545,7 @@ def cmd_export(a) -> int:
     if not path.is_dir():
         raise SystemExit("codefactory: export needs the repository folder (it reads manifests, CI files and source text)")
     text = export(load_graph(path, a.lang, not a.no_cache), path.resolve(), a.json, a.online)
-    out = a.output or ("codefactory-audit.json" if a.json else "codefactory-audit.md")
+    out = a.output or stamped("audit", "json" if a.json else "md")
     if out == "-":
         print(text, end="")
         return 0
@@ -554,16 +555,25 @@ def cmd_export(a) -> int:
     return 0
 
 
+def stamped(kind: str, ext: str = "md") -> str:
+    """codefactory-review-2026-11-26-0915.md: says what it is and when, sorts by date, never overwrites the last one
+    (and has no colon, which Windows doesn't allow in a file name)."""
+    return f"codefactory-{kind}-{datetime.now():%Y-%m-%d-%H%M}.{ext}"
+
+
 def cmd_review(a) -> int:
     path = Path(a.path)
     if not path.is_dir():
         raise SystemExit("codefactory: review needs the repository folder (it reads manifests, CI files and source text)")
     text = review_markdown(load_graph(path, a.lang, not a.no_cache), path.resolve(), a.for_ai, a.online)
-    if a.output:
-        _write(Path(a.output), text)
-        print(f"Wrote {a.output}")
-    else:
+    # someone at a terminal gets a file (a whole report scrolling past is no use); a pipe, or a tool like Claude Code
+    # reading the output, still gets the text
+    out = a.output or (stamped("review") if sys.stdout.isatty() else "-")
+    if out == "-":
         print(text, end="")
+    else:
+        _write(Path(out), text)
+        print(f"Wrote {out}")
     return 0
 
 
@@ -691,6 +701,19 @@ COMMANDS = {
 }
 
 
+START = """codefactory: map a codebase, find its problems, turn them into work. From your repository's folder:
+
+  codefactory review        a technical review, saved as codefactory-review-<date>.md
+  codefactory view          the interactive map, in your browser (with Export audit)
+  codefactory export        every finding as one file: give it to Claude to triage into fixes
+  codefactory plan          what to fix first; then `codefactory prompt 1` for a ready-to-paste brief
+
+  codefactory skill --hook  teach Claude Code in this repository to use all of it
+
+`codefactory --help` lists every command.
+"""
+
+
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="codefactory",
@@ -698,7 +721,8 @@ def parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""examples:
   codefactory view                 open the factory view of this folder in your browser
-  codefactory review -o review.md  a technical review of this repository
+  codefactory review               a technical review (codefactory-review-<date>.md)
+  codefactory export               every finding as an audit to give Claude to triage
   codefactory plan                 ranked tasks; then: codefactory prompt 1
   codefactory context <name>       before changing a function: callers, impact, tests
   codefactory baseline && codefactory check     fail CI only on new issues
@@ -764,7 +788,7 @@ Run `codefactory <command> --help` for a command's options.""",
         if name in ("analyze", "view", "brief", "baseline", "review", "sarif"):
             s.add_argument("-o", "--output", help="output file")
         if name == "export":
-            s.add_argument("-o", "--output", help="output file (default codefactory-audit.md, or .json; - prints it)")
+            s.add_argument("-o", "--output", help="output file (default codefactory-audit-<date>.md, or .json; - prints it)")
         if name in ("brief", "context"):
             s.add_argument("--limit", type=int, default=12 if name == "brief" else 20, help="items per list")
         if name == "flags":
@@ -812,6 +836,9 @@ def main(argv: list[str] | None = None) -> int:
     """Runs a command. Problems a user can fix (a bad factory.toml, a missing folder, TypeScript not installed) end
     with a one-line message; anything unexpected says how to get the full traceback (--debug) to report it."""
     _safe_stdout()
+    if not (sys.argv[1:] if argv is None else argv):  # just `codefactory`: where to start, not a usage error
+        print(START, end="")
+        return 0
     a = parser().parse_args(argv)
     OPTIONS["no_tests"] = bool(getattr(a, "no_tests", False))
     debug = a.debug or bool(os.environ.get("CODEFACTORY_DEBUG"))
