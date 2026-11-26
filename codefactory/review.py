@@ -1272,6 +1272,8 @@ class Review:
         Below 85% the pair is usually a deliberate variant (unticking a set vs deleting it, "45 sec" vs "45s")."""
         if task["kind"] not in ("duplicate", "similar") or any(is_test(w["file"]) for w in task["where"]):
             return False
+        if all(is_doc_sample(w["file"]) for w in task["where"]):
+            return False  # samples and tutorials repeat their setup on purpose: each stands alone
         m = re.search(r"(\d+)% similar", task["title"])
         return not m or int(m.group(1)) >= 85
 

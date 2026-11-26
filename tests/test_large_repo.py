@@ -89,6 +89,30 @@ class LargeRepoLessonsTest(unittest.TestCase):
         order = ["Low", "Medium", "High", "Critical"]
         self.assertLess(order.index(shell_severity("scripts/release.js")), order.index(shell_severity("src/publish.js")))
 
+    def test_a_security_linters_suppression_is_respected_but_never_for_credentials(self):  # Caddy's test helper
+        root = repo({"helper.go": "package helper\n\nimport \"crypto/tls\"\n\n"
+                                  "var c = &tls.Config{InsecureSkipVerify: true} //nolint:gosec\n"
+                                  "var d = &tls.Config{InsecureSkipVerify: true}\n",
+                     "keys.py": 'TOKEN = "ghp_aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789"  # nosec\n'})  # fmt: skip
+        found = scan_sources(root, ["helper.go", "keys.py"])
+        self.assertEqual([e.line for e in found["tls_off"].hits], [6])
+        self.assertTrue(found["secret"].hits)
+
+    def test_copies_only_between_samples_are_not_merge_tasks(self):  # NestJS's sample/ apps
+        boot = (
+            "def bootstrap(port, debug):\n    app = make(port)\n    if debug:\n        app.use(log)\n"
+            "        app.use(trace)\n    for name in ('a', 'b', 'c'):\n        app.mount(name, load(name))\n"
+            "    app.settings['timeout'] = 30\n    app.settings['retries'] = 3\n    app.listen(port)\n    return app\n"
+        )
+        root = repo({"sample/01-cats/main.py": boot, "sample/02-dogs/main.py": boot,
+                     "src/a.py": boot.replace("bootstrap", "start").replace("30", "60").replace("'c'", "'d', 'e'"),
+                     "src/b.py": boot.replace("bootstrap", "begin").replace("30", "60").replace("'c'", "'d', 'e'")})  # fmt: skip
+        r = Review(build(root, cache=False).to_dict(), root)
+        r.architecture()
+        copied = next((f for f in r.findings if f.title.startswith("Copied logic")), None)
+        self.assertIsNotNone(copied)
+        self.assertNotIn("sample/", " ".join(copied.evidence))
+
 
 if __name__ == "__main__":
     unittest.main()

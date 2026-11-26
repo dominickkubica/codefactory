@@ -22,6 +22,8 @@ From reviewing four large public repositories (Django, FastAPI, excalidraw, gin)
 - **Public build variables aren't secrets** (`VITE_`, `NEXT_PUBLIC_`, `REACT_APP_`… in `.env` files), and **No
   lockfile** is Low when `package.json` holds only development tools.
 - Risky calls only in build and release scripts rank one level lower.
+- **A security linter's suppression is respected** on the line (`//nolint:gosec`, `# nosec`, `NOSONAR`) for TLS,
+  eval, shell, HTML and SQL patterns; never for credentials. Copies only between samples aren't merge tasks.
 
 ## 0.21.2 · 2026-11-26
 

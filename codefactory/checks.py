@@ -262,9 +262,18 @@ def _excerpt(line: str) -> str:
     return t if len(t) <= 140 else t[:137] + "…"
 
 
+# a security linter's suppression on the line (gosec's `//nolint:gosec`, bandit's `# nosec`, Sonar's NOSONAR): the authors
+# looked at this line and decided; a credential is never excused this way
+NOSEC = re.compile(r"(?://|#)\s*(?:nosec\b|nolint:\s*[\w,]*\bgosec\b|NOSONAR\b)")
+NOSEC_KEYS = {"tls_off", "eval", "shell", "raw_html", "sql_built", "weak_hash", "weak_random"}
+
+
 def _ignored(lines: list[str], i: int, key: str, file_kinds: set[str] | None) -> bool:
-    """`codefactory: ignore <check>` on the line or the one above, or `ignore-file` for the file (no kinds = all)."""
+    """`codefactory: ignore <check>` on the line or the one above, or `ignore-file` for the file (no kinds = all); for
+    security patterns, also a security linter's suppression on the line itself."""
     if file_kinds is not None and (not file_kinds or key in file_kinds):
+        return True
+    if key in NOSEC_KEYS and 1 <= i <= len(lines) and NOSEC.search(lines[i - 1]):
         return True
     for ln in (i, i - 1):
         if 1 <= ln <= len(lines) and (m := MARK.search(lines[ln - 1])) and not m.group(1):
