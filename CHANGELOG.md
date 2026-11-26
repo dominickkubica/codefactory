@@ -3,6 +3,18 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## Unreleased
+
+From running on a set of personal repositories (18: apps, sites, class projects, scripts):
+
+- Streamlit, Gradio, Dash and Panel apps are profiled as web apps (with where each listens by default: Streamlit on
+  every interface, the others on localhost). Six Streamlit apps had read as command-line tools or data pipelines.
+- Static websites (an index.html, no server code) are a kind of their own, instead of "unknown"; "No automated tests"
+  and "No continuous integration" are Low for them.
+- A small project (under 2,000 lines) that isn't deployed, has no accounts and holds no health or financial data gets
+  "No continuous integration" as Low and "No automated tests" as Medium, each with the reason. A 391-line script had
+  been told its missing CI was High. Unknown kinds keep the default.
+
 ## 0.20.2 · 2026-11-26
 
 - On PyPI: `pip install "codefactory-cli[languages]"` (`codefactory` on PyPI is an unrelated project; the command is

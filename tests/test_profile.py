@@ -103,6 +103,42 @@ class DetectTest(unittest.TestCase):
             profile({**EXPO, "factory.toml": '[profile]\nkind = "spaceship"\n'})
 
 
+class SmallAndStaticTest(unittest.TestCase):
+    """From running on a set of personal repositories: Streamlit apps read as tools or pipelines, static sites as
+    unknown, and a 400-line script was told its lack of CI is High."""
+
+    def test_streamlit_app_is_a_web_app_reachable_on_the_lan(self):
+        p = profile({"requirements.txt": "streamlit>=1.20\npandas\n",
+                     "app.py": "import streamlit as st\nimport pandas as pd\n\nst.title('Lifts')\n"})  # fmt: skip
+        self.assertEqual((p.kind, p.deployment, p.users), ("web app", "LAN server", "no sign-in"))
+        self.assertIn("Streamlit", p.kind_evidence[0])
+        g = profile({"app.py": "import gradio as gr\n\ngr.Interface(fn=len, inputs='text', outputs='text').launch()\n"})
+        self.assertEqual((g.kind, g.deployment), ("web app", "local server"))  # no manifest: the import says it
+
+    def test_static_website(self):
+        p = profile({"index.html": "<html><body>hi</body></html>\n", "style.css": "body{}\n", ".nojekyll": ""})
+        self.assertEqual((p.kind, p.deployment), ("static website", "static hosting"))
+        self.assertIn(".nojekyll", p.kind_evidence[0])
+
+    def test_small_projects_and_static_sites_rank_process_findings_lower(self):
+        def ranked(files):
+            root = repo(files)
+            r = Review(build(root, cache=False).to_dict(), root)
+            r.run()
+            return {f.title: f.severity for f in r.findings if f.title.startswith("No ")}
+
+        small = ranked({"requirements.txt": "streamlit\n", "app.py": "import streamlit as st\n\nst.write('hi')\n"})
+        self.assertEqual((small["No continuous integration"], small["No automated tests"]), ("Low", "Medium"))
+        static = ranked({"index.html": "<html></html>\n"})
+        self.assertEqual((static["No continuous integration"], static["No automated tests"]), ("Low", "Low"))
+        big = ranked({"requirements.txt": "streamlit\n", "app.py": "import streamlit as st\n" + "x = 1\n" * 2500})
+        self.assertEqual(big["No continuous integration"], "High")  # big enough to be someone's codebase
+        deployed = ranked({"requirements.txt": "flask\n", "Procfile": "web: gunicorn app:app\n",
+                           "app.py": "from flask import Flask\napp = Flask(__name__)\n\n@app.post('/x')\ndef x():\n"
+                                     "    return 'ok'\n"})  # fmt: skip
+        self.assertEqual(deployed["No continuous integration"], "High")  # others depend on it
+
+
 class RerankTest(unittest.TestCase):
     def test_review_ranks_for_the_project(self):
         root = repo(EXPO)

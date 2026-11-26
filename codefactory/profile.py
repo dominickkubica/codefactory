@@ -2,8 +2,9 @@
 
 Detected from manifests, the attack surface and the source text, each conclusion with the evidence for it:
 
-- kind: mobile app, web app (UI + API), web service, desktop app, web front-end, command-line tool, data pipeline,
-  library (and the other roles a repository also plays: a backend with a CLI, an app with scripts)
+- kind: mobile app, web app (UI + API, or a Streamlit/Gradio/Dash script served as a page), web service, desktop app,
+  web front-end, static website, command-line tool, data pipeline, library (and the other roles a repository also
+  plays: a backend with a CLI, an app with scripts)
 - deployment: where it runs and who can reach it: local-first on a device, a client of some backend, a server bound to
   this machine, a LAN, every interface, or deployed (Docker, Vercel, Fly…); a CLI or library on the user's machine
 - users: one person (the device owner, whoever runs it), many accounts with sign-in, or a server with no sign-in found
@@ -129,6 +130,12 @@ PIPELINE = {
     "pandas", "polars", "duckdb", "pyspark", "apache-airflow", "dagster", "prefect", "dbt-core", "luigi",
     "great-expectations", "torch", "tensorflow", "jax", "scikit-learn", "xgboost", "lightgbm",
 }  # fmt: skip
+# Python libraries that serve a script as a web page: an app (with a UI, served over HTTP), not a tool or a pipeline.
+# Where each listens by default decides who can reach it.
+DASHBOARD = {"streamlit": ("Streamlit", "LAN server", "Streamlit listens on every network interface by default (port 8501)"),
+             "gradio": ("Gradio", "local server", "Gradio listens on 127.0.0.1 unless told otherwise"),
+             "dash": ("Dash", "local server", "Dash listens on 127.0.0.1 unless told otherwise"),
+             "panel": ("Panel", "local server", "Panel listens on localhost unless told otherwise")}  # fmt: skip
 CLI_LIBS = {"click", "typer", "fire", "docopt", "commander", "yargs", "oclif", "@oclif/core", "cac", "meow"}
 WORKSPACES = {"packages", "apps", "services", "libs", "modules", "projects", "crates", "plugins"}
 # what a deploy job runs: a cloud CLI or action, not just the word "deploy"
@@ -157,6 +164,7 @@ class Profile:
     open_writes: int = 0
     stores: list[str] = field(default_factory=list)
     corrected: list[str] = field(default_factory=list)  # what factory.toml's [profile] overrode
+    lines: int = 0  # lines of source code
 
     @property
     def local_first(self) -> bool:
@@ -493,6 +501,14 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None, source
         roles.append(("desktop app", [f"{d} in {deps[d]}" for d in desktop[:2]]))
     if web_ui and not endpoints and not mobile and not desktop:
         roles.append(("web front-end", web_ui[:1]))
+    dashboard = [d for d in has(*DASHBOARD)] or [
+        d for d in DASHBOARD if any(f.endswith(".py") and re.search(rf"^\s*(?:import|from) {d}\b", texts.get(f, ""), re.M)
+                                    for f in files)
+    ]  # fmt: skip
+    if dashboard and not mobile and not endpoints:
+        name = DASHBOARD[dashboard[0]][0]
+        source = f"{dashboard[0]} in {deps[dashboard[0]]}" if dashboard[0] in deps else f"imports {dashboard[0]}"
+        roles.insert(0, ("web app", [f"{source} (a {name} app: a Python script served as a web page)"]))
     cli = m["py_scripts"] + m["npm_bin"] + m["cli"] + [f"{c} in {deps[c]}" for c in has(*CLI_LIBS)]
     if m["rust_bin"] and has("clap", "structopt", "argh"):
         cli.append("Rust binary with clap")
@@ -524,6 +540,10 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None, source
               r"sklearn|numpy)\b", texts.get(f, ""), re.M) and "__main__" in texts.get(f, "")]  # fmt: skip
         if ml:  # no manifest at all: scripts that train or transform data
             roles.append(("data pipeline", [f"`{ml[0]}` imports a data or ML library and runs as a script"]))
+    pages = [f for f in ("index.html", "docs/index.html", "public/index.html", "site/index.html") if (root / f).is_file()]
+    if not roles and pages and not any(f.endswith(".py") or f.endswith(".go") or f.endswith(".rb") for f in files) and not deps:
+        hosted = [f for f in ("CNAME", ".nojekyll", "netlify.toml", "vercel.json") if (root / f).is_file()]
+        roles.append(("static website", [f"{pages[0]} and no server code" + (f" ({hosted[0]})" if hosted else "")]))
     if not roles and (m["lib"] or m["py_lib"] or m["pkg_main"] or (not m["rust_bin"] and (root / "Cargo.toml").is_file())):
         roles.append(("library", (m["lib"] + m["pkg_main"])[:1] or ["a package manifest and no app or entry point"]))
     p.endpoints = len(endpoints)
@@ -577,6 +597,12 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None, source
     elif p.kind in ("command-line tool", "library", "data pipeline", "desktop app"):
         p.deployment = "user's machine"
         p.deployment_evidence = [f"a {p.kind}: runs where it's installed"]
+    elif p.kind == "web app" and dashboard:
+        p.deployment, why = DASHBOARD[dashboard[0]][1:]
+        p.deployment_evidence = [why]
+    elif p.kind == "static website":
+        p.deployment = "static hosting"
+        p.deployment_evidence = ["pages served as files: no code runs on a server"]
     elif p.kind == "web front-end":
         p.deployment = "browser"
         p.deployment_evidence = ["a front-end with no API of its own in the repository"]
@@ -588,7 +614,7 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None, source
         p.users_evidence = ([f"{auth_deps[0]} in {deps[auth_deps[0]]}"] if auth_deps else []) + (
             [f"{len(guarded)} of {len(endpoints)} endpoints check who's asking"] if guarded else []
         )
-    elif endpoints and not side_server:
+    elif (endpoints and not side_server) or (p.kind == "web app" and dashboard):
         p.users = "no sign-in"
         p.users_evidence = ["no endpoint checks who's asking, and no sign-in library"]
     elif p.kind in ("mobile app", "desktop app") or p.deployment == "local-first":
@@ -616,6 +642,7 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None, source
         if found:
             p.sensitive[category] = found[:3]
 
+    p.lines = sum(text.count("\n") + 1 for fid, text in texts.items() if not is_test(fid))
     _correct(p, config if config is not None else _config(root))
     return p
 

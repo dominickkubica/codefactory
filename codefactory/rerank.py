@@ -17,6 +17,7 @@ from .profile import Profile
 
 SEV = ["Critical", "High", "Medium", "Low"]
 HEAVY = ("health and fitness", "financial", "accounts and passwords")  # data that law and app stores treat as special
+SMALL = 2000  # lines: below this a single-user project is a script, not a codebase a team maintains
 WRITE_WORDS = re.compile(r"runAsync|execAsync|executemany|INSERT|UPDATE|DELETE|\b(?:save|write|insert|update|delete)\w*\(?")
 
 
@@ -36,6 +37,18 @@ def _heavy(p: Profile) -> list[str]:
 def _special(p: Profile) -> list[str]:
     """Health and financial data: special under GDPR, HIPAA, PCI. An app that merely has passwords isn't."""
     return [c for c in ("health and fitness", "financial") if c in p.sensitive]
+
+
+def _small(p: Profile) -> bool:
+    """A script or class project, not a codebase a team maintains or a service others depend on (only when the
+    profile knows what it is: an unknown project keeps the default)."""
+    return (
+        p.kind != "unknown"
+        and 0 < p.lines < SMALL
+        and p.deployment != "deployed server"
+        and p.users != "multi-user"
+        and not _special(p)
+    )
 
 
 def _data(p: Profile) -> str:
@@ -70,6 +83,22 @@ RULES = [
         r"^Network calls without a timeout", lambda p: p.kind == "command-line tool" and not p.server, "Low",
         lambda p: "a command-line tool has someone watching: a hang is seen and stopped. It matters more if it runs "
         "unattended (cron, CI).",
+    ),
+    # ---- small or static: process findings sized for a team's codebase
+    Rule(
+        r"^No (?:automated tests|continuous integration)\b", lambda p: p.kind == "static website", "Low",
+        lambda p: "a static website: no code runs on a server, so there's little to unit test or build. Checking the "
+        "pages and links in a browser before publishing does the job.",
+    ),
+    Rule(
+        r"^No continuous integration", lambda p: _small(p), "Low",
+        lambda p: f"a small project ({p.lines:,} lines) that isn't deployed and has no accounts: running its checks "
+        "before each commit does what CI would. Worth adding once others contribute or it grows.",
+    ),
+    Rule(
+        r"^No automated tests", lambda p: _small(p), "Medium",
+        lambda p: f"a small project ({p.lines:,} lines) that isn't deployed and has no accounts: its author runs it and "
+        "sees the result. Tests start paying off as it grows or others rely on it.",
     ),
     # ---- mobile: the platform's rules
     Rule(

@@ -163,8 +163,8 @@ Before ranking anything, codefactory works out, with evidence for each:
 
 | | Values | From |
 |---|---|---|
-| Kind | mobile app, web app (UI + API), web service, desktop app, web front-end, command-line tool, data pipeline, library (and the other roles it also plays) | manifests (package.json, pyproject, Cargo, go.mod, Maven, Gradle, gemspec, composer, csproj, pubspec), the HTTP endpoints found, SwiftUI/UIKit and Android manifests |
-| Runs | local-first (data on the device), client app (talks to a backend), local server (this machine only), LAN server (bind address set at run time), network server, deployed server (Dockerfile, Vercel, Fly, a deploy workflow…), user's machine, browser | where the server listens, deploy files, local databases (expo-sqlite, Realm, Core Data…) |
+| Kind | mobile app, web app (UI + API, or a Streamlit, Gradio, Dash or Panel script), web service, desktop app, web front-end, static website, command-line tool, data pipeline, library (and the other roles it also plays) | manifests (package.json, pyproject, requirements, Cargo, go.mod, Maven, Gradle, gemspec, composer, csproj, pubspec), the HTTP endpoints found, SwiftUI/UIKit and Android manifests, an index.html with no server code |
+| Runs | local-first (data on the device), client app (talks to a backend), local server (this machine only), LAN server (bind address set at run time), network server, deployed server (Dockerfile, Vercel, Fly, a deploy workflow…), user's machine, browser, static hosting | where the server listens, deploy files, local databases (expo-sqlite, Realm, Core Data…) |
 | Users | single user, multi-user (accounts and sign-in), no sign-in | auth libraries, endpoints that check who's asking |
 | Holds | health and fitness, financial, location, contact details, photos and camera, accounts and passwords | libraries (HealthKit, Stripe, expo-location…), platform APIs, and words in the code (not comments or strings), in at least two files |
 
@@ -182,12 +182,14 @@ The review ranks findings for it. Each change is listed with its default severit
 | Server on this machine only | Request data reaches dangerous calls | High | whoever can send requests can already run code |
 | Deployed server | Endpoints that change data without auth | High | it runs where others can reach it |
 | Local or LAN server with open writes | CORS * | High | any web page the user opens can drive it |
+| Static website | No tests, no CI | Low | no code runs on a server |
+| Under 2,000 lines, not deployed, no accounts, no health or financial data | No CI / no tests | Low / Medium | a script or class project, not a team's codebase |
 
 Detection can be wrong. Correct it in factory.toml and every review and pull-request check uses it:
 
 ```toml
 [profile]
-kind = "web service"            # or mobile app, web app, desktop app, web front-end, command-line tool, data pipeline, library
+kind = "web service"            # or mobile app, web app, desktop app, web front-end, static website, command-line tool, data pipeline, library
 deployment = "deployed server"  # or local-first, client app, local server, LAN server, network server, user's machine, browser
 users = "multi-user"            # or single user, no sign-in
 sensitive = ["financial"]       # replaces what was detected; ["none"] for nothing

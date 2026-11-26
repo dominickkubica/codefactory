@@ -128,10 +128,10 @@ def load_config(root: Path) -> Config:
 
 
 PROFILE_KEYS = {
-    "kind": ("mobile app", "web app", "web service", "desktop app", "web front-end", "command-line tool",
-             "data pipeline", "library"),
+    "kind": ("mobile app", "web app", "web service", "desktop app", "web front-end", "static website",
+             "command-line tool", "data pipeline", "library"),
     "deployment": ("local-first", "client app", "local server", "LAN server", "network server", "deployed server",
-                   "user's machine", "browser"),
+                   "user's machine", "browser", "static hosting"),
     "users": ("single user", "multi-user", "no sign-in"),
 }  # fmt: skip
 
