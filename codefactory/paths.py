@@ -9,7 +9,7 @@ from pathlib import Path
 TEST_DIRS = ("tests", "test", "testing", "__tests__", "__mocks__", "spec", "t", "testdata", "fixtures")  # t/: celery's
 # a folder or file named for tests among other words: e2e-auth-server/, test-utils/, prepare-v1-test-db.mjs
 TEST_TOKEN = re.compile(r"(?:^|[-_.])(?:e2e|tests?|testing)(?:[-_.]|$)", re.I)
-SCRIPT_DIRS = ("scripts", "script", "tools", "bin", "benchmarks", "benchmarking")
+SCRIPT_DIRS = ("scripts", "script", "tools", "bin", "benchmarks", "benchmarking", "build-logic", "buildSrc")
 
 
 def ignored(path: str, ignore: list[str]) -> bool:
@@ -106,8 +106,10 @@ TEST_NAME = re.compile(r"_(?:test|spec|tests)\.\w+$|[a-z0-9]Tests?\.(?:java|kt|c
 
 
 def is_script(path: str) -> bool:
-    """One-off tooling (scripts/, tools/, bin/ at the top): matters less than the product's code."""
-    return path.replace("\\", "/").split("/")[0] in SCRIPT_DIRS
+    """One-off tooling (scripts/, tools/, bin/ at the top, or a package's own scripts/ in a monorepo): matters less
+    than the product's code."""
+    parts = path.replace("\\", "/").split("/")
+    return parts[0] in SCRIPT_DIRS or "scripts" in parts[1:-1]
 
 
 # Platform and architecture tags in file names (Go's file_linux_amd64.go, C's io_win32.c, Python's _posix.py).

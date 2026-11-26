@@ -337,6 +337,51 @@ class LargeRepoLessonsTest(unittest.TestCase):
         (root / ".env").write_text("_APP_JOBS_SECRET=41a51c959d1027bd9f40e86217ddad\n", encoding="utf-8")
         self.assertEqual(scan_repo(root)["env_files"], [".env"])
 
+    def test_every_deliberate_catch_reason_reads_in_the_review(self):  # a new reason once crashed actual's review
+        from codefactory.review import review_markdown
+
+        root = repo({"src/a.ts": "void send('flush').catch(() => undefined);\nawait fs.unlink(p).catch(() => undefined);\n"
+                                 "const x = await load().catch(() => null);\n"})  # fmt: skip
+        text = review_markdown(build(root, cache=False).to_dict(), root)
+        self.assertIn("not awaited", text)
+
+    def test_corpus_round_5_last_fixes(self):  # requests, saleor, laravel, meilisearch
+        files = {
+            # requests: the else of an `if … and verify:` 20 lines up
+            "adapters.py": "def cert_verify(conn, url, verify):\n    if url.startswith('https') and verify:\n"
+            + "        x = 1\n" * 20
+            + "    else:\n        conn.cert_reqs = 'CERT_NONE'\n",
+            # saleor: the verified decode has a call inside it
+            "jwt_utils.py": "import jwt\n\ndef is_ours(token):\n    payload = jwt.decode(token, options={'verify_signature': False})\n"
+            "    return payload.get('iss') == 'us'\n\ndef verify(token):\n"
+            "    return jwt.decode(token, get_key(), algorithms=['HS256'])\n",
+            # laravel: a method named eval, and the words in a string
+            "Redis.php": "<?php\nclass C {\n  public function eval($script, $n) {}\n}\n"
+            "if (str_contains($f, 'eval()\\'d code')) {}\n",
+            # meilisearch: a key shown in documentation prose
+            "docs.rs": ".description(\"Include the API key, for instance: apiKey: '6436fc5237b0d6e0d64253fbaac21d135012ecf1'\")\n",
+        }
+        root = repo(files)
+        found = scan_sources(root, list(files))
+        for key in ("tls_off", "jwt_unverified", "eval", "secret"):
+            self.assertFalse(found[key].hits, key)
+
+    def test_corpus_round_5_n8n(self):  # n8n
+        files = {
+            "src/agent.ts": "class A {\n  eval(e: Eval | BuiltEval): this {\n    return this;\n  }\n}\n",
+            "src/guide.ts": "export const g = `- With embedded expressions: \"=Order #{{ $('Set').item.json.id }}\"`;\n",
+            "src/outbound.ts": "const a = { ...(pool.skipSslCertificateValidation === true && { rejectUnauthorized: false }) };\n"
+            "const b = { ...(options.ignoreSSLIssues ? { rejectUnauthorized: false } : {}) };\n",
+            "src/db/migrations/1620-Unique.ts": "await runQuery(`CREATE UNIQUE INDEX ${indexName} ON ${tableName} (name)`);\n",
+        }
+        root = repo(files)
+        found = scan_sources(root, list(files))
+        for key in ("eval", "shell", "tls_off", "sql_built"):
+            self.assertFalse(found[key].hits, key)
+        from codefactory.paths import is_script
+
+        self.assertTrue(is_script("packages/mcp-browser-extension/scripts/bundle.mjs"))
+
 
 if __name__ == "__main__":
     unittest.main()

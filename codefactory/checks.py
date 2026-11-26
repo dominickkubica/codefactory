@@ -169,6 +169,8 @@ ONLY_IN = {
     PATTERNS["eval"][4]: (".py",),  # yaml.load: js-yaml 4 removed the unsafe loader, so in JavaScript it's safe
     PATTERNS["shell"][-2]: (".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"),
     PATTERNS["shell"][-1]: (".go",),
+    PATTERNS["shell"][4]: (".rb", ".php", ".pl", ".sh", ".bash", ".py"),  # `"…#{x}"` / `"…${x}"` in a double-quoted string
+    PATTERNS["shell"][5]: (".rb",),  # Ruby's backticks and %x(): in JavaScript a backtick is a template string
 }
 COMMENT_LINE = re.compile(r"\s*(?:#|//|\*|/\*|<!--|--\s)")
 # words that say a credential-looking value isn't real ("xoxb-not-a-real-token", "sk_test_fake…", "<your key>")
@@ -280,7 +282,7 @@ def _under_tls_setting(lines: list[str], i: int) -> bool:
     """The line sits in a branch of an `if` on a verification setting (`if verify is False:` / its `else:`), as
     requests and HTTP clients do for their `verify=` option: the user's choice, not an override."""
     indent = len(lines[i - 1]) - len(lines[i - 1].lstrip())
-    for j in range(i - 2, max(-1, i - 14), -1):
+    for j in range(i - 2, max(-1, i - 40), -1):  # (an `else:` may be far from its `if`: requests' cert_verify)
         text = lines[j]
         if not text.strip():
             continue
@@ -307,6 +309,8 @@ def _named_not_secret(fid: str, lines: list[str], i: int) -> bool:
     line = lines[i - 1]
     if I18N.search(fid) or re.match(r"\s*(?:iex>|>>>|\.\.\.>)", line) or i in _elixir_doc_lines(lines):
         return True
+    if re.search(r"(?i)\bfor (?:instance|example)\b|\be\.g\.,? ", line):
+        return True  # an example inside prose (meilisearch's OpenAPI description: "…for instance: apiKey: '6436…'")
     values = re.findall(r"""['"]([^'"]{8,})['"]""", line)
     if not values:
         return False
@@ -335,7 +339,8 @@ def _elixir_doc_lines(lines: list[str]) -> set[int]:
 def _token_question(lines: list[str], i: int, text: str) -> bool:
     """An unverified decode inside an `is_…`/`has_…` function (a yes/no question about the token, such as who issued
     it), in a file that verifies tokens properly elsewhere. Returning the unverified claims is never this."""
-    if lines[i - 1].lstrip().startswith("return") or not re.search(r"jwt\.decode\([^)]*\balgorithms\s*=", text):
+    verified = re.search(r"jwt\.decode\((?:[^()]|\([^()]*\))*?\balgorithms\s*=", text)  # (`get_key()` inside the call)
+    if lines[i - 1].lstrip().startswith("return") or not verified:
         return False
     for j in range(i - 2, max(-1, i - 15), -1):
         if m := re.match(r"\s*(?:async\s+)?def\s+(\w+)", lines[j]):
@@ -462,6 +467,7 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
             if (not test or k == "secret") and (k not in LANG_ONLY or fid.endswith(LANG_ONLY[k])) and ANY[k].search(text)
         }
         sql_here = not test and SQL_HINT.search(text) is not None
+        in_migration = bool(re.search(r"(?:^|/)(?:migrations?|migrate|db/migrate|post_migrate)/", fid, re.I))  # names, by design
         hosts_here = not test and "://" in text
         boundary_here = re.search(r"ErrorBoundary|componentDidCatch|getDerivedStateFromError", text) is not None
         state_here = not test and fid.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs")) and "let " in text
@@ -474,6 +480,13 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                 if key != "secret" and (COMMENT_LINE.match(line) or i in prose):
                     continue  # prose about a pattern ("mark_safe() it at the end") isn't the code; a key is leaked anywhere
                 if any(p.search(line) and (p not in ONLY_IN or fid.endswith(ONLY_IN[p])) for p in pats) and hit(key, i):
+                    if key == "eval" and (
+                        re.search(r"\bfunction\s+eval\s*\(|['\"][^'\"]*\beval\(\)[^'\"]*['\"]", line)
+                        or re.match(
+                            r"\s*(?:(?:public|private|protected|static|async)\s+)*eval\s*\([^)]*\)\s*:\s*[\w<>\[\]| .]+[{;]", line
+                        )
+                    ):
+                        continue  # a method named eval (a Redis client's), or the words "eval()'d code" in a string
                     if key == "insecure_cookie" and re.search(r"\?\s*[\w.]+\s*:\s*false\b", line):
                         continue  # copying another cookie's own flag (an HTTP client's cookie jar), not setting one
                     if key == "secret_key_literal" and re.search(r"\{\{|\{%|<%=|\$\{", line):
@@ -484,6 +497,10 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                         continue  # importing the constant isn't using it
                     if key == "tls_off" and (
                         re.search(r"\bif\s+\w[\w.]*\s+else\b|\?\s*\w+\s*:", line)
+                        or re.search(
+                            r"(?i)\w*(?:verify|insecure|ssl|tls|cert|skip|ignore|unauthori[sz]ed)\w*\s*(?:===?\s*true\s*)?(?:&&|\?)",
+                            line,
+                        )
                         or _under_tls_setting(lines, i)
                         or OWN_VERIFY.search("\n".join(lines[max(0, i - 7) : i + 6]))
                     ):
@@ -506,7 +523,7 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                         out["swallowed_ok"].hits.append(Evidence(fid, i, why))  # deliberate: counted, not reported
                         continue
                     out[key].hits.append(Evidence(fid, i, redact(_excerpt(line)) if key == "secret" else _excerpt(line)))
-            if sql_here and (m := SQL_CALL.search(line)) and hit("sql_built", i):
+            if sql_here and not in_migration and (m := SQL_CALL.search(line)) and hit("sql_built", i):
                 stmt = " ".join(lines[i - 1 : i + 4])
                 if SQL_WORD.search(stmt):
                     py_format = not m.group(1).startswith("`")  # {name}: Python f-strings (and Ruby's #{name})

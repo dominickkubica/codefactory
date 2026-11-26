@@ -99,10 +99,14 @@ def _sample_severity(sev: str, hits) -> str:
     """A credential only in documentation or example code (a tutorial's sample SECRET_KEY, a docs site's public search
     key) is there to be copied, not used: Low, so it's still checked that nothing real reuses it."""
 
-    def sample(e) -> bool:  # a docs example, or a test's fixture key (celery's RSA keys); a vendor token in a test is real
+    def sample(e) -> bool:  # a docs example, or a test's fixture key (celery's RSA keys)
         return is_doc_sample(e.file) or (is_test(e.file) and "PRIVATE KEY" in e.text)
 
-    return "Low" if hits and all(sample(e) for e in hits) else sev
+    if hits and all(sample(e) for e in hits):
+        return "Low"
+    if hits and all(is_test(e.file) for e in hits) and SEVERITIES.index(sev) > SEVERITIES.index("Medium"):
+        return "Medium"  # a vendor-format token only in tests (n8n's redaction tests): likely a fixture, so confirm
+    return sev
 
 
 class Review:
@@ -352,6 +356,7 @@ class Review:
             hits = s[key].hits
             if hits:
                 ev, more = _ev(hits, self.n(6))
+                sev = _sample_severity(sev, hits) if key == "config_secret" else sev  # (a docs site's search key)
                 self.add(title, sev, area, ev, impact, fix, _effort(len(hits), len({e.file for e in hits})), more)
 
     def dependencies(self) -> None:
@@ -1318,10 +1323,11 @@ class Review:
         ]
         if ok := self.scan["swallowed_ok"].hits:
             kinds = Counter(e.text for e in ok)
-            why = {"explained": "a comment says why", "cleanup": "best-effort cleanup", "fallback": "a fallback value"}
+            why = {"explained": "a comment says why", "cleanup": "best-effort cleanup", "fallback": "a fallback value",
+                   "fire and forget": "a promise deliberately not awaited (`void …`)"}  # fmt: skip
             out.append(
                 f"{_n(len(ok), 'empty catch block')} treated as deliberate, not reported ("
-                + ", ".join(f"{n}: {why[k]}" for k, n in kinds.most_common())
+                + ", ".join(f"{n}: {why.get(k, k)}" for k, n in kinds.most_common())
                 + ")."
             )
         if other:

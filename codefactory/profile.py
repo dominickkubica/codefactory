@@ -547,7 +547,9 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None, source
     cli = m["py_scripts"] + m["npm_bin"] + m["cli"] + [f"{c} in {deps[c]}" for c in has(*CLI_LIBS)]
     if m["rust_bin"] and not endpoints:  # a Rust binary is a program you run, whatever parses its arguments
         cli.append("Rust binary with clap" if has("clap", "structopt", "argh") else "a Rust binary ([[bin]] or main.rs)")
-    go_main = [f for f in files if f.endswith(".go") and re.search(r"^package main\b", texts.get(f, ""), re.M)]
+    go_main = [
+        f for f in files if f.endswith(".go") and not is_example_code(f) and re.search(r"^package main\b", texts.get(f, ""), re.M)
+    ]  # (not a Go snippet shown in an app's docs: appwrite's connect-snippets/)
     if go_main and not endpoints:
         cli.append(f"`{go_main[0]}` package main")
     argparse = [
