@@ -37,6 +37,15 @@ version bump on `main` publishes. These are what have broken on Windows before:
 - **Shell tools:** no `sort -V`, `grep` or `sed` in tests. Use Python, or skip on Windows with the reason.
 - **Text:** open files with `encoding="utf-8"`. Windows' default encoding isn't UTF-8.
 
+## The public-repository corpus
+
+`python tools/corpus.py run` clones and reviews every repository in `tools/corpus/repos.txt` (shallow, in parallel,
+under `~/.cache/codefactory-corpus`) and records each outcome in `tools/corpus/results.json`; `python tools/corpus.py
+report` rewrites `docs/CORPUS.md`. After a change to a check, run it, look at every Critical and High finding that
+changed, fix false positives generically with a regression test (`tests/test_large_repo.py`), and record what you
+decided in `tools/corpus/triage.json` (`clean`, `fixed` or `open`, with a note). To grow the corpus, add repositories
+to `repos.txt` and run with `--new`.
+
 If a change alters findings on purpose, `tests/test_golden.py` fails: run
 `CODEFACTORY_UPDATE_GOLDEN=1 python -m unittest tests.test_golden` and check the diff in `tests/golden/` before
 committing it. An unexpected line there is a bug caught early.

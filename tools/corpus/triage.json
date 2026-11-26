@@ -1,0 +1,306 @@
+{
+ "Alamofire/Alamofire": {
+  "status": "clean",
+  "note": ""
+ },
+ "BurntSushi/ripgrep": {
+  "status": "fixed",
+  "note": "Rust binary is a command-line tool"
+ },
+ "LoopKit/Loop": {
+  "status": "fixed",
+  "note": "comment and model property weren't required-reason APIs (a real one remains: no manifest); remaining Critical/High are real"
+ },
+ "actualbudget/actual": {
+  "status": "clean",
+  "note": "remaining Critical/High looked at and real"
+ },
+ "android/nowinandroid": {
+  "status": "fixed",
+  "note": "Dagger @Provides aren't untested logic (2 real untested functions remain); remaining Critical/High are real"
+ },
+ "apache/superset": {
+  "status": "fixed",
+  "note": "docs search key; constants named like tokens; remaining Critical/High are real"
+ },
+ "appwrite/appwrite": {
+  "status": "open",
+  "note": "profiled as a web front-end: routes in its PHP framework (Utopia) aren't found (fixed: constants named like keys; example servers; local-dev env defaults)"
+ },
+ "caddyserver/caddy": {
+  "status": "fixed",
+  "note": "gosec suppression respected"
+ },
+ "calcom/cal.com": {
+  "status": "fixed",
+  "note": "example servers; build-argument stand-in; e2e specs; remaining Critical/High are real"
+ },
+ "celery/celery": {
+  "status": "fixed",
+  "note": "t/ tests, fixture keys, a warning text and an import weren't findings; remaining Critical/High are real"
+ },
+ "cli/cli": {
+  "status": "clean",
+  "note": "real by design: GitHub CLI's OAuth client secret is public"
+ },
+ "dani-garcia/vaultwarden": {
+  "status": "clean",
+  "note": ""
+ },
+ "directus/directus": {
+  "status": "fixed",
+  "note": "locales; metrics counters aren't data writes; remaining Critical/High are real"
+ },
+ "django/django": {
+  "status": "open",
+  "note": "admin redirects through add_preserved_filters (query-only) still read as flows (fixed: framework profiled as a library; 12 data flows \u2192 3; vendored jQuery skipped)"
+ },
+ "dotnet/eShop": {
+  "status": "fixed",
+  "note": "a CI workflow's test password is a Low finding"
+ },
+ "encode/httpx": {
+  "status": "clean",
+  "note": ""
+ },
+ "excalidraw/excalidraw": {
+  "status": "fixed",
+  "note": "public VITE_ env, docs search key, emscripten bindings, release scripts; remaining Critical/High are real"
+ },
+ "expressjs/express": {
+  "status": "fixed",
+  "note": "published npm package is a library; no lockfile by convention"
+ },
+ "fastapi/fastapi": {
+  "status": "fixed",
+  "note": "tutorial keys and variants; import loop through a package entry file is debt"
+ },
+ "fastapi/full-stack-fastapi-template": {
+  "status": "clean",
+  "note": ""
+ },
+ "getsentry/sentry-python": {
+  "status": "fixed",
+  "note": "tox's notiktoken isn't a token; setup.py library classifier; remaining Critical/High are real"
+ },
+ "gin-gonic/gin": {
+  "status": "fixed",
+  "note": "Go module with no main package is a library"
+ },
+ "go-gitea/gitea": {
+  "status": "fixed",
+  "note": "fixtures and TEST_ Makefile variables; remaining Critical/High are real"
+ },
+ "gohugoio/hugo": {
+  "status": "clean",
+  "note": ""
+ },
+ "gotify/server": {
+  "status": "clean",
+  "note": ""
+ },
+ "healthchecks/healthchecks": {
+  "status": "clean",
+  "note": ""
+ },
+ "heartcombo/devise": {
+  "status": "fixed",
+  "note": "gem at the top is a library"
+ },
+ "hoppscotch/hoppscotch": {
+  "status": "fixed",
+  "note": "self-named enum values; PostHog key; cookie jar; remaining Critical/High are real"
+ },
+ "httpie/cli": {
+  "status": "fixed",
+  "note": "TLS chosen by --verify is the user's option (one real verify=False remains); remaining Critical/High are real"
+ },
+ "immich-app/immich": {
+  "status": "fixed",
+  "note": "e2e test keys; profileSigningAlgorithm option; remaining Critical/High are real"
+ },
+ "jekyll/jekyll": {
+  "status": "fixed",
+  "note": "docs search key"
+ },
+ "jellyfin/jellyfin": {
+  "status": "clean",
+  "note": "real by design: a public TMDB API key"
+ },
+ "junegunn/fzf": {
+  "status": "clean",
+  "note": ""
+ },
+ "karpathy/nanoGPT": {
+  "status": "clean",
+  "note": ""
+ },
+ "laravel/framework": {
+  "status": "fixed",
+  "note": "Composer library; Redis ->eval isn't eval; remaining Critical/High are real"
+ },
+ "laravel/laravel": {
+  "status": "clean",
+  "note": ""
+ },
+ "localsend/localsend": {
+  "status": "fixed",
+  "note": "macOS target needs no iOS privacy manifest"
+ },
+ "louislam/uptime-kuma": {
+  "status": "fixed",
+  "note": "test-db scripts; remaining Critical/High are real"
+ },
+ "marktext/marktext": {
+  "status": "clean",
+  "note": "remaining Critical/High looked at and real"
+ },
+ "mastodon/mastodon": {
+  "status": "fixed",
+  "note": "locales aren't credentials; case of DB_SSLMODE; remaining Critical/High are real"
+ },
+ "maybe-finance/maybe": {
+  "status": "clean",
+  "note": ""
+ },
+ "meilisearch/meilisearch": {
+  "status": "fixed",
+  "note": "key in documentation prose"
+ },
+ "mitmproxy/mitmproxy": {
+  "status": "clean",
+  "note": "real by design: a zeroed placeholder key; cert generation endpoint"
+ },
+ "monicahq/monica": {
+  "status": "clean",
+  "note": "remaining Critical/High looked at and real"
+ },
+ "n8n-io/n8n": {
+  "status": "fixed",
+  "note": "TypeScript analyzer out of memory \u2192 general analyzer, not a crash; remaining Critical/High are real"
+ },
+ "nestjs/nest": {
+  "status": "fixed",
+  "note": "copies between sample apps aren't tasks; remaining Critical/High are real"
+ },
+ "outline/outline": {
+  "status": "fixed",
+  "note": "passkey AAGUIDs; .env.test; js-yaml; cleanup catches; remaining Critical/High are real"
+ },
+ "owid/etl": {
+  "status": "clean",
+  "note": ""
+ },
+ "pallets/flask": {
+  "status": "fixed",
+  "note": "example in a docstring isn't configuration"
+ },
+ "phoenixframework/phoenix": {
+  "status": "fixed",
+  "note": "Elixir @moduledoc and iex> examples"
+ },
+ "plausible/analytics": {
+  "status": "clean",
+  "note": "remaining Critical/High looked at and real"
+ },
+ "pocketbase/pocketbase": {
+  "status": "clean",
+  "note": ""
+ },
+ "prometheus/prometheus": {
+  "status": "fixed",
+  "note": "testdata and documentation examples; remaining Critical/High are real"
+ },
+ "psf/requests": {
+  "status": "fixed",
+  "note": "TLS off only in branches of the verify setting"
+ },
+ "pydantic/pydantic": {
+  "status": "fixed",
+  "note": "CI service passwords are a Low finding; docs tooling ranks lower"
+ },
+ "python-poetry/poetry": {
+  "status": "fixed",
+  "note": "zizmor suppression respected"
+ },
+ "saleor/saleor": {
+  "status": "fixed",
+  "note": "a yes/no peek at a JWT in a file that verifies them; remaining Critical/High are real"
+ },
+ "scrapy/scrapy": {
+  "status": "fixed",
+  "note": "noqa: S301 suppressions respected; remaining Critical/High are real"
+ },
+ "shadcn-ui/taxonomy": {
+  "status": "clean",
+  "note": "real: no CI, no tests"
+ },
+ "shadcn-ui/ui": {
+  "status": "clean",
+  "note": "remaining Critical/High looked at and real"
+ },
+ "sharkdp/bat": {
+  "status": "fixed",
+  "note": "Rust src/bin binary is a command-line tool"
+ },
+ "spf13/cobra": {
+  "status": "clean",
+  "note": ""
+ },
+ "spring-projects/spring-petclinic": {
+  "status": "clean",
+  "note": "real: a sample app with no auth, and a demo Kubernetes Secret"
+ },
+ "square/okhttp": {
+  "status": "fixed",
+  "note": "library modules; test apps; key in a KDoc example"
+ },
+ "square/retrofit": {
+  "status": "fixed",
+  "note": "docs website isn't the product"
+ },
+ "streamlit/streamlit": {
+  "status": "clean",
+  "note": "remaining Critical/High looked at and real"
+ },
+ "sveltejs/svelte": {
+  "status": "fixed",
+  "note": "benchmarking and playground scripts; remaining Critical/High are real"
+ },
+ "syncthing/syncthing": {
+  "status": "clean",
+  "note": "real by design: a test harness API key; TLS to its own GUI"
+ },
+ "tldraw/tldraw": {
+  "status": "fixed",
+  "note": "PostHog project keys are public; example server; remaining Critical/High are real"
+ },
+ "tokio-rs/axum": {
+  "status": "fixed",
+  "note": "library crate"
+ },
+ "traefik/traefik": {
+  "status": "fixed",
+  "note": "Go program with a web UI subfolder; its own TLS verification"
+ },
+ "trpc/trpc": {
+  "status": "clean",
+  "note": ""
+ },
+ "vitejs/vite": {
+  "status": "fixed",
+  "note": "playground circular imports are on purpose; remaining Critical/High are real"
+ },
+ "vuejs/core": {
+  "status": "clean",
+  "note": "remaining Critical/High looked at and real"
+ },
+ "wagtail/wagtail": {
+  "status": "open",
+  "note": "redirect URL built from a helper given the request reads as a flow (fixed: project-template placeholder isn't a key)"
+ },
+ "withastro/astro": {
+  "status": "clean",
+  "note": "remaining Critical/High looked at and real"
+ }
+}

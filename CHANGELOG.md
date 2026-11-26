@@ -3,6 +3,28 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## Unreleased
+
+Checked against 76 public repositories (`docs/CORPUS.md`, `tools/corpus.py`): every one analyzed without a crash or a
+timeout, its Critical and High findings looked at, and about 60 false-positive patterns fixed, each with a regression
+test.
+
+- **No crash on huge TypeScript monorepos**: the type checker gets half the machine's memory, and when it still runs
+  out (n8n) the review goes on with the general analyzer.
+- **Profiles**: libraries are recognized in every ecosystem (PyPI classifiers, npm packages that say what they ship,
+  Composer's default type, gems, library crates, mostly-library Gradle and .NET builds, Go modules without a main
+  package); Rust binaries are command-line tools; test, sample and documentation apps don't make a project a mobile
+  app or a web front-end.
+- **Credentials**: name-like and self-named values, translations, UUIDs, public PostHog keys, template placeholders,
+  documentation examples (docstrings, Elixir @doc, doctests, prose, doc comments), test data (`testdata/`,
+  `fixtures/`, `e2e-…`, `t/`) and CI services' throwaway passwords aren't reported as leaked credentials.
+- **Security patterns**: TLS settings chosen by an option (ternary, `if verify`, `case 'no-verify'`) or with their own
+  verification; security-linter suppressions (`nosec`, `noqa: S…`, `nolint:gosec`, zizmor); method calls named eval;
+  js-yaml's safe load; JWT peeks in files that verify; query-string-only redirects; SQL in migrations.
+- **Quality findings**: import loops through a package's entry file are Medium; best-effort cleanup catches and
+  `void p.catch(…)` are deliberate; example servers, cache writes and dependency-injection providers aren't
+  unprotected endpoints or untested logic.
+
 ## 0.22.1 · 2026-11-26
 
 0.22.0 was tagged but never published: its release build stopped on a test that failed without the language pack (a Go
