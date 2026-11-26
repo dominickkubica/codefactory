@@ -93,20 +93,23 @@ class Review:
         self.g, self.root, self.v = g, root, View(g)
         self.repo = scan_repo(root)
         pool = ThreadPoolExecutor(max_workers=1)  # git log runs while the checks below read files
-        history = pool.submit(hotspots.analyze, root, g)
-        sources = source_files(root, g)  # parsed or not: line checks need no parser
-        self.scan = scan_sources(root, sources)
-        extra, self.history_note = audit_scan(root, current_secrets(self.scan["secret"], root))
-        self.scan.update(extra)  # CI, Docker, mobile config and git history: same shape, same silencing
-        self.scan.update(privacy_scan(root, sources))  # personal data, Apple privacy rules
-        self.scan.update(apple_scan(root, sources))  # Swift crashes, cycles, main-thread I/O
-        self.scan.update(infra_scan(root, set(load_config(root).ignore)))  # shell, Make, YAML, HTML, Pkl, patches
-        self.online, self.vulns, self.deps_note = online, [], ""
-        self._apply_silence(load_config(root).silence)
-        self.surface = surface(root, g, self.v)
-        self.profile = detect_profile(root, g, self.surface, sources=sources)  # what kind of project: findings are ranked for it
-        self.history = history.result()  # where change happens: findings there are worth fixing first
-        pool.shutdown()
+        try:
+            history = pool.submit(hotspots.analyze, root, g)
+            sources = source_files(root, g)  # parsed or not: line checks need no parser
+            self.scan = scan_sources(root, sources)
+            extra, self.history_note = audit_scan(root, current_secrets(self.scan["secret"], root))
+            self.scan.update(extra)  # CI, Docker, mobile config and git history: same shape, same silencing
+            self.scan.update(privacy_scan(root, sources))  # personal data, Apple privacy rules
+            self.scan.update(apple_scan(root, sources))  # Swift crashes, cycles, main-thread I/O
+            self.scan.update(infra_scan(root, set(load_config(root).ignore)))  # shell, Make, YAML, HTML, Pkl, patches
+            self.online, self.vulns, self.deps_note = online, [], ""
+            self._apply_silence(load_config(root).silence)
+            self.surface = surface(root, g, self.v)
+            # what kind of project: findings are ranked for it
+            self.profile = detect_profile(root, g, self.surface, sources=sources)
+            self.history = history.result()  # where change happens: findings there are worth fixing first
+        finally:  # a failed check doesn't leave git running (and the interpreter waiting for it at exit)
+            pool.shutdown(wait=False, cancel_futures=True)
         self.hot = self.history.by_path()
         self.rank_changes: list[rerank.Change] = []
         self.writers = writes(self.v)

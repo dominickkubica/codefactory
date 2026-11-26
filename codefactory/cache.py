@@ -81,7 +81,7 @@ def _dir(root: Path) -> Path | None:
     return cache_dir(root)
 
 
-def load_cached(root: Path, ignore: list[str]) -> dict | None:
+def load_cached(root: Path, ignore: list[str], stamp: str | None = None) -> dict | None:
     d = _dir(root)
     if d is None:
         return None
@@ -90,17 +90,22 @@ def load_cached(root: Path, ignore: list[str]) -> dict | None:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
-    return data.get("graph") if data.get("fingerprint") == fingerprint(root, ignore) else None
+    return data.get("graph") if data.get("fingerprint") == (stamp or fingerprint(root, ignore)) else None
 
 
-def save_cache(root: Path, ignore: list[str], graph: dict) -> None:
+def save_cache(root: Path, ignore: list[str], graph: dict, stamp: str | None = None, recent: bool = False) -> None:
+    """Keep the graph under `stamp`: the fingerprint taken *before* analysis, so a file edited while it ran makes the
+    next run's fingerprint differ instead of being cached as analyzed. `recent`: a file changed in the moments before
+    the stamp was taken (see paths.racy): then nothing is kept."""
     d = _dir(root)
     if d is None:
         return  # untrusted cache folder: analyze in full each time
-    recent: list = []
-    stamp = fingerprint(root, ignore, recent)
+    if stamp is None:
+        changed: list = []
+        stamp = fingerprint(root, ignore, changed)
+        recent = bool(changed)
     if recent:
-        return  # a file changed in the last moments: a same-size edit in the same tick would look unchanged
+        return  # a same-size edit in the same clock tick would look unchanged
     try:
         d.mkdir(exist_ok=True)
         (d / ".gitignore").write_text("# codefactory's cache: never committed\n*\n", encoding="utf-8")

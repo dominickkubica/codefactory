@@ -45,6 +45,11 @@ class Config:
     profile: dict = field(default_factory=dict)  # [profile] corrections to the detected project profile
 
 
+NAME = re.compile(r"[A-Za-z0-9_][\w .:/-]{0,79}")
+# catastrophic backtracking's usual shape: a group holding a repeat, repeated itself ((a+)+, (\w*\s?)*, (x{2,})+)
+NESTED = re.compile(r"\((?:[^()\\]|\\.)*(?:[+*]|\{\d*,\d*\})(?:[^()\\]|\\.)*\)(?:[+*]|\{\d*,\d*\})")
+
+
 def parse_rule(rule: str) -> tuple[str, str]:
     left, sep, right = rule.partition("->")
     if not sep or not left.strip() or not right.strip():
@@ -97,6 +102,8 @@ def load_config(root: Path) -> Config:
     for q in data.get("queries", []):
         if not q.get("name") or not q.get("sql"):
             raise ValueError("Each [[queries]] entry in factory.toml needs a name and sql")
+        if not NAME.fullmatch(str(q["name"])):  # it becomes a finding kind, shown in pages and comments
+            raise ValueError(f"Query name {q['name']!r}: letters, digits, spaces and _ . : / - only (up to 80)")
         if q.get("severity", "warn") not in ("high", "warn", "info"):
             raise ValueError(f"Query {q['name']!r}: severity must be high, warn or info")
         cfg.queries.append({k: q[k] for k in ("name", "sql", "severity", "message") if k in q})
@@ -114,6 +121,11 @@ def load_config(root: Path) -> Config:
             raise ValueError("Each [[rule]] entry in factory.toml needs an id and a pattern (a regular expression)")
         if r.get("severity", "warn") not in ("high", "warn", "info"):
             raise ValueError(f"Rule {r['id']!r}: severity must be high, warn or info")
+        if not NAME.fullmatch(str(r["id"])):
+            raise ValueError(f"Rule id {r['id']!r}: letters, digits, spaces and _ . : / - only (up to 80)")
+        if NESTED.search(str(r["pattern"])):  # it runs on every line of every file: a hang would stop every review
+            raise ValueError(f"Rule {r['id']!r}: a repeated group that itself repeats, like (a+)+, can take forever on "
+                             "some lines; write it without the outer repeat")  # fmt: skip
         try:
             regex = re.compile(r["pattern"])
         except re.error as e:

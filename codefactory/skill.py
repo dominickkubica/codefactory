@@ -177,9 +177,15 @@ def update(source: str = SOURCE) -> tuple[str, str]:
     dropped = drop_git_install()
     proc = subprocess.run([*pip, source], capture_output=True, text=True)
     if proc.returncode != 0:
+        why = f"pip couldn't upgrade codefactory:\n{proc.stderr.strip()[-1500:]}"
         if dropped:  # put the GitHub install back rather than leave nothing installed
-            subprocess.run([*pip, f"codefactory[languages] @ git+https://{GIT_URL}"], capture_output=True)
-        raise RuntimeError(f"pip couldn't upgrade codefactory:\n{proc.stderr.strip()[-1500:]}")
+            back = subprocess.run([*pip, f"codefactory[languages] @ git+https://{GIT_URL}"], capture_output=True)
+            if back.returncode != 0:
+                why += ("\nPutting the previous install back failed too, so codefactory isn't installed now. When you're "
+                        f"online: {sys.executable} -m pip install \"{source}\"")  # fmt: skip
+            else:
+                why += "\nThe previous install was put back."
+        raise RuntimeError(why)
     new = subprocess.run(
         [sys.executable, "-c", "import codefactory; print(codefactory.__version__)"], capture_output=True, text=True
     ).stdout.strip()

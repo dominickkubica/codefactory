@@ -10,9 +10,12 @@ from __future__ import annotations
 
 import json
 import re
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
+
+from .paths import links_outside
 
 API = "https://api.osv.dev/v1"
 BATCH = 500
@@ -132,51 +135,78 @@ def packages(root: Path) -> list[Package]:
         sorted(root.glob("requirements*.txt")) + sorted(root.glob("requirements/*.txt")) + sorted(root.glob("constraints*.txt"))
     )
     for path in candidates:
-        if not path.is_file() or "node_modules" in path.relative_to(root).parts:
-            continue
+        if not path.is_file() or "node_modules" in path.relative_to(root).parts or links_outside(root, path.relative_to(root)):
+            continue  # (a link out of the repository: not its lockfile, and its lines would be sent to OSV)
         reader = READERS.get(path.name, _requirements)
         try:
             out += reader(path.read_text(encoding="utf-8", errors="replace"), path.relative_to(root).as_posix())
-        except (ValueError, KeyError, TypeError):
-            continue  # an unreadable lockfile: skip it rather than fail the review
+        except (ValueError, KeyError, TypeError, AttributeError, IndexError):
+            continue  # an unreadable or oddly shaped lockfile: skip it rather than fail the review
     return list(dict.fromkeys(out))
 
 
-def _post(url: str, body: dict, timeout: int) -> dict:
+def _json(req, timeout: float) -> dict:
+    """A JSON object from OSV. A cut-off or malformed answer is an OSError or ValueError, like any network failure."""
+    import http.client
+
+    try:
+        with urllib.request.urlopen(req, timeout=max(1.0, timeout)) as r:  # noqa: S310 (a fixed https URL)
+            data = json.loads(r.read(20_000_000))  # (an answer bigger than 20 MB is cut off, so it fails to parse)
+    except http.client.HTTPException as e:  # IncompleteRead and friends aren't OSErrors
+        raise OSError(f"OSV answered badly: {e!r}") from None
+    if not isinstance(data, dict):
+        raise ValueError("OSV's answer isn't a JSON object")
+    return data
+
+
+def _post(url: str, body: dict, timeout: float) -> dict:
     req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310 (a fixed https URL)
-        return json.loads(r.read())
+    return _json(req, timeout)
 
 
-def _get(url: str, timeout: int) -> dict:
-    with urllib.request.urlopen(url, timeout=timeout) as r:  # noqa: S310
-        return json.loads(r.read())
+def _get(url: str, timeout: float) -> dict:
+    return _json(url, timeout)
 
 
 SEVERITY_ORDER = {"CRITICAL": 0, "HIGH": 1, "MODERATE": 2, "MEDIUM": 2, "LOW": 3, "": 4}
 
 
-def vulnerabilities(pkgs: list[Package], timeout: int = 30) -> list[Vulnerability]:
-    """Known vulnerabilities of these exact versions. Raises OSError when OSV can't be reached."""
+def vulnerabilities(pkgs: list[Package], timeout: int = 30, budget: float = 120) -> list[Vulnerability]:
+    """Known vulnerabilities of these exact versions. Raises OSError when OSV can't be reached. All requests together
+    stop after `budget` seconds (details still missing then are left out), so a slow network can't stall a review."""
+    import time
+
+    deadline = time.monotonic() + budget
+    left = lambda: min(timeout, deadline - time.monotonic())  # noqa: E731
     found: list[Vulnerability] = []
     for i in range(0, len(pkgs), BATCH):
         chunk = pkgs[i : i + BATCH]
         queries = [{"package": {"name": p.name, "ecosystem": p.ecosystem}, "version": p.version} for p in chunk]
         # codefactory: ignore io_in_loop — one request per 500 packages, OSV's batch size
-        results = _post(f"{API}/querybatch", {"queries": queries}, timeout).get("results", [])
+        if left() <= 0:
+            raise OSError(f"OSV took longer than {budget:.0f} s")
+        results = _post(f"{API}/querybatch", {"queries": queries}, left()).get("results", [])
+        if not isinstance(results, list):
+            raise ValueError("OSV's answer has no list of results")
         for p, res in zip(chunk, results, strict=False):
-            found += [Vulnerability(p, v["id"]) for v in res.get("vulns") or []]
+            vulns = res.get("vulns") if isinstance(res, dict) else None
+            found += [Vulnerability(p, str(v["id"])) for v in vulns or [] if isinstance(v, dict) and v.get("id")]
     for v in found[:DETAILS]:
+        if left() <= 0:
+            break  # out of time: the rest keep their id, without details
         try:
             # codefactory: ignore io_in_loop — OSV has no batch endpoint for details; capped at DETAILS requests
-            d = _get(f"{API}/vulns/{v.id}", timeout)
+            d = _get(f"{API}/vulns/{urllib.parse.quote(v.id, safe='')}", left())
         except (OSError, ValueError):
             continue
-        v.summary = (d.get("summary") or d.get("details", "").split("\n")[0])[:160]
-        v.severity = str((d.get("database_specific") or {}).get("severity") or "").upper()
-        for a in d.get("affected", []):
-            if a.get("package", {}).get("name") == v.package.name:
-                fixes = [e["fixed"] for r in a.get("ranges", []) for e in r.get("events", []) if "fixed" in e]
-                v.fixed = ", ".join(dict.fromkeys(fixes))
+        try:  # an oddly shaped answer leaves this one without details, not the review without a report
+            v.summary = str(d.get("summary") or str(d.get("details", "")).split("\n")[0])[:160]
+            v.severity = str((d.get("database_specific") or {}).get("severity") or "").upper()
+            for a in d.get("affected", []):
+                if a.get("package", {}).get("name") == v.package.name:
+                    fixes = [str(e["fixed"]) for r in a.get("ranges", []) for e in r.get("events", []) if "fixed" in e]
+                    v.fixed = ", ".join(dict.fromkeys(fixes))
+        except (AttributeError, TypeError, KeyError):
+            continue
     found.sort(key=lambda v: (SEVERITY_ORDER.get(v.severity, 4), v.package.name))
     return found

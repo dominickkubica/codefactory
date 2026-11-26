@@ -21,7 +21,7 @@ import re
 from pathlib import Path
 
 from .checks import PATTERNS, PLACEHOLDER, VENDOR_SECRETS, Check, Evidence
-from .paths import is_test
+from .paths import is_test, links_outside
 from .suppress import MARK
 
 SKIP = {"node_modules", ".git", ".codefactory", ".venv", "venv", "dist", "build", "vendor", "Pods", ".expo", "coverage",
@@ -81,7 +81,9 @@ def files(root: Path, ignore: set[str] | None = None) -> list[str]:
         dirnames[:] = sorted(d for d in dirnames if d not in skip and not (d.startswith(".") and d != ".github"))
         for name in sorted(filenames):
             if name.endswith(CONFIG_EXT + HTML_EXT + SHELL_EXT + PATCH_EXT) or name in MAKEFILES or name.endswith(".mk"):
-                out.append(Path(dirpath, name).relative_to(root).as_posix())
+                rel = Path(dirpath, name).relative_to(root).as_posix()
+                if not links_outside(root, rel):
+                    out.append(rel)
     return out
 
 

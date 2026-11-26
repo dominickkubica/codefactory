@@ -22,11 +22,15 @@ GitHub Action that exposes a token or lets a pull request from a fork act with t
   git (then nothing is cached: a pull request could otherwise redirect its writes and clean-up, or plant results
   that hide its findings), never follows a link inside it, and leaves out of a diff's base anything that links
   outside the folder. A file changed within two seconds of being stamped isn't trusted from the cache.
+- **It reads only the repository.** A file that is a symbolic link to somewhere outside it (`config.py ->
+  ~/.aws/credentials`) is skipped by every check, analyzer and lockfile reader, and a patch's paths can't climb out of
+  its folder. Outputs (`-o`, the PR comment, the baseline) are never written through a symbolic link.
 - **Secrets it finds are reported cut to their first 4 characters** (`AKIA…`), in the review, PR comments, SARIF
   and annotations, including keys found only in git history.
 - **A repository's settings can only read.** Saved queries in `factory.toml` run read-only on an in-memory copy of
-  the graph (no ATTACH, writes or PRAGMA) and stop after 30 seconds. Annotations it prints for GitHub are escaped, so
-  a finding's text can't become a workflow command.
+  the graph (no ATTACH, writes or PRAGMA) and stop after 30 seconds. `[[rule]]` patterns shaped for catastrophic
+  backtracking (`(a+)+`) are refused, and query names and rule ids are plain text. Annotations it prints for GitHub
+  are escaped, so a finding's text can't become a workflow command.
 - **It stays on the machine.** The only network call is `review --online` (dependency vulnerabilities from
   OSV.dev), which sends package names and versions and nothing else, and only when asked. `update` installs from
   PyPI (`codefactory-cli`) when you run it.
@@ -34,9 +38,22 @@ GitHub Action that exposes a token or lets a pull request from a fork act with t
   those commands describe.
 - **No runtime dependencies.** The optional `[languages]` extra adds tree-sitter and its grammar pack.
 - **The GitHub Action** runs codefactory from its own files (nothing fetched for it), installs the language pack and
-  TypeScript at exact versions (`action-requirements.txt`, hash-checked), posts its comment only on pull requests
-  from the same repository (a fork's token can't write; the result goes to the job summary), and never runs the
-  pull request's own TypeScript compiler.
+  TypeScript at exact versions (`action-requirements.txt`, hash-checked), keeps its comment file in the runner's
+  temporary folder (outside the checkout), posts the comment only on pull requests from the same repository (a fork's
+  token can't write; the result goes to the job summary), always enforces `fail-on` (a step that fails counts as a
+  failure), and never runs the pull request's own TypeScript compiler.
+- **Its own CI and release** pin every action to a commit and every install to a hash (`build-requirements.txt` for
+  the build backend), keep no token after checkout, and only ever move the `v0` tag forward.
+
+## Running on a repository you don't trust
+
+Everything in the analyzed repository is the author's: its source, but also `factory.toml` (saved queries, custom
+rules, silenced findings, the profile), `.codefactory/`, `node_modules/`, symbolic links and file names. codefactory
+treats all of it as data: it never runs it, never writes through it, and never lets it point outside the repository.
+What the author can still do is shape the result: `factory.toml` can silence findings or declare the project's
+profile. For a pull request from someone you don't trust, read its `factory.toml` changes as part of the review, the
+same as any code.
+
 
 ## Supported versions
 
@@ -60,7 +77,8 @@ Every release from 0.17.0 on is built by GitHub Actions from the tagged commit
   ```bash
   git checkout v0.20.3
   export SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)
-  pip install build==1.2.2.post1 && python -m build
+  pip install --require-hashes --no-deps -r build-requirements.txt
+  python -m build --no-isolation
   python tools/reproducible_sdist.py dist/*.tar.gz
   sha256sum dist/*        # the same as SHA256SUMS
   ```

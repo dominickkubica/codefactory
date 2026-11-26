@@ -8,10 +8,12 @@ checks, so code moving down a file doesn't look new.
 
 from __future__ import annotations
 
+import contextlib
 import shutil
 import subprocess
 import tarfile
 import tempfile
+import time
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -70,34 +72,53 @@ def _base_member(member: tarfile.TarInfo, dest: str) -> tarfile.TarInfo | None:
         return None
 
 
+def _complete(target: Path, sha: str) -> bool:
+    """A finished extraction of this commit: our own marker, naming it (anything else is extracted again)."""
+    try:
+        return not target.is_symlink() and (target / ".complete").read_text(encoding="utf-8") == sha
+    except OSError:
+        return False
+
+
 def extract(root: Path, sha: str, into: Path) -> Path:
     """The tree at `sha`, extracted once (git archive) into `into/<sha>`: the cache folder, or a temporary one."""
     target = into / sha[:12]
-    try:  # only our own marker, naming this commit: anything else is re-extracted
-        if (target / ".complete").read_text(encoding="utf-8") == sha and not target.is_symlink():
-            return target
-    except OSError:
-        pass
+    if _complete(target, sha):
+        return target
     if target.is_symlink():
         target.unlink()
-    shutil.rmtree(target, ignore_errors=True)
-    target.mkdir(parents=True)
-    with tempfile.TemporaryDirectory() as tmp:
-        archive = Path(tmp) / "base.tar"
-        # the analyzed folder only, with paths relative to it (a subfolder of a monorepo is compared with itself)
-        prefix = git(root, "rev-parse", "--show-prefix").rstrip("/")
-        top = git(root, "rev-parse", "--show-toplevel")  # run there: from a subfolder, `sha:path` is read relative to it
-        git(Path(top), "archive", "--format=tar", "-o", str(archive), f"{sha}:{prefix}" if prefix else sha)
-        with tarfile.open(archive) as tar:
-            try:  # the data filter refuses absolute paths, links out of the folder and special files
-                tar.extractall(target, filter=_base_member)
-            except TypeError:  # Python 3.11 before 3.11.4 has no filters: leave out every link instead
-                safe = [m for m in tar.getmembers() if _keep(m.name) and (m.isfile() or m.isdir())]
-                tar.extractall(target, members=safe)  # noqa: S202
-    (target / ".complete").write_text(sha, encoding="utf-8")
-    # older bases: keep three at most (real folders only: a link is removed, never followed)
-    olds = sorted((p for p in into.iterdir() if p != target), key=lambda p: p.lstat().st_mtime)
-    for old in olds[:-2]:
+    into.mkdir(parents=True, exist_ok=True)
+    # extracted into a folder of this run's own, then moved into place in one step: two runs at once (a pre-commit
+    # hook and an editor, parallel CI jobs) never delete or read each other's half-extracted base
+    work = Path(tempfile.mkdtemp(prefix=f".{sha[:12]}-", dir=into))
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            archive = Path(tmp) / "base.tar"
+            # the analyzed folder only, with paths relative to it (a subfolder of a monorepo is compared with itself)
+            prefix = git(root, "rev-parse", "--show-prefix").rstrip("/")
+            top = git(root, "rev-parse", "--show-toplevel")  # run there: from a subfolder, `sha:path` is read relative to it
+            git(Path(top), "archive", "--format=tar", "-o", str(archive), f"{sha}:{prefix}" if prefix else sha)
+            with tarfile.open(archive) as tar:
+                try:  # the data filter refuses absolute paths, links out of the folder and special files
+                    tar.extractall(work, filter=_base_member)
+                except TypeError:  # Python 3.11 before 3.11.4 has no filters: leave out every link instead
+                    safe = [m for m in tar.getmembers() if _keep(m.name) and (m.isfile() or m.isdir())]
+                    tar.extractall(work, members=safe)  # noqa: S202
+        (work / ".complete").write_text(sha, encoding="utf-8")
+        if not _complete(target, sha):  # (another run may have finished meanwhile: then its copy is used)
+            shutil.rmtree(target, ignore_errors=True)  # stale or unfinished
+            with contextlib.suppress(OSError):  # lost a race to another run's rename: its copy is just as good
+                work.rename(target)
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    # older bases: keep three at most (real folders only: a link is removed, never followed; another run's work in
+    # progress, a dot folder, only once it's an hour old)
+    now = time.time()
+    olds = sorted(
+        (p for p in into.iterdir() if p != target and (not p.name.startswith(".") or now - p.lstat().st_mtime > 3600)),
+        key=lambda p: p.lstat().st_mtime,
+    )
+    for old in olds[:-2] if len(olds) > 2 else []:
         if old.is_symlink() or not old.is_dir():
             old.unlink(missing_ok=True)
         else:

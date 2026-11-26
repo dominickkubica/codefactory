@@ -13,7 +13,7 @@ import subprocess
 from pathlib import Path
 
 from .checks import ANY, PATTERNS, PLACEHOLDER, VENDOR_SECRETS, Check, Evidence, redact
-from .paths import drop_ignored, is_test, walk
+from .paths import drop_ignored, is_test, links_outside, walk
 from .suppress import MARK
 
 # GitHub Actions
@@ -59,6 +59,8 @@ def _excerpt(text: str) -> str:
 def workflows(root: Path, out: dict[str, Check]) -> None:
     for path in sorted((root / ".github" / "workflows").glob("*.y*ml")):
         rel = path.relative_to(root).as_posix()
+        if links_outside(root, rel):
+            continue
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
@@ -166,6 +168,11 @@ def history(root: Path, current: set[str], out: dict[str, Check], max_lines: int
     commit, file, seen, read, note = "", "", set(), 0, ""
     texts: dict[str, str] = {}
     pats = PATTERNS["secret"]
+    import threading
+
+    watchdog = threading.Timer(timeout, proc.kill)  # git stalled or slow: stop it, and say what was read
+    watchdog.daemon = True
+    watchdog.start()
     try:
         for raw in proc.stdout:
             read += 1
@@ -192,9 +199,13 @@ def history(root: Path, current: set[str], out: dict[str, Check], max_lines: int
                     seen.add((file, value))
                     out["history_secret"].hits.append(Evidence(file, 0, f"commit {commit}: {redact(_excerpt(line))}"))
     finally:
+        timed_out = not watchdog.is_alive() and proc.poll() not in (0, None) and read <= max_lines
+        watchdog.cancel()
         proc.kill()
         proc.stdout.close()
         proc.wait(timeout=timeout)
+    if timed_out and not note:
+        note = f"history read for {timeout} s, then stopped ({read:,} changed lines, the most recent commits)"
     shallow = subprocess.run(["git", "-C", str(root), "rev-parse", "--is-shallow-repository"], capture_output=True, text=True)
     if shallow.stdout.strip() == "true":
         note = (note + "; " if note else "") + "shallow clone: only part of the history was available"

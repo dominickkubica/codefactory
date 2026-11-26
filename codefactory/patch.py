@@ -55,14 +55,17 @@ def check(text: str) -> dict:
     added = added_lines(text)
     with tempfile.TemporaryDirectory() as d:
         root = Path(d)
+        files = []
         for file, lines in added.items():
             path = root / file
             if not path.resolve().is_relative_to(root.resolve()):
-                continue  # a path that climbs out of the folder
+                continue  # a path that climbs out of the folder: neither written nor read
             path.parent.mkdir(parents=True, exist_ok=True)
             body = [lines.get(n, "") for n in range(1, max(lines) + 1)]
             path.write_text("\n".join(body) + "\n", encoding="utf-8")
-        files = sorted(added)
+            files.append(file)
+        files.sort()
+        added = {f: added[f] for f in files}
         checks = _scan(root, files)
         checks.update(privacy_scan(root, files))
         checks.update(apple_scan(root, files))

@@ -6,7 +6,7 @@
   const D = window.FACTORY;
   const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const $ = (s) => document.querySelector(s);
-  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const SEV = { high: 0, warn: 1, info: 2 };
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -560,7 +560,7 @@
     const lensSet = LENS_KINDS[lens];
     const list = D.flags.filter((fl) => flagFilter ? fl.kind === flagFilter : !lensSet || lensSet.has(fl.kind)).slice(0, 400);
     $("#issues").innerHTML = (kinds.length ? `<div class="chips">${kinds.map((k) =>
-      `<button class="chip" data-kind="${k}" aria-pressed="${flagFilter === k}">${KIND[k] || k} ${counts[k]}</button>`).join("")}</div>` :
+      `<button class="chip" data-kind="${esc(k)}" aria-pressed="${flagFilter === k}">${esc(KIND[k] || k)} ${counts[k]}</button>`).join("")}</div>` :
       `<p class="empty">No issues found.</p>`) +
       list.map((fl) => { const i = D.flags.indexOf(fl); return `<div class="flag ${fl.severity}" tabindex="0" data-i="${i}"><b>${esc(KIND[fl.kind] || fl.kind)}</b> · ${esc(fl.message)}
         <div class="where">${esc(shortTarget(fl.target))}${fl.line ? ":" + fl.line : ""}</div>${promptButton(i)}</div>`; }).join("");

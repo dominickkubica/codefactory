@@ -40,8 +40,9 @@ jobs:
       - name: Build (reproducible)
         run: |
           export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
-          pip install --quiet "build==1.2.2.post1"
-          python -m build
+          # the build backend at exact, hash-checked versions: a new setuptools can't change (or get into) the release
+          pip install --quiet --require-hashes --no-deps -r build-requirements.txt
+          python -m build --no-isolation
           python tools/reproducible_sdist.py dist/*.tar.gz
           pip install --quiet dist/*.whl
           codefactory sbom . -o dist/codefactory.cdx.json
@@ -51,7 +52,7 @@ jobs:
           export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
           sed -i 's/^name = "codefactory"$/name = "codefactory-cli"/' pyproject.toml
           grep -q '^name = "codefactory-cli"$' pyproject.toml
-          python -m build -o pypi
+          python -m build --no-isolation -o pypi
           python tools/reproducible_sdist.py pypi/*.tar.gz
           git checkout -- pyproject.toml
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -109,8 +110,13 @@ jobs:
             gh release create "$TAG" dist/* --title "codefactory $TAG" --notes-file notes.md --verify-tag
           fi
           major="${TAG%%.*}"
-          git tag -f "$major" "$TAG^{commit}"
-          git push -f origin "refs/tags/$major"
+          newest="$(git tag -l "$major.*.*" | sort -V | tail -1)"
+          if [ "$newest" = "$TAG" ]; then  # a backport (v0.19.5 after v0.20.2) mustn't move v0 back
+            git tag -f "$major" "$TAG^{commit}"
+            git push -f origin "refs/tags/$major"
+          else
+            echo "$TAG isn't the newest $major release ($newest is): $major stays where it is"
+          fi
 
   pypi:
     needs: build

@@ -16,12 +16,13 @@ from . import __version__
 from .analyzers import LANGUAGES, analyze
 from .baseline import baseline_path, compare, read_baseline, write_baseline
 from .brief import brief_markdown, context_data, context_markdown
-from .cache import load_cached, save_cache
+from .cache import fingerprint, load_cached, save_cache
 from .checks import scan_sources
 from .config import load_config
 from .flags import SEVERITY_ORDER, run_flags
 from .graph import Flag, Graph
 from .layers import assign_layers
+from .paths import write_file
 from .plan import make_plan, plan_markdown
 from .review import review_markdown
 from .sarif import build_sarif, gha_command, github_annotations
@@ -61,13 +62,15 @@ def load_graph(path: Path, languages: list[str] | None = None, cache: bool = Tru
         raise SystemExit(f"codefactory: {path} is not a folder or a graph .json file")
     root = path.resolve()
     ignore = load_config(root).ignore
+    stamp, recent = "", []
     if cache and not languages:
-        hit = load_cached(root, ignore)
+        stamp = fingerprint(root, ignore, recent)  # before analysis: what's analyzed is at least this new
+        hit = load_cached(root, ignore, stamp)
         if hit is not None:
             return hit
     graph = build(root, languages, cache).to_dict()
     if cache and not languages:
-        save_cache(root, ignore, graph)
+        save_cache(root, ignore, graph, stamp, bool(recent))
     return graph
 
 
@@ -86,7 +89,7 @@ def _write(path: Path, text: str) -> None:
             "Pick an existing folder with -o (on Windows, a OneDrive-synced Desktop is under OneDrive\\Desktop)."
         )
     try:
-        path.write_text(text, encoding="utf-8")
+        write_file(path, text)
     except OSError as e:
         raise SystemExit(f"codefactory: can't save {path}: {e.strerror or e}") from None
 

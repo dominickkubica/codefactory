@@ -16,7 +16,7 @@ from pathlib import Path
 
 from .brief import View
 from .intent import interp_safe, push_skip_explained, safe_names, swallow_intent
-from .paths import is_test
+from .paths import is_test, links_outside
 from .suppress import MARK
 from .suppress import _parse as parse_mark
 
@@ -292,7 +292,7 @@ def source_files(root: Path, graph: dict) -> list[str]:
         for name in filenames:
             if name.endswith(SRC_EXT) and not name.endswith((".min.js", ".d.ts")):
                 out.add(Path(dirpath, name).relative_to(root).as_posix())
-    return sorted(out)
+    return sorted(f for f in out if not links_outside(root, f))
 
 
 def scan_sources(root: Path, files: list[str]) -> dict[str, Check]:
@@ -601,7 +601,10 @@ def scan_repo(root: Path) -> dict:
     info["env_files"] = [
         p.name
         for p in root.glob(".env*")
-        if p.is_file() and not p.name.endswith((".example", ".sample", ".template", ".dist")) and _holds_secret(p)
+        if p.is_file()
+        and not p.name.endswith((".example", ".sample", ".template", ".dist"))
+        and not links_outside(root, p.name)
+        and _holds_secret(p)
     ]
     if info["readme"]:
         t = (root / info["readme"]).read_text(encoding="utf-8", errors="replace").lower()

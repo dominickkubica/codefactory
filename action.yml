@@ -53,9 +53,9 @@ runs:
         base="${BASE_INPUT:-${BASE_REF:+origin/$BASE_REF}}"
         if [ -n "$BASE_REF" ]; then git fetch --no-tags --quiet origin "$BASE_REF"; fi
         set +e
-        python -m codefactory diff . ${base:+--base "$base"} --comment codefactory-comment.md --github --fail-on "$FAIL_ON"
+        python -m codefactory diff . ${base:+--base "$base"} --comment "$RUNNER_TEMP/codefactory-comment.md" --github --fail-on "$FAIL_ON"
         echo "status=$?" >> "$GITHUB_OUTPUT"
-        cat codefactory-comment.md >> "$GITHUB_STEP_SUMMARY" 2> /dev/null
+        cat "$RUNNER_TEMP/codefactory-comment.md" >> "$GITHUB_STEP_SUMMARY" 2> /dev/null
     - name: Comment on the pull request
       # a pull request from a fork gets a read-only token: its result is in the job summary instead
       if: >-
@@ -68,7 +68,8 @@ runs:
         REPO: ${{ github.repository }}
       run: |
         marker="<!-- codefactory -->"
-        body="$(printf '%s\n%s' "$marker" "$(cat codefactory-comment.md)")"
+        # (outside the checkout: a pull request can't commit it as a link to some other file)
+        body="$(printf '%s\n%s' "$marker" "$(cat "$RUNNER_TEMP/codefactory-comment.md")")"
         id="$(gh api "repos/$REPO/issues/$PR/comments" --paginate --jq ".[] | select(.body | startswith(\"$marker\")) | .id" | head -1)" || id=""
         if [ -n "$id" ]; then
           gh api -X PATCH "repos/$REPO/issues/comments/$id" -f body="$body" > /dev/null
@@ -76,5 +77,8 @@ runs:
           gh api "repos/$REPO/issues/$PR/comments" -f body="$body" > /dev/null
         fi || echo "::warning title=codefactory::couldn't post the comment (the token needs pull-requests: write); the result is in the job summary"
     - name: Result
+      if: always()  # the gate holds even when commenting failed; no result recorded (a failed step) fails it
       shell: bash
-      run: exit ${{ steps.diff.outputs.status }}
+      env:
+        STATUS: ${{ steps.diff.outputs.status }}
+      run: exit "${STATUS:-1}"

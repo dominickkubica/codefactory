@@ -29,10 +29,10 @@ def baseline_path(repo_or_file: Path) -> Path:
 def write_baseline(graph: dict, path: Path) -> int:
     fns = {f["id"]: f for f in graph["functions"]}
     counts = Counter(issue_key(graph, f, fns) for f in graph["flags"])
-    path.write_text(
-        json.dumps({"version": 1, "created": date.today().isoformat(), "issues": dict(sorted(counts.items()))}, indent=1) + "\n",
-        encoding="utf-8",
-    )
+    from .paths import write_file
+
+    doc = {"version": 1, "created": date.today().isoformat(), "issues": dict(sorted(counts.items()))}
+    write_file(path, json.dumps(doc, indent=1) + "\n")
     return sum(counts.values())
 
 

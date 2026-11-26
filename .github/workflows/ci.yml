@@ -4,15 +4,22 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+# Every action is pinned to a commit (the comment says which version) and every install is exact and hash-checked,
+# as in release.yml; Dependabot proposes updates (.github/dependabot.yml).
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
-      - run: pip install ruff==0.17.6
+      - run: pip install --require-hashes --no-deps -r .github/ci-requirements.txt
       - run: ruff check codefactory tests
       - run: ruff format --check codefactory tests
 
@@ -23,25 +30,26 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         python: ["3.11", "3.13"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python }}
       - name: Tests on a bare machine (no TypeScript, no language pack), as the release build runs them
         run: python -m unittest discover -s tests -t .
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install -g typescript@5.9.2
+      - name: TypeScript (the runner's own Node.js)
+        run: npm install -g --ignore-scripts typescript@5.9.3
       - name: Tests without the optional language pack
         run: python -m unittest discover -s tests -t .
       - name: Tests with it (Go, Java, Ruby and more through tree-sitter)
         run: |
-          pip install "tree-sitter>=0.25" "tree-sitter-language-pack>=1.0,<2"
+          pip install --require-hashes --no-deps -r action-requirements.txt
           python -m unittest discover -s tests -t .
       - name: Install as a user would, and run the command
         run: |
-          pip install ".[languages]"
+          pip install --require-hashes --no-deps -r build-requirements.txt
+          pip install --no-build-isolation --no-deps .
           codefactory --version
       - name: codefactory finds nothing serious in itself
         run: codefactory check .
@@ -50,13 +58,13 @@ jobs:
     # the pull-request action, run on codefactory itself: compares this commit with the one before
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 2
+          persist-credentials: false
       - uses: ./
         with:
           base: HEAD~1
           comment: "false"
-      - name: The comment was written
-        run: test -s codefactory-comment.md && cat codefactory-comment.md
-
+      - name: The comment was written (outside the checkout)
+        run: test -s "$RUNNER_TEMP/codefactory-comment.md" && cat "$RUNNER_TEMP/codefactory-comment.md"

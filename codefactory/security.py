@@ -27,6 +27,22 @@ AUTH = re.compile(
     r"require_?account|require_?user|authenticated",
     re.I,
 )
+# what has the words but doesn't check who's asking: a database session (Depends(get_db_session), sessionmaker),
+# session or CSRF middleware (app.use(session({…})), SessionMiddleware, csrf_token). Counted as auth, they hid the
+# endpoints that have none.
+NOT_AUTH = re.compile(
+    r"\b\w*(?:db|database|sql|orm|async|engine)_?session\w*|\bget_?(?:db|session)\b|\bsession_?(?:local|maker|factory|scope)\w*|"
+    r"\b(?:Session|Cookie|Csrf|CSRF)Middleware\b|\b(?:cookie_?|express_?)?session\s*\(|express-session|cookie-session|"
+    r"\bcsrf\w*|\bxsrf\w*",
+    re.I,
+)
+
+
+def _auth(text: str) -> re.Match | None:
+    """An auth check's words in `text`, not counting database sessions and session or CSRF middleware."""
+    return AUTH.search(NOT_AUTH.sub(" ", text))
+
+
 SINK_KINDS = ("sql_built", "shell", "eval", "raw_html")
 METHODS = "get|post|put|patch|delete|head|options"
 
@@ -145,7 +161,7 @@ class _RailsControllers:
         for file in files:
             text = "\n".join(_read(root, cache, file))
             if "/concerns/" in file:
-                guard = next((a for a in RAILS_AUTH.findall(text) if AUTH.search(a)), "")
+                guard = next((a for a in RAILS_AUTH.findall(text) if _auth(a)), "")
                 m = re.search(r"^\s*module\s+([\w:]+)", text, re.M)
                 if guard and m:
                     self.concerns[m.group(1).split("::")[-1]] = guard
@@ -157,7 +173,7 @@ class _RailsControllers:
 
     def _own(self, text: str) -> str:
         """The controller's own auth before_action, or one an included concern adds (`include Authentication`)."""
-        own = next((a for a in RAILS_AUTH.findall(text) if AUTH.search(a)), "")
+        own = next((a for a in RAILS_AUTH.findall(text) if _auth(a)), "")
         if own:
             return own
         for line in re.findall(r"^\s*include\s+([^\n]+)", text, re.M):
@@ -185,7 +201,7 @@ class _RailsControllers:
     def skipped(text: str) -> set[str] | None:
         """Actions an auth before_action is skipped for: None (not skipped), empty (all), or the `only:` ones."""
         for m in RAILS_SKIP.finditer(text):
-            if AUTH.search(m.group(1)):
+            if _auth(m.group(1)):
                 return set(re.findall(r"\w+", m.group(2) or ""))
         # a concern's helper: `skip_authentication only: :new` (Rails 8's generator, and many apps)
         for m in re.finditer(r"^\s*(?:skip_\w*auth\w*|allow_unauthenticated_access)\b([^\n]*)", text, re.M):
@@ -200,14 +216,14 @@ def _php_entries(file: str, lines: list[str], text: str, module, fns: list[dict]
         auth_until = []  # brace depths of open groups whose middleware checks who's asking
         depth = 0
         for i, ln in enumerate(lines, 1):
-            if re.search(r"middleware\(", ln) and AUTH.search(ln) and ("{" in ln or "group(" in ln):
+            if re.search(r"middleware\(", ln) and _auth(ln) and ("{" in ln or "group(" in ln):
                 auth_until.append(depth)
             m = LARAVEL_ROUTE.search(ln)
             if m:
                 verb = {"any": "ANY", "match": "ANY", "resource": "ANY", "apiresource": "ANY"}.get(m.group(1).lower(),
                                                                                                 m.group(1).upper())  # fmt: skip
                 guard = "middleware(auth) group" if auth_until else ""
-                if re.search(r"->middleware\(", ln) and AUTH.search(ln.split("->middleware(", 1)[1]):
+                if re.search(r"->middleware\(", ln) and _auth(ln.split("->middleware(", 1)[1]):
                     guard = "->middleware(auth)"
                 out.append(Entry(module["id"], verb, "/" + m.group(2).lstrip("/"), "Laravel", file, i, guard))
             depth += ln.count("{") - ln.count("}")
@@ -238,7 +254,7 @@ def _rust_entries(file, lines, text, module, named, fns, guards: set[str]) -> li
         sig = "\n".join(lines[f["line"] - 1 : f["line"] + 6]).split("{")[0]
         m = RUST_ATTR_ROUTE.search(attrs + "\n" + sig.split("fn ", 1)[0])
         if m:
-            auth = next((g for g in guards if re.search(rf":\s*{g}\b", sig)), "") or ((a := AUTH.search(sig)) and a.group(0))
+            auth = next((g for g in guards if re.search(rf":\s*{g}\b", sig)), "") or ((a := _auth(sig)) and a.group(0))
             out.append(Entry(f["id"], m.group(1).upper(), m.group(2), "Rust", file, f["line"], auth or ""))
     for i, ln in enumerate(lines, 1):  # Axum: .route("/x", get(handler))
         m = AXUM_ROUTE.search(ln)
@@ -285,8 +301,8 @@ def _phoenix_entries(file, lines, module, plugs: dict[str, str]) -> list[Entry]:
         if m and module:
             target = (m.group(3) or "").split(".")[-1]
             auth = (
-                (AUTH.search(piped) and f"pipe_through {piped.strip()}")
-                or (AUTH.search(session) and f"live_session {session.strip()[:60]}")
+                (_auth(piped) and f"pipe_through {piped.strip()}")
+                or (_auth(session) and f"live_session {session.strip()[:60]}")
                 or (target in plugs and f"{target}: plug {plugs[target]}")
                 or ""
             )
@@ -304,13 +320,13 @@ def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
     rust_guards: set[str] = set()  # request guards that check a token or session (`impl FromRequest for Headers`)
     for f in (f for f in by_file if f.endswith(".rs")):
         rust_text = "\n".join(_read(root, cache, f))
-        rust_guards |= {m.group(1) for m in RUST_GUARD.finditer(rust_text) if AUTH.search(rust_text[m.end() : m.end() + 3000])}
+        rust_guards |= {m.group(1) for m in RUST_GUARD.finditer(rust_text) if _auth(rust_text[m.end() : m.end() + 3000])}
     phoenix_plugs: dict[str, str] = {}  # controller or LiveView short name -> the auth plug / on_mount hook it uses
     for f in (f for f in by_file if f.endswith(".ex")):
         ex_text = "\n".join(_read(root, cache, f))
         mod = re.search(r"^\s*defmodule\s+([\w.]+)", ex_text, re.M)
         guard = next((m.group(1) for m in re.finditer(r"^\s*(?:plug|on_mount)\s+([\w.:]+)", ex_text, re.M)
-                      if AUTH.search(m.group(1))), "")  # fmt: skip
+                      if _auth(m.group(1))), "")  # fmt: skip
         if mod and guard:
             phoenix_plugs[mod.group(1).split(".")[-1]] = guard
     by_name: dict[str, list[dict]] = {}  # Django URL handlers by name, and class-based views' methods by class
@@ -336,7 +352,7 @@ def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
         if file.endswith(".py"):
             pm = re.search(r"(?:APIRouter|Blueprint)\([^)]*?(?:prefix|url_prefix)\s*=\s*['\"]([^'\"]*)['\"]", text, re.S)
             prefix = pm.group(1).rstrip("/") if pm else ""
-            router_auth = ", ".join(n for m in ROUTER_DEPS.finditer(text) for n in DEPENDS.findall(m.group(1)) if AUTH.search(n))
+            router_auth = ", ".join(n for m in ROUTER_DEPS.finditer(text) for n in DEPENDS.findall(m.group(1)) if _auth(n))
             for f in fns:
                 if f["kind"] == "module":
                     continue
@@ -353,8 +369,8 @@ def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
                 else:
                     verb, path, framework = ",".join(re.findall(r"\w+", drf.group(1))).upper() or "GET", f["name"], "DRF"
                 sig = _signature(lines, f["line"])
-                deps = [d for d in DEPENDS.findall(deco + sig) if AUTH.search(d)]
-                deps += [aliases[a] for a in re.findall(r":\s*(\w+)", sig) if a in aliases and AUTH.search(aliases[a])]
+                deps = [d for d in DEPENDS.findall(deco + sig) if _auth(d)]
+                deps += [aliases[a] for a in re.findall(r":\s*(\w+)", sig) if a in aliases and _auth(aliases[a])]
                 auth = (
                     (PY_AUTH_DECORATOR.search(deco) and PY_AUTH_DECORATOR.search(deco).group(0).strip())
                     or (deps and f"Depends({deps[0]})")
@@ -379,7 +395,7 @@ def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
                     entries.append(Entry(f["id"], "ANY", "/" + m.group(1), "Django", f["file"], f["line"],
                                          auth.group(0).strip() if auth else ""))  # fmt: skip
         elif file.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")):
-            app_auth = next((m.group(1) for m in JS_APP_AUTH.finditer(text) if AUTH.search(m.group(1))), "")
+            app_auth = next((m.group(1) for m in JS_APP_AUTH.finditer(text) if _auth(m.group(1))), "")
             for i, ln in enumerate(lines, 1):
                 m = JS_ROUTE.search(ln)
                 if not m or m.group(1) in ("axios", "http", "fetch", "client", "api", "request", "supertest", "agent"):
@@ -389,7 +405,7 @@ def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
                 idents = [a for a in args if re.fullmatch(r"[\w.]+", a)]
                 handler = named.get(idents[-1].split(".")[-1]) if idents and not re.search(r"=>|function", args[-1]) else None
                 middleware = idents[:-1] if handler else idents
-                auth = next((mw for mw in middleware if AUTH.search(mw)), "") or (app_auth and f"app.use({app_auth})")
+                auth = next((mw for mw in middleware if _auth(mw)), "") or (app_auth and f"app.use({app_auth})")
                 target = handler or module
                 if target:
                     entries.append(Entry(target["id"], m.group(2).upper(), m.group(3), "Express-style", file, i, auth))
@@ -437,7 +453,7 @@ def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
                 if m:
                     args = re.findall(r"[\w.]+", m.group(3))
                     handler = next((named[a.split(".")[-1]] for a in reversed(args) if a.split(".")[-1] in named), None)
-                    auth = next((a for a in args if AUTH.search(a)), "")
+                    auth = next((a for a in args if _auth(a)), "")
                     verb = "ANY" if m.group(1) in ("HandleFunc", "Handle", "Any") else m.group(1).upper()
                     if handler or module:
                         entries.append(Entry((handler or module)["id"], verb, m.group(2), "Go", file, i, auth))

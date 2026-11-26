@@ -38,7 +38,33 @@ Each has a regression test (`tests/test_security_audit.py`).
   the 100 ns to slip through), and a file changed within two seconds of being stamped isn't trusted (git's "racy"
   rule, on every system).
 
+- **No file linking outside the repository is read** (`config.py -> ~/.aws/credentials`): every check, analyzer,
+  lockfile reader (whose lines would have gone to OSV) and the TypeScript helper skip them; links within the
+  repository are fine.
+- **Outputs are never written through a symbolic link** (`-o`, `--comment`, the baseline), and the Action keeps its
+  comment file in the runner's temporary folder: a pull request could commit `codefactory-comment.md` as a link and
+  have a runner file overwritten, or published in the comment.
+- **`diff --patch` doesn't read files outside its folder**: paths that climb out were skipped when written but still
+  read.
+- **The viewer escapes finding kinds** (a saved query's name was put into the page as HTML), and query names and rule
+  ids are now plain text.
+- **The Action always enforces `fail-on`**: its last step runs even when an earlier one failed, and a missing result
+  fails the check instead of passing it. Its `languages` input reaches the shell through the environment.
+- **CI and release hardening**: CI has read-only permissions, actions pinned to commits, no stored token, and
+  hash-checked installs (Dependabot proposes updates). The release builds with a hash-pinned backend
+  (`build-requirements.txt`, `--no-isolation`; still byte-identical), and a backport tag no longer moves `v0` back.
+- **A review can't be crashed or stalled by the repository**: oddly shaped lockfiles are skipped, cut-off or malformed
+  OSV answers are network errors, all OSV requests share a two-minute budget, `[[rule]]` patterns shaped for
+  catastrophic backtracking are refused, and the git history scan stops at its time limit (a watchdog stops git).
+- **A failed `update` says so** when putting the previous install back fails too.
+
 ### Fixed
+- **Session and CSRF middleware and database sessions no longer count as authentication** (`Depends(get_db_session)`,
+  `app.use(session(…))`, `SessionMiddleware`, `csrf_token`): they hid endpoints with no auth check.
+- **Two `diff` runs at once** no longer delete each other's half-extracted base: each extracts into its own folder and
+  moves it into place in one step.
+- **The cache fingerprint is taken before analysis**: a file edited while codefactory ran was cached as analyzed.
+- **A failed review step stops git** instead of leaving it running (and the interpreter waiting for it at exit).
 - **Projects on TypeScript 7** (the native rewrite, which ships no JavaScript API yet) made the TypeScript analyzer
   fail outright. A compiler without the API is skipped for the next one (a global TypeScript 5), and with none the
   review says how to get one.

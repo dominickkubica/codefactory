@@ -12,9 +12,17 @@ const ts = require(tsPath);
 const ignore = new Set(JSON.parse(ignoreJson || "[]"));
 const EXT = /\.(tsx?|jsx?|mjs|cjs|mts|cts)$/;
 const rel = (f) => path.relative(root, f).split(path.sep).join("/");
+const realRoot = fs.realpathSync(root);
+// a link to somewhere outside the repository: not its code (a pull request can commit `a.ts -> ~/.npmrc`)
+const outside = (f) => {
+  try {
+    const r = path.relative(realRoot, fs.realpathSync(f));
+    return r.startsWith("..") || path.isAbsolute(r);
+  } catch { return true; }
+};
 const skipped = (f) => {
   const parts = rel(f).split("/");
-  return parts.slice(0, -1).some((p) => ignore.has(p) || (p.startsWith(".") && p !== "." && p !== "..")) || /\.d\.[mc]?ts$|\.min\.[mc]?js$/.test(f) || !EXT.test(f) || rel(f).startsWith("..");
+  return parts.slice(0, -1).some((p) => ignore.has(p) || (p.startsWith(".") && p !== "." && p !== "..")) || /\.d\.[mc]?ts$|\.min\.[mc]?js$/.test(f) || !EXT.test(f) || rel(f).startsWith("..") || outside(f);
 };
 
 function walkDir(dir, out) {

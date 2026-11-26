@@ -45,7 +45,9 @@ def walk(root, names: tuple[str, ...] = (), suffixes: tuple[str, ...] = (), skip
         for name in filenames:
             if (names or suffixes) and name not in names and not name.endswith(suffixes):
                 continue
-            yield name if rel_dir == "." else f"{rel_dir}/{name}"
+            rel = name if rel_dir == "." else f"{rel_dir}/{name}"
+            if not links_outside(root, rel):
+                yield rel
 
 
 @functools.lru_cache(maxsize=65536)
@@ -138,3 +140,31 @@ def file_stamp(st) -> str:
 
 def racy(st, now_ns: int) -> bool:
     return max(st.st_mtime_ns, st.st_ctime_ns) >= now_ns - RACY_NS
+
+
+def links_outside(root, rel) -> bool:
+    """A file that is a symbolic link to somewhere outside `root`. Its text isn't the repository's (a pull request can
+    commit `config.py -> ~/.aws/credentials`), so no check reads it. A link within the repository is fine: its target
+    is read under its own path anyway. (Folder links aren't descended into: os.walk doesn't follow them.)"""
+    import os
+
+    full = os.path.join(str(root), str(rel))
+    if not os.path.islink(full):
+        return False
+    try:
+        return not Path(full).resolve().is_relative_to(Path(root).resolve())
+    except (OSError, RuntimeError):  # a loop, or unreadable: not ours either
+        return True
+
+
+def write_file(path, text: str) -> None:
+    """Write a file, never through a symbolic link: an output path inside a repository (the Action's comment file, a
+    baseline) can be a link a pull request committed, pointing at something to overwrite or, once read back, publish."""
+    import os
+
+    path = Path(path)
+    if path.is_symlink():
+        raise OSError(f"{path} is a symbolic link; not writing through it")
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0)  # (and no link swapped in meanwhile)
+    with os.fdopen(os.open(path, flags, 0o644), "w", encoding="utf-8") as f:
+        f.write(text)
