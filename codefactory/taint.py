@@ -290,10 +290,6 @@ def _body(node) -> list[ast.AST]:
     return cached
 
 
-def _has_source(node) -> bool:
-    return any(isinstance(n, (ast.Attribute, ast.Call)) and _source(n) for n in _body(node))
-
-
 def summarize(node, callees: dict[str, Summary], fid: str = "") -> Summary:
     f = _Function(node, callees, fid)
     s = Summary(f.params)

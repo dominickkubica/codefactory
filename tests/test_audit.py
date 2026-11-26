@@ -87,6 +87,21 @@ class RepositoryChecksTest(unittest.TestCase):
         self.assertEqual(found["docker_latest"].hits, [])
         self.assertEqual(found["docker_root"].hits, [])
 
+    def test_a_key_marked_as_intended_isnt_a_deleted_one(self):
+        # codefactory's own review: test keys marked `codefactory: ignore-file secret` were reported as deleted, still
+        # leaked, because the history check took "not reported now" for "not in the code now"
+        root = tree({"tests/test_x.py": "# codefactory: ignore-file secret — fake keys\nKEY = 'AKIA2E0A8F3B244C9986'\n"})
+        git = ["git", "-C", str(root), "-c", "user.name=t", "-c", "user.email=t@example.invalid"]
+        subprocess.run([*git, "init", "-q"], check=True)
+        subprocess.run([*git, "add", "."], check=True)
+        subprocess.run([*git, "commit", "-qm", "x"], check=True)
+        found, _ = scan(root, set())
+        self.assertEqual(found["history_secret"].hits, [])
+
+    def test_jinja_safe_filter_not_a_regex_alternation(self):
+        root = tree({"a.py": "V = re.compile(r'allow|safe|valid')\nHTML = '{{ bio | safe }}'\n"})
+        self.assertEqual([e.line for e in scan_sources(root, ["a.py"])["raw_html"].hits], [2])
+
     def test_a_deleted_secret_is_still_in_history(self):
         root = tree({"config.py": 'STRIPE = "sk_live_' + "4eC39HqLyjWDarjtT1zdp7dc" + '"\n'})
         git = ["git", "-C", str(root), "-c", "user.name=t", "-c", "user.email=t@example.invalid"]

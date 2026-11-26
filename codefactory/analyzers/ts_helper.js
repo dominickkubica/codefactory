@@ -26,8 +26,9 @@ function walkDir(dir, out) {
 }
 
 // Program: the repo's tsconfig when there is one (its paths and settings), plus any other source files found.
+// codefactory: ignore module_state — a one-shot script: one run, one program, no importers
 let options = { allowJs: true, jsx: ts.JsxEmit.Preserve, noEmit: true, skipLibCheck: true, esModuleInterop: true };
-let fileNames = [];
+let fileNames = []; // codefactory: ignore module_state — the same one run
 const cfgPath = ts.findConfigFile(root, ts.sys.fileExists, "tsconfig.json");
 // (TypeScript reports paths with "/", Node on Windows with "\\": compare both resolved.)
 if (cfgPath && path.resolve(path.dirname(cfgPath)) === path.resolve(root)) {
@@ -327,6 +328,7 @@ function fnForSymbol(sym) {
 }
 // Code loaded on demand: const { fn } = require("./x") (also cast with `as`), const m = require("./x"); m.fn(),
 // require("./x").fn(), await import("./x"). The type checker can't see through these; the module's exports can.
+// codefactory: ignore module_state — filled once per run, read by the passes after it
 let exportsByFile = null;
 function exportsOf(fileId) {
   if (!exportsByFile) {

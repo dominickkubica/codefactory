@@ -162,6 +162,7 @@ def vulnerabilities(pkgs: list[Package], timeout: int = 30) -> list[Vulnerabilit
     for i in range(0, len(pkgs), BATCH):
         chunk = pkgs[i : i + BATCH]
         queries = [{"package": {"name": p.name, "ecosystem": p.ecosystem}, "version": p.version} for p in chunk]
+        # codefactory: ignore io_in_loop — one request per 500 packages, OSV's batch size
         results = _post(f"{API}/querybatch", {"queries": queries}, timeout).get("results", [])
         for p, res in zip(chunk, results, strict=False):
             found += [Vulnerability(p, v["id"]) for v in res.get("vulns") or []]

@@ -138,6 +138,17 @@ def mobile(root: Path, out: dict[str, Check]) -> None:
                 out["mobile_cleartext"].hits.append(Evidence(rel, _line(text, m.start()), _excerpt(m.group(0))))
 
 
+def _now(root: Path, file: str, texts: dict[str, str]) -> str:
+    """The file's current text ("" if it's gone): a key still there isn't a deleted one, even when a
+    `codefactory: ignore` comment keeps the current-files check quiet about it."""
+    if file not in texts:
+        try:
+            texts[file] = (root / file).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            texts[file] = ""
+    return texts[file]
+
+
 def history(root: Path, current: set[str], out: dict[str, Check], max_lines: int = 400_000, timeout: int = 60) -> str:
     """Secrets added in any commit (and branch) that aren't in the current files: deleted, but still leaked. Returns a
     note on how much history was read ("" when everything was)."""
@@ -153,6 +164,7 @@ def history(root: Path, current: set[str], out: dict[str, Check], max_lines: int
     except OSError:
         return "git isn't available: history not checked"
     commit, file, seen, read, note = "", "", set(), 0, ""
+    texts: dict[str, str] = {}
     pats = PATTERNS["secret"]
     try:
         for raw in proc.stdout:
@@ -175,8 +187,8 @@ def history(root: Path, current: set[str], out: dict[str, Check], max_lines: int
                     value = next(m.group(0) for p in use if (m := p.search(line)))
                     if re.search(PLACEHOLDER, line) or MARK.search(line):
                         continue  # (a `codefactory: ignore` comment on it said it isn't real)
-                    if value in current or (file, value) in seen:
-                        continue  # still in the code: the current-files check reports it
+                    if value in current or (file, value) in seen or value in _now(root, file, texts):
+                        continue  # still in the code: the current-files check reports it (or it was marked as intended)
                     seen.add((file, value))
                     out["history_secret"].hits.append(Evidence(file, 0, f"commit {commit}: {_excerpt(line)}"))
     finally:

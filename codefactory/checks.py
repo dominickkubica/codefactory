@@ -92,7 +92,7 @@ PATTERNS: dict[str, list[re.Pattern]] = {
         re.compile(r"dangerouslySetInnerHTML"),
         re.compile(r"\.innerHTML\s*=(?!=)(?!\s*(?:\"\"|''|``)\s*;?\s*$)"),  # not clearing it: `el.innerHTML = ""`
         re.compile(r"\bv-html\b"),
-        re.compile(r"\|\s*safe\b"),
+        re.compile(r"\{[{%][^}%\n]*\|\s*safe\b"),  # a template's `{{ x | safe }}`, not `allow|safe` in a regex
         re.compile(r"\bmark_safe\s*\("),
     ],
     "plain_http": [

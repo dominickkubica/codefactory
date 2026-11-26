@@ -1,3 +1,4 @@
+# codefactory: ignore-file secret — fake keys the patch tests expect to be found
 """`codefactory diff --patch`: the lines a unified diff adds, checked without the repository."""
 
 import contextlib

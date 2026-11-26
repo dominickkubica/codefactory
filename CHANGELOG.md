@@ -18,6 +18,9 @@ Bugs found by testing every command in every environment, and a speed pass.
 - `plan` on 1.7M lines: 3 s to 1.1 s (copy groups each re-scanned every finding); Django URL matching uses an index.
 
 ### Fixed
+- Found by running codefactory on itself: Jinja's `| safe` filter matched `allow|safe` inside a regular expression (it
+  now needs template syntax, `{{ x | safe }}`); and a key marked as intended (`codefactory: ignore-file secret`) was
+  reported as deleted but still in history, because the history check took "not reported" for "not in the code".
 - Line checks (credentials, SQL, shell, privacy, Swift) ran only on files an analyzer could parse: without Node.js's
   TypeScript or the language pack, JavaScript, TypeScript and other files got no line checks at all. They now run on
   every source file on disk, parsed or not; the profile reads them too, and hotspot coupling counts them.
