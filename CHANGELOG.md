@@ -3,7 +3,7 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
-## Unreleased
+## 0.22.0 · 2026-11-26
 
 From reviewing four large public repositories (Django, FastAPI, excalidraw, gin) and from benchmarking agents on them.
 
