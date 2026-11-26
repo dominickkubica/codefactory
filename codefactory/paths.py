@@ -6,8 +6,8 @@ import functools
 import re
 from pathlib import Path
 
-TEST_DIRS = ("tests", "test", "testing", "__tests__", "__mocks__", "spec")
-SCRIPT_DIRS = ("scripts", "script", "tools", "bin")
+TEST_DIRS = ("tests", "test", "testing", "__tests__", "__mocks__", "spec", "t")  # t/: Perl's and celery's
+SCRIPT_DIRS = ("scripts", "script", "tools", "bin", "benchmarks", "benchmarking")
 
 
 def ignored(path: str, ignore: list[str]) -> bool:
@@ -60,7 +60,9 @@ def is_vendored(path: str) -> bool:
 
 # documentation and example code: a top-level docs site or examples folder (docs/, dev-docs/, examples/), and tutorial
 # folders anywhere (docs_src/, tutorials/). Not `app/docs/`: a product can have a documents feature.
-DOC_SAMPLE = re.compile(r"^(?:[\w-]*docs?|documentation|examples?|samples?|website)/|(?:^|/)(?:docs_src|tutorials?)/", re.I)
+DOC_SAMPLE = re.compile(
+    r"^(?:[\w-]*docs?|documentation|examples?|samples?|website|playgrounds?)/|(?:^|/)(?:docs_src|tutorials?)/", re.I
+)
 
 
 def is_doc_sample(path: str) -> bool:

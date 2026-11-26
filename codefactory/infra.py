@@ -33,7 +33,7 @@ PATCH_EXT = (".diff", ".patch")
 MAKEFILES = ("Makefile", "makefile", "GNUmakefile")
 MAX_BYTES = 1_000_000
 
-KEYS = ("config_secret", "shell_pipe", "shell_rm_var", "shell_eval", "compose_privileged",
+KEYS = ("config_secret", "ci_test_secret", "shell_pipe", "shell_rm_var", "shell_eval", "compose_privileged",
         "compose_exposed", "compose_secret", "k8s_privileged", "k8s_host", "k8s_secret", "html_mixed",
         "html_no_sri", "config_http")  # fmt: skip
 
@@ -46,7 +46,9 @@ RM_VAR = re.compile(
 SHELL_EVAL = re.compile(r"^\s*eval\s+[\"']?\$(?!\()")  # not `eval "$(ssh-agent -s)"`: a trusted command's output
 # credentials without quotes, as config files write them: `PASSWORD = s3cr3t…`, `password: hunter2…`, `api.key=…`
 UNQUOTED_SECRET = re.compile(
-    r"^\s*(?:export\s+)?[\w.-]*(?:password|passwd|secret|token|api[_.-]?key|private[_.-]?key)[\w.-]*\s*(?::|\??=|:=)\s*"
+    # the word as a part of the name (`DB_PASSWORD`, `api.token`), not inside another (`notiktoken` in a tox env)
+    r"^\s*(?:export\s+)?(?:[\w.-]*[_.-])?(?:password|passwd|secret|token|api[_.-]?key|private[_.-]?key)(?:[_.-][\w.-]*)?"
+    r"\s*(?::|\??=|:=)\s*"
     r"(?=[^\s'\"]*\d)([^\s'\"$#{(%][^\s#]{7,})\s*$",
     re.I,
 )
@@ -120,8 +122,13 @@ def _secrets(rel: str, lines: list[str], out: dict, unquoted: bool = True) -> No
         body = ln[1:] if patch else ln
         if re.search(PLACEHOLDER, body) or re.search(r"\$\{\{|\$\{|\{\{|\$\(", body):
             continue
-        if any(p.search(body) for p in pats) or (unquoted and not is_test(rel) and UNQUOTED_SECRET.match(body)):
-            _hit(out, "config_secret", rel, lines, i, f"{body.split('=')[0].split(':')[0].strip()[:60]} = ********")
+        vendor = any(p.search(body) for p in pats)
+        if vendor or (unquoted and not is_test(rel) and UNQUOTED_SECRET.match(body)):
+            # a plain password in a CI workflow configures that run's throwaway services (a test database, MinIO): a
+            # vendor key there is as leaked as anywhere
+            ci = not vendor and rel.startswith(".github/workflows/")
+            label = f"{body.split('=')[0].split(':')[0].strip()[:60]} = ********"
+            _hit(out, "ci_test_secret" if ci else "config_secret", rel, lines, i, label)
 
 
 def shell(rel: str, lines: list[str], out: dict, makefile: bool = False) -> None:

@@ -113,6 +113,115 @@ class LargeRepoLessonsTest(unittest.TestCase):
         self.assertIsNotNone(copied)
         self.assertNotIn("sample/", " ".join(copied.evidence))
 
+    def test_an_example_in_a_docstring_is_documentation_not_configuration(self):  # Flask's Config docstring
+        root = repo({"config.py": 'class Config:\n    """Load it from a module::\n\n        SECRET_KEY = \'development key\'\n'
+                                  '        app.config.from_object(__name__)\n    """\n\n\nSECRET_KEY = "a-real-hardcoded-key-1234"\n'})  # fmt: skip
+        hits = scan_sources(root, ["config.py"])["secret_key_literal"].hits
+        self.assertEqual([e.line for e in hits], [9])
+
+    def test_tls_checks_chosen_by_a_setting_are_an_option_not_an_override(self):  # httpie's --verify
+        root = repo({"ssl_.py": "import ssl\n\ndef context(verify):\n"
+                                "    return dict(cert_reqs=ssl.CERT_REQUIRED if verify else ssl.CERT_NONE)\n\n"
+                                "def always():\n    return dict(cert_reqs=ssl.CERT_NONE)\n"})  # fmt: skip
+        self.assertEqual([e.line for e in scan_sources(root, ["ssl_.py"])["tls_off"].hits], [7])
+
+    def test_a_required_reason_api_is_code_not_a_comment_or_a_property(self):  # Loop's Swift headers and models
+        from codefactory.privacy import scan as privacy_scan
+
+        files = {"App/Store.swift": "//  NSUserDefaults+Status.swift\nimport Foundation\n"
+                                    "struct Context { var creationDate: Date\n  init(d: Date) { self.creationDate = d } }\n",
+                 "App.xcodeproj/project.pbxproj": ""}  # fmt: skip
+        root = repo(files)
+        self.assertFalse(privacy_scan(root, ["App/Store.swift"])["ios_privacy_manifest"].hits)
+        files["App/Prefs.swift"] = 'import Foundation\nlet seen = UserDefaults.standard.bool(forKey: "seen")\n'
+        root = repo(files)
+        hits = privacy_scan(root, ["App/Store.swift", "App/Prefs.swift"])["ios_privacy_manifest"].hits
+        self.assertEqual([(e.file, e.line) for e in hits], [("App/Prefs.swift", 2)])
+
+    def test_a_dependency_injection_provider_isnt_untested_logic(self):  # Now in Android's DaosModule
+        root = repo({"di/DaosModule.kt": "@Module\ninternal object DaosModule {\n    @Provides\n"
+                                         "    fun providesTopicsDao(db: Db): TopicDao = db.topicDao()\n\n"
+                                         "    fun countTopics(db: Db): Int = db.topicDao().count()\n}\n"})  # fmt: skip
+        r = Review(build(root, cache=False).to_dict(), root)
+        self.assertTrue(r._di_provider({"file": "di/DaosModule.kt", "line": 4}))
+        self.assertTrue(r._di_provider({"file": "di/DaosModule.kt", "line": 3}))  # (an analyzer starting at the annotation)
+        self.assertFalse(r._di_provider({"file": "di/DaosModule.kt", "line": 6}))
+
+    def test_tls_checks_off_in_a_branch_of_a_verify_setting_are_an_option(self):  # requests' adapters.py
+        root = repo({"adapters.py": "def cert_verify(conn, verify):\n    if verify:\n        conn.cert_reqs = 'CERT_REQUIRED'\n"
+                                    "    else:\n        conn.cert_reqs = 'CERT_NONE'\n    reqs = 'CERT_REQUIRED'\n"
+                                    "    if verify is False:\n        reqs = 'CERT_NONE'\n\n\n"
+                                    "def always(conn):\n    conn.cert_reqs = 'CERT_NONE'\n"})  # fmt: skip
+        self.assertEqual([e.line for e in scan_sources(root, ["adapters.py"])["tls_off"].hits], [12])
+
+    def test_a_mac_targets_code_needs_no_ios_privacy_manifest(self):  # localsend's macos/ Runner
+        from codefactory.privacy import scan as privacy_scan
+
+        root = repo({"app/macos/Runner/AppDelegate.swift": "import Cocoa\nlet m = UserDefaults.standard.bool(forKey: \"m\")\n",
+                     "app/ios/Runner/AppDelegate.swift": "import UIKit\nclass AppDelegate {}\n"})  # fmt: skip
+        files = ["app/macos/Runner/AppDelegate.swift", "app/ios/Runner/AppDelegate.swift"]
+        self.assertFalse(privacy_scan(root, files)["ios_privacy_manifest"].hits)
+
+    def test_corpus_round_5_lessons(self):  # celery, scrapy, poetry, sentry-python, pydantic
+        from codefactory.audit import scan_config
+        from codefactory.infra import scan as infra_scan
+
+        root = repo({
+            # celery: t/ holds the tests; its fixture keys and an import or a warning about CERT_NONE aren't findings
+            "t/unit/security/keys.py": 'KEY1 = """-----BEGIN RSA PRIVATE KEY-----\nMIIEow\n-----END RSA PRIVATE KEY-----"""\n',
+            "backends/redis.py": 'from ssl import CERT_NONE\n\nW = """\nSetting ssl_cert_reqs=CERT_NONE is insecure.\n"""\n',
+            # scrapy: a ruff/bandit security code in noqa is the authors' decision
+            "cache.py": "import pickle\n\ndef load(f):\n    return pickle.load(f)  # noqa: S301\n",
+            # sentry-python: tiktoken isn't a token
+            "tox.ini": "[testenv]\ndeps =\n    py3.9-langchain-notiktoken-v0.1.20: aiohttp1234\n",
+            # pydantic: a CI run's throwaway service password
+            ".github/workflows/ci.yml": "on: push\njobs:\n  t:\n    runs-on: ubuntu-latest\n    env:\n"
+                                        "      MINIO_ROOT_PASSWORD: polarpolar12\n    steps:\n      - run: make test\n",
+            # poetry: zizmor's own suppression on a pull_request_target trigger
+            ".github/workflows/docs.yml": "on:\n  pull_request_target:  # zizmor: ignore[dangerous-triggers]\n"
+                                          "jobs:\n  d:\n    runs-on: ubuntu-latest\n    steps:\n"
+                                          "      - uses: actions/checkout@v4\n        with:\n"
+                                          "          ref: ${{ github.event.pull_request.head.sha }}\n",
+        })  # fmt: skip
+        files = ["t/unit/security/keys.py", "backends/redis.py", "cache.py"]
+        found = scan_sources(root, files)
+        self.assertFalse(found["tls_off"].hits)
+        self.assertFalse(found["eval"].hits)
+        infra = infra_scan(root, set())
+        self.assertFalse(infra["config_secret"].hits)
+        self.assertEqual([e.file for e in infra["ci_test_secret"].hits], [".github/workflows/ci.yml"])
+        self.assertFalse(scan_config(root)["gha_pr_target"].hits)
+        r = Review(build(root, cache=False).to_dict(), root)
+        r.security()
+        self.assertEqual({f.title: f.severity for f in r.findings}.get("Credentials committed in source", "Low"), "Low")
+
+    def test_corpus_round_5_more(self):  # express, vite, svelte, wagtail, saleor
+        files = {
+            # wagtail: a project template's placeholder
+            "project_template/settings.py": 'SECRET_KEY = "{{ secret_key }}"\n',
+            # saleor: a yes/no peek at a token in a file that verifies them; returning unverified claims stays
+            "jwt_utils.py": "import jwt\n\ndef is_ours(token):\n    try:\n"
+            "        payload = jwt.decode(token, options={'verify_signature': False})\n"
+            "    except jwt.PyJWTError:\n        return False\n    return payload.get('iss') == 'us'\n\n"
+            "def claims(token):\n    return jwt.decode(token, options={'verify_signature': False})\n\n"
+            "def verify(token, key):\n    return jwt.decode(token, key, algorithms=['HS256'])\n",
+        }
+        root = repo(files)
+        found = scan_sources(root, list(files))
+        self.assertFalse(found["secret_key_literal"].hits)
+        self.assertEqual([e.line for e in found["jwt_unverified"].hits], [11])
+
+        # express: a published npm package is a library, and a library ships no lockfile by convention
+        express = repo({"package.json": json.dumps({"name": "web", "files": ["lib/"]}),
+                        "lib/app.js": "const http = require('http');\nmodule.exports = function app() {};\n"})  # fmt: skip
+        self.assertEqual(detect(express, build(express, cache=False).to_dict()).kind, "library")
+
+        # vite: a playground's circular imports test circularity on purpose
+        loop = repo({"playground/circular/a.py": "from playground.circular import b\n",
+                     "playground/circular/b.py": "from playground.circular import a\n",
+                     "playground/__init__.py": "", "playground/circular/__init__.py": ""})  # fmt: skip
+        self.assertFalse([f for f in build(loop, cache=False).flags if f.kind == "cycle"])
+
 
 if __name__ == "__main__":
     unittest.main()

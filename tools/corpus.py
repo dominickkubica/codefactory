@@ -1,0 +1,182 @@
+"""The public-repository corpus: every repository codefactory has been checked against, and what became of it.
+
+    python tools/corpus.py run [--jobs 8] [--only owner/repo,...] [--new]   clone (shallow) and analyze
+    python tools/corpus.py report                                          rewrite docs/CORPUS.md
+
+`tools/corpus/repos.txt` lists the repositories (owner/repo, one per line, `#` comments). Each run clones into
+~/.cache/codefactory-corpus (or CODEFACTORY_CORPUS), runs `codefactory export --json` with a time limit in a separate
+process, and records the outcome in `tools/corpus/results.json`: the commit, seconds, the profile, findings by
+severity, and the Critical and High titles. `tools/corpus/triage.json` holds what a person decided about each one:
+`clean` (every Critical and High finding checked and real, or none), `fixed` (false positives found and fixed, with
+a regression test), or `open` (something still to fix, with a note). A repository is accounted for once it ran
+without a crash or timeout and has a triage status.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+HERE = ROOT / "tools" / "corpus"
+CACHE = Path(os.environ.get("CODEFACTORY_CORPUS", Path.home() / ".cache" / "codefactory-corpus"))
+LIMIT = 900  # seconds per repository
+
+
+def repos() -> list[str]:
+    out = []
+    for line in (HERE / "repos.txt").read_text(encoding="utf-8").splitlines():
+        name = line.split("#", 1)[0].strip()
+        if name:
+            out.append(name)
+    return list(dict.fromkeys(out))
+
+
+def load(name: str) -> dict:
+    path = HERE / name
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+
+
+def save(name: str, data: dict) -> None:
+    (HERE / name).write_text(json.dumps(dict(sorted(data.items())), indent=1) + "\n", encoding="utf-8")
+
+
+def checkout(repo: str) -> Path:
+    path = CACHE / repo.replace("/", "__")
+    if (path / ".git").exists():
+        return path
+    shutil.rmtree(path, ignore_errors=True)
+    subprocess.run(
+        ["git", "clone", "-q", "--depth", "1", f"https://github.com/{repo}.git", str(path)],
+        check=True,
+        capture_output=True,
+        timeout=600,
+    )
+    return path
+
+
+def analyze(repo: str) -> dict:
+    started = time.time()
+    try:
+        path = checkout(repo)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+        return {"status": "clone failed", "error": str(e)[-300:]}
+    out = CACHE / "exports" / f"{repo.replace('/', '__')}.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    env = {**os.environ, "PYTHONPATH": str(ROOT)}
+    try:
+        done = subprocess.run(
+            [sys.executable, "-m", "codefactory", "export", str(path), "--json", "-o", str(out)],
+            capture_output=True,
+            text=True,
+            timeout=LIMIT,
+            env=env,
+        )
+    except subprocess.TimeoutExpired:
+        return {"status": "timeout", "seconds": LIMIT}
+    seconds = round(time.time() - started, 1)
+    if done.returncode != 0 or not out.exists():
+        return {"status": "crash", "seconds": seconds, "error": (done.stderr or done.stdout)[-600:]}
+    data = json.loads(out.read_text(encoding="utf-8"))
+    try:  # the structured profile (the export carries its one-line summary); the analysis is cached by now
+        prof = subprocess.run(
+            [sys.executable, "-m", "codefactory", "profile", str(path), "--json"],
+            capture_output=True, text=True, timeout=LIMIT, env=env,
+        )  # fmt: skip
+        profile = json.loads(prof.stdout) if prof.returncode == 0 else {}
+    except (subprocess.TimeoutExpired, ValueError):
+        profile = {}
+    counts: dict[str, int] = {}
+    for f in data["findings"]:
+        counts[f["severity"]] = counts.get(f["severity"], 0) + 1
+    return {
+        "status": "ok",
+        "seconds": seconds,
+        "commit": data.get("commit", "")[:12],
+        "kind": profile.get("kind", ""),
+        "deployment": profile.get("deployment", ""),
+        "counts": counts,
+        "serious": [f"{f['severity']}: {f['title']}" for f in data["findings"] if f["severity"] in ("Critical", "High")],
+    }
+
+
+def run(args) -> int:
+    CACHE.mkdir(parents=True, exist_ok=True)
+    results = load("results.json")
+    wanted = args.only.split(",") if args.only else repos()
+    if args.new:
+        wanted = [r for r in wanted if r not in results]
+    print(f"{len(wanted)} repositories, {args.jobs} at a time", flush=True)
+
+    def one(repo: str) -> tuple[str, dict]:
+        try:
+            result = analyze(repo)
+        except Exception as e:  # a bug in this script mustn't lose the rest of the run
+            result = {"status": "crash", "error": f"corpus.py: {type(e).__name__}: {e}"}
+        flag = "" if result["status"] == "ok" else f"  ** {result['status']} **"
+        serious = len(result.get("serious", []))
+        print(f"{repo:45} {result.get('kind', ''):18} {result.get('seconds', '')!s:>6}s  serious {serious}{flag}", flush=True)
+        return repo, result
+
+    with ThreadPoolExecutor(max_workers=args.jobs) as pool:
+        for repo, result in pool.map(one, wanted):
+            results[repo] = result
+            save("results.json", results)  # after each, so an interrupted run keeps what it did
+    bad = [r for r in wanted if results[r]["status"] != "ok"]
+    print(f"done: {len(wanted) - len(bad)} ok, {len(bad)} not ({', '.join(bad) or 'none'})")
+    return 1 if bad else 0
+
+
+def report(args) -> int:
+    results, triage = load("results.json"), load("triage.json")
+    names = repos()
+    accounted = [r for r in names if results.get(r, {}).get("status") == "ok" and r in triage]
+    lines = [
+        "# Corpus",
+        "",
+        "Every public repository codefactory has been checked against: analyzed without a crash or timeout, its Critical",
+        "and High findings looked at, and false positives fixed with a regression test. Generated by",
+        "`python tools/corpus.py report` from `tools/corpus/results.json` and `tools/corpus/triage.json`.",
+        "",
+        f"**{len(accounted)} of {len(names)} accounted for.**",
+        "",
+        "| Repository | Profile | Critical / High / Medium / Low | Seconds | Status |",
+        "|---|---|---|---|---|",
+    ]
+    for repo in sorted(names, key=str.lower):
+        r = results.get(repo, {})
+        t = triage.get(repo, {})
+        if r.get("status") != "ok":
+            row = [repo, "", "", "", r.get("status", "not run")]
+        else:
+            c = r.get("counts", {})
+            sev = " / ".join(str(c.get(s, 0)) for s in ("Critical", "High", "Medium", "Low"))
+            status = t.get("status", "to triage") + (f": {t['note']}" if t.get("note") else "")
+            row = [f"[{repo}](https://github.com/{repo})", r.get("kind") or "unknown", sev, str(r.get("seconds", "")), status]
+        lines.append("| " + " | ".join(row) + " |")
+    (ROOT / "docs" / "CORPUS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"docs/CORPUS.md: {len(accounted)} of {len(names)} accounted for")
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = p.add_subparsers(dest="cmd", required=True)
+    r = sub.add_parser("run")
+    r.add_argument("--jobs", type=int, default=8)
+    r.add_argument("--only", default=None)
+    r.add_argument("--new", action="store_true", help="only repositories with no result yet")
+    sub.add_parser("report")
+    args = p.parse_args(argv)
+    return run(args) if args.cmd == "run" else report(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

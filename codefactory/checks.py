@@ -264,8 +264,62 @@ def _excerpt(line: str) -> str:
 
 # a security linter's suppression on the line (gosec's `//nolint:gosec`, bandit's `# nosec`, Sonar's NOSONAR): the authors
 # looked at this line and decided; a credential is never excused this way
-NOSEC = re.compile(r"(?://|#)\s*(?:nosec\b|nolint:\s*[\w,]*\bgosec\b|NOSONAR\b)")
+NOSEC = re.compile(r"(?://|#)\s*(?:nosec\b|nolint:\s*[\w,]*\bgosec\b|NOSONAR\b|noqa:\s*[\w, ]*\bS\d{3}\b)")
 NOSEC_KEYS = {"tls_off", "eval", "shell", "raw_html", "sql_built", "weak_hash", "weak_random"}
+
+
+TLS_SETTING = re.compile(r"\b(?:if|elif|else\s+if|unless)\b.*\b\w*(?:verify|insecure|ssl|tls|cert|skip)\w*\b", re.I)
+
+
+def _under_tls_setting(lines: list[str], i: int) -> bool:
+    """The line sits in a branch of an `if` on a verification setting (`if verify is False:` / its `else:`), as
+    requests and HTTP clients do for their `verify=` option: the user's choice, not an override."""
+    indent = len(lines[i - 1]) - len(lines[i - 1].lstrip())
+    for j in range(i - 2, max(-1, i - 14), -1):
+        text = lines[j]
+        if not text.strip():
+            continue
+        level = len(text) - len(text.lstrip())
+        if level >= indent:
+            continue
+        head = text.strip()
+        if head.startswith(("else", "} else")) and not TLS_SETTING.search(head):
+            indent = level + 1  # the else of an `if` further up: look for that `if` at this level
+            continue
+        return bool(TLS_SETTING.search(head))
+    return False
+
+
+def _token_question(lines: list[str], i: int, text: str) -> bool:
+    """An unverified decode inside an `is_…`/`has_…` function (a yes/no question about the token, such as who issued
+    it), in a file that verifies tokens properly elsewhere. Returning the unverified claims is never this."""
+    if lines[i - 1].lstrip().startswith("return") or not re.search(r"jwt\.decode\([^)]*\balgorithms\s*=", text):
+        return False
+    for j in range(i - 2, max(-1, i - 15), -1):
+        if m := re.match(r"\s*(?:async\s+)?def\s+(\w+)", lines[j]):
+            return bool(re.match(r"(?:is|has)_", m.group(1)))
+    return False
+
+
+def _docstring_lines(text: str) -> set[int]:
+    """Lines inside a Python docstring: documentation, where `SECRET_KEY = 'development key'` is an example to copy
+    (Flask's Config), not configuration."""
+    import ast
+
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError):
+        return set()
+    out: set[int] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)) and node.body:
+            first = node.body[0]
+            if isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant) and isinstance(first.value.value, str):
+                out.update(range(first.lineno, (first.end_lineno or first.lineno) + 1))
+        # and any string spanning lines: a message or help text that mentions a setting (celery's CERT_NONE warning)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str) and (node.end_lineno or node.lineno) > node.lineno:
+            out.update(range(node.lineno + 1, (node.end_lineno or node.lineno) + 1))
+    return out
 
 
 def _ignored(lines: list[str], i: int, key: str, file_kinds: set[str] | None) -> bool:
@@ -370,13 +424,24 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
         boundary_here = re.search(r"ErrorBoundary|componentDidCatch|getDerivedStateFromError", text) is not None
         state_here = not test and fid.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs")) and "let " in text
 
+        prose = _docstring_lines(text) if fid.endswith(".py") and set(present) - {"secret"} else set()
         for i, line in enumerate(lines, 1):
             if len(line) > 2000:  # minified or data
                 continue
             for key, pats in present.items():  # tests: only secrets (a test may do anything; a leaked key is leaked)
-                if key != "secret" and COMMENT_LINE.match(line):
+                if key != "secret" and (COMMENT_LINE.match(line) or i in prose):
                     continue  # prose about a pattern ("mark_safe() it at the end") isn't the code; a key is leaked anywhere
                 if any(p.search(line) and (p not in ONLY_IN or fid.endswith(ONLY_IN[p])) for p in pats) and hit(key, i):
+                    if key == "secret_key_literal" and re.search(r"\{\{|\{%|<%=|\$\{", line):
+                        continue  # a project template's placeholder (`SECRET_KEY = "{{ secret_key }}"`), filled in later
+                    if key == "jwt_unverified" and _token_question(lines, i, text):
+                        continue  # `is_saleor_token`: a yes/no peek at who issued it, in a file that verifies tokens
+                    if key == "tls_off" and line.lstrip().startswith(("import ", "from ")):
+                        continue  # importing the constant isn't using it
+                    if key == "tls_off" and (
+                        re.search(r"\bif\s+\w[\w.]*\s+else\b|\?\s*\w+\s*:", line) or _under_tls_setting(lines, i)
+                    ):
+                        continue  # chosen by a setting (`CERT_REQUIRED if verify else CERT_NONE`): the user's option
                     if key == "raw_html" and CONSTANT_HTML.search(line):
                         continue  # a fixed string: no one's data can get into it
                     if key == "raw_html" and re.search(r"mark_safe\(.*\bsettings\.[A-Z_]+", line):

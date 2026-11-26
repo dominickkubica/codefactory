@@ -246,6 +246,16 @@ class _Function:
                 out |= self.origins(child, env)
         return out
 
+    def _query_only(self, s: ast.JoinedStr, env: dict[str, set]) -> bool:
+        """`f"{url}?{query.urlencode()}"` with `url` untainted: what comes from the request is the query string."""
+        for i, part in enumerate(s.values):
+            if isinstance(part, ast.Constant) and isinstance(part.value, str) and "?" in part.value:
+                before = s.values[:i]
+                return bool(before) and not any(self.origins(v, env) for v in before)
+            if self.origins(part, env):
+                return False
+        return False
+
     def run(self, tainted_params: set[int]) -> tuple[dict, list, set]:
         env: dict[str, set] = {p: {("param", i)} for i, p in enumerate(self.params) if i in tainted_params}
         body = _body(self.node)
@@ -287,6 +297,8 @@ class _Function:
                             continue  # a constant query or command: bound parameters, nothing to inject
                         if isinstance(a, ast.Name) and a.id in guards.get(id(n), ()):
                             continue  # inside `if is_safe(x):` / `if _allow_redirect(x):`: checked first
+                        if kind == "redirect" and isinstance(a, ast.JoinedStr) and self._query_only(a, env):
+                            continue  # request data only after the `?`: it can't change where the redirect goes
                         if kind == "redirect" and _local_url(a, body):
                             continue  # a path this app builds (reverse(), url_for(), "/…"): a query string can't leave it
                         for label in self.origins(a, env):

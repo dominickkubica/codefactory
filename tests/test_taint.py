@@ -37,7 +37,8 @@ class TaintTest(unittest.TestCase):
         # a bound SQL parameter, an int() conversion, a Depends() connection, an int-typed id, a path read from the database
         # …and a redirect target checked and replaced when the check fails
         # …and a value handed to a sanitizer that marks its own output safe
-        for safe in ("find_user_safe", "page", "shot", "stored_path", "go", "num", "number_format"):
+        # …and a redirect whose path the app builds, with request data only in its query string
+        for safe in ("find_user_safe", "page", "shot", "stored_path", "go", "num", "number_format", "find"):
             self.assertNotIn(safe, names)
         self.assertEqual(sum(1 for name, _ in self.flows if name == "find_user"), 1)  # GET /page's int() isn't a second
 

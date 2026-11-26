@@ -146,7 +146,10 @@ def import_cycles(g: Graph) -> list[Flag]:
     for e in g.edges:
         # a Rust crate compiles as one unit, so its modules may use each other; tests and factories (fixtures for
         # tests and seeding, like Laravel's model <-> factory pairs) aren't part of the product's structure
-        if e.kind == "import" and not any(x.endswith(".rs") or is_test(x) or NOT_PRODUCT.search(x) for x in (e.src, e.dst)):
+        # (nor samples and playgrounds: vite's playground/ keeps circular imports on purpose, to test them)
+        if e.kind == "import" and not any(
+            x.endswith(".rs") or is_test(x) or is_doc_sample(x) or NOT_PRODUCT.search(x) for x in (e.src, e.dst)
+        ):
             adj[e.src].add(e.dst)
     index, low, stack, on, comps, counter = {}, {}, [], set(), [], [0]
 

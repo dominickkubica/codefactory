@@ -92,8 +92,10 @@ USAGE = {
 # Apple's "required reason" API categories, as used from native code
 REQUIRED_REASON = {
     "NSPrivacyAccessedAPICategoryUserDefaults": r"\bUserDefaults\b|\bNSUserDefaults\b|@AppStorage",
+    # the file attribute keys, not a model's own `self.creationDate` (Loop's WatchContext)
     "NSPrivacyAccessedAPICategoryFileTimestamp": (
-        r"\.creationDate\b|\.modificationDate\b|NSFileCreationDate|NSFileModificationDate|contentModificationDateKey"
+        r"FileAttributeKey\.(?:creation|modification)Date\b|(?<![\w)\]])\.(?:creation|modification)Date\b|"
+        r"NSFileCreationDate|NSFileModificationDate|(?:creation|contentModification|attributeModification)DateKey"
     ),
     "NSPrivacyAccessedAPICategorySystemBootTime": r"systemUptime|mach_absolute_time",
     "NSPrivacyAccessedAPICategoryDiskSpace": r"volumeAvailableCapacity|NSFileSystemFreeSize|systemFreeSize|statfs\(",
@@ -170,14 +172,18 @@ def _declared_keys(root: Path) -> tuple[set[str], set[str], bool]:
 
 
 def _first_line(texts: dict[str, str], pattern: str) -> tuple[str, int, str] | None:
-    """(file, line number, line) of the first match: one search per file, lines only where it matched."""
+    """(file, line number, line) of the first match in code, not in a comment (`//  NSUserDefaults+Status.swift`, a
+    file's own header, names the file): one search per file, lines only where it matched."""
+    from .checks import COMMENT_LINE
+
     rx = re.compile(pattern)
     for fid, text in texts.items():
-        m = rx.search(text)
-        if m:
+        for m in rx.finditer(text):
             start = text.rfind("\n", 0, m.start()) + 1
             end = text.find("\n", m.start())
-            return fid, text.count("\n", 0, m.start()) + 1, text[start : end if end >= 0 else None]
+            line = text[start : end if end >= 0 else None]
+            if not COMMENT_LINE.match(line):
+                return fid, text.count("\n", 0, m.start()) + 1, line
     return None
 
 
@@ -204,8 +210,15 @@ def apple(root: Path, files: list[str], out: dict[str, Check]) -> None:
         fid, line, text = where or ("package.json", 1, ", ".join(sorted(deps & set(plugin_names))))
         out["ios_usage_missing"].hits.append(Evidence(fid, line, f"{resource}: no {key} ({text.strip()[:100]})"))
     if not manifest:
+        # the manifest rule is for iOS, iPadOS, watchOS, tvOS and visionOS apps: not a Mac target's code (a Flutter or
+        # React Native project's macos/ folder, an AppKit file)
+        apple_mobile = {
+            f: t
+            for f, t in texts.items()
+            if f.endswith(NATIVE) and "macos/" not in f.lower() and not re.search(r"^import (?:AppKit|Cocoa)\b", t, re.M)
+        }
         for category, uses in REQUIRED_REASON.items():
-            hit = _first_line({f: t for f, t in texts.items() if f.endswith(NATIVE)}, uses)
+            hit = _first_line(apple_mobile, uses)
             if hit:
                 fid, line, text = hit
                 name = category.removeprefix("NSPrivacyAccessedAPICategory")

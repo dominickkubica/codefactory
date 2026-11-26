@@ -98,7 +98,11 @@ def _lower(sev: str) -> str:
 def _sample_severity(sev: str, hits) -> str:
     """A credential only in documentation or example code (a tutorial's sample SECRET_KEY, a docs site's public search
     key) is there to be copied, not used: Low, so it's still checked that nothing real reuses it."""
-    return "Low" if hits and all(is_doc_sample(e.file) for e in hits) else sev
+
+    def sample(e) -> bool:  # a docs example, or a test's fixture key (celery's RSA keys); a vendor token in a test is real
+        return is_doc_sample(e.file) or (is_test(e.file) and "PRIVATE KEY" in e.text)
+
+    return "Low" if hits and all(sample(e) for e in hits) else sev
 
 
 class Review:
@@ -291,8 +295,8 @@ class Review:
                 if key in SINK_KINDS:
                     ev = [line + self._reached_by(e) for line, e in zip(ev, hits, strict=False)]
                     sev = self._by_reach(sev, hits)
-                    if all(is_script(e.file) or is_test(e.file) for e in hits):
-                        sev = _lower(sev)  # release and build scripts, run by the people who write them
+                    if all(is_script(e.file) or is_test(e.file) or is_doc_sample(e.file) for e in hits):
+                        sev = _lower(sev)  # build scripts and docs tooling, run by the people who write them
                 self.add(title, sev, "Security", ev, impact, fix, _effort(len(hits), len({e.file for e in hits})), more)
         self.endpoints()
         self.flows()
@@ -769,7 +773,10 @@ class Review:
         risky = [
             f
             for f in code
-            if f["id"] not in self.reached and (f.get("io") or len(callers[f["id"]]) >= 8) and not is_script(f["file"])
+            if f["id"] not in self.reached
+            and (f.get("io") or len(callers[f["id"]]) >= 8)
+            and not is_script(f["file"])
+            and not self._di_provider(f)
         ]
         # writes first (a wrong one loses data), then I/O, then code that keeps changing, then the most depended-on
         risky.sort(
@@ -869,9 +876,10 @@ class Review:
             )
         if r["manifests"] and not r["locks"] and any(m == "package.json" for m in r["manifests"]):
             dev = r.get("npm_dev_only")
+            library = getattr(getattr(self, "profile", None), "kind", "") == "library"  # npm libraries don't ship one
             self.add(
                 "No lockfile",
-                "Low" if dev else "High",
+                "Low" if dev or library else "High",
                 "Dependencies",
                 [", ".join(r["manifests"]) + (" (development tools only)" if dev else "")],
                 "Development tools can resolve different versions between installs, so a lint or test run can change "
@@ -1277,6 +1285,24 @@ class Review:
         m = re.search(r"(\d+)% similar", task["title"])
         return not m or int(m.group(1)) >= 85
 
+    def _di_provider(self, f: dict) -> bool:
+        """A dependency-injection provider (Dagger/Hilt `@Provides`, Spring `@Bean`): one line of wiring the framework
+        calls, tested through what it builds, not on its own (Now in Android's DaosModule)."""
+        if not f["file"].endswith((".kt", ".java", ".scala")):
+            return False
+        try:
+            lines = (self.root / f["file"]).read_text(encoding="utf-8", errors="replace").splitlines()
+        except OSError:
+            return False
+        # its own annotations: the definition's line (an analyzer may start it at the annotation) and the annotation
+        # lines right above it
+        i = min(f["line"], len(lines)) - 1
+        own = [lines[i]] if i >= 0 else []
+        while i > 0 and lines[i - 1].strip().startswith("@"):
+            i -= 1
+            own.append(lines[i])
+        return bool(re.search(r"@(?:Provides|Binds|BindsInstance|Bean|Produces)\b", " ".join(own)))
+
     def limits(self) -> list[str]:
         analyzed = Counter(Path(f["id"]).suffix for f in self.g["files"])
         seen = {f["id"] for f in self.g["files"]}
@@ -1470,6 +1496,9 @@ INFRA_CHECKS = [
      "key in one is as leaked as one in the code.",
      "Rotate it, then read it from the environment or a secret manager (Pkl: `read(\"env:NAME\")`; Compose and "
      "Kubernetes: secrets)."),
+    ("ci_test_secret", "Passwords for CI services written into workflows", "Low", "Security",
+     "Usually throwaway credentials for the run's own test services; if any guards something real, it's leaked.",
+     "Use repository secrets (`${{ secrets.NAME }}`) for anything that isn't a throwaway test value."),
     ("compose_secret", "Passwords written into docker-compose", "Medium", "Security",
      "Everyone with the repository has them, and the same file tends to reach staging and production.",
      "Use an `.env` file that isn't committed, `${VAR}` substitution, or Compose `secrets:`."),

@@ -237,6 +237,9 @@ def _manifests(root: Path) -> dict:
                 out["npm_bin"].append(f"{rel}package.json bin")
             if data.get("main") or data.get("exports") or data.get("module"):
                 out["pkg_main"].append(f"{rel}package.json")
+            # a package published for others to import (express): not private, and it says what it ships
+            if not rel and not data.get("private") and data.get("name") and (data.get("files") or data.get("exports")):
+                out["published_lib"].append("package.json: a published npm package (not private; files or exports)")
         py = d / "pyproject.toml"
         if py.is_file():
             try:
@@ -256,6 +259,12 @@ def _manifests(root: Path) -> dict:
             libs = [c for c in project.get("classifiers", []) if c.startswith("Topic :: Software Development :: Libraries")]
             if libs and not d.relative_to(root).parts:
                 out["published_lib"].append(f"{rel}pyproject.toml: {libs[0]}")
+        if not d.relative_to(root).parts:
+            for setup in ("setup.py", "setup.cfg"):
+                text = (d / setup).read_text(encoding="utf-8", errors="replace") if (d / setup).is_file() else ""
+                if lib := re.search(r"Topic :: Software Development :: Libraries[^\"'\n]*", text):
+                    out["published_lib"].append(f"{setup}: {lib.group(0)}")
+                    break
         for setup in ("setup.cfg", "setup.py"):  # older Python packaging: console_scripts entry points
             if (d / setup).is_file() and re.search(r"console_scripts", (d / setup).read_text(encoding="utf-8", errors="replace")):
                 out["py_scripts"].append(f"{rel}{setup} console_scripts")
@@ -554,7 +563,14 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None, source
     go_lib = (root / "go.mod").is_file() and not [f for f in go_main if not EXAMPLE_DIR.search(f)] and not m["rust_bin"]
     if go_lib and not m["published_lib"]:
         m["published_lib"].append("go.mod and no `package main`: a Go module others import")
-    if m["published_lib"] and not m["files"] and not mobile and (not roles or roles[0][0] != "library"):
+    if (
+        m["published_lib"]
+        and not m["files"]
+        and not mobile
+        and not desktop
+        and not web_ui  # a published component or UI kit is a front-end library, a web app's package isn't
+        and (not roles or roles[0][0] != "library")
+    ):
         # (deploy files would say it also runs somewhere: then it's what it serves after all)
         roles.insert(0, ("library", m["published_lib"][:1]))
     p.endpoints = len(endpoints)

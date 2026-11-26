@@ -66,7 +66,10 @@ def workflows(root: Path, out: dict[str, Check]) -> None:
         except OSError:
             continue
         lines = text.splitlines()
-        if m := PR_TARGET.search(text):
+        line_of = _line(text, m.start()) if (m := PR_TARGET.search(text)) else 0
+        if m and "zizmor: ignore[dangerous-triggers]" in lines[line_of - 1]:
+            m = None  # the authors ran zizmor (a workflow security linter) and decided this trigger is safe
+        if m:
             # runs with the repository's secrets and write access, on code from a fork: dangerous only if it checks
             # that code out (or builds it); otherwise it's the safe way to label or comment on a PR
             danger = HEAD_CHECKOUT.search(text)

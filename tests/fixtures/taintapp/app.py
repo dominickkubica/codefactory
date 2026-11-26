@@ -105,3 +105,14 @@ def number_format(value):
 def num():
     # a sanitizer's own body (it marks its formatted number safe) isn't the request's flow
     return number_format(request.args["n"])
+
+
+def detail_url():
+    return "/items/1"
+
+
+@app.route("/find")
+def find():
+    # the app builds the path; the request only fills the query string (wagtail's find view): not a flow
+    url = detail_url()
+    return redirect(f"{url}?{request.query_string}")
