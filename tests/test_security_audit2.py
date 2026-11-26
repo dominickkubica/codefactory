@@ -187,9 +187,9 @@ class RobustnessTest(unittest.TestCase):
                 (root / "a.py").write_text("def g():\n    return 22\n", encoding="utf-8")  # changed mid-run
                 return g
 
-            with mock.patch("codefactory.paths.RACY_NS", 0), mock.patch.object(cli, "build", edit_while_analyzing):
+            with mock.patch("codefactory.paths.racy", return_value=False), mock.patch.object(cli, "build", edit_while_analyzing):
                 cli.load_graph(root)
-            with mock.patch("codefactory.paths.RACY_NS", 0):
+            with mock.patch("codefactory.paths.racy", return_value=False):
                 self.assertIsNone(load_cached(root, []))  # the edit isn't cached as analyzed
 
 

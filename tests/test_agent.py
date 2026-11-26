@@ -88,7 +88,9 @@ class AgentTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d) / "shop"
             shutil.copytree(SHOP, root, ignore=shutil.ignore_patterns(".codefactory"))
-            racy = mock.patch("codefactory.paths.RACY_NS", 0)  # files just copied: trust their stamps (tested apart)
+            racy = mock.patch(
+                "codefactory.paths.racy", return_value=False
+            )  # files just copied: trust their stamps (tested apart)
             racy.start()
             self.addCleanup(racy.stop)
             first = load_graph(root)
