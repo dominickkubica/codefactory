@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -242,6 +243,13 @@ _NAMED_VALUE = re.compile(
 _PEM_BODY = re.compile(r"(PRIVATE KEY-----(?:\\r)?(?:\\n)?)[A-Za-z0-9+/=]{8,}")
 
 
+# raw HTML from a string literal with nothing put into it (no ${…}, no +): `el.innerHTML = '<b>Copied</b>'`,
+# `__html: "<br>"`, also inside a page a Go or Python file holds as text
+CONSTANT_HTML = re.compile(
+    r"""(?:\.innerHTML\s*=|__html\s*:|mark_safe\(|v-html\s*=\s*)\s*(["'`])(?:(?!\1)(?!\$\{)[^\\]|\\.)*\1\s*[;,)}]*\s*(?:/?>)?\s*$"""
+)
+
+
 def redact(text: str) -> str:
     """The text with secret values cut to their first 4 characters: `AKIA…`, `API_KEY = "sk_l…"`."""
     text = _VENDOR_KEY.sub(lambda m: m.group(0)[:4] + "…", text)
@@ -359,6 +367,8 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                 if key != "secret" and COMMENT_LINE.match(line):
                     continue  # prose about a pattern ("mark_safe() it at the end") isn't the code; a key is leaked anywhere
                 if any(p.search(line) and (p not in ONLY_IN or fid.endswith(ONLY_IN[p])) for p in pats) and hit(key, i):
+                    if key == "raw_html" and CONSTANT_HTML.search(line):
+                        continue  # a fixed string: no one's data can get into it
                     if key == "raw_html" and re.search(r"mark_safe\(.*\bsettings\.[A-Z_]+", line):
                         continue  # the site's own configuration, not user data
                     if key == "plain_http" and re.match(r"\s*(?:\*|//|#|/\*)", line):  # an example in a doc comment
@@ -452,15 +462,37 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
 # ---- repository ----------------------------------------------------------------------------------------------------
 
 CI_FILES = [
-    ".github/workflows",
-    ".gitlab-ci.yml",
-    ".circleci",
-    "azure-pipelines.yml",
-    "Jenkinsfile",
-    ".travis.yml",
-    "bitbucket-pipelines.yml",
-    ".buildkite",
-]
+    ".github/workflows", ".gitlab-ci.yml", ".circleci", "azure-pipelines.yml", ".azure-pipelines", "Jenkinsfile",
+    ".travis.yml", "bitbucket-pipelines.yml", ".buildkite", ".drone.yml", ".woodpecker.yml", ".woodpecker",
+    ".cirrus.yml", ".semaphore", ".teamcity", "appveyor.yml", ".appveyor.yml", "buildspec.yml", "cloudbuild.yaml",
+    "cloudbuild.yml", "bamboo-specs", ".tekton", "rio.yml", ".rio.yml", "codefresh.yml", ".harness", "bitrise.yml",
+    "codemagic.yaml", ".gitea/workflows", ".forgejo/workflows", ".taskcluster.yml", "wercker.yml", ".concourse",
+]  # fmt: skip
+CI_NAMES = "GitHub Actions, GitLab, CircleCI, Jenkins, Azure, Travis, Bitbucket, Buildkite, Drone, Cirrus, TeamCity, Rio, …"
+
+
+def repo_levels(root: Path) -> list[Path]:
+    """The analyzed folder, then each folder above it up to the top of its git repository: CI, the README and the
+    license usually live at the top, so a review of a subfolder (`internal/`, one package of a monorepo) finds them."""
+    out = [root]
+    try:
+        top = subprocess.run(["git", "-C", str(root), "rev-parse", "--show-toplevel"], capture_output=True, text=True,
+                             timeout=10).stdout.strip()  # fmt: skip
+    except (OSError, subprocess.SubprocessError):
+        return out
+    if not top:
+        return out
+    top_p, here = Path(top).resolve(), root.resolve()
+    while here != top_p and top_p in here.parents:
+        here = here.parent
+        out.append(here)
+    return out
+
+
+def _rel(root: Path, p: Path) -> str:
+    return os.path.relpath(p, root).replace("\\", "/")
+
+
 LOCKS = [
     "package-lock.json",
     "yarn.lock",
@@ -525,12 +557,19 @@ def scan_repo(root: Path) -> dict:
         "deps": {},
         "deploy": [],
     }
-    for c in CI_FILES:
-        p = root / c
-        if p.is_dir():
-            info["ci"] += [str(f.relative_to(root)).replace("\\", "/") for f in sorted(p.glob("*.y*ml"))]
-        elif p.is_file():
-            info["ci"].append(c)
+    from .config import load_config
+
+    levels = repo_levels(root)
+    declared = list(load_config(root).ci)  # factory.toml `ci = ["…"]`: a CI system this list doesn't know
+    for level in levels:
+        for c in [*CI_FILES, *declared]:
+            p = level / c
+            if p.is_dir():
+                info["ci"] += [_rel(root, f) for f in sorted(p.iterdir()) if f.is_file() and not f.name.startswith(".")]
+            elif p.is_file():
+                info["ci"].append(_rel(root, p))
+        if info["ci"]:
+            break  # the nearest level with CI is this folder's
     for f in info["ci"]:
         try:
             t = (root / f).read_text(encoding="utf-8", errors="replace").lower()
@@ -596,8 +635,10 @@ def scan_repo(root: Path) -> dict:
     for f in (".nvmrc", ".node-version", ".python-version", ".tool-versions", "runtime.txt"):
         if (root / f).exists():
             info["runtime_pin"].append(f)
-    info["readme"] = next((f for f in ("README.md", "README.rst", "README.txt", "README") if (root / f).exists()), None)
-    info["license"] = next((f for f in ("LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING") if (root / f).exists()), None)
+    names = ("README.md", "README.rst", "README.txt", "README", "readme.md")
+    info["readme"] = next((_rel(root, lv / f) for lv in levels for f in names if (lv / f).exists()), None)
+    licenses = ("LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING")
+    info["license"] = next((_rel(root, lv / f) for lv in levels for f in licenses if (lv / f).exists()), None)
     info["env_files"] = [
         p.name
         for p in root.glob(".env*")
@@ -615,13 +656,14 @@ def scan_repo(root: Path) -> dict:
 # ---- testing -------------------------------------------------------------------------------------------------------
 
 
-def test_reach(v: View) -> set[str]:
-    """Functions a test calls or hands on (a callback), directly or through others."""
+def test_reach(v: View, also: set[str] | frozenset = frozenset()) -> set[str]:
+    """Functions a test calls or hands on (a callback), directly or through others (`also`: ones tests reach in ways
+    the graph doesn't link, followed the same way)."""
     out_edges: dict[str, list[str]] = {}
     for e in v.g["edges"]:
         if e["kind"] in ("call", "ref"):
             out_edges.setdefault(e["src"], []).append(e["dst"])
-    start = [fid for fid, f in v.fn.items() if is_test(f["file"])]
+    start = [fid for fid, f in v.fn.items() if is_test(f["file"])] + [fid for fid in also if fid in v.fn]
     seen, q = set(start), deque(start)
     while q:
         for nxt in out_edges.get(q.popleft(), []):

@@ -48,8 +48,8 @@ edge ref src/util/format.ts::<module> -> src/util/math.ts::sum
 edge ref src/util/math.ts::<module> -> src/util/format.ts::describe
 flag high cycle src/util/format.ts:0 Import loop of 2 files: format.ts → math.ts
 flag high cycle src/util/math.ts:0 Import loop of 2 files: format.ts → math.ts
-flag info io_in_loop src/data/fixed.ts::countTables:11 countTables calls db.getFirstAsync() inside a loop (line 11 and 2 more): one query per item (the N+1 pattern). Load them all with one query (WHERE id IN (…), a JOIN). It loops over a list fixed in the code, so the number of calls can't grow with the data: fine as is unless that list gets long.
-flag info io_in_loop src/data/fixed.ts::firstFive:20 firstFive calls db.getFirstAsync() inside a loop (line 20): one query per item (the N+1 pattern). Load them all with one query (WHERE id IN (…), a JOIN). It loops over a list fixed in the code, so the number of calls can't grow with the data: fine as is unless that list gets long.
+flag info io_in_loop src/data/fixed.ts::countTables:11 countTables calls db.getFirstAsync() inside a loop (line 11 and 2 more): one query per item (the N+1 pattern). Load them all with one query (WHERE id IN (…), a JOIN). It loops over a list fixed in the code, or runs once at startup or in a migration, so the number of calls can't grow with the data: fine as is unless that list gets long.
+flag info io_in_loop src/data/fixed.ts::firstFive:20 firstFive calls db.getFirstAsync() inside a loop (line 20): one query per item (the N+1 pattern). Load them all with one query (WHERE id IN (…), a JOIN). It loops over a list fixed in the code, or runs once at startup or in a migration, so the number of calls can't grow with the data: fine as is unless that list gets long.
 flag info quadratic_scan src/data/repo.ts::tagged:14 tagged calls picked.includes() on every round of a loop (line 14): fine for short lists, slow (O(n²)) for long ones. A Map or Set built once before the loop makes each lookup instant.
 flag warn duplicate src/util/math.ts::addUp:13 Same code as sum (src/util/math.ts)
 flag warn duplicate src/util/math.ts::sum:5 Same code as addUp (src/util/math.ts)

@@ -82,11 +82,20 @@ JS_LANGS = {
 # I/O by the receiver's or callee's name: a database, the network, files. Matched on calls nothing in the codebase
 # defines, so the codebase's own functions are followed instead.
 IO_RECEIVER = re.compile(
-    r"(?:^|[.:>])(?:db|database|conn|connection|cursor|session|repo|repository|dao|client|http|https|httpClient|api|"
+    r"(?:^|[.:>])(?:db|database|conn|connection|cursor|session|repo|repository|dao|client|httpClient|api|"
     r"redis|em|entityManager|jdbc|mongo|stmt|statement|pool|tx|s3|bucket|requests|"
-    r"_db|_repo|_client|_http|\$db|\$pdo|pdo|DB|Http|HttpClient)\s*(?:\.|->|::)\s*\w+$",
+    r"_db|_repo|_client|_http|\$db|\$pdo|pdo|DB|HttpClient)\s*(?:\.|->|::)\s*\w+$",
     re.I,
 )
+# `http.` / `https.` is a package or module: only its request functions talk to the network (Go's http.SetCookie,
+# http.HandleFunc, http.Error and http.NewRequest don't)
+HTTP_PACKAGE = re.compile(r"(?:^|[.:>])(?:http|https|Http)\s*(?:\.|->|::)\s*(?:get|post|put|patch|delete|head|"
+                          r"request|do|send|fetch|postform|urlopen)\w*$", re.I)  # fmt: skip
+# migrations step through their changes one at a time on purpose (each its own statement, in order)
+MIGRATION = re.compile(r"(?i)migrat|schema_?lock|upgrade_?schema")
+# startup code runs once, over what's configured (a loop per server, per registry): not a loop over data
+STARTUP = re.compile(r"(?:^|::|\.)(?:main|init|boot\w*|setup\w*|Setup\w*|New\w*|new_\w*|Register\w*|register\w*|"
+                     r"Start\w*|start\w*|Init\w*|Configure\w*|configure\w*|Bootstrap\w*|Must\w*|Load\w*Config\w*)$")  # fmt: skip
 IO_NAME = re.compile(
     r"(?:^|[.:>])(?:query|execute|executeQuery|executeUpdate|exec_query|rawQuery|QueryRow|QueryContext|ExecContext|"
     r"Exec|urlopen|fetch|findById|findOne|findAll|find_by|"
@@ -192,10 +201,40 @@ def _import_index(rels: list[str]) -> dict[str, list[str]]:
     return idx
 
 
-def _resolve_import(source: str, idx: dict[str, list[str]], lang: str) -> list[str]:
+def _go_modules(root: Path) -> list[tuple[str, str]]:
+    """(module path, its folder) for each go.mod: a Go import is the repository's own only under one of them."""
+    from ..paths import walk
+
+    out = []
+    for rel in walk(root, names=("go.mod",)):
+        try:
+            m = re.search(r"^module\s+(\S+)", (root / rel).read_text(encoding="utf-8", errors="replace"), re.M)
+        except OSError:
+            continue
+        if m:
+            out.append((m.group(1).strip('"'), rel.rsplit("/", 1)[0] if "/" in rel else ""))
+    return sorted(out, key=lambda x: -len(x[0]))  # the longest (most specific) module first
+
+
+def _go_package(source: str, idx: dict[str, list[str]], mods: list[tuple[str, str]]) -> list[str]:
+    """A Go import, by its full path: `example.com/app/internal/sync` is the folder internal/sync; `sync`, or anything
+    outside the module, is the standard library or a dependency, whatever folders the repository happens to have."""
+    source = source.strip().strip('"`')
+    for mod, folder in mods:
+        if source == mod or source.startswith(mod + "/"):
+            key = "/".join(p for p in (folder, source[len(mod) :].strip("/")) if p)
+            files = [f for f in idx.get(key + "/", []) if not _is_test(f) and f.rsplit("/", 1)[0] == key]
+            return sorted(files, key=lambda f: (Path(f).stem != key.rsplit("/", 1)[-1], f))[:1]
+    return []
+
+
+def _resolve_import(source: str, idx: dict[str, list[str]], lang: str, go_mods: list | None = None) -> list[str]:
     """The file(s) an import names: the longest path suffix that is a file (C's "net/socket.h", Java's a.b.Orders),
-    else a package folder, linked through one file (its namesake if there is one). Go imports always name packages.
-    Among several equal matches the shallowest folder wins; more than three equal files is too ambiguous to link."""
+    else a package folder, linked through one file (its namesake if there is one). Go imports always name packages
+    (by their full path, when there's a go.mod). Among several equal matches the shallowest folder wins; more than
+    three equal files is too ambiguous to link."""
+    if lang == "go" and go_mods:
+        return _go_package(source, idx, go_mods)
     s = re.sub(r"\.(?:h|hpp|hh|rb|php|lua|dart|go|rs|java|kt|swift|cs|ex|js|ts)$", "", source.strip())
     parts = [p for p in re.split(r"[./\\:]+", s) if p and p not in ("crate", "self", "super", "~", "@", "..")]
     # the path as written, then without its last part: `import a.b.fn` (Kotlin, Java static) names something inside a.b
@@ -234,7 +273,7 @@ def analyze_generic(root: Path, ignore: list[str], include_js: bool = False, cac
         )
         return g
     items = [(rel, (str(root / rel), rel, lang)) for rel, lang in found]
-    parsed = parallel.run(root, "generic", items, parse_file, tool="treewalk-4", cache=cache)
+    parsed = parallel.run(root, "generic", items, parse_file, tool="treewalk-5", cache=cache)
     return link(g, parsed, rails_associations(root, [rel for rel, _ in found if rel.endswith(".rb")]))
 
 
@@ -280,13 +319,14 @@ def link(g: Graph, parsed: dict[str, dict], associations: re.Pattern | None = No
     langs = Counter(d["lang"] for d in parsed.values())
     g.language = "+".join(sorted(langs))
     idx = _import_index(list(parsed))
+    go_mods = _go_modules(Path(g.root)) if g.root and any(d["lang"] == "go" for d in parsed.values()) else []
     defs: dict[str, list[str]] = defaultdict(list)  # name -> function ids
     file_of: dict[str, str] = {}
     kind_of: dict[str, str] = {}
     imported: dict[str, set[str]] = {}
     for rel, d in sorted(parsed.items()):
         g.files.append(File(id=rel, module=rel.rsplit(".", 1)[0].replace("/", "."), loc=d["loc"]))
-        imported[rel] = {dst for src in d["imports"] for dst in _resolve_import(src, idx, d["lang"]) if dst != rel}
+        imported[rel] = {dst for src in d["imports"] for dst in _resolve_import(src, idx, d["lang"], go_mods) if dst != rel}
         g.edges += [Edge(rel, dst, "import") for dst in sorted(imported[rel])]
         top = Function(id=f"{rel}::<module>", file=rel, name="<module>", qualname="<module>", line=1, end=1, loc=0, kind="module")
         g.functions.append(top)
@@ -359,30 +399,37 @@ def link(g: Graph, parsed: dict[str, dict], associations: re.Pattern | None = No
                     target, cands = resolve(name, src)
                     for c in [target] if target else cands if len(cands) <= 3 else ():
                         refs[(src, c)] += 1
-            for name, line, in_loop, callee in rec["calls"]:
+            startup = bool(STARTUP.search(src) or MIGRATION.search(src))
+            for name, line, in_loop, callee, *rest in rec["calls"]:
+                route = bool(rest and rest[0])
                 target, cands = resolve(name, src, bare=not re.search(r"\.|->|::", callee), callee=callee)
                 if target:
                     calls[(src, target)] += 1
                     if in_loop:
-                        g.sites.append(Site(src, "loop_call", line, target=target))
+                        g.sites.append(Site(src, "loop_call", line, target=target, bounded=startup))
                     continue
                 if len(cands) <= 3:
                     for c in cands:
                         refs[(src, c)] += 1
                 else:  # called by a name many things define (String, Error, Read): any of them may be what runs
                     ambiguous.add(name)
-                if not cands and (
-                    IO_RECEIVER.search(callee)
-                    or IO_NAME.search(callee)
-                    or (src.split("::")[0].endswith(ORM_LANGS) and ORM_NAME.search(callee))
-                    or (src.split("::")[0].endswith(".swift") and SWIFT_STORE.search(callee))
-                    or (_typed_io(callee, types) and (ORM_NAME.search(callee) or IO_VERB.search(callee)))
-                    or (src.split("::")[0].endswith(".rb") and AR.search(callee))
-                    or (associations and src.split("::")[0].endswith(".rb") and associations.search(callee))
+                if (
+                    not cands
+                    and not route
+                    and (
+                        IO_RECEIVER.search(callee)
+                        or HTTP_PACKAGE.search(callee)
+                        or IO_NAME.search(callee)
+                        or (src.split("::")[0].endswith(ORM_LANGS) and ORM_NAME.search(callee))
+                        or (src.split("::")[0].endswith(".swift") and SWIFT_STORE.search(callee))
+                        or (_typed_io(callee, types) and (ORM_NAME.search(callee) or IO_VERB.search(callee)))
+                        or (src.split("::")[0].endswith(".rb") and AR.search(callee))
+                        or (associations and src.split("::")[0].endswith(".rb") and associations.search(callee))
+                    )
                 ):
                     io.add(callee)
                     if in_loop:
-                        g.sites.append(Site(src, "loop_io", line, detail=callee))
+                        g.sites.append(Site(src, "loop_io", line, detail=callee, bounded=startup))
             if src in by_id:
                 by_id[src].io = sorted(io)
     framework = {f["id"] for d in parsed.values() for f in d["functions"] if f.get("framework")}

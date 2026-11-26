@@ -23,7 +23,7 @@ COMPLEXITY = {"S": "under an hour, one place", "M": "a few hours, several places
 # sounds): exact = a fact read from the files; lead = depends on what static reading can't see (callers by name,
 # tests through HTTP, guard flags, layer guesses); likely = the rest (a call chain was followed, but not its conditions)
 EXACT = re.compile(
-    r"(?i)^(?:credentials committed|environment files|sql assembled|no (?:continuous integration|"
+    r"(?i)^(?:credentials committed|environment files|sql assembled|no (?:"
     r"automated tests|readme|lockfile)|unpinned|runtime version|readme doesn't|ci doesn't|workflow runs|"
     r"network calls without a timeout|very long functions|dependencies on moving targets)"
 )

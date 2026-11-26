@@ -108,6 +108,24 @@ def _last_ident(node, depth: int = 0) -> str:
     return ""
 
 
+BATCHED = re.compile(r"(?i)\b(?:batch|chunk|page)\w*\b|\+=\s*(?:\w*(?:size|Size|limit|Limit|max|Max)\w*|\d{2,})")
+
+
+def _batched(loop) -> bool:
+    """`for _, batch := range batches`, `for i := 0; i < n; i += 1000`: a loop over batches is the batching, one
+    call per batch is what the fix for one call per item looks like."""
+    head = loop.text.decode("utf-8", "replace").split("{", 1)[0].split("\n", 1)[0][:200]
+    return BATCHED.search(head) is not None
+
+
+def _route_call(node) -> bool:
+    """`r.Get("/users", h)`, `r.Get("/api/"+p, h)`, `app.post('/x', …)`: registering a route (its first argument a
+    path), not making a request, though the method is named like one."""
+    args = node.child_by_field_name("arguments")
+    first = next(iter(args.named_children), None) if args is not None else None
+    return first is not None and re.match(r"""^[`"']/""", first.text.decode("utf-8", "replace")) is not None
+
+
 def _callee_text(node) -> str:
     """`repo.find`: the callee as written. Java, Ruby and PHP keep the receiver and the method name in separate fields
     (object/receiver + name/method); others have one function expression."""
@@ -250,14 +268,14 @@ def walk(source: bytes, parser, rel: str) -> dict:
         if fn is not None and (BRANCH.search(t) or t in ("&&", "||", "and", "or", "??", "orelse", "andalso")):
             fn["branches"] += 1
         in_loop = loops
-        if LOOP.search(t) and not NOT_LOOP.search(t) and node.named_children:
+        if LOOP.search(t) and not NOT_LOOP.search(t) and node.named_children and not _batched(node):
             in_loop = loops + 1
         if CALL.match(t):
             name = _name(node, call=True)
             if name in REQUIRE and fn is None:  # Ruby, Lua, PHP, Elixir: imports are calls
                 out["imports"] += [s for s in _import_sources(node)[:1] if s != name]
             elif name:
-                owner["calls"].append([name, node.start_point[0] + 1, loops > 0, _callee_text(node)])
+                owner["calls"].append([name, node.start_point[0] + 1, loops > 0, _callee_text(node), _route_call(node)])
             if name in ITER:  # the closure it's given runs per item
                 for c in node.named_children:
                     if CLOSURE.search(c.type) or any(CLOSURE.search(g.type) for g in c.named_children):

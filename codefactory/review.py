@@ -19,7 +19,7 @@ from .apple import scan as apple_scan
 from .audit import current_secrets
 from .audit import scan as audit_scan
 from .brief import View
-from .checks import scan_repo, scan_sources, source_files, test_reach
+from .checks import CI_NAMES, scan_repo, scan_sources, source_files, test_reach
 from .config import load_config
 from .coverage import measured
 from .infra import scan as infra_scan
@@ -115,7 +115,7 @@ class Review:
         self.rank_changes: list[rerank.Change] = []
         self.writers = writes(self.v)
         # (with tests left out of the results, what they reach was kept: coverage still counts them)
-        static = set(g["tests"]["reached"]) if g.get("tests") else test_reach(self.v)
+        static = set(g["tests"]["reached"]) if g.get("tests") else test_reach(self.v, self._tested_unlinked())
         self.coverage = measured(root, g["functions"])
         if self.coverage:  # what ran, where the report knows; the static estimate for files it doesn't cover
             seen = self.coverage.seen
@@ -129,6 +129,35 @@ class Review:
             self.by_kind[f["kind"]].append(f)
         self.code_fns = [f for f in g["functions"] if f["kind"] != "module" and not is_test(f["file"])]
         self._strengths: list[str] | None = None
+
+    def _tested_unlinked(self) -> set[str]:
+        """Functions tests run that the call graph doesn't link to them: a route's handler, when a test sends a request
+        to its URL (TestClient, httptest, supertest); and in languages matched by name (Go, Java, …) a method a test
+        calls on a value whose type isn't known (an interface, what a helper returns). "No test reaches it" was wrong
+        for both on real repositories."""
+        files = [f["id"] for f in self.g["files"] if is_test(f["id"])]
+        texts = []
+        for rel in files[:2000]:
+            try:
+                texts.append((self.root / rel).read_text(encoding="utf-8", errors="replace")[:2_000_000])
+            except OSError:
+                continue
+        blob = "\n".join(texts)
+        if not blob:
+            return set()
+        out = set()
+        for e in self.surface.entries:
+            path = e.path.rstrip("/")
+            if len(path) < 2:
+                continue  # "/": every URL ends somewhere
+            parts = [r"[^/\"'`?]+" if re.fullmatch(r"\{[^}]*\}|<[^>]*>|:\w+|\*\w*", p) else re.escape(p) for p in path.split("/")]
+            if re.search(r"[\"'`][^\"'`\s]*" + "/".join(parts) + r"/?(?:\?[^\"'`]*)?[\"'`]", blob):
+                out.add(e.fn)
+        called = set(re.findall(r"\.(\w+)\s*\(", blob))
+        precise = (".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts")  # (their calls are resolved)
+        out |= {fid for fid, f in self.v.fn.items() if f["kind"] == "method" and f["name"] in called
+                and not f["file"].endswith(precise) and not is_test(f["file"])}  # fmt: skip
+        return out
 
     def n(self, shown: int) -> int:
         """How many locations a finding lists: a few in the report, all of them in the export."""
@@ -609,18 +638,22 @@ class Review:
             )
         rank = {name: i for i, name in enumerate(self.g["layers"])}
         layer_of = {f["id"]: f["layer"] for f in self.g["files"]}
-        back = Counter()
+        back, example = Counter(), {}
         for e in self.g["edges"]:
-            if e["kind"] == "import":
+            if e["kind"] == "import" and not is_test(e["src"]) and not is_test(e["dst"]):  # (Go's _test.go: same folder)
                 a, b = layer_of.get(e["src"]), layer_of.get(e["dst"])
-                if a and b and "tests" not in (a, b) and rank.get(b, 0) < rank.get(a, 0):
+                if a and b and "tests" not in (a, b) and rank.get(b, 0) < rank.get(a, 0) and not ROOT_LAYER.match(a):
                     back[(a, b)] += 1
+                    example.setdefault((a, b), (e["src"], e["dst"]))
         if back:
             self.add(
                 "Dependencies against the layer order",
                 "Low",
                 "Architecture",
-                [f"{a} imports {b} ({n} files)" for (a, b), n in back.most_common(5)],
+                [
+                    f"{a} imports {b} ({_n(n, 'import')}, e.g. `{example[(a, b)][0]}` → `{example[(a, b)][1]}`)"
+                    for (a, b), n in back.most_common(self.n(5))
+                ],  # fmt: skip
                 "A lower layer reaching up into a higher one blurs who depends on whom.",
                 "Check each is intended; if not, move the shared piece down or pass it in. Make the rule explicit in "
                 "factory.toml ([rules] forbid).",
@@ -794,7 +827,10 @@ class Review:
                 "No continuous integration",
                 "High",
                 "Delivery",
-                ["no CI configuration found (" + ", ".join(c for c in CI_HINT) + ")"],
+                [
+                    f"no CI configuration found here or above, up to the repository's top (looked for {CI_NAMES}); "
+                    'if yours is another system, name its file in factory.toml: ci = ["path"]'
+                ],
                 "Nothing checks a change before it ships.",
                 "Add a CI workflow that installs from the lockfile and runs "
                 "typecheck, lint and tests on every pull request and push to the main branch.",
@@ -1366,7 +1402,8 @@ class Review:
         return __version__
 
 
-CI_HINT = [".github/workflows", ".gitlab-ci.yml", ".circleci", "Jenkinsfile"]
+# a composition root: where the program is wired together, so importing every layer is its job
+ROOT_LAYER = re.compile(r"(?i)^(?:cmd|boot|bootstrap|main|app|server|wire|wiring|entry|entrypoints?)$")
 SECURITY_KEYS = {"secret", "eval", "shell", "tls_off", "raw_html", "sql_built", "history_secret", "secret_key_literal",
                  "jwt_unverified", "weak_cipher", "weak_hash", "weak_random", "cors_any", "insecure_cookie", "debug_on",
                  "sensitive_storage", "docker_secret", "gha_injection"}  # fmt: skip

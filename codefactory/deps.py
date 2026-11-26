@@ -182,9 +182,9 @@ def vulnerabilities(pkgs: list[Package], timeout: int = 30, budget: float = 120)
     for i in range(0, len(pkgs), BATCH):
         chunk = pkgs[i : i + BATCH]
         queries = [{"package": {"name": p.name, "ecosystem": p.ecosystem}, "version": p.version} for p in chunk]
-        # codefactory: ignore io_in_loop — one request per 500 packages, OSV's batch size
         if left() <= 0:
             raise OSError(f"OSV took longer than {budget:.0f} s")
+        # codefactory: ignore io_in_loop — one request per 500 packages, OSV's batch size
         results = _post(f"{API}/querybatch", {"queries": queries}, left()).get("results", [])
         if not isinstance(results, list):
             raise ValueError("OSV's answer has no list of results")

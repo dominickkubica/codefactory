@@ -605,6 +605,8 @@ Optional, at the root of the analyzed repository.
 
 ```toml
 ignore = ["migrations", "fixtures"]   # extra folder names to skip (.venv, node_modules, build… are skipped already)
+ci = ["ci/pipeline.yml"]               # a CI system codefactory doesn't know (it finds GitHub Actions, GitLab, Jenkins,
+                                       # Azure, Buildkite, Drone, TeamCity, Rio and ~20 more, up to the repository's top)
 tests = false                          # leave test code out of findings, the plan and the map (the same as --no-tests;
                                        # still counted for coverage). Default true.
 

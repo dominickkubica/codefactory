@@ -340,7 +340,11 @@ def markdown(s: Summary, findings_by_file: dict[str, list[str]] | None = None) -
             )
         out.append("")
     if s.owners:
-        out += ["**Busy code only one person changes** (if they're away, nobody knows it):", ""]
+        out += [
+            "**Busy code only one person changes** (context about the team, not a problem in the code: if they're "
+            "away, nobody else has worked in it):",
+            "",
+        ]
         out += [f"- `{p}`: {share:.0%} of {n} changes by {who}" for p, who, share, n in s.owners]
         out.append("")
     elif people == 1:

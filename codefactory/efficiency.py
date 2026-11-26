@@ -201,7 +201,8 @@ def efficiency_flags(g: Graph) -> list[Flag]:
         if fixed or migration:  # can't grow with the data: worth knowing, not worth fixing
             sev = "info"
         note = (
-            " It loops over a list fixed in the code, so the number of calls can't grow with the data: fine as "
+            " It loops over a list fixed in the code, or runs once at startup or in a migration, so the number of "
+            "calls can't grow with the data: fine as "
             "is unless that list gets long."
             if fixed
             else " It's in a migration, which runs once per upgrade."

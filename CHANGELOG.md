@@ -69,6 +69,29 @@ Each has a regression test (`tests/test_security_audit.py`).
   fail outright. A compiler without the API is skipped for the next one (a global TypeScript 5), and with none the
   review says how to get one.
 
+### From a Go service's maintainer
+Eight findings he triaged as wrong, each fixed with a test (`tests/test_go_service.py`):
+
+- **A subfolder review missed the repository's CI and README** ("No continuous integration: High" on `internal/`):
+  CI, README and license are looked for from the folder up to the repository's top.
+- **CI systems beyond GitHub, GitLab, Jenkins and CircleCI**: ~30 now (Rio, Azure, Buildkite, Drone, Woodpecker,
+  Cirrus, TeamCity, AppVeyor, CodeBuild, Cloud Build, Bamboo, Tekton, Harness, Bitrise, Gitea, Forgejo…), and
+  `ci = ["path"]` in factory.toml names any other.
+- **Go calls read as N+1 queries by their name**: `http.SetCookie`, `http.HandleFunc` and the rest of the `http`
+  package aren't requests (only Get, Post, Head, PostForm, Do are); `r.Get("/path", h)` registers a route; a loop in
+  startup code (`main`, `init`, `New…`, `Register…`, `Start…`) runs once per configured thing (info, not a warning).
+- **Batched writes and migrations**: a loop over batches (`i += 1000`, `range batches`) is the batching; migration
+  and schema-lock code steps through its changes on purpose.
+- **"No test reaches it" when tests do**: a method tests call through an interface (several types implement it, so
+  the name alone can't say which) counts as reached in Go, Java and the other languages matched by name, and so does
+  a route's handler when a test sends a request to its URL (TestClient, httptest, supertest). On a 77k-line
+  repository, 26 "untested" functions became 12, the rest confirmed untested.
+- **A constant string flagged as XSS**: raw HTML from a string literal with nothing put into it isn't reported.
+- **Go's standard library taken for the repository's own packages** ("auth imports sync"): Go imports are resolved by
+  their full path under the module in go.mod. The layer check also skips imports in test files and composition roots
+  (`cmd`, `boot`, `main`, `app`, `server` import everything by design), and names an example file for each.
+- **"One person changes most of the busy code"** is labelled as context about the team, not a problem in the code.
+
 ### Audit export
 - **`codefactory export`**: every finding as one audit file, Markdown or `--json`, made to be handed to Claude with
   "triage these into individual fixes sorted by severity, then complexity" (it opens with those instructions).
