@@ -59,12 +59,12 @@ committing it. An unexpected line there is a bug caught early.
 
 ## Releasing
 
-1. Update `version` in `pyproject.toml` and `__version__` in `codefactory/__init__.py`.
+1. Update `version` in `pyproject.toml` and `__version__` in `codefactory/__init__.py` (a test checks they match).
 2. Add a section to `CHANGELOG.md` (`## 1.2.3 · date`): the release notes are taken from it.
-3. Merge to `main` with CI green, then tag that commit and push the tag:
-   `git tag v1.2.3 && git push origin v1.2.3`.
+3. Push to `main`. That's all: when `main`'s version has no tag yet, [release.yml](.github/workflows/release.yml)
+   tags the commit and releases it. (Pushing a tag yourself, or publishing a release on the website, still works.)
 
-[release.yml](.github/workflows/release.yml) then checks the tag matches the version, runs the tests, builds the
+It then checks the tag matches the version, runs the tests, builds the
 wheel and sdist reproducibly, writes the SBOM, attests provenance and the SBOM, creates the GitHub release with
 `SHA256SUMS`, and moves the major tag (`v0`) to it. With the repository variable `PYPI_PUBLISH` set to `true` and a
 [trusted publisher](https://docs.pypi.org/trusted-publishers/) configured on PyPI (project `codefactory-cli`,

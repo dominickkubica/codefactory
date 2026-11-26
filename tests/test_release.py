@@ -26,6 +26,17 @@ def _portable(sarif: dict) -> dict:
 
 
 class SbomTest(unittest.TestCase):
+    def test_versions_match(self):
+        # a version bump on main is a release now: the package and its code must agree before it goes out
+        import tomllib
+
+        from codefactory import __version__
+
+        root = Path(__file__).parent.parent
+        version = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+        self.assertEqual(__version__, version)
+        self.assertIn(f"## {version} ·", (root / "CHANGELOG.md").read_text(encoding="utf-8"))  # its release notes
+
     def setUp(self):
         self.root = Path(tempfile.mkdtemp())
         (self.root / "package-lock.json").write_text(json.dumps({"lockfileVersion": 3, "packages": {

@@ -1,4 +1,7 @@
-# Publishes a release when a version tag (v1.2.3) is pushed:
+# Publishes a release when the version in pyproject.toml changes on main (nothing to click: the tag, the GitHub
+# release and PyPI all follow), or when a version tag (v1.2.3) is pushed by hand or from the website:
+#   0. on main: if pyproject.toml's version has no tag yet, tags this commit (a tag a workflow pushes can't start
+#      another workflow, so the rest runs here, in the same run)
 #   1. checks the tag matches the version in pyproject.toml, and that the tests pass
 #   2. builds the sdist and wheel reproducibly (SOURCE_DATE_EPOCH = the tagged commit's time)
 #   3. writes a CycloneDX SBOM with codefactory itself
@@ -14,11 +17,48 @@ name: Release
 on:
   push:
     tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+    branches: [main]
+    paths: [pyproject.toml, .github/workflows/release.yml]
+  workflow_dispatch:
 
 permissions: {}
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
+  version:
+    # which release this run is: the pushed tag, or main's version when it has no tag yet (else nothing to do)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # creating the tag
+    outputs:
+      tag: ${{ steps.which.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: which
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ "$REF_TYPE" = "tag" ]; then echo "tag=$REF_NAME" >> "$GITHUB_OUTPUT"; exit 0; fi
+          version="$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["project"]["version"])')"
+          if gh api "repos/$REPO/git/ref/tags/v$version" > /dev/null 2>&1; then
+            echo "v$version is already released: nothing to do"
+            exit 0
+          fi
+          gh api "repos/$REPO/git/refs" -f "ref=refs/tags/v$version" -f "sha=$GITHUB_SHA" > /dev/null
+          echo "tagged $GITHUB_SHA as v$version"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: version
+    if: needs.version.outputs.tag != ''
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -31,7 +71,7 @@ jobs:
           python-version: "3.13"
       - name: The tag matches the package version
         env:
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ needs.version.outputs.tag }}
         run: |
           version="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["project"]["version"])')"
           test "v$version" = "$TAG" || { echo "::error::tag $TAG but pyproject.toml says $version"; exit 1; }
@@ -65,7 +105,7 @@ jobs:
           path: pypi/
 
   release:
-    needs: build
+    needs: [version, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write # the release and the major tag
@@ -92,7 +132,7 @@ jobs:
           sbom-path: dist/codefactory.cdx.json
       - name: Release notes from the changelog
         env:
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ needs.version.outputs.tag }}
         run: |
           version="${TAG#v}"
           awk -v v="$version" '$0 ~ "^## "v" " {on=1; next} on && /^## / {exit} on' CHANGELOG.md > notes.md
@@ -100,7 +140,7 @@ jobs:
       - name: Create the release and move the major tag
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ needs.version.outputs.tag }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
             # made on the website (which also made the tag): add the files and the notes to it
@@ -119,7 +159,7 @@ jobs:
           fi
 
   pypi:
-    needs: build
+    needs: [version, build]
     if: vars.PYPI_PUBLISH == 'true'
     runs-on: ubuntu-latest
     environment: pypi
