@@ -81,6 +81,26 @@ class DetectTest(unittest.TestCase):
         self.assertEqual(profile(CLI).deployment, "user's machine")
         self.assertEqual(profile(LIBRARY).kind, "library")
 
+    def test_a_published_framework_is_a_library_not_the_service_its_views_make(self):  # Django, from its review
+        files = {
+            "pyproject.toml": '[project]\nname = "framework"\nclassifiers = [\n'
+            '  "Topic :: Software Development :: Libraries :: Application Frameworks",\n]\n',
+            "framework/views.py": """
+                from flask import Flask
+                app = Flask(__name__)
+
+                @app.get("/i18n/setlang")
+                def set_language():
+                    return "ok"
+            """,
+        }
+        p = profile(files)
+        self.assertEqual(p.kind, "library")
+        self.assertIn("web service", p.also)
+        self.assertEqual(p.deployment, "user's machine")
+        files["Dockerfile"] = "FROM python:3.13\n"  # deployed after all: then it's the service
+        self.assertEqual(profile(files).kind, "web service")
+
     def test_jvm_manifests(self):
         android = {"app/build.gradle": "plugins { id 'com.android.application' }\n", "app/src/A.kt": "class A\n"}
         self.assertEqual(profile(android).kind, "mobile app")

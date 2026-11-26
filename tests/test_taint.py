@@ -17,7 +17,14 @@ class TaintTest(unittest.TestCase):
     def test_proven_flows(self):
         self.assertEqual(
             set(self.flows),
-            {("find_user", "sql"), ("fetch", "ssrf"), ("download", "path"), ("ping", "shell"), ("report", "sql")},
+            {
+                ("find_user", "sql"),
+                ("fetch", "ssrf"),
+                ("download", "path"),
+                ("ping", "shell"),
+                ("report", "sql"),
+                ("go_bad", "redirect"),
+            },
         )
 
     def test_the_chain_names_the_route_and_the_helper(self):
@@ -28,7 +35,9 @@ class TaintTest(unittest.TestCase):
     def test_look_alikes_are_not_flows(self):
         names = {name for name, _ in self.flows}
         # a bound SQL parameter, an int() conversion, a Depends() connection, an int-typed id, a path read from the database
-        for safe in ("find_user_safe", "page", "shot", "stored_path"):
+        # …and a redirect target checked and replaced when the check fails
+        # …and a value handed to a sanitizer that marks its own output safe
+        for safe in ("find_user_safe", "page", "shot", "stored_path", "go", "num", "number_format"):
             self.assertNotIn(safe, names)
         self.assertEqual(sum(1 for name, _ in self.flows if name == "find_user"), 1)  # GET /page's int() isn't a second
 

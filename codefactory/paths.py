@@ -50,6 +50,14 @@ def walk(root, names: tuple[str, ...] = (), suffixes: tuple[str, ...] = (), skip
                 yield rel
 
 
+# someone else's code copied in (a bundled jQuery, a minified build): its patterns aren't this project's to fix
+VENDORED = re.compile(r"(?:^|/)(?:vendor|vendored|third_party|thirdparty|bower_components)/|\.min\.(?:js|css)$")
+
+
+def is_vendored(path: str) -> bool:
+    return bool(VENDORED.search(path.replace("\\", "/")))
+
+
 @functools.lru_cache(maxsize=65536)
 def is_test(path: str) -> bool:
     """tests/…, __tests__/…, test_*.py, *_test.py, *.test.ts, *.spec.js…"""

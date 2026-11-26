@@ -25,7 +25,9 @@ ROUTE_ATTRS = {"get", "post", "put", "patch", "delete", "route", "api_route", "w
 REQUEST_ATTRS = {"args", "form", "values", "json", "data", "files", "cookies", "headers", "query_params", "path_params",
                  "GET", "POST", "body", "FILES", "COOKIES", "META", "get_json", "query_string"}  # fmt: skip
 SANITIZERS = {"int", "float", "bool", "len", "abs", "round", "UUID", "uuid4", "basename", "secure_filename", "quote",
-              "escape", "clean", "quote_plus", "urlencode", "isdigit", "isalnum", "hexdigest", "count"}  # fmt: skip
+              "escape", "clean", "quote_plus", "urlencode", "isdigit", "isalnum", "hexdigest", "count",
+              # escape their arguments (format_html, conditional_escape) or reduce them to a formatted number
+              "format_html", "format_html_join", "conditional_escape", "number_format", "intcomma"}  # fmt: skip
 SQL = {"execute", "executemany", "executescript", "raw", "text", "extra"}
 SHELL = {"system", "popen", "getoutput", "getstatusoutput"}
 SUBPROCESS = {"run", "call", "check_call", "check_output", "Popen"}
@@ -128,13 +130,7 @@ def _guards(func) -> dict[int, set[str]]:
 
     def visit(node, checked: frozenset):
         if isinstance(node, ast.If):
-            names = {
-                a.id
-                for c in ast.walk(node.test)
-                if isinstance(c, ast.Call) and VALIDATOR.search(_name(c.func))
-                for a in c.args
-                if isinstance(a, ast.Name)
-            }
+            names = _validated(node.test)
             for child in node.body:
                 visit(child, checked | names)
             for child in node.orelse:
@@ -146,6 +142,38 @@ def _guards(func) -> dict[int, set[str]]:
             visit(child, checked)
 
     visit(func, frozenset())
+    return out
+
+
+def _validated(test: ast.AST) -> set[str]:
+    """Names a validator call in a test checks: `is_safe(x)`, `url_has_allowed_host_and_scheme(url=x, …)`."""
+    return {
+        a.id
+        for c in ast.walk(test)
+        if isinstance(c, ast.Call) and VALIDATOR.search(_name(c.func))
+        for a in [*c.args, *(k.value for k in c.keywords)]
+        if isinstance(a, ast.Name)
+    }
+
+
+def _replaced_unless_valid(func) -> dict[str, int]:
+    """Names that are checked and, when the check fails, replaced or abandoned: `if not is_safe(x): x = "/"` (or
+    return / raise). From the end of that `if` on, the name holds either a value that passed or the replacement:
+    {name: the line the check ends on}."""
+    out: dict[str, int] = {}
+    for node in ast.walk(func):
+        if not isinstance(node, ast.If):
+            continue
+        negated = [n.operand for n in ast.walk(node.test) if isinstance(n, ast.UnaryOp) and isinstance(n.op, ast.Not)]
+        names = set().union(*(_validated(n) for n in negated)) if negated else set()
+        for name in names:
+            assigned = any(
+                isinstance(t, ast.Name) and t.id == name for n in ast.walk(node) if isinstance(n, ast.Assign) for t in n.targets
+            )
+            leaves = bool(node.body) and isinstance(node.body[-1], (ast.Return, ast.Raise))
+            if assigned or leaves:
+                end = getattr(node, "end_lineno", node.lineno)
+                out[name] = min(out.get(name, end), end)
     return out
 
 
@@ -179,10 +207,15 @@ class _Function:
     def __init__(self, node, callees: dict[str, Summary], fid: str = ""):
         self.node, self.callees, self.fid = node, callees, fid
         self.params = [a.arg for a in node.args.posonlyargs + node.args.args + node.args.kwonlyargs]
+        # names checked and replaced when the check fails, and the line from which they read as clean
+        self.clean_after = _replaced_unless_valid(node)
+        self.line: int | None = None  # the statement being evaluated
 
     def origins(self, expr: ast.AST, env: dict[str, set]) -> set:
         """The taint labels an expression carries: ("param", i) or ("source", text)."""
         if isinstance(expr, ast.Name):
+            if self.line is not None and self.line > self.clean_after.get(expr.id, self.line):
+                return set()  # after `if not is_safe(x): x = "/"`, and anything built from it
             return set(env.get(expr.id, ()))
         if src := _source(expr):
             return {("source", src)}
@@ -230,6 +263,7 @@ class _Function:
                     targets, value = [n.optional_vars], n.context_expr
                 if value is None:
                     continue
+                self.line = getattr(n, "lineno", None)
                 labels = self.origins(value, env)
                 if not labels:
                     continue
@@ -243,6 +277,7 @@ class _Function:
         hits, calls, returns = [], [], set()
         guards = _guards(self.node)
         for n in body:
+            self.line = getattr(n, "lineno", None)
             if isinstance(n, ast.Call):
                 sink = _sink(n)
                 if sink:
@@ -257,7 +292,7 @@ class _Function:
                         for label in self.origins(a, env):
                             hits.append((label, kind, n.lineno, ast.unparse(n.func)[:50], "", self.fid))
                 summary = self.callees.get(_name(n.func))
-                if summary is not None:
+                if summary is not None and _name(n.func) not in SANITIZERS:  # (inside an escaper is its own business)
                     for i, a in enumerate(n.args):
                         for flow in summary.sinks.get(i, []):
                             for label in self.origins(a, env):
@@ -316,7 +351,10 @@ def _entry(node, source: str) -> str:
 
 def taint_flags(g: Graph, root: Path) -> list[Flag]:
     """Proven flows from request data (or another source) to a sink, one finding per sink line."""
-    fns = [f for f in g.functions if f.file.endswith(".py") and f.kind != "module"]
+    from .paths import is_test
+
+    # a test's own server fetching what its test asks for isn't the product's flow
+    fns = [f for f in g.functions if f.file.endswith(".py") and f.kind != "module" and not is_test(f.file)]
     if not fns:
         return []
     callees_of: dict[str, list[str]] = {}

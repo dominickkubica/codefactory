@@ -17,7 +17,7 @@ from pathlib import Path
 
 from .brief import View
 from .intent import interp_safe, push_skip_explained, safe_names, swallow_intent
-from .paths import is_test, links_outside
+from .paths import is_test, is_vendored, links_outside
 from .suppress import MARK
 from .suppress import _parse as parse_mark
 
@@ -300,7 +300,7 @@ def source_files(root: Path, graph: dict) -> list[str]:
         for name in filenames:
             if name.endswith(SRC_EXT) and not name.endswith((".min.js", ".d.ts")):
                 out.add(Path(dirpath, name).relative_to(root).as_posix())
-    return sorted(f for f in out if not links_outside(root, f))
+    return sorted(f for f in out if not links_outside(root, f) and not is_vendored(f))
 
 
 def scan_sources(root: Path, files: list[str]) -> dict[str, Check]:
@@ -547,6 +547,7 @@ def scan_repo(root: Path) -> dict:
         "ci_on_push": False,
         "locks": [],
         "manifests": [],
+        "npm_dev_only": False,
         "floating": [],
         "unpinned_py": [],
         "runtime_pin": [],
@@ -594,6 +595,10 @@ def scan_repo(root: Path) -> dict:
             data = json.loads(pkg.read_text(encoding="utf-8"))
         except ValueError:
             data = {}
+        # only dev tooling (linters, a JS test runner in a Python project): nothing that ships drifts
+        info["npm_dev_only"] = bool(data.get("devDependencies")) and not (
+            data.get("dependencies") or data.get("peerDependencies")
+        )
         deps = {**data.get("dependencies", {}), **data.get("devDependencies", {})}
         info["deps"].update(deps)
         info["floating"] = [

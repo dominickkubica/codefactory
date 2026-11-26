@@ -3,7 +3,7 @@ import subprocess
 
 import requests
 from fastapi import APIRouter, Depends
-from flask import Flask, request
+from flask import Flask, redirect, request
 
 router = APIRouter()
 app = Flask(__name__)
@@ -72,3 +72,36 @@ def shot(shot_id: int, conn=Depends(get_db)):
 @router.get("/report")
 def report(table: str, conn=Depends(get_db)):
     return conn.execute(f"SELECT count(*) FROM {table}").fetchone()  # a request string pasted into SQL
+
+
+def url_has_allowed_host_and_scheme(url, allowed_hosts):
+    return bool(url) and url.startswith("/") and not url.startswith("//")
+
+
+@app.route("/go")
+def go():
+    # checked, and replaced when the check fails (Django's set_language): not a flow
+    target = request.args.get("next")
+    if not url_has_allowed_host_and_scheme(url=target, allowed_hosts={"example.com"}):
+        target = "/"
+    final = target + "?from=go"  # built from the checked value: clean too
+    return redirect(final)
+
+
+@app.route("/go-bad")
+def go_bad():
+    return redirect(request.args.get("next"))
+
+
+def mark_safe(text):
+    return text
+
+
+def number_format(value):
+    return mark_safe(str(value))  # (a stand-in: only its name says it formats a number)
+
+
+@app.route("/num")
+def num():
+    # a sanitizer's own body (it marks its formatted number safe) isn't the request's flow
+    return number_format(request.args["n"])

@@ -852,12 +852,16 @@ class Review:
                 "S",
             )
         if r["manifests"] and not r["locks"] and any(m == "package.json" for m in r["manifests"]):
+            dev = r.get("npm_dev_only")
             self.add(
                 "No lockfile",
-                "High",
+                "Low" if dev else "High",
                 "Dependencies",
-                [", ".join(r["manifests"])],
-                "Every install can resolve different versions: builds aren't reproducible.",
+                [", ".join(r["manifests"]) + (" (development tools only)" if dev else "")],
+                "Development tools can resolve different versions between installs, so a lint or test run can change "
+                "without a code change."
+                if dev
+                else "Every install can resolve different versions: builds aren't reproducible.",
                 "Commit the lockfile your package manager writes, and install with it in CI (npm ci / pnpm i --frozen-lockfile).",
                 "S",
             )

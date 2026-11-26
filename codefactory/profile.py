@@ -217,7 +217,7 @@ def _manifests(root: Path) -> dict:
     (`packages/*`, `apps/*`, `services/*`…, where monorepos keep their parts)."""
     out: dict = {"deps": {}, "npm_bin": [], "py_scripts": [], "go_main": [], "rust_bin": False, "flutter": False,
                  "pkg_main": [], "py_lib": False, "files": set(), "lib": [], "cli": [], "android": [],
-                 "swift_lib": False}  # fmt: skip
+                 "swift_lib": False, "published_lib": []}  # fmt: skip
     top = [p for p in sorted(root.iterdir()) if p.is_dir() and p.name not in SKIP_DIRS and not p.name.startswith(".")
            and not EXAMPLE_DIR.search(p.name + "/")]  # fmt: skip
     nested = [c for d in top if d.name in WORKSPACES for c in sorted(d.iterdir()) if c.is_dir() and c.name not in SKIP_DIRS]
@@ -251,6 +251,11 @@ def _manifests(root: Path) -> dict:
             scripts = {**project.get("scripts", {}), **(data.get("tool", {}).get("poetry", {}).get("scripts", {}) or {})}
             out["py_scripts"] += [f"{rel}pyproject.toml [project.scripts] {name}" for name in list(scripts)[:3]]
             out["py_lib"] = out["py_lib"] or bool(project.get("name"))
+            # a package that says it's for developers to build on (Django, Flask, requests): its endpoints are
+            # what it lets others serve, not a service this repository runs
+            libs = [c for c in project.get("classifiers", []) if c.startswith("Topic :: Software Development :: Libraries")]
+            if libs and not d.relative_to(root).parts:
+                out["published_lib"].append(f"{rel}pyproject.toml: {libs[0]}")
         for setup in ("setup.cfg", "setup.py"):  # older Python packaging: console_scripts entry points
             if (d / setup).is_file() and re.search(r"console_scripts", (d / setup).read_text(encoding="utf-8", errors="replace")):
                 out["py_scripts"].append(f"{rel}{setup} console_scripts")
@@ -546,6 +551,9 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None, source
         roles.append(("static website", [f"{pages[0]} and no server code" + (f" ({hosted[0]})" if hosted else "")]))
     if not roles and (m["lib"] or m["py_lib"] or m["pkg_main"] or (not m["rust_bin"] and (root / "Cargo.toml").is_file())):
         roles.append(("library", (m["lib"] + m["pkg_main"])[:1] or ["a package manifest and no app or entry point"]))
+    if m["published_lib"] and not m["files"] and not mobile and roles and roles[0][0] != "library":
+        # (deploy files would say it also runs somewhere: then it's what it serves after all)
+        roles.insert(0, ("library", m["published_lib"][:1]))
     p.endpoints = len(endpoints)
     if wrapped_mobile:
         roles.append(("mobile app", [f"{wrapped_mobile[0]}, a client of the rest"]))
@@ -570,7 +578,8 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None, source
     # where it runs, who reaches it
     deployed = sorted(m["files"])
     # the main role decides where it runs: an app's (or a tool's) own small server is a part of it, not what it is
-    side_server = (p.kind in ("data pipeline", "command-line tool", "library") and len(endpoints) <= 5) or p.kind in (
+    side_server = (p.kind in ("data pipeline", "command-line tool") and len(endpoints) <= 5) or p.kind in (
+        "library",
         "mobile app",
         "desktop app",
     )
