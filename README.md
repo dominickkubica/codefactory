@@ -116,8 +116,10 @@ For the by-name languages, call, impact and unused-code findings are leads to co
 | `skill` | Teach Claude Code in a repository when and how to use all of the above (`--hook`: keep it current) |
 | `update` | Upgrade codefactory to the latest version |
 
-Commands that take a name work from inside the repository: `codefactory context checkout`. `codefactory --help` and
-`codefactory <command> --help` list every option.
+Commands that take a name work from inside the repository: `codefactory context checkout`. `--no-tests` (or
+`tests = false` in factory.toml) leaves test code out of findings, the plan and the map; copies that exist only between
+tests are listed as info and aren't plan tasks either way. `codefactory --help` and `codefactory <command> --help` list
+every option.
 
 ## With Claude Code
 

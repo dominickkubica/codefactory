@@ -67,10 +67,23 @@ def load_graph(path: Path, languages: list[str] | None = None, cache: bool = Tru
         stamp = fingerprint(root, ignore, recent)  # before analysis: what's analyzed is at least this new
         hit = load_cached(root, ignore, stamp)
         if hit is not None:
-            return hit
+            return _scoped(hit, root)
     graph = build(root, languages, cache).to_dict()
     if cache and not languages:
         save_cache(root, ignore, graph, stamp, bool(recent))
+    return _scoped(graph, root)
+
+
+# --no-tests, for the command being run (load_graph has many callers; the option is the same for all of them)
+OPTIONS = {"no_tests": False}
+
+
+def _scoped(graph: dict, root: Path) -> dict:
+    """The graph as this run shows it: without test code when asked (--no-tests, or `tests = false`)."""
+    if OPTIONS["no_tests"] or not load_config(root).tests:
+        from .scope import without_tests
+
+        return without_tests(graph)
     return graph
 
 
@@ -706,6 +719,8 @@ Run `codefactory <command> --help` for a command's options.""",
                 help="only these analyzers (other = every language but Python and TypeScript)",
             )
             s.add_argument("--no-cache", action="store_true", help="analyze again even if nothing changed")
+            s.add_argument("--no-tests", action="store_true",
+                           help="leave test code out of findings, the plan and the map (still counted for coverage)")  # fmt: skip
         if name in ("flags", "query", "trace", "path", "context", "plan", "surface", "diff", "org", "profile", "hotspots"):
             s.add_argument("--json", action="store_true", help="machine-readable output")
         if name in ("trace", "path"):
@@ -753,6 +768,7 @@ def main(argv: list[str] | None = None) -> int:
     with a one-line message; anything unexpected says how to get the full traceback (--debug) to report it."""
     _safe_stdout()
     a = parser().parse_args(argv)
+    OPTIONS["no_tests"] = bool(getattr(a, "no_tests", False))
     debug = a.debug or bool(os.environ.get("CODEFACTORY_DEBUG"))
     repo = Path(getattr(a, "path", None) or ".")
     if a.cmd not in ("skill", "update") and skill_outdated(repo if repo.is_dir() else repo.parent):

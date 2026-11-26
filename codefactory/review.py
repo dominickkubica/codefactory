@@ -113,7 +113,8 @@ class Review:
         self.hot = self.history.by_path()
         self.rank_changes: list[rerank.Change] = []
         self.writers = writes(self.v)
-        static = test_reach(self.v)
+        # (with tests left out of the results, what they reach was kept: coverage still counts them)
+        static = set(g["tests"]["reached"]) if g.get("tests") else test_reach(self.v)
         self.coverage = measured(root, g["functions"])
         if self.coverage:  # what ran, where the report knows; the static estimate for files it doesn't cover
             seen = self.coverage.seen
@@ -687,7 +688,7 @@ class Review:
             )
 
     def testing(self) -> None:
-        tests = [f for f in self.g["files"] if is_test(f["id"])]
+        tests = [f for f in self.g["files"] if is_test(f["id"])] or (self.g.get("tests") or {}).get("files", [])
         code = [f for f in self.code_fns]
         if not tests:
             self.add(

@@ -176,9 +176,13 @@ def near_duplicates(g: Graph, cfg: Config) -> list[Flag]:
     for (a, b), sim in pairs.items():
         best[a] = max(best[a], sim)
         best[b] = max(best[b], sim)
+    from .flags import TEST_COPY
+    from .paths import is_test
+
     out = []
     for members in groups.values():
         members.sort()
+        in_tests = all(is_test(by_id[m].file) for m in members)  # repetition between tests is often on purpose
         for m in members:
             others = [o for o in members if o != m]
             sims = [pairs.get((m, o) if m < o else (o, m)) for o in others]
@@ -189,9 +193,9 @@ def near_duplicates(g: Graph, cfg: Config) -> list[Flag]:
             out.append(
                 Flag(
                     "similar",
-                    "warn" if best[m] >= 0.85 else "info",
+                    "warn" if best[m] >= 0.85 and not in_tests else "info",
                     m,
-                    f"{pct} similar to {names}: likely a copy that was edited",
+                    f"{pct} similar to {names}: likely a copy that was edited" + (TEST_COPY if in_tests else ""),
                     others,
                     line=by_id[m].line,
                     score=round(best[m], 3),

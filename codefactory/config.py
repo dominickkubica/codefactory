@@ -39,6 +39,7 @@ class Config:
     duplicate_min_lines: int = 6
     similar_threshold: float = 0.75  # near-duplicates: share of structure in common (0-1)
     hub_callers: int = 12
+    tests: bool = True  # false: test code is left out of findings, the plan and the map (still counted for coverage)
     queries: list[dict] = field(default_factory=list)  # saved SQL checks that become flags
     silence: list[dict] = field(default_factory=list)  # [[silence]] kind / where (glob) / reason (+ by, on)
     rules: list[dict] = field(default_factory=list)  # [[rule]] custom pattern checks: id, pattern, files, severity…
@@ -93,6 +94,9 @@ def load_config(root: Path) -> Config:
     cfg.layers = {name: [globs] if isinstance(globs, str) else list(globs) for name, globs in layers.items()}
     cfg.forbid = [parse_rule(r) for r in data.get("rules", {}).get("forbid", [])]
     cfg.ignore += list(data.get("ignore", []))
+    if not isinstance(data.get("tests", True), bool):
+        raise ValueError("factory.toml: `tests` is true (the default) or false")
+    cfg.tests = data.get("tests", True)
     t = data.get("thresholds", {})
     cfg.large_file = int(t.get("large_file", cfg.large_file))
     cfg.long_function = int(t.get("long_function", cfg.long_function))

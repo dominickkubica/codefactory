@@ -107,6 +107,9 @@ def dead_code(g: Graph) -> list[Flag]:
     return out
 
 
+TEST_COPY = " (all in tests: one table-driven or parametrized test, or a shared helper, would hold it once)"
+
+
 def duplicates(g: Graph, cfg: Config) -> list[Flag]:
     groups = defaultdict(list)
     for fn in g.functions:
@@ -123,10 +126,12 @@ def duplicates(g: Graph, cfg: Config) -> list[Flag]:
         if len(fns) < 2:
             continue
         ids = [f.id for f in fns]
+        in_tests = all(is_test(f.file) for f in fns)  # tests often repeat themselves on purpose: a lead, not a task
         for f in fns:
             others = [o for o in fns if o is not f]
             names = ", ".join(f"{o.qualname} ({o.file})" for o in others[:3]) + (" …" if len(others) > 3 else "")
-            out.append(Flag("duplicate", "warn", f.id, f"Same code as {names}", [i for i in ids if i != f.id]))
+            message = f"Same code as {names}" + (TEST_COPY if in_tests else "")
+            out.append(Flag("duplicate", "info" if in_tests else "warn", f.id, message, [i for i in ids if i != f.id]))
     return out
 
 

@@ -39,7 +39,9 @@ an option is rejected, run `codefactory update` (it also refreshes this file to 
 1. **Check impact before editing.** Run `context` on what you'll change. If it has many callers or a large impact,
    keep its signature, or update every caller it lists.
 2. **Copied code (`duplicate`, `similar`).** Merge into one function in the lowest layer that all copies' callers can
-   import (usually `lib`/`utils`), then point each copy's callers at it. `brief` lists groups by lines saved.
+   import (usually `lib`/`utils`), then point each copy's callers at it. `brief` lists groups by lines saved. Copies
+   only between tests are `info` and not plan tasks: fold them into a table-driven (parametrized) test only if the
+   user asks. If the user wants test code left out of results, add `--no-tests` to any command.
 3. **Calls in loops (`io_in_loop`).** `warn` = reads or network: replace the per-item call with one batched query
    (`WHERE id IN (…)`, a JOIN) or one request. `info` = writes, files or programs: batch only if many items. Writes
    already inside a transaction (also one opened by every caller) and sleeps aren't reported, so a reported write

@@ -69,6 +69,17 @@ Each has a regression test (`tests/test_security_audit.py`).
   fail outright. A compiler without the API is skipped for the next one (a global TypeScript 5), and with none the
   review says how to get one.
 
+### Test code
+From a Go repository whose early tests (written before table-driven tests were its standard) filled the plan with
+"share one body" tasks:
+
+- **Copies only between tests are `info`, with a hint** ("one table-driven or parametrized test, or a shared helper,
+  would hold it once"), **and aren't plan tasks**: tests often repeat themselves on purpose. A copy between a test and
+  product code is still a `warn` and a task.
+- **`--no-tests`, or `tests = false` in factory.toml, leaves test code out** of findings, the plan, the map, `query`
+  and the viewer (Go's `_test.go` files sit next to the code, so folder `ignore` couldn't). Tests are still analyzed:
+  the review's coverage counts what they reach, and it doesn't report "no automated tests".
+
 ### Profiles
 From running on a set of personal repositories (18: apps, sites, class projects, scripts):
 

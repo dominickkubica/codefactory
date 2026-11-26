@@ -577,6 +577,8 @@ Optional, at the root of the analyzed repository.
 
 ```toml
 ignore = ["migrations", "fixtures"]   # extra folder names to skip (.venv, node_modules, build… are skipped already)
+tests = false                          # leave test code out of findings, the plan and the map (the same as --no-tests;
+                                       # still counted for coverage). Default true.
 
 [layers]                               # first match wins; unmatched files keep their inferred layer
 ui = ["app/screens/**", "app/components/**"]
