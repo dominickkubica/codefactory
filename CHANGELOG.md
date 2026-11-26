@@ -30,7 +30,9 @@ Each has a regression test (`tests/test_security_audit.py`).
 - **The Action installs only exact, hash-checked versions** of tree-sitter and the language pack
   (`action-requirements.txt`), and runs codefactory from its own files instead of installing it.
 - **The caches notice a file copied with its old modification time** (cp -p, tar, rsync -t): stamps include the
-  change time, and a file changed within two seconds of being stamped isn't trusted (git's "racy" rule).
+  change time (Linux and macOS: Windows reports the creation time there, so a copy must also match the old time to
+  the 100 ns to slip through), and a file changed within two seconds of being stamped isn't trusted (git's "racy"
+  rule, on every system).
 
 ### Fixed
 - **Projects on TypeScript 7** (the native rewrite, which ships no JavaScript API yet) made the TypeScript analyzer

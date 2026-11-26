@@ -179,6 +179,7 @@ class ActionTest(unittest.TestCase):
 
 
 class StaleCacheTest(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "Windows reports the creation time, not the change time")
     def test_a_copy_that_keeps_the_old_time_is_still_a_change(self):
         with tempfile.TemporaryDirectory() as d:
             f = Path(d) / "app.py"
