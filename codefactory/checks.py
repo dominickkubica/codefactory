@@ -559,20 +559,21 @@ def scan_repo(root: Path) -> dict:
     }
     from .config import load_config
 
-    levels = repo_levels(root)
+    real = root.resolve()  # (Windows: the same folder can be C:\\Users\\RUNNER~1\\… or C:/Users/runneradmin/…)
+    levels = repo_levels(real)
     declared = list(load_config(root).ci)  # factory.toml `ci = ["…"]`: a CI system this list doesn't know
     for level in levels:
         for c in [*CI_FILES, *declared]:
             p = level / c
             if p.is_dir():
-                info["ci"] += [_rel(root, f) for f in sorted(p.iterdir()) if f.is_file() and not f.name.startswith(".")]
+                info["ci"] += [_rel(real, f) for f in sorted(p.iterdir()) if f.is_file() and not f.name.startswith(".")]
             elif p.is_file():
-                info["ci"].append(_rel(root, p))
+                info["ci"].append(_rel(real, p))
         if info["ci"]:
             break  # the nearest level with CI is this folder's
     for f in info["ci"]:
         try:
-            t = (root / f).read_text(encoding="utf-8", errors="replace").lower()
+            t = (real / f).read_text(encoding="utf-8", errors="replace").lower()
         except OSError:
             continue
         for step, words in {
@@ -636,9 +637,9 @@ def scan_repo(root: Path) -> dict:
         if (root / f).exists():
             info["runtime_pin"].append(f)
     names = ("README.md", "README.rst", "README.txt", "README", "readme.md")
-    info["readme"] = next((_rel(root, lv / f) for lv in levels for f in names if (lv / f).exists()), None)
+    info["readme"] = next((_rel(real, lv / f) for lv in levels for f in names if (lv / f).exists()), None)
     licenses = ("LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING")
-    info["license"] = next((_rel(root, lv / f) for lv in levels for f in licenses if (lv / f).exists()), None)
+    info["license"] = next((_rel(real, lv / f) for lv in levels for f in licenses if (lv / f).exists()), None)
     info["env_files"] = [
         p.name
         for p in root.glob(".env*")
@@ -648,7 +649,7 @@ def scan_repo(root: Path) -> dict:
         and _holds_secret(p)
     ]
     if info["readme"]:
-        t = (root / info["readme"]).read_text(encoding="utf-8", errors="replace").lower()
+        t = (real / info["readme"]).read_text(encoding="utf-8", errors="replace").lower()
         info["readme_run"] = bool(re.search(r"install|npm |pip |yarn |make |cargo |go run|docker", t))
     return info
 
