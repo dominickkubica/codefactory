@@ -335,6 +335,17 @@ def cmd_context(a) -> int:
     return 0
 
 
+def cmd_prefetch(a) -> int:
+    from .prefetch import hook, write_index
+
+    root = Path(a.path).resolve()
+    if a.hook:
+        return hook(root)
+    path = write_index(root, load_graph(root, a.lang, not a.no_cache))
+    print(f"Wrote {path}. Hook it to Claude Code prompts: `codefactory prefetch --hook` (UserPromptSubmit).")
+    return 0
+
+
 def cmd_baseline(a) -> int:
     graph = load_graph(Path(a.path), a.lang, not a.no_cache)
     out = baseline_path(_repo(a.path)) if not a.output else Path(a.output)
@@ -678,6 +689,10 @@ COMMANDS = {
     "path": (cmd_path, "the shortest call path between two functions: path [repo] from to"),
     "brief": (cmd_brief, "a Markdown map of the repo for an AI agent: layers, hubs, issues by what to do"),
     "context": (cmd_context, "before changing a file or function: callers, calls, impact, tests: context [repo] name"),
+    "prefetch": (
+        cmd_prefetch,
+        "index the repo so a prompt hook (--hook) can hand an agent the code, callers and tests a prompt names",
+    ),
     "export": (cmd_export, "every finding as one audit file (Markdown or --json) for an AI to triage into fixes"),
     "review": (cmd_review, "a full technical review (summary, system map, findings by severity, gaps), no AI needed"),
     "plan": (cmd_plan, "ranked tasks with steps, tests and a fix prompt each: the work list"),
@@ -756,6 +771,9 @@ Run `codefactory <command> --help` for a command's options.""",
             s.add_argument("--why", required=True, help="why it's intended (kept with the rule, shown by flags --silenced)")
         if name == "skill":
             s.add_argument("--hook", action="store_true", help="also add a session-start hook that keeps codefactory current")
+        if name == "prefetch":
+            s.add_argument("--hook", action="store_true",
+                           help="answer a Claude Code UserPromptSubmit hook (prompt JSON on stdin) from the index")  # fmt: skip
         if name == "update":
             s.add_argument("--source", default=SKILL_SOURCE, help="where to install from (default: codefactory-cli on PyPI)")
         if name == "sbom":
