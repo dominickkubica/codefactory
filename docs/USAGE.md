@@ -18,18 +18,20 @@ Everything codefactory can do, how to read what it tells you, and how to fit it 
 ## Installing
 
 ```bash
-pip install git+https://github.com/dominickkubica/codefactory     # or, from a clone: pip install -e .
+pip install codefactory-cli     # or, from a clone: pip install -e .
 codefactory --version
 ```
 
-- **Python 3.11+**, no Python dependencies.
+- **Python 3.11+**, no Python dependencies. The PyPI package is `codefactory-cli` (`codefactory` on PyPI is an
+  unrelated project); the command is `codefactory`. If you installed from GitHub before, `codefactory update`
+  removes that install and installs from PyPI (the two share files, so they shouldn't both be installed).
 - **TypeScript / JavaScript** also needs [Node.js](https://nodejs.org) and the `typescript` package. codefactory uses,
   in order: the analyzed project's own `node_modules/typescript` (so `npm install` in the project is enough), a global
   install (`npm install -g typescript`), or the folder in the `CODEFACTORY_TYPESCRIPT` environment variable. Without
   any of them, TypeScript/JavaScript goes through the general analyzer (matching calls by name) if the language pack
   is installed, and is skipped with a note if it isn't.
 - **Every other language** (Go, Java, Kotlin, Swift, Rust, C/C++, C#, Ruby, PHP, Scala, Dart, Lua, Elixir…) needs the
-  optional language pack: `pip install "codefactory[languages] @ git+https://github.com/dominickkubica/codefactory"`
+  optional language pack: `pip install "codefactory-cli[languages]"`
   (or `pip install tree-sitter tree-sitter-language-pack`). Each language's grammar downloads the first time it's
   needed and is cached, so after that it works offline. Without the pack, those files are listed in the review as
   not analyzed. Without TypeScript, the pack also analyzes TypeScript/JavaScript, matching calls by name.
@@ -458,7 +460,7 @@ jobs:
       - uses: actions/setup-node@v4          # TypeScript / JavaScript projects
         with: { node-version: 22 }
       - run: npm ci                          # the project's own typescript
-      - run: pip install git+https://github.com/dominickkubica/codefactory
+      - run: pip install codefactory-cli
       - run: codefactory check --github      # annotates new issues on the pull request, and fails on them
 ```
 
@@ -598,7 +600,7 @@ sql = "SELECT id AS target FROM functions WHERE …"
 | Message | What to do |
 |---|---|
 | `… isn't installed. Using the general analyzer for TypeScript/JavaScript instead.` | For precise TypeScript analysis, run `npm install` in the project (or `npm install -g typescript`). |
-| `… files in go, java … aren't analyzed` | `pip install "codefactory[languages] @ git+https://github.com/dominickkubica/codefactory"` |
+| `… files in go, java … aren't analyzed` | `pip install "codefactory-cli[languages]"` |
 | `SKILL.md is from an older version` | `codefactory skill` (or `codefactory update`) rewrites it; commit the change. |
 | `Node.js isn't installed` | Install Node.js, or analyze only Python with `--lang python`. |
 | `can't save …: the folder … doesn't exist` | Pick an existing folder with `-o`. On Windows a OneDrive-synced Desktop lives under `OneDrive\Desktop`. |

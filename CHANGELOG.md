@@ -3,6 +3,13 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## Unreleased
+
+- On PyPI: `pip install "codefactory-cli[languages]"` (`codefactory` on PyPI is an unrelated project; the command is
+  still `codefactory`). `codefactory update` and the session hook now install from PyPI, so they get released
+  versions rather than whatever is on the main branch, and first remove an install from GitHub: the two share
+  every file, so removing either later would have broken the other.
+
 ## 0.20.1 · 2026-11-26
 
 Bugs found by testing every command in every environment, and a speed pass.

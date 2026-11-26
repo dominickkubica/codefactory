@@ -692,7 +692,7 @@ Run `codefactory <command> --help` for a command's options.""",
         if name == "skill":
             s.add_argument("--hook", action="store_true", help="also add a session-start hook that keeps codefactory current")
         if name == "update":
-            s.add_argument("--source", default=SKILL_SOURCE, help="where to install from (default: the GitHub repository)")
+            s.add_argument("--source", default=SKILL_SOURCE, help="where to install from (default: codefactory-cli on PyPI)")
         if name == "sbom":
             s.add_argument("-o", "--output", help="output file (default: print it)")
         if name not in ("skill", "update", "sbom"):

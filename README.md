@@ -22,7 +22,7 @@ the number of calls it carries. Dashed orange conveyors run backwards, from a lo
 ## Quick start
 
 ```bash
-pip install "codefactory[languages] @ git+https://github.com/dominickkubica/codefactory"
+pip install "codefactory-cli[languages]"
 cd path/to/your/repo
 
 codefactory review -o review.md  # a technical review of the repository (--online: also vulnerable dependencies)
@@ -32,6 +32,8 @@ codefactory profile              # what kind of project it thinks this is (findi
 codefactory hotspots             # where change happens: complex code that keeps changing
 ```
 
+- **The package is `codefactory-cli`** on PyPI (`codefactory` there is an unrelated project); the command is
+  `codefactory`. Installed from GitHub before? `codefactory update` moves you over.
 - **Python 3.11 or newer.** On Windows, run the same commands in PowerShell; use `py -m pip` if `pip` isn't found.
 - **TypeScript/JavaScript projects:** run `npm install` in the project first, because codefactory uses the project's
   own TypeScript compiler (needs [Node.js](https://nodejs.org)). Without it, those files are still analyzed, less

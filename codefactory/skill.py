@@ -19,7 +19,8 @@ from pathlib import Path
 
 from . import __version__
 
-SOURCE = "codefactory[languages] @ git+https://github.com/dominickkubica/codefactory"
+SOURCE = "codefactory-cli[languages]"  # on PyPI as codefactory-cli (`codefactory` there is an unrelated project)
+GIT_URL = "github.com/dominickkubica/codefactory"
 STAMP = re.compile(r"<!-- codefactory skill (\S+) -->")
 HOOK_NAME = "codefactory.sh"
 HOOK_COMMAND = f'"$CLAUDE_PROJECT_DIR"/.claude/hooks/{HOOK_NAME}'
@@ -100,6 +101,7 @@ if [ -f ../codefactory/pyproject.toml ]; then
   # a checkout of codefactory next to this repository (a cloud session with both attached): use it as is
   "$PY" -c "import codefactory" 2>/dev/null || install -e "../codefactory[languages]"
 elif ! "$PY" -c "import codefactory" 2>/dev/null || [ -z "$(find "$STAMP" -mmin -1440 2>/dev/null)" ]; then
+  "$PY" -c "from codefactory.skill import drop_git_install as d; d()" >/dev/null 2>&1 # an older install from GitHub
   install "$SOURCE" && touch "$STAMP"
 fi
 
@@ -131,12 +133,34 @@ def install_hook(repo: Path) -> tuple[Path, Path]:
     return hook, settings_file
 
 
+def git_install() -> bool:
+    """codefactory installed from its GitHub repository (as the `codefactory` distribution), before it was on PyPI."""
+    from importlib.metadata import PackageNotFoundError, distribution
+
+    try:
+        url = distribution("codefactory").read_text("direct_url.json") or ""
+    except PackageNotFoundError:
+        return False
+    return GIT_URL in url and '"vcs_info"' in url  # not an editable clone (a file:// URL), not PyPI's other project
+
+
+def drop_git_install() -> bool:
+    """Uninstalls a GitHub install, which shares every file with codefactory-cli: with both installed, removing
+    either one later would break the other."""
+    if not git_install():
+        return False
+    return subprocess.run([sys.executable, "-m", "pip", "uninstall", "--yes", "--quiet", "codefactory"],
+                          capture_output=True).returncode == 0  # fmt: skip
+
+
 def update(source: str = SOURCE) -> tuple[str, str]:
     """Upgrades codefactory with this Python's pip. Returns (old version, new version)."""
-    proc = subprocess.run(
-        [sys.executable, "-m", "pip", "install", "--quiet", "--upgrade", source], capture_output=True, text=True
-    )
+    pip = [sys.executable, "-m", "pip", "install", "--quiet", "--upgrade"]
+    dropped = drop_git_install()
+    proc = subprocess.run([*pip, source], capture_output=True, text=True)
     if proc.returncode != 0:
+        if dropped:  # put the GitHub install back rather than leave nothing installed
+            subprocess.run([*pip, f"codefactory[languages] @ git+https://{GIT_URL}"], capture_output=True)
         raise RuntimeError(f"pip couldn't upgrade codefactory:\n{proc.stderr.strip()[-1500:]}")
     new = subprocess.run(
         [sys.executable, "-c", "import codefactory; print(codefactory.__version__)"], capture_output=True, text=True

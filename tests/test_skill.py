@@ -82,9 +82,44 @@ class SkillTest(unittest.TestCase):
         with mock.patch("subprocess.run", return_value=ok) as run:
             self.assertEqual(skill.update(), (__version__, "9.9.9"))
         self.assertIn(skill.SOURCE, run.call_args_list[0].args[0])
+        self.assertEqual(skill.SOURCE, "codefactory-cli[languages]")
         bad = subprocess.CompletedProcess([], 1, stdout="", stderr="no network")
         with mock.patch("subprocess.run", return_value=bad), self.assertRaises(RuntimeError):
             skill.update()
+
+    def _dist(self, direct_url):
+        dist = mock.Mock()
+        dist.read_text.return_value = direct_url
+        return mock.patch("importlib.metadata.distribution", return_value=dist)
+
+    def test_git_install_is_only_ours_from_github(self):
+        git = '{"url": "https://github.com/dominickkubica/codefactory", "vcs_info": {"vcs": "git"}}'
+        with self._dist(git):
+            self.assertTrue(skill.git_install())
+        with self._dist('{"url": "file:///home/me/codefactory", "dir_info": {"editable": true}}'):
+            self.assertFalse(skill.git_install())  # a developer's clone stays
+        with self._dist(None):
+            self.assertFalse(skill.git_install())  # from PyPI (no direct_url.json): the unrelated project
+        from importlib.metadata import PackageNotFoundError
+
+        with mock.patch("importlib.metadata.distribution", side_effect=PackageNotFoundError):
+            self.assertFalse(skill.git_install())
+
+    def test_update_moves_a_git_install_to_pypi(self):
+        ok = subprocess.CompletedProcess([], 0, stdout="9.9.9\n", stderr="")
+        with mock.patch.object(skill, "git_install", return_value=True), mock.patch("subprocess.run", return_value=ok) as run:
+            skill.update()
+        cmds = [c.args[0] for c in run.call_args_list]
+        self.assertIn("uninstall", cmds[0])  # the GitHub install goes first, then PyPI's
+        self.assertIn(skill.SOURCE, cmds[1])
+        bad = subprocess.CompletedProcess([], 1, stdout="", stderr="no network")
+        with (
+            mock.patch.object(skill, "git_install", return_value=True),
+            mock.patch("subprocess.run", side_effect=[ok, bad, ok]) as run,
+            self.assertRaises(RuntimeError),
+        ):
+            skill.update()
+        self.assertIn("git+https://github.com/dominickkubica/codefactory", run.call_args_list[2].args[0][-1])  # put back
 
 
 if __name__ == "__main__":
