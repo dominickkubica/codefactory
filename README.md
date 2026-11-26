@@ -28,6 +28,8 @@ cd path/to/your/repo
 codefactory review -o review.md  # a technical review of the repository (--online: also vulnerable dependencies)
 codefactory view                 # the interactive map, in your browser
 codefactory plan                 # what to fix first, ranked; then: codefactory prompt 1
+codefactory profile              # what kind of project it thinks this is (findings are ranked for it)
+codefactory hotspots             # where change happens: complex code that keeps changing
 ```
 
 - **Python 3.11 or newer.** On Windows, run the same commands in PowerShell; use `py -m pip` if `pip` isn't found.
@@ -81,7 +83,8 @@ codefactory plan                 # what to fix first, ranked; then: codefactory 
 |---|---|---|
 | Python | Precisely: imports, `self`/`cls`, classes, re-exports, dispatch tables, `getattr` | Standard library only |
 | TypeScript, JavaScript | Precisely: the project's own TypeScript type checker (path aliases, hooks, JSX, lazy `require`) | Needs Node.js and `npm install` |
-| Go, Java, Kotlin, Swift, Rust, C, C++, C#, Ruby, PHP, Scala, Dart, Lua, Elixir and more | By name, through tree-sitter | `[languages]` install; grammars download once, then work offline |
+| Go, Java, Kotlin, Swift, Rust, C, C++, C#, Ruby, PHP, Scala, Dart, Lua, Elixir and more | By name, plus declared types, through tree-sitter | `[languages]` install; grammars download once, then work offline |
+| Shell, Makefiles, YAML (docker-compose, Kubernetes, GitHub Actions), HTML, Pkl, TOML, Terraform, `.diff`/`.patch` | Not a call graph: line checks for credentials, unsafe commands and configuration | No install needed |
 
 For the by-name languages, call, impact and unused-code findings are leads to confirm, and the review says so.
 
@@ -93,7 +96,10 @@ For the by-name languages, call, impact and unused-code findings are leads to co
 | `view` | The interactive factory floor (one HTML file), with lenses for duplication, efficiency and size |
 | `flags` | Every issue with `file:line`; `--min warn`, `--kind similar`, `--json`, `--github` |
 | `plan` / `prompt` | Ranked tasks with steps and tests / one task as a ready-to-paste Claude Code prompt |
-| `diff` | What a change adds and fixes, compared with the base branch: a pull-request comment, annotations or JSON |
+| `diff` | What a change adds and fixes, compared with the base branch: a pull-request comment, annotations or JSON; `--patch file.diff` checks a patch on its own, no repository needed |
+| `profile` | What kind of project this is (mobile app, web service, CLI, library…), where it runs, who uses it, what sensitive data it holds, with evidence; the review ranks findings for it |
+| `hotspots` | From git history: complex code that changes often, files that change together without importing each other, code only one person knows |
+| `sbom` | A CycloneDX software bill of materials of every pinned dependency |
 | `org` | A dashboard across many repositories: health, findings, trends, and findings per owning team |
 | `surface` | The attack surface: every HTTP endpoint, its auth check, and whether it changes data or reaches risky code |
 | `accept` | Mark a finding as intended, with the reason, so later runs show only what's new |
@@ -158,7 +164,10 @@ three sample apps make any change in output visible in CI.
   recall the first time it met code it hadn't been tuned on; 100% and 100% after fixing what that found. Details,
   per check, in [Accuracy](docs/ACCURACY.md).
 - **Checked on real code** in each language family: two production apps (React Native, FastAPI), pip, Python's and
-  Go's standard libraries, Apache commons-lang (Java), OkHttp (Kotlin) and Rack (Ruby).
+  Go's standard libraries, Apache commons-lang (Java), OkHttp (Kotlin), Rack (Ruby), and 24 public projects assessed
+  in three rounds (Rails, Django, Laravel, Spring, ASP.NET, Phoenix, Next.js, Rust, Go, Kotlin Android, Swift,
+  Flutter, Electron, data pipelines). Every false finding they showed was fixed, with a regression test copied from
+  the real repository; the results are in [Accuracy](docs/ACCURACY.md).
 - **Hints are labelled as hints.** Calls through reflection or untyped objects can be missed, so "unused" and "no
   test reaches it" are reported as leads to verify.
 - **Measured where it can be.** With a coverage report in the repository (`coverage/lcov.info`, Istanbul's
@@ -201,5 +210,5 @@ is analyzed, and `review --online`, which sends package names and versions (noth
 
 ## Status and license
 
-Version 0.10, actively developed and used on real projects. Issues and pull requests are welcome; see
+Version 0.20, actively developed and used on real projects. Issues and pull requests are welcome; see
 [Contributing](CONTRIBUTING.md). [MIT licensed](LICENSE): use it, change it, share it.
