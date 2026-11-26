@@ -131,7 +131,7 @@ PATTERNS.update(
         "jwt_unverified": [
             re.compile(r"verify_(?:signature|exp)['\"]?\s*:\s*False"),
             re.compile(r"jwt\.decode\([^)]*verify\s*=\s*False"),
-            re.compile(r"algorithms?\s*[:=]\s*\[?\s*['\"]none['\"]", re.I),
+            re.compile(r"\balgorithms?\s*[:=]\s*\[?\s*['\"]none['\"]", re.I),  # not `profileSigningAlgorithm: 'none'`
             re.compile(r"ignoreExpiration\s*:\s*true"),
         ],
         "weak_cipher": [
@@ -320,8 +320,18 @@ def _named_not_secret(fid: str, lines: list[str], i: int) -> bool:
     name = line.split("=")[0].split(":")[0]
     if UUID.match(value) and not re.search(r"key|secret|token", name, re.I):
         return True
+    if value.strip().upper() == re.sub(r"\W", "", name).strip().upper():
+        return True  # an enum whose value is its own name (`JWT_SECRET = 'JWT_SECRET'`)
     parts = [p for p in re.split(r"[_\-/.:]", value) if p]
-    return len(parts) >= 2 and all(re.fullmatch(r"[a-z]{1,15}\d?|[A-Z]{1,15}\d?|v\d+", p) for p in parts)
+    if len(parts) == 1:  # camelCase words (`consoleOAuth2Provider`), not random characters
+        parts = re.findall(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|\d+", value)
+        words = [p for p in parts if p.isalpha() and len(p) >= 3]
+        short = sum(len(p) for p in parts if len(p) < 3)
+        if "".join(parts) != value or len(words) < 2 or sum(p.isdigit() for p in parts) > 1 or short * 3 > len(value):
+            return False  # random characters split into fragments, not words
+    return len(parts) >= 2 and all(
+        re.fullmatch(r"[a-z]{1,15}\d?|[A-Z][a-z]{0,14}\d?|[A-Z]{1,15}\d?|v\d+|\d{1,4}", p) for p in parts
+    )
 
 
 def _elixir_doc_lines(lines: list[str]) -> set[int]:
@@ -489,6 +499,8 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                         continue  # a method named eval (a Redis client's), or the words "eval()'d code" in a string
                     if key == "insecure_cookie" and re.search(r"\?\s*[\w.]+\s*:\s*false\b", line):
                         continue  # copying another cookie's own flag (an HTTP client's cookie jar), not setting one
+                    if key == "secret_key_literal" and re.match(r"\s*(\w+)\s*=\s*['\"]\1['\"]", line):
+                        continue  # an enum whose value is its own name (hoppscotch's InfraConfig.JWT_SECRET)
                     if key == "secret_key_literal" and re.search(r"\{\{|\{%|<%=|\$\{", line):
                         continue  # a project template's placeholder (`SECRET_KEY = "{{ secret_key }}"`), filled in later
                     if key == "jwt_unverified" and _token_question(lines, i, text):
@@ -517,6 +529,8 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                             continue
                     if key == "secret" and re.search(PLACEHOLDER, line):
                         continue
+                    if key == "secret" and COMMENT_LINE.match(line) and "PRIVATE KEY-----" in line:
+                        continue  # a key block shown in a doc comment (okhttp's KDoc): an example of the format
                     if key == "secret" and not any(p.search(line) for p in VENDOR_PATTERNS) and _named_not_secret(fid, lines, i):
                         continue  # the generic `token = "…"` rule only: a vendor key or a key block is leaked anywhere
                     if key == "swallowed" and (why := swallow_intent(line, lines[i - 2] if i > 1 else "")):

@@ -382,6 +382,23 @@ class LargeRepoLessonsTest(unittest.TestCase):
 
         self.assertTrue(is_script("packages/mcp-browser-extension/scripts/bundle.mjs"))
 
+    def test_corpus_round_5_final_credentials(self):  # appwrite, hoppscotch, okhttp, immich, cal.com
+        from codefactory.audit import scan_config
+
+        files = {
+            "src/Response.php": "<?php\npublic const MODEL_CONSOLE_OAUTH2_PROVIDER = 'consoleOAuth2Provider';\n",
+            "src/InfraConfig.ts": "export enum C {\n  JWT_SECRET = 'JWT_SECRET',\n}\n",
+            "src/HeldCertificate.kt": "/**\n * -----BEGIN PRIVATE KEY-----\n * MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQ\n */\n",
+            "src/config.dto.ts": "const d = { profileSigningAlgorithm: 'none' };\n",
+            "src/real.ts": "export const API_TOKEN = 'a8Fk3Lq9Zx2Wm7Rt5Yp1Nc4Vb6'\n",
+        }
+        root = repo({**files, "Dockerfile": "FROM node:20.11\nARG NEXTAUTH_SECRET=secret\n"})
+        found = scan_sources(root, list(files))
+        self.assertEqual([e.file for e in found["secret"].hits], ["src/real.ts"])
+        self.assertFalse(found["secret_key_literal"].hits)
+        self.assertFalse(found["jwt_unverified"].hits)
+        self.assertFalse(scan_config(root)["docker_secret"].hits)
+
 
 if __name__ == "__main__":
     unittest.main()

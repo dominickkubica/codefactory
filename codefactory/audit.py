@@ -125,7 +125,10 @@ def dockerfiles(root: Path, files: list[Path], out: dict[str, Check]) -> None:
             if not tag or tag == "latest":
                 out["docker_latest"].hits.append(Evidence(rel, _line(text, m.start()), f"FROM {image}"))
         for m in ENV_SECRET.finditer(text):
-            if not re.search(r"\$\{?\w+|changeme|example|<", m.group(0), re.I):
+            # (a build argument's stand-in, `ARG NEXTAUTH_SECRET=secret`, is replaced at build time)
+            if not re.search(
+                r"\$\{?\w+|changeme|example|<|=\s*['\"]?(?:secret|password|changeit|dummy)['\"]?\s*$", m.group(0), re.I
+            ):
                 out["docker_secret"].hits.append(Evidence(rel, _line(text, m.start()), redact(_excerpt(m.group(0)))))
 
 
