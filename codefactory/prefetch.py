@@ -24,9 +24,12 @@ BUDGET = 3000
 PREFIXES = ("cmd_", "command_", "handle_", "handler_", "do_", "run_", "api_", "on_", "job_", "task_")
 DOC_SUFFIXES = (".md", ".rst", ".txt")
 WORD = re.compile(r"/?[A-Za-z_][\w./{}:-]*[\w}]")
-#: A plain word names something on its own only if it's this long; shorter ones count in backticks or as part of
-#: a longer name.
+#: A short word in backticks (`list`) names a command (`_cmd_list`), not every function called that; from this
+#: length it names a function too. Plain words outside backticks never count: English ("parallel", "configured")
+#: matched unrelated functions in a large codebase.
 PLAIN_MIN = 8
+#: Findings about size and shape, not behaviour: noise when locating what a prompt is about.
+STYLE = frozenset({"long_function", "complex", "deep_nesting", "long_file", "god_file", "many_params"})
 MAX_PER_NAME = 3  # a name matching more functions than this is too common to say anything about
 
 
@@ -103,6 +106,10 @@ def build(root: Path, graph: dict) -> dict:
                 "callers_total": len(callers) + len(refs),
                 "calls": [short(c) for c in sorted({e["dst"] for e in v.callees[f["id"]]})[:4]],
                 "tests": tests(f["id"], f["file"]),
+                # what codefactory found wrong with it (a handler nothing calls, a query in a loop…)
+                "issues": [
+                    f"{fl['kind']}: {fl['message'][:120]}" for fl in v.flags_on.get(f["id"], []) if fl["kind"] not in STYLE
+                ][:3],
             }
         )
     modules = {}
@@ -118,7 +125,12 @@ def build(root: Path, graph: dict) -> dict:
             else set()
         )
         mtests = sorted(v.importers.get(f["id"], set()) & test_files) or sorted(reach)
-        modules.setdefault(stem, []).append({"file": f["id"], "tests": mtests[:4]})
+        main = sorted(
+            (fn for fn in v.fns_in.get(f["id"], []) if fn["kind"] != "module"),
+            key=lambda fn: (-len(v.callers[fn["id"]]) - fn["loc"] / 20, fn["line"]),
+        )[:4]
+        defines = [f"{fn['qualname']} {fn['line']}-{fn['end']}" for fn in sorted(main, key=lambda fn: fn["line"])]
+        modules.setdefault(stem, []).append({"file": f["id"], "tests": mtests[:4], "defines": defines})
     routes = []
     try:
         for e in find_entries(root, graph, v):
@@ -186,10 +198,10 @@ def names(prompt: str) -> tuple[set[str], set[str]]:
                     if n > 1:
                         phrases.add(" ".join(part))
     for w in WORD.findall(prompt):
-        special = bool(re.search(r"[_./-]|[a-z][A-Z]", w))
-        if special or len(w) >= PLAIN_MIN:
-            keys.add(bare(w.replace("-", "_")))
+        # a hyphen alone ("built-in") is English; in backticks (`forward-test`) it was counted above
+        special = bool(re.search(r"[_./]|[a-z][A-Z]", w))
         if special:
+            keys.add(bare(w.replace("-", "_")))
             phrases.add(w)
     keys = {k for k in keys if len(k) >= 3}
     phrases = {p for p in phrases if len(p) >= 4}
@@ -238,6 +250,8 @@ def answer(root: Path, index: dict, prompt: str) -> str:
             out += f"; calls: {', '.join(f['calls'])}"
         if f["tests"]:
             out += f"; tests: {', '.join(f['tests'])}"
+        if f.get("issues"):
+            out += f"; codefactory found: {'; '.join(f['issues'])}"
         return out
 
     # functions, best names first: a longer key (forward_test) says more than a short one (report)
@@ -267,27 +281,54 @@ def answer(root: Path, index: dict, prompt: str) -> str:
     for k in sorted(keys):
         for m in index["modules"].get(k, []):
             t = f"; tests: {', '.join(m['tests'])}" if m["tests"] else ""
-            items.append(f"- module {m['file']}{t}")
-    # where the names appear as strings in code (a CLI command, a registry key) and in docs
+            d = f"; defines: {', '.join(m['defines'])}" if m.get("defines") else ""
+            items.append(f"- module {m['file']}{d}{t}")
+    # where the names appear as strings in code (a CLI command, a registry key), and where a name is assigned at
+    # the top of a module (a signal, a setting, a registry): one pass over the source, each file read once
     texts = sorted({p for p in phrases if not p.startswith("/") or p.count("/") > 1}, key=len, reverse=True)
     # a command line (`optscan position list`) is registered word by word: look for each word after the program's
-    literals = {w for p in texts for w in (p.split()[1:] if " " in p else [p]) if len(w) >= 4}
+    literals = sorted({w for p in texts for w in (p.split()[1:] if " " in p else [p]) if len(w) >= 4}, key=lambda w: (-len(w), w))
+    defined = {p for p in phrases if re.fullmatch(r"[A-Za-z_]\w{3,}", p)}
+    quoted = {w: re.compile(r"""["']""" + re.escape(w) + r"""["']""") for w in literals}
+    assigned = {w: re.compile(r"^" + re.escape(w) + r"\s*(?::[^=]*)?=(?!=)") for w in defined}
+    used = {w: re.compile(r"\b" + re.escape(w) + r"\b") for w in defined}
+    hits: dict[tuple[str, str], list[str]] = {}
+    for rel in index["sources"]:
+        if not fresh(rel):
+            continue
+        try:
+            text = (root / rel).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        wanted = [w for w in set(literals) | defined if w in text]
+        if not wanted:
+            continue
+        for i, line in enumerate(text.splitlines(), 1):
+            for w in wanted:
+                for kind, pats in (("string", quoted), ("assigned", assigned), ("used", used)):
+                    pat = pats.get(w)
+                    if not pat or not pat.search(line):
+                        continue
+                    if kind == "used" and (
+                        assigned[w].search(line) or line.lstrip().startswith(("import ", "from ", "#", "//", "*", "/*"))
+                    ):
+                        continue
+                    found = hits.setdefault((kind, w), [])
+                    if len(found) <= 12:
+                        found.append(f"  {rel}:{i}: {line.strip()[:110]}")
     strings: list[str] = []
-    for p in sorted(literals, key=lambda w: (-len(w), w)):
-        pattern = re.compile(r"""["']""" + re.escape(p) + r"""["']""")
-        hits = []
-        for rel in index["sources"]:
-            if not fresh(rel):
-                continue
-            for i, line in enumerate(_lines(root, rel), 1):
-                if pattern.search(line):
-                    hits.append(f"  {rel}:{i}: {line.strip()[:110]}")
-                    if len(hits) > 6:
-                        break
-            if len(hits) > 6:
-                break
-        if 0 < len(hits) <= 6:
-            strings.append(f'- "{p}" as a string:\n' + "\n".join(hits[:4]))
+    for w in sorted(defined):
+        found = hits.get(("assigned", w), [])
+        if 0 < len(found) <= 3:
+            strings.append(f"- `{w}` is defined at:\n" + "\n".join(found))
+            uses = hits.get(("used", w), [])
+            if uses:
+                more = " (first 12)" if len(uses) > 12 else ""
+                strings.append(f"- `{w}` is used at{more}:\n" + "\n".join(uses[:12]))
+    for w in literals:
+        found = hits.get(("string", w), [])
+        if 0 < len(found) <= 6:
+            strings.append(f'- "{w}" as a string:\n' + "\n".join(found[:4]))
     docs: list[str] = []
     for rel in index["docs"]:
         if not fresh(rel):

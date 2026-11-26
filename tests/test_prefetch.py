@@ -51,9 +51,15 @@ def project() -> Path:
             handlers = {"forward-test": _cmd_forward_test, "health": _cmd_health}
             a = p.parse_args(argv)
             handlers[a.cmd](a)
+
+
+        def configured():
+            return True
         """)
     )
-    (root / "app" / "trades.py").write_text("def recent(n):\n    return list(range(n))\n")
+    (root / "app" / "trades.py").write_text(
+        "TRADE_CLOSED = object()\n\n\ndef recent(n):\n    return list(range(n))\n\n\ndef close():\n    return TRADE_CLOSED\n"
+    )
     (root / "tests" / "test_cli.py").write_text(
         "from app.cli import _cmd_forward_test\n\n\ndef test_forward():\n    _cmd_forward_test(None)\n"
     )
@@ -82,7 +88,7 @@ class PrefetchTest(unittest.TestCase):
     def test_a_command_is_located_with_callers_calls_tests_strings_and_docs(self):
         text = context(self.root, "Add a --limit N option to the `app forward-test` command.")
         self.assertIn("`_cmd_forward_test` app/cli.py:6-8", text)
-        self.assertIn("recent app/trades.py:1", text)  # what it calls
+        self.assertIn("recent app/trades.py:4", text)  # what it calls
         self.assertIn("tests: tests/test_cli.py", text)
         self.assertIn('app/cli.py:26: sub.add_parser("forward-test")', text)  # where the command is registered
         self.assertIn("README.md:3", text)
@@ -92,6 +98,16 @@ class PrefetchTest(unittest.TestCase):
         self.assertIn("_cmd_health", text)
         self.assertNotIn("`health` app/cli.py", text)
         self.assertNotIn("_list", context(self.root, "Make `app list` sort by date."))
+
+    def test_a_module_lists_what_it_defines_and_a_module_level_name_is_found(self):
+        text = context(self.root, "Who sends `TRADE_CLOSED`, and what is in the `trades` module?")
+        self.assertIn("app/trades.py:1: TRADE_CLOSED = object()", text)
+        self.assertIn("module app/trades.py; defines: recent 4-5", text)
+        self.assertIn("app/trades.py:9: return TRADE_CLOSED", text)  # where it's used
+
+    def test_plain_english_names_nothing_but_backticks_do(self):  # "configured" once pulled in unrelated code
+        self.assertNotIn("configured", context(self.root, "Make sure the app is configured before it runs."))
+        self.assertIn("`configured` app/cli.py", context(self.root, "Is `configured` ever called?"))
 
     def test_nothing_named_nothing_added(self):
         self.assertEqual(context(self.root, "Why is the sky blue?"), "")
