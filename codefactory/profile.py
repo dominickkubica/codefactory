@@ -554,7 +554,7 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None, source
     go_lib = (root / "go.mod").is_file() and not [f for f in go_main if not EXAMPLE_DIR.search(f)] and not m["rust_bin"]
     if go_lib and not m["published_lib"]:
         m["published_lib"].append("go.mod and no `package main`: a Go module others import")
-    if m["published_lib"] and not m["files"] and not mobile and roles and roles[0][0] != "library":
+    if m["published_lib"] and not m["files"] and not mobile and (not roles or roles[0][0] != "library"):
         # (deploy files would say it also runs somewhere: then it's what it serves after all)
         roles.insert(0, ("library", m["published_lib"][:1]))
     p.endpoints = len(endpoints)

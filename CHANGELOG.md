@@ -3,7 +3,10 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
-## 0.22.0 · 2026-11-26
+## 0.22.1 · 2026-11-26
+
+0.22.0 was tagged but never published: its release build stopped on a test that failed without the language pack (a Go
+module whose files couldn't be parsed wasn't recognized as a library). 0.22.1 is that release with the fix.
 
 From reviewing four large public repositories (Django, FastAPI, excalidraw, gin) and from benchmarking agents on them.
 
