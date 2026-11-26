@@ -3,6 +3,15 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.20.1 · 2026-11-26
+
+### Fixed
+- Line checks (credentials, SQL, shell, privacy, Swift) ran only on files an analyzer could parse: without Node.js's
+  TypeScript or the language pack, JavaScript, TypeScript and other files got no line checks at all. They now run on
+  every source file on disk, parsed or not; the profile reads them too, and hotspot coupling counts them.
+- CI also runs the tests on a bare machine (no TypeScript, no language pack), as the release build does: the v0.20.0
+  release build failed there.
+
 ## 0.20.0 · 2026-11-26
 
 Shell, Make, YAML, HTML, Pkl, more Go, and patches.

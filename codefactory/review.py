@@ -18,7 +18,7 @@ from .apple import scan as apple_scan
 from .audit import current_secrets
 from .audit import scan as audit_scan
 from .brief import View
-from .checks import scan_repo, scan_sources, test_reach
+from .checks import scan_repo, scan_sources, source_files, test_reach
 from .config import load_config
 from .coverage import measured
 from .infra import scan as infra_scan
@@ -91,11 +91,12 @@ class Review:
     def __init__(self, g: dict, root: Path, online: bool = False):
         self.g, self.root, self.v = g, root, View(g)
         self.repo = scan_repo(root)
-        self.scan = scan_sources(root, [f["id"] for f in g["files"]])
+        sources = source_files(root, g)  # parsed or not: line checks need no parser
+        self.scan = scan_sources(root, sources)
         extra, self.history_note = audit_scan(root, current_secrets(self.scan["secret"]))
         self.scan.update(extra)  # CI, Docker, mobile config and git history: same shape, same silencing
-        self.scan.update(privacy_scan(root, [f["id"] for f in g["files"]]))  # personal data, Apple privacy rules
-        self.scan.update(apple_scan(root, [f["id"] for f in g["files"]]))  # Swift crashes, cycles, main-thread I/O
+        self.scan.update(privacy_scan(root, sources))  # personal data, Apple privacy rules
+        self.scan.update(apple_scan(root, sources))  # Swift crashes, cycles, main-thread I/O
         self.scan.update(infra_scan(root, set(load_config(root).ignore)))  # shell, Make, YAML, HTML, Pkl, patches
         self.online, self.vulns, self.deps_note = online, [], ""
         self._apply_silence(load_config(root).silence)

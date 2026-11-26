@@ -14,7 +14,7 @@ from pathlib import Path
 
 from . import __version__
 from .baseline import issue_key
-from .checks import scan_sources
+from .checks import scan_sources, source_files
 
 SCHEMA = "https://json.schemastore.org/sarif-2.1.0.json"
 LEVEL = {"high": "error", "warn": "warning", "info": "note"}
@@ -589,14 +589,15 @@ def build_sarif(graph: dict, root: Path | None = None, new_keys: Counter | None 
         from .audit import current_secrets
         from .audit import scan as audit_scan
 
-        checks = scan_sources(root, [f["id"] for f in graph["files"]])
+        sources = source_files(root, graph)  # parsed or not: line checks need no parser
+        checks = scan_sources(root, sources)
         checks.update(audit_scan(root, current_secrets(checks["secret"]))[0])
         from .privacy import scan as privacy_scan
 
-        checks.update(privacy_scan(root, [f["id"] for f in graph["files"]]))
+        checks.update(privacy_scan(root, sources))
         from .apple import scan as apple_scan
 
-        checks.update(apple_scan(root, [f["id"] for f in graph["files"]]))
+        checks.update(apple_scan(root, sources))
         from .config import load_config
         from .infra import scan as infra_scan
 

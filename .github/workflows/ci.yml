@@ -27,6 +27,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
+      - name: Tests on a bare machine (no TypeScript, no language pack), as the release build runs them
+        run: python -m unittest discover -s tests -t .
       - uses: actions/setup-node@v4
         with:
           node-version: 22

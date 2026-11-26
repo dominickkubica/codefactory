@@ -8,6 +8,7 @@ files. Each returns Evidence: where (file:line), what was seen, and a short exce
 from __future__ import annotations
 
 import json
+import os
 import re
 from collections import deque
 from dataclasses import dataclass, field
@@ -255,6 +256,23 @@ CHECK_KEYS = [
     "swallowed_ok",
     "go_server_timeout",
 ]
+
+
+def source_files(root: Path, graph: dict) -> list[str]:
+    """Every source file to run line checks on: the graph's, plus any on disk the analyzers couldn't read (TypeScript
+    without Node.js, other languages without the language pack). A credential in a file nobody could parse is still a
+    credential."""
+    from .config import load_config
+
+    seen = {f["id"] for f in graph["files"]}
+    skip = set(load_config(root).ignore)
+    out = set(seen)
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in skip and not d.startswith(".") and not d.endswith(".egg-info")]
+        for name in filenames:
+            if name.endswith(SRC_EXT) and not name.endswith((".min.js", ".d.ts")):
+                out.add(Path(dirpath, name).relative_to(root).as_posix())
+    return sorted(out)
 
 
 def scan_sources(root: Path, files: list[str]) -> dict[str, Check]:

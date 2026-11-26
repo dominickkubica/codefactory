@@ -188,7 +188,9 @@ def _same_package(a: str, b: str) -> bool:
 def coupling(h: History, g: dict, limit: int = 8) -> list[Coupling]:
     """Pairs of files that keep changing in the same commits. Those with no import between them are hidden coupling:
     a change in one needs a change in the other, and nothing in the code says so."""
-    known = {f["id"] for f in g["files"]}
+    from .checks import SRC_EXT
+
+    known = {f["id"] for f in g["files"]} | {p for p in h.files if p.endswith(SRC_EXT)}  # parsed or not
     imports = set()
     file_of = {fn["id"]: fn["file"] for fn in g["functions"]}
     for e in g["edges"]:

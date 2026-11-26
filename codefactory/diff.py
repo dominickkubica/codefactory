@@ -90,7 +90,7 @@ def items(root: Path, graph: dict) -> list[Item]:
     """Every finding: graph flags and the review's source and repository checks (git history aside: it's the same
     history on both sides)."""
     from .audit import scan_config
-    from .checks import scan_sources
+    from .checks import scan_sources, source_files
     from .sarif import RULES
 
     fns = {f["id"]: f for f in graph["functions"]}
@@ -102,12 +102,13 @@ def items(root: Path, graph: dict) -> list[Item]:
                         f["message"]))  # fmt: skip
     from .privacy import scan as privacy_scan
 
-    checks = scan_sources(root, [f["id"] for f in graph["files"]])
+    sources = source_files(root, graph)  # parsed or not: line checks need no parser
+    checks = scan_sources(root, sources)
     checks.update(scan_config(root))
-    checks.update(privacy_scan(root, [f["id"] for f in graph["files"]]))
+    checks.update(privacy_scan(root, sources))
     from .apple import scan as apple_scan
 
-    checks.update(apple_scan(root, [f["id"] for f in graph["files"]]))
+    checks.update(apple_scan(root, sources))
     from .config import load_config
     from .infra import scan as infra_scan
 

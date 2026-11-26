@@ -432,7 +432,9 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None) -> Pro
         surface = find_surface(root, g, View(g))
     m = _manifests(root)
     deps = m["deps"]
-    files = [f["id"] for f in g["files"]]
+    from .checks import source_files
+
+    files = source_files(root, g)  # parsed or not: what the code says doesn't need a parser
     texts = _source(root, files)
     p = Profile()
     p.open_writes = 0

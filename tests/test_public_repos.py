@@ -68,6 +68,10 @@ class SurfaceTest(unittest.TestCase):
 
 
 class ProfileTest(unittest.TestCase):
+    @unittest.skipUnless(
+        __import__("shutil").which("node") or __import__("codefactory.analyzers.generic", fromlist=["available"]).available(),
+        "the server's routes need a JavaScript parser (Node.js or the language pack)",
+    )
     def test_monorepo_workspaces_and_a_native_shell(self):
         # Actual Budget: manifests in packages/*, and an iOS folder that only wraps the web app
         root = repo({
