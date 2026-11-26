@@ -26,7 +26,11 @@ from .paths import NOT_SOURCE, is_test, walk
 
 MAX_READ = 400_000  # bytes per file read for sensitive-data detection: past that it's data or generated
 # examples, demos, tests and end-to-end harnesses: they show or check the product, they aren't it
-EXAMPLE_DIR = re.compile(r"(?:^|/)(?:examples?|samples?|demos?|docs?|tests?|e2e|playwright|cypress|fixtures|benchmarks?)/", re.I)
+EXAMPLE_DIR = re.compile(
+    r"(?:^|/)(?:examples?|samples?|demos?|docs?|tests?|e2e|playwright|cypress|fixtures|benchmarks?|website)/", re.I
+)
+# a folder named for a test or sample app (okhttp's android-test-app): its build isn't the product's
+SIDE_APP = re.compile(r"(?:^|[-_/])(?:tests?|samples?|demos?|examples?)(?:[-_/]|$)", re.I)
 SKIP_DIRS = {"node_modules", ".git", ".codefactory", ".venv", "venv", "dist", "build", "Pods", ".expo"}
 
 # category -> (specific APIs: one use is enough; words: in at least two files; dependencies that mean it on their own).
@@ -278,7 +282,13 @@ def _manifests(root: Path) -> dict:
             out["flutter"] = True
         if (d / "Cargo.toml").is_file():
             cargo = (d / "Cargo.toml").read_text(encoding="utf-8", errors="replace")
-            out["rust_bin"] = out["rust_bin"] or "[[bin]]" in cargo or (d / "src" / "main.rs").is_file()
+            out["rust_bin"] = (
+                out["rust_bin"] or "[[bin]]" in cargo or (d / "src" / "main.rs").is_file() or (d / "src" / "bin").is_dir()
+            )
+            out["rust_lib"] = out.get("rust_lib", False) or "[lib]" in cargo or (d / "src" / "lib.rs").is_file()
+            # (table-form dependencies too: `[dependencies.clap]`)
+            for dep in re.findall(r"^\[(?:workspace\.)?dependencies\.([\w-]+)\]", cargo, re.M):
+                out["deps"].setdefault(dep, f"{rel}Cargo.toml")
             for dep in re.findall(r"^([\w-]+)\s*=", cargo.split("[dependencies]", 1)[-1], re.M):
                 out["deps"].setdefault(dep, f"{rel}Cargo.toml")
         if (d / "go.mod").is_file():
@@ -334,16 +344,22 @@ def _other_manifests(d: Path, rel: str, out: dict) -> None:
             gradle = read(d / name)
             for dep in re.findall(r"""['"]([\w.-]+):([\w.-]+):[^'"]*['"]""", gradle):
                 out["deps"].setdefault(dep[1].lower(), f"{rel}{name}")
-            if re.search(r"com\.android\.application|\bandroid\.application\b", gradle):
-                out["android"].append(f"{rel}{name} (com.android.application)")
+            applied = re.sub(r".*\bapply\s+false\b.*", "", gradle)  # `id("com.android.application") apply false`
+            if re.search(r"com\.android\.application|\bandroid\.application\b", applied):
+                if not SIDE_APP.search(rel.rstrip("/")):
+                    out["android"].append(f"{rel}{name} (com.android.application)")
             elif re.search(r"\bapplication\b\s*(?:\{|$)|mainClass|id\(?\s*['\"]application", gradle, re.M):
-                out["cli"].append(f"{rel}{name} application")
+                if not SIDE_APP.search(rel.rstrip("/")):  # (okhttp's module-tests runs, but isn't the product)
+                    out["cli"].append(f"{rel}{name} application")
             elif re.search(r"java-library|com\.android\.library|`java-library`|kotlin\(\"jvm\"\)|maven-publish", gradle):
                 out["lib"].append(f"{rel}{name} (a library build)")
     gemspecs = sorted(d.glob("*.gemspec"))
     if gemspecs:
         spec = read(gemspecs[0])
-        (out["cli"] if re.search(r"\.executables\s*=|bindir", spec) else out["lib"]).append(f"{rel}{gemspecs[0].name}")
+        executables = re.search(r"\.executables\s*=|bindir", spec)
+        (out["cli"] if executables else out["lib"]).append(f"{rel}{gemspecs[0].name}")
+        if not rel and not executables:  # a gem at the top (devise): others' apps use it, even a Rails engine
+            out["published_lib"].append(f"{gemspecs[0].name}: a Ruby gem")
     if (d / "Gemfile").is_file():
         for dep in re.findall(r"^\s*gem\s+['\"]([\w-]+)", read(d / "Gemfile"), re.M):
             out["deps"].setdefault(dep.lower(), f"{rel}Gemfile")
@@ -355,8 +371,10 @@ def _other_manifests(d: Path, rel: str, out: dict) -> None:
         for dep in data.get("require", {}):
             out["deps"].setdefault(dep.lower(), f"{rel}composer.json")  # the full name: "laravel/framework"
             out["deps"].setdefault(dep.split("/")[-1].lower(), f"{rel}composer.json")
-        if data.get("type") == "library":
+        if data.get("name") and data.get("type", "library") == "library":  # Composer's default type is library
             out["lib"].append(f"{rel}composer.json (type library)")
+            if not rel:
+                out["published_lib"].append("composer.json: a Composer library")
         if data.get("bin"):
             out["cli"].append(f"{rel}composer.json bin")
     if (d / "mix.exs").is_file():  # Elixir: {:phoenix, "~> 1.7"}
@@ -495,7 +513,8 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None, source
             if not EXAMPLE_DIR.search(f) and re.search(r"\bimport (?:SwiftUI|UIKit)\b", texts.get(f) or _head(root, f))
         ]
         android = [rel for rel in walk(root, names=("AndroidManifest.xml",), skip=SKIP_DIRS | NOT_SOURCE)
-                   if not EXAMPLE_DIR.search(rel)][:1]  # fmt: skip
+                   if not EXAMPLE_DIR.search(rel) and not SIDE_APP.search(rel.rsplit("/src/", 1)[0])
+                   and "android.intent.action.MAIN" in _head(root, rel, 20000)][:1]  # (an app has a launcher)  # fmt: skip
         mobile = [f"{apple[0]} (SwiftUI/UIKit)"] if apple else (m["android"] or android)
         wrapper = has("@capacitor/core", "@capacitor/ios", "cordova", "@ionic/core")
         if mobile and (wrapper or (has(*WEB_UI) and len(apple) < 10) or len(endpoints) >= 5 or m["swift_lib"]):
@@ -524,8 +543,8 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None, source
         source = f"{dashboard[0]} in {deps[dashboard[0]]}" if dashboard[0] in deps else f"imports {dashboard[0]}"
         roles.insert(0, ("web app", [f"{source} (a {name} app: a Python script served as a web page)"]))
     cli = m["py_scripts"] + m["npm_bin"] + m["cli"] + [f"{c} in {deps[c]}" for c in has(*CLI_LIBS)]
-    if m["rust_bin"] and has("clap", "structopt", "argh"):
-        cli.append("Rust binary with clap")
+    if m["rust_bin"] and not endpoints:  # a Rust binary is a program you run, whatever parses its arguments
+        cli.append("Rust binary with clap" if has("clap", "structopt", "argh") else "a Rust binary ([[bin]] or main.rs)")
     go_main = [f for f in files if f.endswith(".go") and re.search(r"^package main\b", texts.get(f, ""), re.M)]
     if go_main and not endpoints:
         cli.append(f"`{go_main[0]}` package main")
@@ -560,6 +579,13 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None, source
         roles.append(("static website", [f"{pages[0]} and no server code" + (f" ({hosted[0]})" if hosted else "")]))
     if not roles and (m["lib"] or m["py_lib"] or m["pkg_main"] or (not m["rust_bin"] and (root / "Cargo.toml").is_file())):
         roles.append(("library", (m["lib"] + m["pkg_main"])[:1] or ["a package manifest and no app or entry point"]))
+    many_libs = len(m["lib"]) >= 3 and len(m["lib"]) > 2 * len(m["cli"])
+    if many_libs and not endpoints and not m["android"] and not m["published_lib"]:
+        # mostly library modules and nothing served (okhttp: two dozen, and one command-line client, okcurl); a
+        # server split into class libraries (Jellyfin) serves endpoints
+        m["published_lib"].append(f"{len(m['lib'])} library modules ({m['lib'][0]}…)")
+    if m.get("rust_lib") and not m["rust_bin"] and not m["published_lib"]:
+        m["published_lib"].append("Cargo.toml: a library crate and no binary")
     go_lib = (root / "go.mod").is_file() and not [f for f in go_main if not EXAMPLE_DIR.search(f)] and not m["rust_bin"]
     if go_lib and not m["published_lib"]:
         m["published_lib"].append("go.mod and no `package main`: a Go module others import")
@@ -573,6 +599,9 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None, source
     ):
         # (deploy files would say it also runs somewhere: then it's what it serves after all)
         roles.insert(0, ("library", m["published_lib"][:1]))
+    # a Go or Rust program that ships a web UI from a subfolder (traefik's webui/): the program is the product
+    if roles and roles[0][0] == "web front-end" and (go_main or m["rust_bin"]) and all("/" in x for x in web_ui):
+        roles.append(roles.pop(0))
     p.endpoints = len(endpoints)
     if wrapped_mobile:
         roles.append(("mobile app", [f"{wrapped_mobile[0]}, a client of the rest"]))

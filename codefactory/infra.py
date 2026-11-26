@@ -20,7 +20,7 @@ import os
 import re
 from pathlib import Path
 
-from .checks import PATTERNS, PLACEHOLDER, VENDOR_SECRETS, Check, Evidence
+from .checks import I18N, PATTERNS, PLACEHOLDER, VENDOR_SECRETS, Check, Evidence
 from .paths import is_test, links_outside
 from .suppress import MARK
 
@@ -123,7 +123,11 @@ def _secrets(rel: str, lines: list[str], out: dict, unquoted: bool = True) -> No
         if re.search(PLACEHOLDER, body) or re.search(r"\$\{\{|\$\{|\{\{|\$\(", body):
             continue
         vendor = any(p.search(body) for p in pats)
-        if vendor or (unquoted and not is_test(rel) and UNQUOTED_SECRET.match(body)):
+        generic = unquoted and not is_test(rel) and UNQUOTED_SECRET.match(body)
+        # a translation's `password: 密码` and a test database's `TEST_MSSQL_PASSWORD ?= …` aren't credentials
+        if generic and (I18N.search(rel) or re.match(r"\s*(?:export\s+)?\w*TEST_", body)):
+            generic = None
+        if vendor or generic:
             # a plain password in a CI workflow configures that run's throwaway services (a test database, MinIO): a
             # vendor key there is as leaked as anywhere
             ci = not vendor and rel.startswith(".github/workflows/")

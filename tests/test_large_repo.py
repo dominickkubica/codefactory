@@ -222,6 +222,84 @@ class LargeRepoLessonsTest(unittest.TestCase):
                      "playground/__init__.py": "", "playground/circular/__init__.py": ""})  # fmt: skip
         self.assertFalse([f for f in build(loop, cache=False).flags if f.kind == "cycle"])
 
+    def test_the_typescript_analyzer_running_out_of_memory_falls_back_instead_of_crashing(self):  # n8n
+        import subprocess
+        from unittest import mock
+
+        from codefactory.analyzers import typescript
+
+        oom = subprocess.CompletedProcess([], 134, "", "FATAL ERROR: Reached heap limit - JavaScript heap out of memory")
+        with (
+            mock.patch.object(typescript.shutil, "which", return_value="node"),
+            mock.patch.object(typescript, "find_typescript", return_value="ts"),
+            mock.patch.object(typescript.subprocess, "run", return_value=oom),
+            self.assertRaisesRegex(typescript.TypeScriptUnavailable, "ran out of memory"),
+        ):
+            typescript._run_helper(Path("."), [])
+        self.assertGreaterEqual(typescript.heap_mb(), 4096)
+
+    def test_corpus_round_5_profiles(self):  # ripgrep, bat, axum, laravel/framework, devise, okhttp, traefik
+        def kind(files: dict[str, str]) -> str:
+            root = repo(files)
+            return detect(root, build(root, cache=False).to_dict()).kind
+
+        cargo = '[package]\nname = "x"\n'
+        self.assertEqual(kind({"Cargo.toml": cargo + '[[bin]]\nname = "rg"\npath = "crates/core/main.rs"\n',
+                               "crates/core/main.rs": "fn main() {}\n"}), "command-line tool")  # fmt: skip
+        self.assertEqual(kind({"Cargo.toml": cargo, "src/bin/bat/main.rs": "fn main() {}\n"}), "command-line tool")
+        self.assertEqual(kind({"Cargo.toml": cargo, "src/lib.rs": "pub fn f() {}\n"}), "library")
+        self.assertEqual(kind({"composer.json": json.dumps({"name": "laravel/framework"}), "src/A.php": "<?php\n"}), "library")
+        self.assertNotEqual(kind({"composer.json": json.dumps({"name": "a/b", "type": "project"})}), "library")
+        self.assertEqual(kind({"devise.gemspec": "Gem::Specification.new do |s|\n  s.name = 'devise'\nend\n",
+                               "lib/devise.rb": "module Devise; end\n"}), "library")  # fmt: skip
+        libs = {f"m{i}/build.gradle.kts": 'plugins { id("java-library") }\n' for i in range(3)}
+        self.assertEqual(kind({**libs, "build.gradle.kts": 'plugins { id("com.android.application") apply false }\n',
+                               "android-test/src/main/AndroidManifest.xml": "<manifest><application/></manifest>\n"}),
+                         "library")  # fmt: skip
+        self.assertEqual(kind({"go.mod": "module x\n\ngo 1.22\n", "cmd/x/main.go": "package main\n\nfunc main() {}\n",
+                               "webui/package.json": json.dumps({"dependencies": {"react": "19.0.0"}})}),
+                         "command-line tool")  # fmt: skip
+
+    def test_corpus_round_5_credentials(self):  # appwrite, superset, outline, tldraw, phoenix, directus, gitea, immich
+        from codefactory.infra import scan as infra_scan
+
+        files = {
+            "src/Exception.php": "<?php\nconst USER_OAUTH2_BAD_REQUEST = 'user_oauth2_bad_request_x';\n",
+            "src/embedded.ts": "export const GUEST_TOKEN = 'api/v1/security/guest_token/x';\n",
+            "src/passkeys.ts": 'export enum P { GooglePasswordManager = "ea9b8d66-4d01-1d21-3ce4-b6b48cb575d4" }\n',
+            "src/constants.ts": "export const POSTHOG_TOKEN = 'phc_i8oKgMzgV38sn3GfjswW9mevQ3gFlo7bJXekZFeDN6'\n",
+            "lib/endpoint.ex": 'defmodule E do\n  @moduledoc """\n  config :app, E,\n'
+            '    secret_key_base: "kjoy3o1zeidquwy1398juxzldjlksahdk3"\n  """\nend\n',
+            "packages/e2e-auth-server/test-keys.ts": "export const KEY = `-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEF\n`;\n",
+            "src/real.ts": "export const API_TOKEN = 'a8Fk3Lq9Zx2Wm7Rt5Yp1Nc4Vb6'\n",
+        }
+        root = repo({**files,
+                     "app/lang/translations/zh-CN.yaml": "enter_password_to_enable_tfa: 输入您的密码以启用双重认证1234\n",
+                     "Makefile": "TEST_MSSQL_PASSWORD ?= MwantsaSecurePassword1\n",
+                     "config/testdata/conf.yml": "secret_key: 11111111111111111111\n"})  # fmt: skip
+        hits = [e.file for e in scan_sources(root, list(files))["secret"].hits]
+        self.assertEqual(hits, ["src/real.ts"])
+        self.assertFalse(infra_scan(root, set())["config_secret"].hits)
+
+    def test_tls_off_in_a_case_of_a_setting_or_with_its_own_verification(self):  # mastodon, traefik
+        root = repo({
+            "database.js": "switch (env.DB_SSLMODE) {\ncase 'no-verify':\n  config.ssl = { rejectUnauthorized: false };\n"
+                           "  break;\n}\nconst always = { rejectUnauthorized: false };\n",
+            "connect.go": "package c\n\nfunc t() *Transport {\n\treturn &Transport{\n\t\tInsecureSkipVerify: true,\n"
+                          "\t\tRootCAs: roots(),\n\t}\n}\n",
+        })  # fmt: skip
+        hits = scan_sources(root, ["database.js", "connect.go"])["tls_off"].hits
+        self.assertEqual([(e.file, e.line) for e in hits], [("database.js", 6)])
+
+    def test_an_import_loop_through_a_package_entry_file_is_debt_not_a_load_failure(self):  # FastAPI's _compat
+        root = repo({"pkg/__init__.py": "from .shared import helper\nfrom .v2 import Model\n",
+                     "pkg/shared.py": "def helper():\n    return 1\n",
+                     "pkg/v2.py": "from pkg import helper\n\nclass Model:\n    pass\n",
+                     "app/a.py": "from app import b\n", "app/b.py": "from app import a\n", "app/__main__.py": ""})  # fmt: skip
+        cycles = {f.target: f.severity for f in build(root, cache=False).flags if f.kind == "cycle"}
+        self.assertEqual(cycles.get("pkg/v2.py"), "warn")
+        self.assertEqual(cycles.get("app/a.py"), "high")
+
 
 if __name__ == "__main__":
     unittest.main()

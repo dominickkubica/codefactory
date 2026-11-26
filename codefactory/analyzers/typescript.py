@@ -175,13 +175,29 @@ def _run_helper(root: Path, ignore: list[str]) -> dict:
         raise TypeScriptUnavailable("TypeScript files found, but Node.js isn't installed (https://nodejs.org).")
     ts_path = find_typescript(root, node)
     helper = pkg_files(__package__) / "ts_helper.js"
+    heap = heap_mb()
     proc = subprocess.run(
-        [node, "--max-old-space-size=4096", str(helper), str(root), ts_path, json.dumps(ignore)],
+        [node, f"--max-old-space-size={heap}", str(helper), str(root), ts_path, json.dumps(ignore)],
         capture_output=True,
         text=True,
         encoding="utf-8",
         timeout=1800,
     )
     if proc.returncode != 0:
-        raise RuntimeError(f"The TypeScript analyzer failed:\n{proc.stderr.strip()[-2000:]}")
+        # the type checker holds the whole project at once: on a huge monorepo (n8n) it can run out of memory, and a
+        # review should go on with the general analyzer rather than stop
+        why = "ran out of memory" if "heap out of memory" in proc.stderr else "failed"
+        if os.environ.get("CODEFACTORY_DEBUG"):
+            print(proc.stderr.strip()[-2000:], file=sys.stderr)
+        raise TypeScriptUnavailable(f"The TypeScript analyzer {why} on this project (Node.js heap {heap} MB).")
     return json.loads(proc.stdout)
+
+
+def heap_mb() -> int:
+    """Node's heap for the type checker: half this machine's memory, between 4 and 16 GB (Node's own default is lower
+    than a large monorepo needs)."""
+    try:
+        total = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") // (1024 * 1024)
+    except (AttributeError, ValueError, OSError):  # Windows has no sysconf
+        total = 0
+    return max(4096, min(16384, total // 2)) if total else 4096

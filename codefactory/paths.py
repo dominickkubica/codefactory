@@ -6,7 +6,9 @@ import functools
 import re
 from pathlib import Path
 
-TEST_DIRS = ("tests", "test", "testing", "__tests__", "__mocks__", "spec", "t")  # t/: Perl's and celery's
+TEST_DIRS = ("tests", "test", "testing", "__tests__", "__mocks__", "spec", "t", "testdata", "fixtures")  # t/: celery's
+# a folder or file named for tests among other words: e2e-auth-server/, test-utils/, prepare-v1-test-db.mjs
+TEST_TOKEN = re.compile(r"(?:^|[-_.])(?:e2e|tests?|testing)(?:[-_.]|$)", re.I)
 SCRIPT_DIRS = ("scripts", "script", "tools", "bin", "benchmarks", "benchmarking")
 
 
@@ -75,7 +77,8 @@ def is_test(path: str) -> bool:
     parts = path.replace("\\", "/").split("/")
     name = parts[-1]
     return (
-        any(p in TEST_DIRS for p in parts[:-1])
+        any(p in TEST_DIRS or TEST_TOKEN.search(p) for p in parts[:-1])
+        or TEST_TOKEN.search(name.rsplit(".", 1)[0]) is not None
         or name.startswith("test_")
         or name.endswith("_test.py")
         or ".test." in name

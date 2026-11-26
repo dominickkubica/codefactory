@@ -137,6 +137,7 @@ def duplicates(g: Graph, cfg: Config) -> list[Flag]:
     return out
 
 
+ENTRY_FILES = {"__init__.py", "index.ts", "index.tsx", "index.js", "index.mjs", "index.jsx"}
 NOT_PRODUCT = re.compile(r"(?:^|/)(?:database/factories|database/seeders|factories|seeds?|seeders)/")
 
 
@@ -195,7 +196,11 @@ def import_cycles(g: Graph) -> list[Flag]:
         # Java, Kotlin, C#, Swift… load lazily, so a loop works at runtime and is a design smell (they can't be
         # understood, tested or reused apart): warn.
         lazy = all(c.endswith(LAZY_LOADING) for c in comp)
-        sev, what = ("warn", "Dependency loop") if lazy else ("high", "Import loop")
+        # through a package's entry file (`__init__.py`, `index.ts` re-exporting its submodules): the usual layout of
+        # mature libraries (FastAPI, Django, Vue), which loads as long as the entry file orders its imports; a debt to
+        # untangle, not a loading failure waiting to happen
+        entry = any(c.rsplit("/", 1)[-1] in ENTRY_FILES for c in comp)
+        sev, what = ("warn", "Dependency loop") if lazy else ("warn", "Import loop") if entry else ("high", "Import loop")
         for f in comp:
             out.append(Flag("cycle", sev, f, f"{what} of {len(comp)} files: {loop}", [c for c in comp if c != f]))
     return out

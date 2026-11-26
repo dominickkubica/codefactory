@@ -180,6 +180,7 @@ LANG_ONLY = {
 # In tests, keys are fixtures (a PEM block in an example, "secret = 'xxxx…'"): only real credential formats count there,
 # because a live AWS, GitHub, Slack, Stripe or Google key in a test is as leaked as anywhere else.
 VENDOR_SECRETS = PATTERNS["secret"][1:6]
+VENDOR_PATTERNS = PATTERNS["secret"][:6]  # a key block and the vendors' formats; the last one is the generic rule
 # Lines that only count when they're about something security-sensitive: an md5 for a cache key or Math.random() for a
 # chart colour is fine; for a password, a token or a session it isn't.
 CONTEXT = {
@@ -268,7 +269,10 @@ NOSEC = re.compile(r"(?://|#)\s*(?:nosec\b|nolint:\s*[\w,]*\bgosec\b|NOSONAR\b|n
 NOSEC_KEYS = {"tls_off", "eval", "shell", "raw_html", "sql_built", "weak_hash", "weak_random"}
 
 
-TLS_SETTING = re.compile(r"\b(?:if|elif|else\s+if|unless)\b.*\b\w*(?:verify|insecure|ssl|tls|cert|skip)\w*\b", re.I)
+TLS_SETTING = re.compile(r"\b(?:if|elif|else\s+if|unless|case|when)\b.*\b\w*(?:verify|insecure|ssl|tls|cert|skip)\w*\b", re.I)
+# the same TLS config checks the certificate its own way (pinned roots, expected names, a callback): Go has to skip its
+# hostname check to do that (traefik's Consul Connect)
+OWN_VERIFY = re.compile(r"\b(?:RootCAs|VerifyPeerCertificate|VerifyConnection|PeerCertSANs|checkServerIdentity)\b")
 
 
 def _under_tls_setting(lines: list[str], i: int) -> bool:
@@ -288,6 +292,43 @@ def _under_tls_setting(lines: list[str], i: int) -> bool:
             continue
         return bool(TLS_SETTING.search(head))
     return False
+
+
+I18N = re.compile(r"(?:^|/)(?:locales?|i18n|translations?|lang|langs|l10n)/", re.I)
+UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
+
+
+def _named_not_secret(fid: str, lines: list[str], i: int) -> bool:
+    """What the generic `name = "value"` rule catches but isn't a credential: a translation's `password: …`, a constant
+    whose value is a name or a path (`USER_OAUTH2_BAD_REQUEST = 'user_oauth2_bad_request'`, `GUEST_TOKEN: 'api/v1/…'`),
+    a UUID under a password-ish name (a passkey provider's AAGUID), a PostHog project key (public by design), or an
+    example in documentation (Elixir's @doc, a doctest prompt)."""
+    line = lines[i - 1]
+    if I18N.search(fid) or re.match(r"\s*(?:iex>|>>>|\.\.\.>)", line) or i in _elixir_doc_lines(lines):
+        return True
+    values = re.findall(r"""['"]([^'"]{8,})['"]""", line)
+    if not values:
+        return False
+    value = values[-1]
+    if value.startswith("phc_"):
+        return True
+    name = line.split("=")[0].split(":")[0]
+    if UUID.match(value) and not re.search(r"key|secret|token", name, re.I):
+        return True
+    parts = [p for p in re.split(r"[_\-/.:]", value) if p]
+    return len(parts) >= 2 and all(re.fullmatch(r"[a-z]{1,15}\d?|[A-Z]{1,15}\d?|v\d+", p) for p in parts)
+
+
+def _elixir_doc_lines(lines: list[str]) -> set[int]:
+    """Lines inside an Elixir `@moduledoc` / `@doc` heredoc: documentation, with example configuration."""
+    out, start = set(), None
+    for n, text in enumerate(lines, 1):
+        if start is None and re.match(r'\s*@(?:module)?doc\s+(?:~[sS])?"""', text):
+            start = n
+        elif start is not None and text.strip() == '"""':
+            out.update(range(start, n + 1))
+            start = None
+    return out
 
 
 def _token_question(lines: list[str], i: int, text: str) -> bool:
@@ -439,7 +480,9 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                     if key == "tls_off" and line.lstrip().startswith(("import ", "from ")):
                         continue  # importing the constant isn't using it
                     if key == "tls_off" and (
-                        re.search(r"\bif\s+\w[\w.]*\s+else\b|\?\s*\w+\s*:", line) or _under_tls_setting(lines, i)
+                        re.search(r"\bif\s+\w[\w.]*\s+else\b|\?\s*\w+\s*:", line)
+                        or _under_tls_setting(lines, i)
+                        or OWN_VERIFY.search("\n".join(lines[max(0, i - 7) : i + 6]))
                     ):
                         continue  # chosen by a setting (`CERT_REQUIRED if verify else CERT_NONE`): the user's option
                     if key == "raw_html" and CONSTANT_HTML.search(line):
@@ -454,6 +497,8 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                             continue
                     if key == "secret" and re.search(PLACEHOLDER, line):
                         continue
+                    if key == "secret" and not any(p.search(line) for p in VENDOR_PATTERNS) and _named_not_secret(fid, lines, i):
+                        continue  # the generic `token = "…"` rule only: a vendor key or a key block is leaked anywhere
                     if key == "swallowed" and (why := swallow_intent(line, lines[i - 2] if i > 1 else "")):
                         out["swallowed_ok"].hits.append(Evidence(fid, i, why))  # deliberate: counted, not reported
                         continue
