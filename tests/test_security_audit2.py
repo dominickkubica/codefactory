@@ -113,6 +113,7 @@ class WorkflowTest(unittest.TestCase):
         for name in ("build==", "setuptools==", "packaging==", "pyproject-hooks=="):
             self.assertIn("--hash=sha256:", reqs.split(name, 1)[1].split("==", 1)[0] + reqs.split(name, 1)[1][:200])
 
+    @unittest.skipIf(os.name == "nt", "the release job's shell (bash, sort -V) runs on Linux")
     def test_major_tag_only_moves_forward(self):  # finding 15
         rel = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
         script = rel.split('major="${TAG%%.*}"', 1)[1].split("pypi:", 1)[0]
@@ -123,8 +124,8 @@ class WorkflowTest(unittest.TestCase):
             subprocess.run([*git, "commit", "-q", "--allow-empty", "-m", "x"], check=True)
             for tag in ("v0.19.4", "v0.20.2", "v0.19.5"):
                 subprocess.run([*git, "tag", tag], check=True)
-            newest = subprocess.run(f'git -C "{d}" tag -l "v0.*.*" | sort -V | tail -1', shell=True,
-                                    capture_output=True, text=True).stdout.strip()  # fmt: skip
+            script = f'git -C "{d}" tag -l "v0.*.*" | sort -V | tail -1'
+            newest = subprocess.run(["bash", "-c", script], capture_output=True, text=True).stdout.strip()
             self.assertEqual(newest, "v0.20.2")  # so pushing v0.19.5 leaves v0 alone
 
 
