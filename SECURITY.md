@@ -68,14 +68,14 @@ Every release from 0.17.0 on is built by GitHub Actions from the tagged commit
   attestation. Check that a file was built by this repository's workflow from a tag:
 
   ```bash
-  gh attestation verify codefactory-0.21.1-py3-none-any.whl --repo dominickkubica/codefactory
+  gh attestation verify codefactory-0.21.2-py3-none-any.whl --repo dominickkubica/codefactory
   ```
 
 - **SHA-256 sums** (`SHA256SUMS`) attached to the release.
 - **Reproducible builds.** Rebuilding the tag gives byte-identical files:
 
   ```bash
-  git checkout v0.21.1
+  git checkout v0.21.2
   export SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)
   pip install --require-hashes --no-deps -r build-requirements.txt
   python -m build --no-isolation
@@ -83,4 +83,4 @@ Every release from 0.17.0 on is built by GitHub Actions from the tagged commit
   sha256sum dist/*        # the same as SHA256SUMS
   ```
 
-For the GitHub Action, pin a release tag (`@v0.21.1`) or, strictest, its commit SHA, rather than `@main`.
+For the GitHub Action, pin a release tag (`@v0.21.2`) or, strictest, its commit SHA, rather than `@main`.

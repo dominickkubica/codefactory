@@ -3,7 +3,7 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
-## Unreleased
+## 0.21.2 · 2026-11-26
 
 From a review that analyzed nothing and graded it "Strong": a TypeScript app on a Windows PC with no TypeScript
 compiler installed (0.20.3 stopped running the project's own) and no language pack.
