@@ -26,13 +26,13 @@ codefactory --version
 - **Python 3.11+**, no Python dependencies. The PyPI package is `codefactory-cli` (`codefactory` on PyPI is an
   unrelated project); the command is `codefactory`. If you installed from GitHub before, `codefactory update`
   removes that install and installs from PyPI (the two share files, so they shouldn't both be installed).
-- **TypeScript / JavaScript** also needs [Node.js](https://nodejs.org) and the `typescript` package (5.x; TypeScript
-  7, the native rewrite, has no JavaScript API yet). codefactory uses, in order: the folder in the
-  `CODEFACTORY_TYPESCRIPT` environment variable, the analyzed project's own `node_modules/typescript` (so `npm
-  install` in the project is enough), or a global install (`npm install -g typescript`). The project's compiler is
-  code from its dependencies: it's never used when committed to the repository, and `CODEFACTORY_PROJECT_TYPESCRIPT=0`
-  turns it off for code you don't trust. Without any of them, TypeScript/JavaScript goes through the general analyzer
-  (matching calls by name) if the language pack is installed, and is skipped with a note if it isn't.
+- **TypeScript / JavaScript** also needs [Node.js](https://nodejs.org) and a TypeScript 5.x compiler you installed:
+  `npm install -g typescript@5`, or the folder of one in the `CODEFACTORY_TYPESCRIPT` environment variable
+  (TypeScript 7, the native rewrite, has no JavaScript API yet). It never runs the one in the analyzed repository's
+  `node_modules`: that's the repository's code, and codefactory never runs the code it analyzes. Module resolution
+  (tsconfig `paths`, aliases, `baseUrl`) still comes from the project's own files. Without a compiler,
+  TypeScript/JavaScript goes through the general analyzer (matching calls by name) if the language pack is
+  installed, and is skipped with a note if it isn't.
 - **Every other language** (Go, Java, Kotlin, Swift, Rust, C/C++, C#, Ruby, PHP, Scala, Dart, Lua, Elixir…) needs the
   optional language pack: `pip install "codefactory-cli[languages]"`
   (or `pip install tree-sitter tree-sitter-language-pack`). Each language's grammar downloads the first time it's
@@ -265,11 +265,10 @@ repository: use `--base` for those. `--json`, `--github` and `--fail-on` work th
 
 The repository is also a GitHub Action (`uses: dominickkubica/codefactory@v0`, which follows releases; a
 release tag such as `@v0.20.3` or a commit SHA pins one; inputs `base`, `fail-on`, `comment`,
-`languages`, `project-typescript`). It posts one comment per pull request and updates it on every push; check out
-with `fetch-depth: 0` so the base commit is there. On a pull request from a fork (whose token can't write) the
-result goes to the job summary instead. It runs codefactory from its own files and installs the language pack and
-TypeScript at exact, hash-checked versions; `project-typescript: true` uses the project's own compiler instead (more
-precise, but it's the pull request's code: only for pull requests you trust).
+`languages`). It posts one comment per pull request and updates it on every push; check out with `fetch-depth: 0`
+so the base commit is there. On a pull request from a fork (whose token can't write) the result goes to the job
+summary instead. It runs codefactory from its own files and installs the language pack and TypeScript at exact
+versions (the language pack hash-checked), never running the pull request's own TypeScript.
 
 ## Shell, Make, YAML, HTML and configuration
 
@@ -467,7 +466,7 @@ jobs:
         with: { python-version: "3.12" }
       - uses: actions/setup-node@v4          # TypeScript / JavaScript projects
         with: { node-version: 22 }
-      - run: npm ci                          # the project's own typescript
+      - run: npm install -g typescript@5     # a compiler of your own (never the PR's node_modules)
       - run: pip install codefactory-cli
       - run: codefactory check --github      # annotates new issues on the pull request, and fails on them
 ```
@@ -608,7 +607,7 @@ sql = "SELECT id AS target FROM functions WHERE …"
 
 | Message | What to do |
 |---|---|
-| `… isn't installed. Using the general analyzer for TypeScript/JavaScript instead.` | For precise TypeScript analysis, run `npm install` in the project (or `npm install -g typescript`). |
+| `… isn't installed. Using the general analyzer for TypeScript/JavaScript instead.` | For precise TypeScript analysis, `npm install -g typescript@5` (codefactory never runs the one in the repository's node_modules). |
 | `… files in go, java … aren't analyzed` | `pip install "codefactory-cli[languages]"` |
 | `SKILL.md is from an older version` | `codefactory skill` (or `codefactory update`) rewrites it; commit the change. |
 | `Node.js isn't installed` | Install Node.js, or analyze only Python with `--lang python`. |

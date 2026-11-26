@@ -129,8 +129,9 @@ Uses only the standard library `ast` module; nothing is imported or executed.
 ### TypeScript and JavaScript
 
 TypeScript can only be analyzed faithfully by the TypeScript compiler, so `analyzers/typescript.py` runs
-`ts_helper.js` in Node with **the analyzed project's own** `typescript` package and `tsconfig.json`. That gives the
-exact module resolution the project uses (path aliases like `@/…`, `baseUrl`, `paths`) and its type information.
+`ts_helper.js` in Node with a TypeScript 5.x compiler the user installed (never the one in the analyzed repository's
+`node_modules`, which is the repository's code) and the project's own `tsconfig.json`. That gives the exact module
+resolution the project uses (path aliases like `@/…`, `baseUrl`, `paths`) and its type information.
 
 - **Functions:** declarations, methods, arrow functions and function expressions with a name: their own, or the
   variable, property or `memo` / `forwardRef` / `useCallback` they're assigned to. Named functions inside functions
@@ -549,9 +550,11 @@ session from starting.
 - **Static, not dynamic.** Nothing runs, so it's safe on any repository and needs no environment. The price is that
   calls resolved only at runtime are missed; the design compensates by preferring false negatives over false
   positives for anything that suggests deleting code, and by making every finding easy to verify and silence.
-- **The project's own TypeScript.** Bundling a TypeScript version would be simpler, but it would resolve modules
-  differently from the project and drift from its language version. Using the project's own compiler and
-  `tsconfig.json` makes the graph match what the project's build sees.
+- **The user's TypeScript, the project's tsconfig.** Earlier versions ran the project's own compiler from its
+  `node_modules`, to match its language version exactly. A security audit pointed out that this runs the analyzed
+  repository's code (a pull request can commit a fake `node_modules/typescript`), breaking the promise that nothing
+  analyzed is run. Module resolution comes from `tsconfig.json`, not from which compiler reads it, so a compiler the
+  user installed gives the same graph; only a language feature newer than that compiler would parse differently.
 - **No Python dependencies.** Installing the tool can never conflict with a project's dependencies, and it runs
   anywhere Python 3.11 does. Node is needed only for TypeScript.
 - **One graph, many outputs.** Checks never read source text except for the review's line patterns, so they're

@@ -60,8 +60,6 @@ def fingerprint(root: Path, ignore: list[str], recent: list | None = None) -> st
     skip = set(ignore)
     h = hashlib.sha1((_tool_stamp() + "\n" + _parsers()).encode("utf-8", "surrogatepass"))
     source = _source_ext()
-    local_ts = root / "node_modules" / "typescript" / "lib" / "typescript.js"  # a project-local compiler appearing counts too
-    h.update(f"local_ts={local_ts.is_file()}\n".encode())
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = sorted(d for d in dirnames if d not in skip and not d.endswith(".egg-info"))
         for name in sorted(filenames):

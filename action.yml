@@ -20,12 +20,6 @@ inputs:
     description: Install the tree-sitter language pack (Go, Java, Kotlin, Swift, Rust, C/C++, Ruby, PHP…)
     required: false
     default: "true"
-  project-typescript:
-    description: >-
-      Run the TypeScript compiler from the project's own node_modules (more precise, but it's the pull request's
-      code: leave off for pull requests from people you don't trust). Off: a pinned TypeScript the action installs.
-    required: false
-    default: "false"
 runs:
   using: composite
   steps:
@@ -53,13 +47,9 @@ runs:
         BASE_INPUT: ${{ inputs.base }}
         BASE_REF: ${{ github.base_ref }}
         FAIL_ON: ${{ inputs.fail-on }}
-        PROJECT_TS: ${{ inputs.project-typescript }}
       run: |
-        if [ "$PROJECT_TS" != "true" ]; then
-          export CODEFACTORY_PROJECT_TYPESCRIPT=0
-          ts="$RUNNER_TEMP/codefactory-ts/node_modules/typescript"
-          if [ -f "$ts/package.json" ]; then export CODEFACTORY_TYPESCRIPT="$ts"; fi
-        fi
+        ts="$RUNNER_TEMP/codefactory-ts/node_modules/typescript"  # never the pull request's own node_modules
+        if [ -f "$ts/lib/typescript.js" ]; then export CODEFACTORY_TYPESCRIPT="$ts"; fi
         base="${BASE_INPUT:-${BASE_REF:+origin/$BASE_REF}}"
         if [ -n "$BASE_REF" ]; then git fetch --no-tags --quiet origin "$BASE_REF"; fi
         set +e

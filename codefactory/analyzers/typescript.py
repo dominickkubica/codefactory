@@ -1,17 +1,14 @@
 """TypeScript / JavaScript analyzer. The parsing and call resolution run in Node (ts_helper.js) with the TypeScript
 compiler, because only the type checker can tell what `obj.method()` or a function from a React hook really is.
 
-Needs Node on PATH and the `typescript` package: CODEFACTORY_TYPESCRIPT pointing at one, else the analyzed repo's
-own installed compiler (node_modules/typescript), else a global install (npm install -g typescript).
-
-Loading the project's compiler runs code from the project's dependencies (the same package its build runs). It is
-never used when committed to the repository (a pull request could plant one), and CODEFACTORY_PROJECT_TYPESCRIPT=0
-switches it off: for untrusted code (the GitHub Action does), point CODEFACTORY_TYPESCRIPT at a compiler you installed.
+Needs Node on PATH and a TypeScript 5.x compiler the user installed: CODEFACTORY_TYPESCRIPT pointing at one, or a
+global install (npm install -g typescript@5). Never the one inside the analyzed repository: its node_modules is the
+repository's code (a pull request could commit one), and codefactory never runs the code it analyzes. The compiler
+only parses and type-checks; module resolution (tsconfig paths, aliases) comes from the project's own files either way.
 """
 
 from __future__ import annotations
 
-import functools
 import hashlib
 import json
 import os
@@ -61,28 +58,12 @@ def has_api(folder) -> bool:
     return (Path(folder) / "lib" / "typescript.js").is_file()
 
 
-def project_typescript(root: Path) -> Path | None:
-    """The project's own installed TypeScript compiler, unless switched off or committed to the repository."""
-    if os.environ.get("CODEFACTORY_PROJECT_TYPESCRIPT", "").strip().lower() in ("0", "false", "no", "off"):
-        return None
-    local = Path(root) / "node_modules" / "typescript"
-    if not has_api(local) or _committed(str(Path(root).resolve())):
-        return None  # (TypeScript 7 has no JavaScript API: then a global 5.x, if there is one)
-    return local
-
-
-@functools.lru_cache(maxsize=16)
-def _committed(root: str) -> bool:
+def _outside(folder: Path, root: Path) -> bool:
+    """Not inside the analyzed repository (a global install can't be the repository's own code)."""
     try:
-        out = subprocess.run(["git", "-C", root, "ls-files", "-z", "--", "node_modules/typescript"], capture_output=True,
-                             text=True, timeout=60)  # fmt: skip
-    except (OSError, subprocess.SubprocessError):
+        return not folder.resolve().is_relative_to(Path(root).resolve())
+    except OSError:
         return False
-    if out.returncode == 0 and out.stdout.strip("\0"):
-        print(f"codefactory: {root}/node_modules/typescript is committed to git, so it isn't run (it could be anyone's "
-              "code); using CODEFACTORY_TYPESCRIPT or a global install instead.", file=sys.stderr)  # fmt: skip
-        return True
-    return False
 
 
 def find_typescript(root: Path, node: str) -> str:
@@ -91,27 +72,26 @@ def find_typescript(root: Path, node: str) -> str:
         if not has_api(env):
             raise TypeScriptUnavailable(f"CODEFACTORY_TYPESCRIPT ({env}) isn't a TypeScript 5.x package (no lib/typescript.js).")
         return env
-    local = project_typescript(root)
-    if local:
-        return str(local)
+    # a global install: next to node first (no subprocess); then npm, run from the home folder so the analyzed
+    # repository's .npmrc (which could set `prefix` to a folder inside it) isn't read
+    bin_dir = Path(node).resolve().parent if node else None
+    candidates = []
+    if bin_dir:  # (Linux and macOS: <prefix>/lib/node_modules; Windows: next to node.exe)
+        candidates = [bin_dir.parent / "lib" / "node_modules" / "typescript", bin_dir / "node_modules" / "typescript"]
     try:
-        npm_root = subprocess.run(
-            ["npm", "root", "-g"], capture_output=True, text=True, timeout=30, shell=sys.platform == "win32"
-        ).stdout.strip()
-        if npm_root and has_api(Path(npm_root) / "typescript"):
-            return str(Path(npm_root) / "typescript")
-    except (OSError, subprocess.SubprocessError):
+        npm_root = subprocess.run(["npm", "root", "-g"], capture_output=True, text=True, timeout=30, cwd=Path.home(),
+                                  shell=sys.platform == "win32").stdout.strip()  # fmt: skip
+        if npm_root:
+            candidates.append(Path(npm_root) / "typescript")
+    except (OSError, subprocess.SubprocessError, RuntimeError):  # (RuntimeError: no home folder)
         pass
-    if (Path(root) / "node_modules" / "typescript" / "package.json").is_file() and not has_api(
-        Path(root) / "node_modules" / "typescript"
-    ):
-        raise TypeScriptUnavailable(
-            "This project uses TypeScript 7, which has no JavaScript API yet: `npm install -g typescript@5` (or set "
-            "CODEFACTORY_TYPESCRIPT to a TypeScript 5 folder) for precise call resolution."
-        )
+    for c in candidates:
+        if has_api(c) and _outside(c, root):
+            return str(c)
     raise TypeScriptUnavailable(
-        "TypeScript files found, but the typescript package isn't installed. Run `npm install` in the repo, "
-        "or `npm install -g typescript@5`, or set CODEFACTORY_TYPESCRIPT to its folder."
+        "TypeScript files found, but no TypeScript compiler of your own is installed: `npm install -g typescript@5` (or "
+        "set CODEFACTORY_TYPESCRIPT to its folder). codefactory never runs the one in the repository's node_modules: "
+        "that's the repository's code."
     )
 
 

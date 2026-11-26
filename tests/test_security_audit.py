@@ -13,7 +13,7 @@ from pathlib import Path
 from unittest import mock
 
 from codefactory import cache, paths
-from codefactory.analyzers.typescript import project_typescript
+from codefactory.analyzers.typescript import TypeScriptUnavailable, find_typescript, has_api
 from codefactory.checks import redact, scan_sources, source_files
 from codefactory.cli import build, main
 from codefactory.sarif import gha_command
@@ -91,35 +91,45 @@ class CacheFolderTest(unittest.TestCase):
             self.assertEqual(paths.cache_dir(d), Path(d).resolve() / ".codefactory")
 
 
-class ProjectTypeScriptTest(unittest.TestCase):
-    def test_a_committed_compiler_is_never_run(self):
-        with tempfile.TemporaryDirectory() as d:
-            files = {
-                "node_modules/typescript/package.json": '{"name": "typescript"}',
-                "a.ts": "export const a = 1;\n",
-                "node_modules/typescript/lib/typescript.js": "module.exports = {};\n",
-            }
-            repo(d, files)
-            with contextlib.redirect_stderr(io.StringIO()) as err:
-                self.assertIsNone(project_typescript(Path(d)))
-            self.assertIn("committed", err.getvalue())
+def fake_ts(folder: Path) -> Path:
+    (folder / "lib").mkdir(parents=True, exist_ok=True)
+    (folder / "package.json").write_text('{"name": "typescript"}', encoding="utf-8")
+    (folder / "lib" / "typescript.js").write_text("module.exports = {};\n", encoding="utf-8")
+    return folder
 
-    def test_installed_compiler_is_used_unless_switched_off(self):
+
+class ProjectTypeScriptTest(unittest.TestCase):
+    def test_the_repositorys_own_compiler_is_never_run(self):
+        with tempfile.TemporaryDirectory() as d, tempfile.TemporaryDirectory() as home:
+            root = Path(d)
+            fake_ts(root / "node_modules" / "typescript")  # installed or committed: the repository's code either way
+            (root / ".npmrc").write_text(f"prefix={root / 'evil'}\n", encoding="utf-8")  # and npm pointed back inside
+            fake_ts(root / "evil" / "lib" / "node_modules" / "typescript")
+            env = {k: v for k, v in os.environ.items() if k != "CODEFACTORY_TYPESCRIPT"}
+            with mock.patch.dict(os.environ, env, clear=True), mock.patch("pathlib.Path.home", return_value=Path(home)):
+                cwd = os.getcwd()
+                os.chdir(root)  # as when run from inside the repository
+                try:
+                    # node found inside the repository (node_modules/.bin on PATH during `npm run`), a compiler next to it
+                    fake_ts(root / "tools" / "lib" / "node_modules" / "typescript")
+                    found = find_typescript(root, str(root / "tools" / "bin" / "node"))
+                except TypeScriptUnavailable:
+                    found = ""
+                finally:
+                    os.chdir(cwd)
+            self.assertFalse(found.startswith(str(root.resolve())) or found.startswith(str(root)), found)
+
+    def test_typescript_7_has_no_api_to_run(self):
         with tempfile.TemporaryDirectory() as d:
-            repo(d, {"a.ts": "export const a = 1;\n"})
-            ts = Path(d) / "node_modules" / "typescript"
+            ts = Path(d) / "typescript"
             (ts / "lib").mkdir(parents=True)
-            (ts / "package.json").write_text('{"name": "typescript"}', encoding="utf-8")  # installed, not committed
-            self.assertIsNone(project_typescript(Path(d)))  # TypeScript 7: no JavaScript API to run
-            (ts / "lib" / "typescript.js").write_text("module.exports = {};\n", encoding="utf-8")
-            self.assertEqual(project_typescript(Path(d)), ts)
-            with mock.patch.dict(os.environ, {"CODEFACTORY_PROJECT_TYPESCRIPT": "0"}):
-                self.assertIsNone(project_typescript(Path(d)))
+            self.assertFalse(has_api(ts))  # TypeScript 7: lib/version.cjs, no lib/typescript.js
+            self.assertTrue(has_api(fake_ts(ts)))
 
     def test_security_md_says_what_it_does(self):
         text = (ROOT / "SECURITY.md").read_text(encoding="utf-8")
-        self.assertIn("CODEFACTORY_PROJECT_TYPESCRIPT", text)
-        self.assertNotIn("Nothing is imported, built or executed.", text)
+        self.assertIn("It never runs the code it analyzes.", text)
+        self.assertIn("never one inside the analyzed", text)
 
 
 class SecretsTest(unittest.TestCase):
@@ -170,7 +180,7 @@ class ActionTest(unittest.TestCase):
         self.assertIn("--require-hashes", action)
         self.assertNotIn('pip install --quiet "$SOURCE', action)  # codefactory runs from the action's own files
         self.assertIn("typescript@5.9.3", action)
-        self.assertIn("CODEFACTORY_PROJECT_TYPESCRIPT=0", action)
+        self.assertNotIn("project-typescript", action)
         self.assertIn("github.event.pull_request.head.repo.full_name == github.repository", action)
         pins = (ROOT / "action-requirements.txt").read_text(encoding="utf-8")
         for name in ("tree-sitter==", "tree-sitter-language-pack=="):

@@ -37,9 +37,9 @@ codefactory hotspots             # where change happens: complex code that keeps
 - **Python 3.11 or newer.** On Windows, run the same commands in PowerShell; use `py -m pip` if `pip` isn't found.
   On a Mac, `brew install pipx` and then `pipx install "codefactory-cli[languages]"` (Homebrew's Python refuses a
   plain `pip install`, and the built-in `python3` is too old).
-- **TypeScript/JavaScript projects:** run `npm install` in the project first, because codefactory uses the project's
-  own TypeScript compiler (needs [Node.js](https://nodejs.org)). Without it, those files are still analyzed, less
-  precisely.
+- **TypeScript/JavaScript projects:** install TypeScript once, `npm install -g typescript@5` (needs
+  [Node.js](https://nodejs.org)). codefactory never runs the compiler inside a repository's `node_modules`, since
+  that's the repository's code. Without it, those files are still analyzed, less precisely.
 - **`[languages]`** adds the tree-sitter language pack for everything beyond Python and TypeScript. Leave it out for
   a dependency-free install.
 - **Upgrade any time** with `codefactory update`.
@@ -86,7 +86,7 @@ codefactory hotspots             # where change happens: complex code that keeps
 | Language | How calls are resolved | Notes |
 |---|---|---|
 | Python | Precisely: imports, `self`/`cls`, classes, re-exports, dispatch tables, `getattr` | Standard library only |
-| TypeScript, JavaScript | Precisely: the project's own TypeScript type checker (path aliases, hooks, JSX, lazy `require`) | Needs Node.js and `npm install` |
+| TypeScript, JavaScript | Precisely: the TypeScript type checker, with the project's tsconfig (path aliases, hooks, JSX, lazy `require`) | Needs Node.js and `npm install -g typescript@5` |
 | Go, Java, Kotlin, Swift, Rust, C, C++, C#, Ruby, PHP, Scala, Dart, Lua, Elixir and more | By name, plus declared types, through tree-sitter | `[languages]` install; grammars download once, then work offline |
 | Shell, Makefiles, YAML (docker-compose, Kubernetes, GitHub Actions), HTML, Pkl, TOML, Terraform, `.diff`/`.patch` | Not a call graph: line checks for credentials, unsafe commands and configuration | No install needed |
 

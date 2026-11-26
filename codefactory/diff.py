@@ -8,7 +8,6 @@ checks, so code moving down a file doesn't look new.
 
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
 import tarfile
@@ -17,7 +16,6 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
-from .analyzers.typescript import project_typescript
 from .baseline import issue_key
 
 SEV_RANK = {"high": 0, "warn": 1, "info": 2}
@@ -179,10 +177,6 @@ def run(root: Path, base_ref: str, load) -> dict:
         (cache / "diff").unlink()  # never extract (or clean up) through a link
     with tempfile.TemporaryDirectory() as tmp:  # no trusted cache folder: the base lives only for this run
         base_dir = extract(root, sha, cache / "diff" if cache else Path(tmp))
-        project_ts = project_typescript(root)
-        if project_ts and not os.environ.get("CODEFACTORY_TYPESCRIPT"):
-            # the base has no node_modules: use the same compiler for both sides, so only the code differs
-            os.environ["CODEFACTORY_TYPESCRIPT"] = str(project_ts)
         head_items = items(root, load(root))
         base_items = items(base_dir, load(base_dir))
     new, gone = compare(base_items, head_items)

@@ -14,10 +14,14 @@ Each has a regression test (`tests/test_security_audit.py`).
   "base" that made its own findings look old. Nothing is cached then. Links inside the folder are removed, never
   followed, and a diff's base leaves out `.codefactory/` and anything linking outside (a planted link used to stop
   the diff with an error).
-- **The project's own TypeScript compiler is never run when committed to the repository**, and
-  `CODEFACTORY_PROJECT_TYPESCRIPT=0` turns it off. The Action uses its own pinned TypeScript 5.9.3 unless its new
-  `project-typescript` input is set. SECURITY.md said codefactory never runs the analyzed code; it now says exactly
-  when it does.
+- **codefactory never runs the TypeScript compiler inside the analyzed repository.** It used the project's
+  `node_modules/typescript`, which a pull request can commit (or plant through a dependency): running the analyzed
+  code, against SECURITY.md's promise. TypeScript now needs a compiler you installed, `npm install -g typescript@5`
+  (or `CODEFACTORY_TYPESCRIPT`); one found inside the repository is refused even when `node` itself is (as with
+  `node_modules/.bin` on PATH during `npm run`). Module resolution still comes from the project's tsconfig. The Action
+  installs its own pinned TypeScript 5.9.3. **If you relied on `npm install` in the project for TypeScript analysis,
+  install TypeScript globally once.** The Claude Code session hook does it for you (`typescript@5`, when Node is
+  there and no global one is).
 - **Secrets are reported cut to their first 4 characters** (`AKIA…`) in the review, PR comments, SARIF and
   annotations; keys found only in git history were being re-published in full.
 - **`diff --github` escapes its workflow commands**: a newline in a finding could have started a command of its own,

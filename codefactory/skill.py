@@ -88,11 +88,16 @@ STAMP="${HOME:-/tmp}/.cache/codefactory/last-update"
 mkdir -p "$(dirname "$STAMP")" 2>/dev/null
 stale() { [ -z "$(find "$STAMP" -mmin -1440 2>/dev/null)" ]; }
 limit() { if command -v timeout >/dev/null 2>&1; then timeout 180 "$@"; else "$@"; fi; }
+typescript() { # codefactory never runs a repository's own TypeScript: keep a global one for precise analysis
+  command -v npm >/dev/null 2>&1 || return 0
+  [ -f "$(cd ~ 2>/dev/null && npm root -g 2>/dev/null)/typescript/lib/typescript.js" ] && return 0
+  limit npm install -g --silent typescript@5 >/dev/null 2>&1
+}
 
 if [ ! -f ../codefactory/pyproject.toml ] && command -v codefactory >/dev/null 2>&1 && codefactory --version >/dev/null 2>&1; then
   # already a command (pipx, uv tool, a virtualenv): upgrade it with its own Python, never touching python3 (on a Mac
   # without developer tools that's a stub that opens an install dialog; Homebrew's refuses pip installs)
-  if stale; then limit codefactory update >/dev/null 2>&1 && touch "$STAMP"; fi
+  if stale; then limit codefactory update >/dev/null 2>&1 && touch "$STAMP"; typescript; fi
   codefactory skill . >/dev/null 2>&1
   echo "codefactory $(codefactory --version 2>/dev/null | cut -d' ' -f2) is installed: see .claude/skills/codefactory/SKILL.md"
   exit 0
@@ -114,6 +119,7 @@ if [ -f ../codefactory/pyproject.toml ]; then
 elif ! "$PY" -c "import codefactory" 2>/dev/null || stale; then
   "$PY" -c "from codefactory.skill import drop_git_install as d; d()" >/dev/null 2>&1 # an older install from GitHub
   install "$SOURCE" && touch "$STAMP"
+  typescript
 fi
 
 if "$PY" -c "import codefactory" 2>/dev/null; then

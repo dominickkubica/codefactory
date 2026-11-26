@@ -12,13 +12,12 @@ GitHub Action that exposes a token or lets a pull request from a fork act with t
 
 ## What codefactory does and doesn't do
 
-- **It doesn't run the code it analyzes, with one exception you control.** Python is parsed with `ast`, other
-  languages with tree-sitter; nothing is imported, built or executed. TypeScript is read by the TypeScript compiler,
-  run in Node, and by default that is the project's installed one (`node_modules/typescript`): code from the
-  project's dependencies, the same package its own build runs. It never runs a compiler committed to the repository;
-  `CODEFACTORY_PROJECT_TYPESCRIPT=0` switches the project's off (then `CODEFACTORY_TYPESCRIPT` or a global install is
-  used); and the GitHub Action uses its own pinned TypeScript unless its `project-typescript` input says otherwise.
-  The other program it starts is `git`, for history and diffs.
+- **It never runs the code it analyzes.** Python is parsed with `ast`, other languages with tree-sitter; nothing is
+  imported, built or executed. TypeScript is read by a TypeScript compiler run in Node, and only one you installed:
+  `CODEFACTORY_TYPESCRIPT`, or a global install (`npm install -g typescript@5`), never one inside the analyzed
+  repository (its `node_modules` is the repository's code). The global install is found next to `node`, or with
+  `npm root -g` run from your home folder so the repository's `.npmrc` isn't read. The GitHub Action installs its own
+  pinned TypeScript. The other program it starts is `git`, for history and diffs.
 - **Its cache can't be turned against it.** It never uses a `.codefactory/` that is a symbolic link or committed to
   git (then nothing is cached: a pull request could otherwise redirect its writes and clean-up, or plant results
   that hide its findings), never follows a link inside it, and leaves out of a diff's base anything that links
@@ -37,7 +36,7 @@ GitHub Action that exposes a token or lets a pull request from a fork act with t
 - **The GitHub Action** runs codefactory from its own files (nothing fetched for it), installs the language pack and
   TypeScript at exact versions (`action-requirements.txt`, hash-checked), posts its comment only on pull requests
   from the same repository (a fork's token can't write; the result goes to the job summary), and never runs the
-  pull request's own TypeScript compiler unless told to.
+  pull request's own TypeScript compiler.
 
 ## Supported versions
 
