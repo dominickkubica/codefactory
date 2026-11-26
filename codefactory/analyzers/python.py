@@ -13,6 +13,7 @@ from collections import Counter
 from pathlib import Path
 
 from ..graph import Edge, File, Function, Graph, Site
+from ..paths import walk
 from . import parallel
 from .python_parse import parse_module
 
@@ -20,13 +21,12 @@ from .python_parse import parse_module
 def iter_files(root: Path, ignore: list[str]) -> list[Path]:
     skip = set(ignore)
     out = []
-    for p in sorted(root.rglob("*.py")):
-        rel = p.relative_to(root)
-        # hidden folders (.claude, .github, .venv…) hold tooling and environments, not the product's code
-        if any(part in skip or part.endswith(".egg-info") or part.startswith(".") for part in rel.parts[:-1]):
-            continue
-        out.append(p)
-    return out
+    # hidden folders (.claude, .github, .venv…) hold tooling and environments, not the product's code; pruned before
+    # descending, so a virtualenv or node_modules isn't walked at all
+    for rel in walk(root, suffixes=(".py",), skip=skip, hidden=False):
+        if not any(part.endswith(".egg-info") for part in rel.split("/")[:-1]):
+            out.append(root / rel)
+    return sorted(out)
 
 
 def module_name(rel: Path) -> str:

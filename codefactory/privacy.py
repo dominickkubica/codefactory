@@ -19,7 +19,7 @@ import re
 from pathlib import Path
 
 from .checks import SRC_EXT, Check, Evidence
-from .paths import is_test
+from .paths import is_test, walk
 
 PERSONAL = re.compile(
     r"\b(?:e_?mail|email_?address|phone(?:_?number)?|mobile_?number|ssn|social_?security|date_?of_?birth|dob|birth_?(?:date|day)|"
@@ -44,6 +44,7 @@ STORE = re.compile(
     r"(?:\bAsyncStorage\.setItem|\blocalStorage\.setItem|\bsessionStorage\.setItem|\bUserDefaults\.standard\.set|"
     r"\bdefaults\.set|\bputString|\bSharedPreferences|\bMMKV\.set\w*|\bstorage\.set\w*)\s*\(",
 )
+ANY_SINK = re.compile(f"{ANALYTICS.pattern}|{LOG.pattern}|{STORE.pattern}")  # one search to skip lines with no sink
 KEYS = ("privacy_analytics", "privacy_log", "privacy_storage", "ios_usage_missing", "ios_privacy_manifest")
 
 # resource -> (Info.plist key, code that uses it, Expo config plugins that add the key themselves)
@@ -126,10 +127,10 @@ def personal_data(root: Path, files: list[str], out: dict[str, Check]) -> None:
             text = (root / fid).read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-        if not PERSONAL.search(text):
+        if not PERSONAL.search(text) or not ANY_SINK.search(text):
             continue
         for i, line in enumerate(text.splitlines(), 1):
-            if len(line) > 1000 or line.lstrip().startswith(("#", "//", "*")):
+            if len(line) > 1000 or line.lstrip().startswith(("#", "//", "*")) or not ANY_SINK.search(line):
                 continue
             for key, pat in (("privacy_analytics", ANALYTICS), ("privacy_log", LOG), ("privacy_storage", STORE)):
                 m = pat.search(line)
@@ -142,10 +143,9 @@ def personal_data(root: Path, files: list[str], out: dict[str, Check]) -> None:
 def _declared_keys(root: Path) -> tuple[set[str], set[str], bool]:
     """(usage-description keys declared, Expo config plugins listed, whether a privacy manifest exists)."""
     keys, plugins, manifest = set(), set(), False
-    skip = {"node_modules", ".git", ".codefactory", "Pods", "build"}
-    for path in root.rglob("*"):
-        if skip & set(path.relative_to(root).parts) or not path.is_file():
-            continue
+    wanted = ("PrivacyInfo.xcprivacy", "Info.plist", "app.json", "app.config.json", "app.config.js", "app.config.ts")
+    for rel in walk(root, names=wanted, suffixes=(".entitlements",)):
+        path = root / rel
         if path.name == "PrivacyInfo.xcprivacy":
             manifest = True
         elif path.name == "Info.plist" or path.name.endswith(".entitlements"):
@@ -169,6 +169,18 @@ def _declared_keys(root: Path) -> tuple[set[str], set[str], bool]:
     return keys, plugins, manifest
 
 
+def _first_line(texts: dict[str, str], pattern: str) -> tuple[str, int, str] | None:
+    """(file, line number, line) of the first match: one search per file, lines only where it matched."""
+    rx = re.compile(pattern)
+    for fid, text in texts.items():
+        m = rx.search(text)
+        if m:
+            start = text.rfind("\n", 0, m.start()) + 1
+            end = text.find("\n", m.start())
+            return fid, text.count("\n", 0, m.start()) + 1, text[start : end if end >= 0 else None]
+    return None
+
+
 def apple(root: Path, files: list[str], out: dict[str, Check]) -> None:
     ios_project = (root / "ios").is_dir() or any(f.endswith(NATIVE) for f in files) or (root / "app.json").is_file()
     if not ios_project:
@@ -186,17 +198,14 @@ def apple(root: Path, files: list[str], out: dict[str, Check]) -> None:
     for resource, (key, uses, plugin_names) in USAGE.items():
         if key in keys or plugins & set(plugin_names):
             continue
-        where = next(
-            ((fid, i, ln) for fid, t in texts.items() for i, ln in enumerate(t.splitlines(), 1) if re.search(uses, ln)), None
-        )
+        where = _first_line(texts, uses)
         if where is None and not deps & set(plugin_names):
             continue
         fid, line, text = where or ("package.json", 1, ", ".join(sorted(deps & set(plugin_names))))
         out["ios_usage_missing"].hits.append(Evidence(fid, line, f"{resource}: no {key} ({text.strip()[:100]})"))
     if not manifest:
         for category, uses in REQUIRED_REASON.items():
-            hit = next(((fid, i, ln) for fid, t in texts.items() if fid.endswith(NATIVE)
-                        for i, ln in enumerate(t.splitlines(), 1) if re.search(uses, ln)), None)  # fmt: skip
+            hit = _first_line({f: t for f, t in texts.items() if f.endswith(NATIVE)}, uses)
             if hit:
                 fid, line, text = hit
                 name = category.removeprefix("NSPrivacyAccessedAPICategory")

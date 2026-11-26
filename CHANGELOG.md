@@ -5,6 +5,18 @@ change command-line output.
 
 ## 0.20.1 · 2026-11-26
 
+Bugs found by testing every command in every environment, and a speed pass.
+
+### Faster
+- `flags` on 1.7M lines: 54 s to 0.9 s (each finding searched every function; now an index).
+- `review` with nothing changed: Actual Budget 9.4 s to 4.5 s, a React Native app with node_modules 8.7 s to 2.0 s,
+  1.7M lines 20 s to 11 s. File walks no longer descend into node_modules, virtualenvs and build output (Python's
+  `rglob` walked all of them and filtered after); sensitive-data detection only runs its regexes on files containing
+  one of its words; the iOS-permission and personal-data checks search each file once before looking at lines; the
+  history secret scan prefilters with one combined pattern; git history is read in a background thread and cached by
+  HEAD commit.
+- `plan` on 1.7M lines: 3 s to 1.1 s (copy groups each re-scanned every finding); Django URL matching uses an index.
+
 ### Fixed
 - Line checks (credentials, SQL, shell, privacy, Swift) ran only on files an analyzer could parse: without Node.js's
   TypeScript or the language pack, JavaScript, TypeScript and other files got no line checks at all. They now run on

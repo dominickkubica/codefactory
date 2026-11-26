@@ -13,6 +13,7 @@ for whoever commits under that name: someone drove them.
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import time
@@ -76,6 +77,45 @@ def _person(name: str) -> str:
 
 
 def read(root: Path, months: int = MONTHS, max_commits: int = MAX_COMMITS, timeout: int = 60) -> History:
+    """The history, from a cache keyed by the HEAD commit (the log only changes when HEAD does), else from git."""
+    try:
+        head = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD", "--show-prefix"], capture_output=True,
+                              text=True, timeout=10).stdout.split()  # fmt: skip
+    except (OSError, subprocess.SubprocessError):
+        head = []
+    key = f"{'/'.join(head)}|{months}|{max_commits}|{time.strftime('%Y-%m-%d')}" if head else ""  # a day later, the window moves
+    path = root / ".codefactory" / "history.json"
+    if key:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if data.get("key") == key:
+                return _from_json(data["history"])
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+    h = _read(root, months, max_commits, timeout)
+    if key and h.commits:
+        try:
+            path.parent.mkdir(exist_ok=True)
+            path.write_text(json.dumps({"key": key, "history": _to_json(h)}), encoding="utf-8")
+        except OSError:
+            pass  # read-only checkout
+    return h
+
+
+def _to_json(h: History) -> dict:
+    return {"files": {p: [f.commits, f.recent, f.churn, dict(f.authors), f.last] for p, f in h.files.items()},
+            "pairs": [[a, b, n] for (a, b), n in h.pairs.items()], "commits": h.commits, "people": dict(h.people),
+            "first": h.first, "last": h.last, "note": h.note}  # fmt: skip
+
+
+def _from_json(d: dict) -> History:
+    h = History(commits=d["commits"], people=Counter(d["people"]), first=d["first"], last=d["last"], note=d["note"])
+    h.files = {p: FileHistory(p, c, r, ch, Counter(a), last) for p, (c, r, ch, a, last) in d["files"].items()}
+    h.pairs = Counter({(a, b): n for a, b, n in d["pairs"]})
+    return h
+
+
+def _read(root: Path, months: int, max_commits: int, timeout: int) -> History:
     h = History()
     git = ["git", "-C", str(root)]
     try:

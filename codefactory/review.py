@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 import subprocess
 from collections import Counter, defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from fnmatch import fnmatch
 from pathlib import Path
@@ -22,7 +23,7 @@ from .checks import scan_repo, scan_sources, source_files, test_reach
 from .config import load_config
 from .coverage import measured
 from .infra import scan as infra_scan
-from .paths import is_script, is_test
+from .paths import is_script, is_test, walk
 from .plan import make_plan
 from .privacy import scan as privacy_scan
 from .profile import detect as detect_profile
@@ -91,6 +92,8 @@ class Review:
     def __init__(self, g: dict, root: Path, online: bool = False):
         self.g, self.root, self.v = g, root, View(g)
         self.repo = scan_repo(root)
+        pool = ThreadPoolExecutor(max_workers=1)  # git log runs while the checks below read files
+        history = pool.submit(hotspots.analyze, root, g)
         sources = source_files(root, g)  # parsed or not: line checks need no parser
         self.scan = scan_sources(root, sources)
         extra, self.history_note = audit_scan(root, current_secrets(self.scan["secret"]))
@@ -101,8 +104,9 @@ class Review:
         self.online, self.vulns, self.deps_note = online, [], ""
         self._apply_silence(load_config(root).silence)
         self.surface = surface(root, g, self.v)
-        self.profile = detect_profile(root, g, self.surface)  # what kind of project: findings are ranked for it
-        self.history = hotspots.analyze(root, g)  # where change happens: findings there are worth fixing first
+        self.profile = detect_profile(root, g, self.surface, sources=sources)  # what kind of project: findings are ranked for it
+        self.history = history.result()  # where change happens: findings there are worth fixing first
+        pool.shutdown()
         self.hot = self.history.by_path()
         self.rank_changes: list[rerank.Change] = []
         self.writers = writes(self.v)
@@ -1185,11 +1189,9 @@ class Review:
         analyzed = Counter(Path(f["id"]).suffix for f in self.g["files"])
         seen = {f["id"] for f in self.g["files"]}
         other = Counter()
-        skip = {".git", "node_modules", ".venv", "venv", "dist", "build", ".codefactory", "__pycache__", ".expo", "Pods"}
-        for p in self.root.rglob("*"):
-            rel = p.relative_to(self.root)
-            if p.is_file() and p.suffix in OTHER_CODE and not (set(rel.parts) & skip) and rel.as_posix() not in seen:
-                other[OTHER_CODE[p.suffix]] += 1
+        for rel in walk(self.root, suffixes=tuple(OTHER_CODE)):
+            if rel not in seen:
+                other[OTHER_CODE[Path(rel).suffix]] += 1
         out = [
             f"Analyzed {len(self.g['files'])} files ({', '.join(f'{n} {ext}' for ext, n in analyzed.most_common(6))}) "
             "statically: call graph, imports, structure and text patterns. Nothing was executed."

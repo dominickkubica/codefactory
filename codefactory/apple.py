@@ -11,7 +11,7 @@ import re
 from pathlib import Path
 
 from .checks import Check, Evidence
-from .paths import drop_ignored, is_test
+from .paths import drop_ignored, is_test, walk
 
 FORCE = re.compile(r"\btry!|\bas!\s")
 STORED_CLOSURE = re.compile(
@@ -72,11 +72,7 @@ def scan(root: Path, files: list[str]) -> dict[str, Check]:
                 for j in range(first, last + 1):
                     if SYNC_IO.search(code[j]) and "Task {" not in code[j] and "async" not in code[j]:
                         out["main_thread_io"].hits.append(Evidence(fid, j + 1, lines[j].strip()[:140]))
-    for path in sorted(root.rglob("*.entitlements")):
-        if {"node_modules", ".git", "Pods", ".codefactory"} & set(
-            path.relative_to(root).parts
-        ):  # relative: a diff's base lives in .codefactory/
-            continue
+    for path in sorted(root / rel for rel in walk(root, suffixes=(".entitlements",))):
         text = path.read_text(encoding="utf-8", errors="replace")
         for m in WEAK_ENTITLEMENTS.finditer(text):
             rel = path.relative_to(root).as_posix()

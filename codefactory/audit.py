@@ -12,8 +12,8 @@ import re
 import subprocess
 from pathlib import Path
 
-from .checks import PATTERNS, PLACEHOLDER, VENDOR_SECRETS, Check, Evidence
-from .paths import drop_ignored, is_test
+from .checks import ANY, PATTERNS, PLACEHOLDER, VENDOR_SECRETS, Check, Evidence
+from .paths import drop_ignored, is_test, walk
 from .suppress import MARK
 
 # GitHub Actions
@@ -126,8 +126,7 @@ def dockerfiles(root: Path, files: list[Path], out: dict[str, Check]) -> None:
 
 def mobile(root: Path, out: dict[str, Check]) -> None:
     names = ("app.json", "app.config.json", "Info.plist", "AndroidManifest.xml")
-    skip = {"node_modules", ".git", ".codefactory"}  # checked on the relative path: a diff's base lives in .codefactory/
-    found = (p for name in names for p in root.rglob(name) if not (skip & set(p.relative_to(root).parts)))
+    found = (root / rel for rel in walk(root, names=names))
     for path in sorted(found):
         rel = path.relative_to(root).as_posix()
         try:
@@ -169,8 +168,10 @@ def history(root: Path, current: set[str], out: dict[str, Check], max_lines: int
                 line = raw[1:]
                 if len(line) > 500 or VENDORED.search(file):
                     continue  # minified or vendored code (a bundled yarn release, dist/, vendor/): not anyone's key
+                if not ANY["secret"].search(line):
+                    continue  # one search rules out almost every line
                 use = VENDOR_SECRETS if is_test(file) else pats  # test fixtures: only real credential formats
-                if len(line) < 2000 and any(p.search(line) for p in use):
+                if any(p.search(line) for p in use):
                     value = next(m.group(0) for p in use if (m := p.search(line)))
                     if re.search(PLACEHOLDER, line) or MARK.search(line):
                         continue  # (a `codefactory: ignore` comment on it said it isn't real)
@@ -194,12 +195,9 @@ def current_secrets(secret_check: Check) -> set[str]:
 
 
 def find_dockerfiles(root: Path) -> list[Path]:
-    skip = {"node_modules", ".git", ".venv", "venv", ".codefactory"}
     return sorted(
-        p for p in root.rglob("*")
-        if p.is_file() and re.fullmatch(r"(?i)dockerfile(\..+)?|.+\.dockerfile", p.name)
-        and not (skip & set(p.relative_to(root).parts))  # relative: a diff's base lives in .codefactory/
-    )  # fmt: skip
+        root / rel for rel in walk(root) if re.fullmatch(r"(?i)dockerfile(\..+)?|.+\.dockerfile", rel.rsplit("/", 1)[-1])
+    )
 
 
 def scan_config(root: Path) -> dict[str, Check]:

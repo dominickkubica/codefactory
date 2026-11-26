@@ -82,6 +82,10 @@ class Planner:
     # -- tasks -----------------------------------------------------------------------------------------------------
     def copies(self) -> list[dict]:
         out, seen = [], set()
+        by_target: dict[tuple[str, str], list[dict]] = {}  # (kind, function) -> its copy flags: one pass, not one per group
+        for x in self.g["flags"]:
+            if x["kind"] in ("duplicate", "similar"):
+                by_target.setdefault((x["kind"], x["target"]), []).append(x)
         for f in self.g["flags"]:
             if f["kind"] not in ("duplicate", "similar"):
                 continue
@@ -92,7 +96,7 @@ class Planner:
             members = [self.v.fn[i] for i in group if i in self.v.fn]
             if len(members) < 2:
                 continue
-            flags = [x for x in self.g["flags"] if x["kind"] == f["kind"] and x["target"] in group]
+            flags = [x for t in group for x in by_target.get((f["kind"], t), [])]
             exact = f["kind"] == "duplicate"
             # keep the copy in the layer the others can depend on (rightmost), then the most-called one
             home = max(

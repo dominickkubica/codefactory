@@ -21,7 +21,7 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .paths import is_test
+from .paths import NOT_SOURCE, is_test, walk
 
 MAX_READ = 400_000  # bytes per file read for sensitive-data detection: past that it's data or generated
 # examples, demos, tests and end-to-end harnesses: they show or check the product, they aren't it
@@ -79,6 +79,25 @@ NOT_PRODUCT_TEXT = re.compile(
     r"(?:^|[/_.-])generated[_.-]|strings_\w+\.\w+$",
     re.I,
 )
+# words one of a category's patterns needs (lowercase): a file with none of them can't match, so it isn't searched
+HINTS = {  # each a lowercase piece one of the category's patterns can't match without
+    "health and fitness": ("health", "hkquantity", "hkworkout", "heart", "blood", "bodyfat", "body_fat", "bodyweight",
+                           "body_weight", "menstrua", "medication", "diagnos", "calories", "workout", "sleep_stage",
+                           "sleepstage", "sleep_score", "sleepscore"),
+    "financial": ("stripe", "plaid", "paymentintent", "payment_intent", "ibapi", "ib_insync", "brokerage", "buying_power",
+                  "buyingpower", "account_balance", "accountbalance", "liquidation", "card_number", "cardnumber",
+                  "routing_number", "routingnumber", "iban", "portfolio", "trade_history", "trades_history", "trade_log",
+                  "trades_log", "payee"),
+    "location": ("cllocationmanager", "getcurrentpositionasync", "watchpositionasync", "geolocation", "fusedlocation",
+                 "locationmanager", "user_location", "userlocation", "current_position", "currentposition"),
+    "contact details": ("cncontact", "getcontactsasync", "email", "phone", "first_name", "last_name", "date_of_birth",
+                        "dateofbirth", "home_address", "homeaddress", "street_address", "streetaddress"),
+    "photos and camera": ("phphotolibrary", "phpicker", "avcapturedevice", "launchimagelibraryasync",
+                          "launchcameraasync", "uiimagepicker", "cameraview"),
+    "accounts and passwords": ("bcrypt", "argon2", "passlib", "pbkdf2", "check_password", "set_password",
+                               "hash_password", "hashpassword", "password_hash", "passwordhash", "hashed_password",
+                               "hashedpassword", "createuserwithemailandpassword", "signinwithpassword"),
+}  # fmt: skip
 # comments and string literals, removed before looking for words (newlines kept, so line numbers stay right)
 NOT_CODE = re.compile(
     r'"""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\'|/\*[\s\S]*?\*/|"(?:\\.|[^"\\\n])*"|\'(?:\\.|[^\'\\\n])*\'|`(?:\\.|[^`\\])*`|//[^\n]*|#[^\n]*'
@@ -356,12 +375,10 @@ def _swift_files(root: Path, files: list[str]) -> list[str]:
     if found:
         return found
     out = []
-    for p in root.rglob("*.swift"):
-        rel = p.relative_to(root)
-        if not SKIP_DIRS & set(rel.parts):
-            out.append(rel.as_posix())
-            if len(out) >= 200:
-                break
+    for rel in walk(root, suffixes=(".swift",), skip=SKIP_DIRS | NOT_SOURCE):
+        out.append(rel)
+        if len(out) >= 200:
+            break
     return sorted(out)
 
 
@@ -423,7 +440,7 @@ def _first(texts: dict[str, str], code: dict[str, str], pattern: str, min_files:
     return hits[:limit] if len(hits) >= min_files else []
 
 
-def detect(root: Path, g: dict, surface=None, config: dict | None = None) -> Profile:
+def detect(root: Path, g: dict, surface=None, config: dict | None = None, sources: list[str] | None = None) -> Profile:
     """The profile of the repository at `root` (graph `g`; the attack surface if already computed)."""
     if surface is None:
         from .brief import View
@@ -434,7 +451,7 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None) -> Pro
     deps = m["deps"]
     from .checks import source_files
 
-    files = source_files(root, g)  # parsed or not: what the code says doesn't need a parser
+    files = sources if sources is not None else source_files(root, g)  # parsed or not: no parser needed
     texts = _source(root, files)
     p = Profile()
     p.open_writes = 0
@@ -455,11 +472,8 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None) -> Pro
             for f in _swift_files(root, files)
             if not EXAMPLE_DIR.search(f) and re.search(r"\bimport (?:SwiftUI|UIKit)\b", texts.get(f) or _head(root, f))
         ]
-        android = [
-            rel
-            for p_ in root.glob("**/AndroidManifest.xml")
-            if not SKIP_DIRS & set(p_.relative_to(root).parts) and not EXAMPLE_DIR.search(rel := p_.relative_to(root).as_posix())
-        ][:1]
+        android = [rel for rel in walk(root, names=("AndroidManifest.xml",), skip=SKIP_DIRS | NOT_SOURCE)
+                   if not EXAMPLE_DIR.search(rel)][:1]  # fmt: skip
         mobile = [f"{apple[0]} (SwiftUI/UIKit)"] if apple else (m["android"] or android)
         wrapper = has("@capacitor/core", "@capacitor/ios", "cordova", "@ionic/core")
         if mobile and (wrapper or (has(*WEB_UI) and len(apple) < 10) or len(endpoints) >= 5 or m["swift_lib"]):
@@ -585,10 +599,17 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None) -> Pro
         p.users_evidence = ["whoever runs it"]
 
     # what it holds
-    code = {fid: code_only(text) for fid, text in texts.items() if not NOT_PRODUCT_TEXT.search(fid)}
+    # cheap first: a file gets the regexes (and has its comments and strings removed) only if its lowercased text
+    # contains one of the category's words at all; on 1.7M lines this is most of the profile's time saved
+    lowered = {fid: text.lower() for fid, text in texts.items() if not NOT_PRODUCT_TEXT.search(fid)}
+    stripped: dict[str, str] = {}
     schema = _schema_contact(root, texts)
     for category, (strong, words, dep_names) in SENSITIVE.items():
         found = [f"{d} in {deps[d]}" for d in dep_names if d in deps][:2]
+        hints = HINTS[category]
+        code = {
+            fid: stripped.setdefault(fid, code_only(texts[fid])) for fid, low in lowered.items() if any(h in low for h in hints)
+        }
         found += _first(texts, code, strong) or _first(texts, code, words, min_files=2)
         if category == "contact details" and not found and schema:
             found = schema

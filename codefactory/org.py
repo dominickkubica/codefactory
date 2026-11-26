@@ -25,8 +25,9 @@ def snapshot(root: Path, graph: dict) -> dict:
     owners = load_owners(root)
     per_owner: dict[str, Counter] = {}
     if owners:
+        file_of = {fn["id"]: fn["file"] for fn in graph["functions"]}
         for f in graph["flags"]:
-            file = next((fn["file"] for fn in graph["functions"] if fn["id"] == f["target"]), f["target"])
+            file = file_of.get(f["target"], f["target"])
             for who in owners.of(file):
                 per_owner.setdefault(who, Counter())[f["severity"]] += 1
     code = [f for f in graph["files"]]

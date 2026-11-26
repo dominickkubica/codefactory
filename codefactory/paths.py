@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import re
 
 TEST_DIRS = ("tests", "test", "testing", "__tests__", "__mocks__", "spec")
@@ -24,6 +25,29 @@ def drop_ignored(checks: dict, root) -> dict:
     return checks
 
 
+# folders no check needs to look inside: dependencies, environments, build output, caches
+NOT_SOURCE = frozenset({".git", ".hg", ".svn", "node_modules", ".venv", "venv", "env", "__pycache__", ".codefactory",
+                        "site-packages", "dist", "build", "Pods", ".expo", ".next", ".nuxt", ".gradle", "DerivedData",
+                        "coverage", ".tox", ".mypy_cache", ".pytest_cache", ".ruff_cache", "bower_components"})  # fmt: skip
+
+
+def walk(root, names: tuple[str, ...] = (), suffixes: tuple[str, ...] = (), skip=NOT_SOURCE, hidden: bool = True):
+    """Relative paths (posix) of the files under `root` with one of these names or suffixes (all files if neither),
+    pruning `skip` folders (and hidden ones unless `hidden`) before descending: `Path.rglob` walks all of
+    node_modules first and filters after, which on a JavaScript project is most of the time spent."""
+    import os
+
+    root = str(root)
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in skip and (hidden or not d.startswith("."))]
+        rel_dir = os.path.relpath(dirpath, root).replace("\\", "/")
+        for name in filenames:
+            if (names or suffixes) and name not in names and not name.endswith(suffixes):
+                continue
+            yield name if rel_dir == "." else f"{rel_dir}/{name}"
+
+
+@functools.lru_cache(maxsize=65536)
 def is_test(path: str) -> bool:
     """tests/…, __tests__/…, test_*.py, *_test.py, *.test.ts, *.spec.js…"""
     parts = path.replace("\\", "/").split("/")

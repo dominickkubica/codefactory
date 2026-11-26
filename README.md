@@ -186,11 +186,13 @@ three sample apps make any change in output visible in CI.
 
 Files are parsed on every core and cached one by one, so a repeat run re-reads only what changed:
 
-| Codebase (full review, 4 cores) | First run | One file changed | Nothing changed |
-|---|---|---|---|
-| A React Native app, 500 files, 33k lines | 14 s | 3 s (14 s for a TypeScript file\*) | 3 s |
-| Python's standard library and packages, 3,900 files, 1.7M lines | 48 s | 21 s | 5 s |
-| Go's standard library, 6,000 files, 2.4M lines | 65 s | | |
+| Codebase (full review, 4 cores) | First run | Nothing changed |
+|---|---|---|
+| A React Native app with a Swift watch app, 535 files, 36k lines | 11 s | 2 s |
+| A TypeScript monorepo (Actual Budget), 2,400 files, 1,500 commits of history | 22 s | 4.5 s |
+| Python's standard library and packages, 3,900 files, 1.7M lines | 54 s | 11 s |
+
+A changed file re-reads just that file, except TypeScript\*.
 
 \*The TypeScript type checker needs the whole program, so a TypeScript change re-runs it. Other commands (`flags`,
 `brief`, `context`, `plan`) answer from the cache in well under a second when nothing changed.

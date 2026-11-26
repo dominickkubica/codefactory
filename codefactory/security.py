@@ -313,6 +313,13 @@ def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
                       if AUTH.search(m.group(1))), "")  # fmt: skip
         if mod and guard:
             phoenix_plugs[mod.group(1).split(".")[-1]] = guard
+    by_name: dict[str, list[dict]] = {}  # Django URL handlers by name, and class-based views' methods by class
+    by_class: dict[str, list[dict]] = {}
+    for fn in g["functions"]:
+        if fn["kind"] != "module":
+            by_name.setdefault(fn["name"], []).append(fn)
+        if fn["kind"] == "method":
+            by_class.setdefault(fn["qualname"].split(".")[0], []).append(fn)
     rails = _RailsControllers(root, [f for f in by_file if f.endswith("_controller.rb") or "controllers/concerns/" in f], cache)
     aliases = {}  # FastAPI: CurrentUser = Annotated[User, Depends(get_current_user)]
     for file in by_file:
@@ -362,9 +369,7 @@ def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
                     target, module = dotted[-1], (dotted[-2] if len(dotted) > 1 else "views")
                     # one handler per URL: the function (or class-based view) of that name, nearest the urls.py and
                     # in the module it names; not every function called `index` in the project
-                    cands = [f for f in g["functions"] if f["name"] == target and f["kind"] != "module"] or [
-                        f for f in g["functions"] if f["qualname"].split(".")[0] == target and f["kind"] == "method"
-                    ]
+                    cands = by_name.get(target, []) or by_class.get(target, [])
                     if not cands:
                         continue
                     f = min(cands, key=lambda c: (not c["file"].startswith(here + "/") if here else False,

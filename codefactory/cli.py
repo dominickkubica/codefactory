@@ -121,8 +121,22 @@ def _split(values: list[str], wanted: int) -> tuple[str, list[str]]:
     raise SystemExit(f"codefactory: expected {wanted} value(s) (optionally after the repo path), got {len(values)}")
 
 
+_FN_INDEX: dict[int, tuple[dict, dict]] = {}
+
+
+def _function(graph: dict, fid: str) -> dict | None:
+    """The function with this id, from an index built once per graph (a search per finding was quadratic: 54 s for
+    17,700 findings on 1.7M lines)."""
+    cached = _FN_INDEX.get(id(graph))
+    if cached is None or cached[0] is not graph:
+        cached = (graph, {x["id"]: x for x in graph["functions"]})
+        _FN_INDEX.clear()
+        _FN_INDEX[id(graph)] = cached
+    return cached[1].get(fid)
+
+
 def _flag_dict(graph: dict, f: dict) -> dict:
-    fn = next((x for x in graph["functions"] if x["id"] == f["target"]), None)
+    fn = _function(graph, f["target"])
     file = fn["file"] if fn else f["target"]
     owners = _owners(Path(graph["root"]))
     return {
