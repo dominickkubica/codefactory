@@ -171,8 +171,39 @@ def drop_git_install() -> bool:
                           capture_output=True).returncode == 0  # fmt: skip
 
 
+def tool_manager(prefix: str | None = None) -> str:
+    """ "pipx" or "uv" when codefactory was installed as a tool by one of them (its environment has no pip of its own:
+    upgrading has to go through them), else ""."""
+    p = Path(prefix or sys.prefix)
+    return "pipx" if (p / "pipx_metadata.json").is_file() else "uv" if (p / "uv-receipt.toml").is_file() else ""
+
+
+def _tool_upgrade(manager: str, source: str) -> tuple[str, str]:
+    import shutil
+
+    exe = shutil.which(manager)
+    if manager == "pipx":
+        cmd = (
+            ["upgrade", "codefactory-cli"] if source == SOURCE else ["runpip", "codefactory-cli", "install", "--upgrade", source]
+        )
+    else:
+        cmd = ["tool", "upgrade", "codefactory-cli"] if source == SOURCE else ["tool", "install", "--force", source]
+    if not exe:
+        raise RuntimeError(f"codefactory was installed with {manager}, which isn't on PATH here: run `{manager} {' '.join(cmd)}`")
+    proc = subprocess.run([exe, *cmd], capture_output=True, text=True)
+    if proc.returncode != 0:
+        raise RuntimeError(f"{manager} couldn't upgrade codefactory:\n{(proc.stderr or proc.stdout).strip()[-1500:]}")
+    new = subprocess.run(
+        [sys.executable, "-c", "import codefactory; print(codefactory.__version__)"], capture_output=True, text=True
+    ).stdout.strip()
+    return __version__, new or "?"
+
+
 def update(source: str = SOURCE) -> tuple[str, str]:
-    """Upgrades codefactory with this Python's pip. Returns (old version, new version)."""
+    """Upgrades codefactory the way it was installed: pipx or uv for a tool install (their environments have no pip),
+    else this Python's pip. Returns (old version, new version)."""
+    if manager := tool_manager():
+        return _tool_upgrade(manager, source)
     pip = [sys.executable, "-m", "pip", "install", "--quiet", "--upgrade"]
     dropped = drop_git_install()
     proc = subprocess.run([*pip, source], capture_output=True, text=True)

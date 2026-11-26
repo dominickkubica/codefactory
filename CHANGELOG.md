@@ -3,6 +3,13 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.21.1 · 2026-11-26
+
+- **`codefactory update` works for a pipx or uv install** (how the README says to install on a Mac): their
+  environments have no pip, so the upgrade failed with "No module named pip", and the Claude Code session hook, which
+  runs it daily, never upgraded either. It now runs `pipx upgrade codefactory-cli` / `uv tool upgrade codefactory-cli`
+  for those. On 0.21.0 or earlier with pipx, upgrade once by hand: `pipx upgrade codefactory-cli`.
+
 ## 0.21.0 · 2026-11-26
 
 ### From a Go service's maintainer

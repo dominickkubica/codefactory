@@ -97,6 +97,22 @@ class SkillTest(unittest.TestCase):
         self.assertEqual(calls.count("codefactory skill ."), 2)
         self.assertIn("9.9.9", proc.stdout)
 
+    def test_update_goes_through_pipx_or_uv_for_a_tool_install(self):
+        # pipx and uv tool environments have no pip: `python -m pip install --upgrade` failed in them
+        prefix = Path(self.tmp.name) / "venv"
+        prefix.mkdir()
+        self.assertEqual(skill.tool_manager(str(prefix)), "")
+        (prefix / "pipx_metadata.json").write_text("{}", encoding="utf-8")
+        self.assertEqual(skill.tool_manager(str(prefix)), "pipx")
+        ok = subprocess.CompletedProcess([], 0, stdout="9.9.9\n", stderr="")
+        with mock.patch.object(skill, "tool_manager", return_value="pipx"), \
+             mock.patch("shutil.which", return_value="/usr/bin/pipx"), mock.patch("subprocess.run", return_value=ok) as run:  # fmt: skip
+            self.assertEqual(skill.update(), (__version__, "9.9.9"))
+        self.assertEqual(run.call_args_list[0].args[0], ["/usr/bin/pipx", "upgrade", "codefactory-cli"])
+        with mock.patch.object(skill, "tool_manager", return_value="uv"), mock.patch("shutil.which", return_value=None), \
+             self.assertRaisesRegex(RuntimeError, "uv tool upgrade codefactory-cli"):  # fmt: skip
+            skill.update()
+
     def test_update_reports_versions(self):
         ok = subprocess.CompletedProcess([], 0, stdout="9.9.9\n", stderr="")
         with mock.patch("subprocess.run", return_value=ok) as run:
