@@ -3,6 +3,64 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.21.0 · 2026-11-26
+
+### From a Go service's maintainer
+Eight findings he triaged as wrong, each fixed with a test (`tests/test_go_service.py`):
+
+- **A subfolder review missed the repository's CI and README** ("No continuous integration: High" on `internal/`):
+  CI, README and license are looked for from the folder up to the repository's top.
+- **CI systems beyond GitHub, GitLab, Jenkins and CircleCI**: ~30 now (Rio, Azure, Buildkite, Drone, Woodpecker,
+  Cirrus, TeamCity, AppVeyor, CodeBuild, Cloud Build, Bamboo, Tekton, Harness, Bitrise, Gitea, Forgejo…), and
+  `ci = ["path"]` in factory.toml names any other.
+- **Go calls read as N+1 queries by their name**: `http.SetCookie`, `http.HandleFunc` and the rest of the `http`
+  package aren't requests (only Get, Post, Head, PostForm, Do are); `r.Get("/path", h)` registers a route; a loop in
+  startup code (`main`, `init`, `New…`, `Register…`, `Start…`) runs once per configured thing (info, not a warning).
+- **Batched writes and migrations**: a loop over batches (`i += 1000`, `range batches`) is the batching; migration
+  and schema-lock code steps through its changes on purpose.
+- **"No test reaches it" when tests do**: a method tests call through an interface (several types implement it, so
+  the name alone can't say which) counts as reached in Go, Java and the other languages matched by name, and so does
+  a route's handler when a test sends a request to its URL (TestClient, httptest, supertest). On a 77k-line
+  repository, 26 "untested" functions became 12, the rest confirmed untested.
+- **A constant string flagged as XSS**: raw HTML from a string literal with nothing put into it isn't reported.
+- **Go's standard library taken for the repository's own packages** ("auth imports sync"): Go imports are resolved by
+  their full path under the module in go.mod. The layer check also skips imports in test files and composition roots
+  (`cmd`, `boot`, `main`, `app`, `server` import everything by design), and names an example file for each.
+- **"One person changes most of the busy code"** is labelled as context about the team, not a problem in the code.
+
+### Audit export
+- **`codefactory export`**: every finding as one audit file, Markdown or `--json`, made to be handed to Claude with
+  "triage these into individual fixes sorted by severity, then complexity" (it opens with those instructions).
+  Each finding has a stable id, severity, complexity, confidence (exact, likely or lead), every location with its
+  line of code (marked when it's a script or a test), impact, fix, what settles it, and the plan's ready-made fixes
+  for exactly those locations. Shaped by a trial: a fresh Claude triaged a 77k-line repository from it, and its
+  critique (no code shown, three quarters fix boilerplate, a confidence label that read backwards, counts that didn't
+  match) halved the file and changed the format.
+- **Files say what they are and when**: `review` at a terminal saves `codefactory-review-<date>.md` instead of
+  scrolling a whole report past (a pipe or Claude Code still gets the text; `-o -` prints it), and `export` saves
+  `codefactory-audit-<date>.md`. Neither overwrites the last one. Plain `codefactory` says where to start instead
+  of reporting a usage error. (From a tester who didn't read three lines further.)
+- **Copy-group titles name every function** ("Merge down_days, up_days"), not "2 copies of" one of them.
+- **The factory view has Export audit and Copy for Claude buttons** with the same file, so its security and
+  reliability findings are a click away (the map's panel lists the structural ones).
+
+### Factory view
+- **Phones and narrow windows**: the map on top and the panel below, both full width (the panel took half the
+  screen and pushed the map into slivers); finding text wraps instead of running off the edge.
+- **Hall names fit**: shrunk before they're cut ("OPTS…" said nothing), stats in short form when narrow ("6.2k
+  lines"), and the most-used list left out of halls too narrow to show a name in it; the header wraps between words.
+
+### Test code
+From a Go repository whose early tests (written before table-driven tests were its standard) filled the plan with
+"share one body" tasks:
+
+- **Copies only between tests are `info`, with a hint** ("one table-driven or parametrized test, or a shared helper,
+  would hold it once"), **and aren't plan tasks**: tests often repeat themselves on purpose. A copy between a test and
+  product code is still a `warn` and a task.
+- **`--no-tests`, or `tests = false` in factory.toml, leaves test code out** of findings, the plan, the map, `query`
+  and the viewer (Go's `_test.go` files sit next to the code, so folder `ignore` couldn't). Tests are still analyzed:
+  the review's coverage counts what they reach, and it doesn't report "no automated tests".
+
 ## 0.20.3 · 2026-11-26
 
 ### Security
@@ -68,62 +126,6 @@ Each has a regression test (`tests/test_security_audit.py`).
 - **Projects on TypeScript 7** (the native rewrite, which ships no JavaScript API yet) made the TypeScript analyzer
   fail outright. A compiler without the API is skipped for the next one (a global TypeScript 5), and with none the
   review says how to get one.
-
-### From a Go service's maintainer
-Eight findings he triaged as wrong, each fixed with a test (`tests/test_go_service.py`):
-
-- **A subfolder review missed the repository's CI and README** ("No continuous integration: High" on `internal/`):
-  CI, README and license are looked for from the folder up to the repository's top.
-- **CI systems beyond GitHub, GitLab, Jenkins and CircleCI**: ~30 now (Rio, Azure, Buildkite, Drone, Woodpecker,
-  Cirrus, TeamCity, AppVeyor, CodeBuild, Cloud Build, Bamboo, Tekton, Harness, Bitrise, Gitea, Forgejo…), and
-  `ci = ["path"]` in factory.toml names any other.
-- **Go calls read as N+1 queries by their name**: `http.SetCookie`, `http.HandleFunc` and the rest of the `http`
-  package aren't requests (only Get, Post, Head, PostForm, Do are); `r.Get("/path", h)` registers a route; a loop in
-  startup code (`main`, `init`, `New…`, `Register…`, `Start…`) runs once per configured thing (info, not a warning).
-- **Batched writes and migrations**: a loop over batches (`i += 1000`, `range batches`) is the batching; migration
-  and schema-lock code steps through its changes on purpose.
-- **"No test reaches it" when tests do**: a method tests call through an interface (several types implement it, so
-  the name alone can't say which) counts as reached in Go, Java and the other languages matched by name, and so does
-  a route's handler when a test sends a request to its URL (TestClient, httptest, supertest). On a 77k-line
-  repository, 26 "untested" functions became 12, the rest confirmed untested.
-- **A constant string flagged as XSS**: raw HTML from a string literal with nothing put into it isn't reported.
-- **Go's standard library taken for the repository's own packages** ("auth imports sync"): Go imports are resolved by
-  their full path under the module in go.mod. The layer check also skips imports in test files and composition roots
-  (`cmd`, `boot`, `main`, `app`, `server` import everything by design), and names an example file for each.
-- **"One person changes most of the busy code"** is labelled as context about the team, not a problem in the code.
-
-### Audit export
-- **`codefactory export`**: every finding as one audit file, Markdown or `--json`, made to be handed to Claude with
-  "triage these into individual fixes sorted by severity, then complexity" (it opens with those instructions).
-  Each finding has a stable id, severity, complexity, confidence (exact, likely or lead), every location with its
-  line of code (marked when it's a script or a test), impact, fix, what settles it, and the plan's ready-made fixes
-  for exactly those locations. Shaped by a trial: a fresh Claude triaged a 77k-line repository from it, and its
-  critique (no code shown, three quarters fix boilerplate, a confidence label that read backwards, counts that didn't
-  match) halved the file and changed the format.
-- **Files say what they are and when**: `review` at a terminal saves `codefactory-review-<date>.md` instead of
-  scrolling a whole report past (a pipe or Claude Code still gets the text; `-o -` prints it), and `export` saves
-  `codefactory-audit-<date>.md`. Neither overwrites the last one. Plain `codefactory` says where to start instead
-  of reporting a usage error. (From a tester who didn't read three lines further.)
-- **Copy-group titles name every function** ("Merge down_days, up_days"), not "2 copies of" one of them.
-- **The factory view has Export audit and Copy for Claude buttons** with the same file, so its security and
-  reliability findings are a click away (the map's panel lists the structural ones).
-
-### Factory view
-- **Phones and narrow windows**: the map on top and the panel below, both full width (the panel took half the
-  screen and pushed the map into slivers); finding text wraps instead of running off the edge.
-- **Hall names fit**: shrunk before they're cut ("OPTS…" said nothing), stats in short form when narrow ("6.2k
-  lines"), and the most-used list left out of halls too narrow to show a name in it; the header wraps between words.
-
-### Test code
-From a Go repository whose early tests (written before table-driven tests were its standard) filled the plan with
-"share one body" tasks:
-
-- **Copies only between tests are `info`, with a hint** ("one table-driven or parametrized test, or a shared helper,
-  would hold it once"), **and aren't plan tasks**: tests often repeat themselves on purpose. A copy between a test and
-  product code is still a `warn` and a task.
-- **`--no-tests`, or `tests = false` in factory.toml, leaves test code out** of findings, the plan, the map, `query`
-  and the viewer (Go's `_test.go` files sit next to the code, so folder `ignore` couldn't). Tests are still analyzed:
-  the review's coverage counts what they reach, and it doesn't report "no automated tests".
 
 ### Profiles
 From running on a set of personal repositories (18: apps, sites, class projects, scripts):

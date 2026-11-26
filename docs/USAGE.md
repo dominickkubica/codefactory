@@ -292,7 +292,7 @@ each finding points at its line in the new file. Graph findings (loops, copies, 
 repository: use `--base` for those. `--json`, `--github` and `--fail-on` work the same.
 
 The repository is also a GitHub Action (`uses: dominickkubica/codefactory@v0`, which follows releases; a
-release tag such as `@v0.20.3` or a commit SHA pins one; inputs `base`, `fail-on`, `comment`,
+release tag such as `@v0.21.0` or a commit SHA pins one; inputs `base`, `fail-on`, `comment`,
 `languages`). It posts one comment per pull request and updates it on every push; check out with `fetch-depth: 0`
 so the base commit is there. On a pull request from a fork (whose token can't write) the result goes to the job
 summary instead. It runs codefactory from its own files and installs the language pack and TypeScript at exact
