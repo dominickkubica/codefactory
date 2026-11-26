@@ -17,6 +17,9 @@ compiler installed (0.20.3 stopped running the project's own) and no language pa
 - **Tests are counted from the disk** when they weren't analyzed: no more "No automated tests" over hundreds of them.
 - **No silent empty analysis**: without a TypeScript compiler and without the language pack, codefactory says the
   TypeScript/JavaScript files are NOT analyzed, instead of "using the general analyzer" that wasn't there.
+- **An analysis that left TypeScript out isn't cached**, so installing a compiler takes effect on the next run (the
+  empty result was kept until `--no-cache`), and the cache notices a TypeScript installed with `npm install -g` on
+  Windows (`%APPDATA%\npm`, not next to node.exe).
 
 ## 0.21.1 · 2026-11-26
 

@@ -70,7 +70,9 @@ def load_graph(path: Path, languages: list[str] | None = None, cache: bool = Tru
         if hit is not None:
             return _scoped(hit, root)
     graph = build(root, languages, cache).to_dict()
-    if cache and not languages:
+    from .analyzers import INCOMPLETE
+
+    if cache and not languages and not INCOMPLETE:  # (a result missing a language isn't kept: see analyzers)
         save_cache(root, ignore, graph, stamp, bool(recent))
     return _scoped(graph, root)
 

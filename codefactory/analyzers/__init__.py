@@ -18,7 +18,13 @@ from .typescript import TypeScriptUnavailable, analyze_typescript
 LANGUAGES = ("python", "typescript", "other")
 
 
+# set when the last analysis left a language out for want of a tool (no TypeScript compiler): such a result isn't
+# cached, so installing the tool takes effect on the next run instead of after --no-cache
+INCOMPLETE: list[str] = []
+
+
 def analyze(root: Path, ignore: list[str], languages: list[str] | None = None, cache: bool = True) -> Graph:
+    INCOMPLETE.clear()
     g = Graph(root=str(root), language="")
     wanted = languages or list(LANGUAGES)
     js_fallback = False
@@ -33,6 +39,7 @@ def analyze(root: Path, ignore: list[str], languages: list[str] | None = None, c
                     raise SystemExit(f"codefactory: {e}") from None
                 from .generic import available
 
+                INCOMPLETE.append("typescript")  # (by name, or not at all: either way not what a compiler gives)
                 if available():
                     print(f"codefactory: {e} Using the general analyzer for TypeScript/JavaScript instead.", file=sys.stderr)
                 else:  # nothing will read them: say so, loudly (a review of nothing once graded "Strong")

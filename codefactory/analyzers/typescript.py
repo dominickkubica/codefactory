@@ -119,6 +119,8 @@ def find_typescript(root: Path, node: str) -> str:
     except (OSError, subprocess.SubprocessError, RuntimeError):  # (RuntimeError: no home folder)
         pass
     candidates.insert(0, own_typescript_dir() / "node_modules" / "typescript")  # (installed by an earlier run)
+    if os.environ.get("APPDATA"):  # Windows' global npm folder, found without running npm
+        candidates.append(Path(os.environ["APPDATA"]) / "npm" / "node_modules" / "typescript")
     for c in candidates:
         if has_api(c) and _outside(c, root):
             return str(c)

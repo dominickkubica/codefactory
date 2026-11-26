@@ -36,6 +36,8 @@ def _parsers() -> str:
     if node:
         bin_dir = Path(node).resolve().parent
         candidates += [str(bin_dir.parent / "lib" / "node_modules" / "typescript"), str(bin_dir / "node_modules" / "typescript")]
+    if os.environ.get("APPDATA"):  # Windows: `npm install -g` puts packages here, not next to node.exe
+        candidates.append(str(Path(os.environ["APPDATA"]) / "npm" / "node_modules" / "typescript"))
     ts = next((c for c in candidates if c and (Path(c) / "lib" / "typescript.js").is_file()), "")
     return f"pack={available()}|node={bool(node)}|ts={ts}"
 

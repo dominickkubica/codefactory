@@ -175,6 +175,26 @@ class NothingAnalyzedTest(unittest.TestCase):
         self.assertNotIn("No automated tests", [f.title for f in r.findings])  # the test file is on disk
         self.assertIn("**Tests:** 1 test files", text)
 
+    def test_an_analysis_missing_typescript_isnt_cached(self):
+        # the empty result was saved, so installing TypeScript changed nothing until --no-cache
+        import contextlib
+        import io
+        from unittest import mock
+
+        from codefactory.analyzers.typescript import TypeScriptUnavailable
+        from codefactory.cli import load_graph
+
+        root = Path(tempfile.mkdtemp())
+        (root / "app.ts").write_text("export function f() { return 1; }\n", encoding="utf-8")
+        with mock.patch("codefactory.analyzers.analyze_typescript", side_effect=TypeScriptUnavailable("no compiler.")), \
+             mock.patch("codefactory.analyzers.generic.available", return_value=False), \
+             mock.patch("codefactory.paths.racy", return_value=False), contextlib.redirect_stderr(io.StringIO()):  # fmt: skip
+            load_graph(root)
+        self.assertFalse((root / ".codefactory" / "graph.json").exists())
+        with mock.patch("codefactory.paths.racy", return_value=False), contextlib.redirect_stderr(io.StringIO()):
+            g = load_graph(root)  # TypeScript (or the language pack) there now: analyzed, and kept
+        self.assertTrue(g["files"] or not (root / ".codefactory" / "graph.json").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
