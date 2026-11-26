@@ -3,6 +3,26 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## Unreleased
+
+From reviewing four large public repositories (Django, FastAPI, excalidraw, gin) and from benchmarking agents on them.
+
+- **`codefactory prefetch`**: a Claude Code prompt hook (`codefactory prefetch --hook`) that adds, for what a prompt
+  names, the definition's file and line range, callers, calls, tests, codefactory's findings, where the name is
+  registered as a string, where a module-level name is defined and used, and the docs that mention it. It answers from
+  an index built ahead of time (`codefactory prefetch`) in well under a second and leaves out files changed since.
+  Measured: it cuts an agent's searching, but not its cost (`self-verifying-map`'s `docs/results.md`).
+- **Frameworks and libraries are profiled as libraries**: a package whose classifiers say it's for developers to build
+  on (Django, FastAPI), or a Go module with no main package (gin), is a library, not the web service its views make.
+- **Fewer false data flows**: a value checked and replaced when the check fails (`if not is_safe(url=x): x = "/"`),
+  and anything built from it, is clean; escapers and number formatters are sanitizers; test servers aren't the
+  product. Django's 12 reported flows drop to 3.
+- **Not the project's code, not its findings**: vendored and minified files get no line checks, generated files are
+  checked like tests, and documentation samples (a tutorial's sample key, its variants) are Low or leads, not tasks.
+- **Public build variables aren't secrets** (`VITE_`, `NEXT_PUBLIC_`, `REACT_APP_`… in `.env` files), and **No
+  lockfile** is Low when `package.json` holds only development tools.
+- Risky calls only in build and release scripts rank one level lower.
+
 ## 0.21.2 · 2026-11-26
 
 From a review that analyzed nothing and graded it "Strong": a TypeScript app on a Windows PC with no TypeScript
