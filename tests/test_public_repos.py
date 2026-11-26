@@ -1,6 +1,8 @@
 """Regressions found by assessing public repositories. Round 1: Spring PetClinic, HTTPie, Actual Budget, the FastAPI
 full-stack template, LoopKit. Round 2: Maybe (Rails), Healthchecks (Django), Now in Android, PocketBase, Gotify, Our
-World in Data's ETL. Each test is the smallest copy of what the real repository did."""
+World in Data's ETL. Round 3: Taxonomy (Next.js), Monica (Laravel), Vaultwarden (Rust), eShop (ASP.NET), LocalSend
+(Flutter), MarkText (Electron), Alamofire (Swift package), Plausible (Phoenix), nanoGPT. Each test is the smallest copy
+of what the real repository did."""
 
 import json
 import subprocess
@@ -265,6 +267,98 @@ class RoundTwoTest(unittest.TestCase):
         p = Profile(kind="web service", sensitive={"accounts and passwords": ["bcrypt"]})
         f = Finding("Personal data in unencrypted storage", "Medium", "Security", [], "", "", "S")
         self.assertEqual((rerank([f], p), f.severity), ([], "Medium"))  # PocketBase: a remembered test email
+
+
+TS = unittest.skipUnless(__import__("codefactory.analyzers.generic", fromlist=["available"]).available(), "needs tree-sitter")
+
+
+class RoundThreeTest(unittest.TestCase):
+    @TS
+    def test_routes_and_auth_in_five_more_frameworks(self):
+        root = repo({
+            "routes/web.php": "<?php\nRoute::get('/about', [Page::class, 'about']);\n"
+                "Route::middleware(['auth', 'verified'])->group(function () {\n"
+                "    Route::post('/contacts', [ContactController::class, 'store']);\n});\n",
+            "src/api/core.rs": "use rocket::request::FromRequest;\npub struct Headers;\n"
+                "impl<'r> FromRequest<'r> for Headers {\n    fn from_request() { decode_login(token) }\n}\n\n"
+                "#[post(\"/ciphers\", data = \"<data>\")]\nasync fn post_ciphers(data: Json<C>, headers: Headers) {}\n\n"
+                "#[get(\"/alive\")]\nfn alive() -> &'static str { \"ok\" }\n",
+            "Api/Orders.cs": "public static class Orders {\n  public static void Map(WebApplication app) {\n"
+                "    var api = app.MapGroup(\"/api/orders\").RequireAuthorization();\n"
+                "    api.MapPost(\"/\", Create);\n    app.MapGet(\"/health\", () => \"ok\");\n  }\n}\n",
+            "lib/web/router.ex": "defmodule Web.Router do\n  scope \"/\", Web do\n    pipe_through [:browser]\n"
+                "    get \"/sites\", SiteController, :index\n    get \"/\", PageController, :home\n  end\nend\n",
+            "lib/web/site_controller.ex": "defmodule Web.SiteController do\n  plug Web.RequireAccountPlug\nend\n",
+        })  # fmt: skip
+        g = graph(root)
+        got = {(e.framework, e.path): bool(e.auth) for e in surface(root, g, View(g)).entries}
+        self.assertEqual(got, {
+            ("Laravel", "/about"): False, ("Laravel", "/contacts"): True,
+            ("Rust", "/ciphers"): True, ("Rust", "/alive"): False,
+            ("ASP.NET", "/"): True, ("ASP.NET", "/health"): False,
+            ("Phoenix", "/sites"): True, ("Phoenix", "/"): False,
+        })  # fmt: skip
+
+    def test_next_handler_checks_and_webhook_signatures(self):
+        root = repo({
+            "package.json": json.dumps({"dependencies": {"next": "14.0.0"}}),
+            "app/api/posts/[postId]/route.ts": "export async function DELETE(req: Request) {\n"
+                "  if (!(await verifyCurrentUserHasAccessToPost('x'))) return new Response(null, { status: 403 })\n"
+                "  await db.post.delete({ where: { id: 'x' } })\n}\n",
+            "app/api/webhooks/stripe/route.ts": "export async function POST(req: Request) {\n"
+                "  const event = stripe.webhooks.constructEvent(body, signature, secret)\n  await db.user.update({})\n}\n",
+        })  # fmt: skip
+        g = graph(root)
+        self.assertTrue(all(e.auth for e in surface(root, g, View(g)).entries))
+
+    def test_profiles_of_packages_examples_and_scripts(self):
+        # Alamofire: a Swift package whose Example/ app isn't the product; Vaultwarden: a Playwright harness's
+        # package.json isn't the product either; nanoGPT: no manifest, scripts importing torch
+        root = repo({
+            "Package.swift": 'let package = Package(name: "Alamofire", products: [.library(name: "Alamofire")])\n',
+            "Source/Request.swift": "import Foundation\npublic class Request {}\n",
+            "Example/Source/AppDelegate.swift": "import UIKit\nclass AppDelegate: UIResponder {}\n",
+        })  # fmt: skip
+        p = detect(root, graph(root))
+        self.assertEqual(p.kind, "library")
+        root = repo({"train.py": "import torch\n\nif __name__ == '__main__':\n    torch.manual_seed(0)\n"})
+        self.assertEqual(detect(root, graph(root)).kind, "data pipeline")
+        root = repo({
+            "app/pubspec.yaml": "dependencies:\n  flutter:\n    sdk: flutter\n", "pubspec.yaml": "flutter:\n",
+            "app/lib/gen/strings_ar.g.dart": "String get symptom => 'x';\n",
+            "app/lib/fingerprint.dart": "final a = Icons.medication;\nfinal b = Icons.medication;\n",
+            "app/lib/troubleshoot.dart": "final symptomText = t.symptom;\n",
+        })  # fmt: skip
+        self.assertNotIn("health and fitness", detect(root, graph(root)).sensitive)  # LocalSend
+        root = repo({"composer.json": json.dumps({"require": {"laravel/framework": "^11.0"}}),
+                     "database/migrations/2024_create_contacts.php": "<?php\n$table->string('first_name');\n"})  # fmt: skip
+        self.assertIn("contact details", detect(root, graph(root)).sensitive)  # Monica
+
+    @TS
+    def test_collections_arent_databases_but_repositories_are(self):
+        root = repo({
+            "src/cache.rs": "fn cached(k: String) {\n    CLIENT_CACHE.insert(k, 1);\n    for x in xs { MAP.insert(x, 1); }\n}\n",
+            "src/Owner.java": "class OwnerController {\n  private final OwnerRepository owners;\n"
+                "  void saveAll(java.util.List<Owner> list) {\n    for (Owner o : list) { owners.save(o); }\n  }\n}\n",
+        })  # fmt: skip
+        g = graph(root)
+        io = {f["qualname"]: f.get("io", []) for f in g["functions"]}
+        self.assertEqual(io.get("cached"), [])  # Vaultwarden: a HashMap insert isn't a write to the database
+        self.assertTrue(io.get("OwnerController.saveAll"))  # PetClinic: a Spring Data repository is
+
+    def test_format_checks_ignored_catches_and_env_templates(self):
+        from codefactory.checks import _holds_secret, _scan
+        from codefactory.intent import swallow_intent
+
+        root = repo({"cert.rs": 'assert!(pem.starts_with("-----BEGIN PRIVATE KEY-----"));\n',
+                     "real.py": 'KEY = """-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASC\n"""\n',
+                     ".env.docker": "APP_KEY=\nAPP_DEBUG=false\nDB_PASSWORD=changethis\n",
+                     ".env": "API_TOKEN=9f8e7d6c5b4a39281706\n"})  # fmt: skip
+        found = _scan(root, ["cert.rs", "real.py"])
+        self.assertEqual([e.file for e in found["secret"].hits], ["real.py"])  # LocalSend's check isn't a key
+        self.assertFalse(_holds_secret(root / ".env.docker"))  # Monica: a template
+        self.assertTrue(_holds_secret(root / ".env"))
+        self.assertEqual(swallow_intent("} catch (_: Exception) {}", ""), "explained")  # Kotlin: ignored by name
 
 
 if __name__ == "__main__":

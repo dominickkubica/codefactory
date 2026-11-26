@@ -62,8 +62,8 @@ RULES = [
     ),
     Rule(
         r"^(?:Shell commands built at runtime|Dynamic code execution)",
-        lambda p: p.kind == "command-line tool" and not p.server, "Medium",
-        lambda p: "a command-line tool runs with its user's own rights: this matters when it processes files or text "
+        lambda p: p.kind in ("command-line tool", "data pipeline") and not p.server, "Medium",
+        lambda p: f"a {p.kind} runs with its user's own rights: this matters when it processes files or text "
         "from someone else (downloads, other people's repositories), not for the user's own input.",
     ),
     Rule(

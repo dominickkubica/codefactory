@@ -140,6 +140,8 @@ def read(root: Path, months: int = MONTHS, max_commits: int = MAX_COMMITS, timeo
 
 
 GENERATED = re.compile(
+    r"(?:^|[/_.-])generated[_.-]|(?:^|/)(?:vendor|vendored|third_party|external)/|"
+    r"(?:^|/)(?:jquery|datatables|bootstrap|lodash|moment|chart|d3|highlight)(?:[.-][\w.-]*)?\.js$|"
     r"(?:^|/)(?:generated|__generated__|gen)/|\.(?:gen|generated|g|pb|pb\.gw)\.\w+$|_pb2(?:_grpc)?\.py$|\.pb\.go$|"
     r"(?:^|/)(?:openapi|swagger)[\w.-]*\.(?:ts|js|py)$|\.min\.js$"
 )
@@ -173,7 +175,9 @@ def hotspots(h: History, g: dict, limit: int = 10) -> list[Hotspot]:
     return [x for x in out if x.score >= 0.05][:limit]
 
 
-PACKAGE_LANGS = (".go", ".kt", ".java", ".scala", ".swift", ".cs")
+PACKAGE_LANGS = (".go", ".kt", ".java", ".scala", ".swift", ".cs", ".rs")  # .rs: sibling modules of one crate
+# translations change together by design: adding a string touches every language
+TRANSLATIONS = re.compile(r"(?:^|/)(?:i18n|l10n|locales?|translations?|lang)/", re.I)
 
 
 def _same_package(a: str, b: str) -> bool:
@@ -198,7 +202,8 @@ def coupling(h: History, g: dict, limit: int = 8) -> list[Coupling]:
     for (a, b), together in h.pairs.items():
         if together < 4 or a not in known or b not in known:
             continue
-        if is_test(a) or is_test(b) or a in magnets or b in magnets or generated(a) or generated(b):
+        if (is_test(a) or is_test(b) or a in magnets or b in magnets or generated(a) or generated(b)
+                or TRANSLATIONS.search(a) or TRANSLATIONS.search(b)):  # fmt: skip
             continue  # tests change with their code by design; version files change with everything
         fewer = min(h.files[a].commits, h.files[b].commits)
         share = together / fewer if fewer else 0

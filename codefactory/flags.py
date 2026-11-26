@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 
 from .config import Config
@@ -129,11 +130,16 @@ def duplicates(g: Graph, cfg: Config) -> list[Flag]:
     return out
 
 
+NOT_PRODUCT = re.compile(r"(?:^|/)(?:database/factories|database/seeders|factories|seeds?|seeders)/")
+
+
 def import_cycles(g: Graph) -> list[Flag]:
     """Strongly connected groups of files in the import graph (Tarjan)."""
     adj = defaultdict(set)
     for e in g.edges:
-        if e.kind == "import":
+        # a Rust crate compiles as one unit, so its modules may use each other; tests and factories (fixtures for
+        # tests and seeding, like Laravel's model <-> factory pairs) aren't part of the product's structure
+        if e.kind == "import" and not any(x.endswith(".rs") or is_test(x) or NOT_PRODUCT.search(x) for x in (e.src, e.dst)):
             adj[e.src].add(e.dst)
     index, low, stack, on, comps, counter = {}, {}, [], set(), [], [0]
 

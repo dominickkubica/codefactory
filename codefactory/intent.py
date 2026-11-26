@@ -28,6 +28,8 @@ def swallow_intent(line: str, above: str) -> str | None:
     """Why an empty catch on this line is deliberate, or None if it isn't shown to be."""
     if TRAILING_COMMENT.search(line.split("catch", 1)[-1] if "catch" in line else line) or re.match(r"\s*(?://|#)\s*\S", above):
         return "explained"
+    if re.search(r"catch\s*\(\s*(?:_|ignored?|expected|unused)\b", line):  # Kotlin/Java/C#: named to say it's ignored
+        return "explained"
     if CLEANUP.search(line):
         return "cleanup"
     if FALLBACK.search(line):
@@ -74,7 +76,7 @@ def safe_names(lines: list[str], i: int, span: int = 25) -> set[str]:
                 ln,
             ):
                 safe.add(m.group(1) or m.group(2) or m.group(3))
-            if (a := re.match(r"\s*(?:const|let|var)?\s*(\w+)\s*=\s*(.+)", ln)) and not a.group(2).startswith("="):
+            if (a := re.match(r"\s*(?:const|let|var)?\s*\$?(\w+)\s*=\s*(.+)", ln)) and not a.group(2).startswith("="):
                 rhs = a.group(2)
                 if (
                     re.match(r"(?:Object\.(?:keys|values)\(\s*)?[A-Z][A-Z0-9_]{2,}\b", rhs)
@@ -83,6 +85,11 @@ def safe_names(lines: list[str], i: int, span: int = 25) -> set[str]:
                     or re.search(r"""\.join\(\s*\(?['"]\?['"]""", rhs)  # placeholders: ",".join("?" * len(ids))
                 ):
                     safe.add(a.group(1))
+    joined = " ".join(window)  # `$scope = cond ? 'concat(?, id)' : 'cast(? as text)';` (PHP, JS) or `x = 'a' if c else 'b'`
+    lit = r"""(?:'[^']*'|"[^"]*")"""
+    for m in re.finditer(rf"\$?(\w+)\s*=\s*[^;=]*?\?\s*{lit}\s*:\s*{lit}\s*;|(\w+)\s*=\s*{lit}\s+if\s+[^\n]+?\s+else\s+{lit}",
+                         joined):  # fmt: skip
+        safe.add(m.group(1) or m.group(2))
     return safe
 
 

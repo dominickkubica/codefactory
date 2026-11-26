@@ -23,7 +23,8 @@ from .paths import is_test
 
 AUTH = re.compile(
     r"auth|login|logged|jwt|token|session|permission|current_?user|require_?user|verify|protect|guard|admin|"
-    r"secured|roles?_?(?:required|allowed)|principal|bearer|api_?key|signed_?in|ensure_?user|clerk|passport",
+    r"secured|roles?_?(?:required|allowed)|principal|bearer|api_?key|signed_?in|ensure_?user|clerk|passport|"
+    r"require_?account|require_?user|authenticated",
     re.I,
 )
 SINK_KINDS = ("sql_built", "shell", "eval", "raw_html")
@@ -50,6 +51,21 @@ SPRING_AUTH = re.compile(r"@(?:PreAuthorize|Secured|RolesAllowed|PostAuthorize)\
 GO_ROUTE = re.compile(
     r"\b\w+\.(HandleFunc|Handle|GET|POST|PUT|PATCH|DELETE|Get|Post|Put|Patch|Delete|Any)\(\s*\"(/[^\"]*)\"\s*,\s*([^\n]*)"
 )
+# Laravel (routes/*.php) and Symfony attributes
+LARAVEL_ROUTE = re.compile(
+    r"Route::(get|post|put|patch|delete|any|match|resource|apiResource)\(\s*(?:\[[^\]]*\],\s*)?['\"]([^'\"]+)['\"]"
+)
+SYMFONY_ROUTE = re.compile(r"#\[Route\(\s*(?:path:\s*)?['\"]([^'\"]+)['\"][^\]]*?(?:methods:\s*\[([^\]]*)\])?")
+# Rust: Rocket / Actix attribute macros, Axum's router
+RUST_ATTR_ROUTE = re.compile(r"#\[(get|post|put|patch|delete|head|options|route)\(\s*\"([^\"]*)\"")
+AXUM_ROUTE = re.compile(r"\.route\(\s*\"(/[^\"]*)\"\s*,\s*(get|post|put|patch|delete|any)\(\s*([\w:]+)")
+RUST_GUARD = re.compile(r"impl\s*(?:<[^>]*>)?\s*FromRequest(?:Parts)?\s*(?:<[^>]*>)?\s*for\s+(\w+)")
+# ASP.NET: minimal APIs and controller attributes
+ASPNET_MAP = re.compile(r"(\w+)\.Map(Get|Post|Put|Patch|Delete|Methods)\(\s*\"([^\"]*)\"")
+ASPNET_GROUP = re.compile(r"(?:var\s+)?(\w+)\s*=\s*[^;]*?MapGroup\([^;]*;", re.S)
+ASPNET_ATTR = re.compile(r"\[Http(Get|Post|Put|Patch|Delete)(?:\(\s*\"([^\"]*)\"\s*\))?\]")
+# Phoenix (Elixir) router
+PHOENIX_ROUTE = re.compile(r"^\s*(get|post|put|patch|delete|live|resources|forward)\s+\"(/[^\"]*)\"(?:\s*,\s*([\w.]+))?", re.M)
 SINATRA = re.compile(r"^\s*(get|post|put|patch|delete)\s+['\"](/[^'\"]*)['\"]", re.M)
 RAILS_AUTH = re.compile(r"before_action\s+:(\w+[!?]?)")
 LOCAL = re.compile(r"""(?:host|bind|api_host|HOST)(?:\s*:\s*\w+)?\s*[=:]\s*['"](127\.0\.0\.1|localhost|::1)['"]""")
@@ -178,12 +194,125 @@ class _RailsControllers:
         return None
 
 
+def _php_entries(file: str, lines: list[str], text: str, module, fns: list[dict]) -> list[Entry]:
+    out = []
+    if module and re.search(r"(?:^|/)routes/[\w/]+\.php$", file):
+        auth_until = []  # brace depths of open groups whose middleware checks who's asking
+        depth = 0
+        for i, ln in enumerate(lines, 1):
+            if re.search(r"middleware\(", ln) and AUTH.search(ln) and ("{" in ln or "group(" in ln):
+                auth_until.append(depth)
+            m = LARAVEL_ROUTE.search(ln)
+            if m:
+                verb = {"any": "ANY", "match": "ANY", "resource": "ANY", "apiresource": "ANY"}.get(m.group(1).lower(),
+                                                                                                m.group(1).upper())  # fmt: skip
+                guard = "middleware(auth) group" if auth_until else ""
+                if re.search(r"->middleware\(", ln) and AUTH.search(ln.split("->middleware(", 1)[1]):
+                    guard = "->middleware(auth)"
+                out.append(Entry(module["id"], verb, "/" + m.group(2).lstrip("/"), "Laravel", file, i, guard))
+            depth += ln.count("{") - ln.count("}")
+            while auth_until and depth <= auth_until[-1]:
+                auth_until.pop()
+    for f in fns:  # Symfony: #[Route('/x', methods: ['POST'])] on a controller method
+        if f["kind"] == "module":
+            continue
+        head = "\n".join(lines[max(0, f["line"] - 6) : f["line"] + 1])
+        m = SYMFONY_ROUTE.search(head)
+        if m:
+            verb = ",".join(re.findall(r"\w+", m.group(2) or "")).upper() or "ANY"
+            auth = re.search(r"#\[IsGranted|denyAccessUnlessGranted|#\[Security", head + "\n".join(lines[f["line"] : f["end"]]))
+            out.append(Entry(f["id"], verb, m.group(1), "Symfony", file, f["line"], auth.group(0) if auth else ""))
+    return out
+
+
+def _rust_entries(file, lines, text, module, named, fns, guards: set[str]) -> list[Entry]:
+    out = []
+    for f in fns:  # Rocket / Actix: the attribute is on (or just above) the function's first line
+        if f["kind"] == "module":
+            continue
+        # the attributes stacked directly above (or starting) this function, then its signature up to the body
+        start = f["line"] - 1
+        while start > 0 and re.match(r"\s*(?:#\[|///)", lines[start - 1]):
+            start -= 1
+        attrs = "\n".join(ln for ln in lines[start : f["line"]] if re.match(r"\s*#\[", ln))
+        sig = "\n".join(lines[f["line"] - 1 : f["line"] + 6]).split("{")[0]
+        m = RUST_ATTR_ROUTE.search(attrs + "\n" + sig.split("fn ", 1)[0])
+        if m:
+            auth = next((g for g in guards if re.search(rf":\s*{g}\b", sig)), "") or ((a := AUTH.search(sig)) and a.group(0))
+            out.append(Entry(f["id"], m.group(1).upper(), m.group(2), "Rust", file, f["line"], auth or ""))
+    for i, ln in enumerate(lines, 1):  # Axum: .route("/x", get(handler))
+        m = AXUM_ROUTE.search(ln)
+        if m and (handler := named.get(m.group(3).split("::")[-1]) or module):
+            out.append(Entry(handler["id"], m.group(2).upper(), m.group(1), "Axum", file, i, ""))
+    return out
+
+
+def _aspnet_entries(file, lines, text, module, fns) -> list[Entry]:
+    out = []
+    authed = {m.group(1) for m in ASPNET_GROUP.finditer(text) if "RequireAuthorization" in m.group(0)}
+    class_auth = re.search(r"\[Authorize[\](]", text) and not re.search(r"\[AllowAnonymous\]", text)
+    for i, ln in enumerate(lines, 1):  # minimal APIs: app.MapGet("/x", ...), group.MapPost(...)
+        m = ASPNET_MAP.search(ln)
+        if m and module:
+            tail = " ".join(lines[i - 1 : i + 3])
+            auth = "RequireAuthorization()" if (m.group(1) in authed or "RequireAuthorization" in tail) else ""
+            out.append(Entry(module["id"], m.group(2).upper(), m.group(3), "ASP.NET", file, i, auth))
+    for f in fns:  # controllers: [HttpGet("x")] on a method, [Authorize] on it or its class
+        if f["kind"] == "module":
+            continue
+        head = "\n".join(lines[max(0, f["line"] - 6) : f["line"] + 1])
+        m = ASPNET_ATTR.search(head)
+        if m:
+            auth = "[Authorize]" if ("[Authorize" in head or class_auth) and "[AllowAnonymous]" not in head else ""
+            out.append(Entry(f["id"], m.group(1).upper(), m.group(2) or "", "ASP.NET", file, f["line"], auth))
+    return out
+
+
+def _phoenix_entries(file, lines, module, plugs: dict[str, str]) -> list[Entry]:
+    """Routes from a Phoenix router. Auth: a `pipe_through` or `live_session` with an auth plug or hook, or a `plug`
+    in the controller (or LiveView) the route points at."""
+    out, piped, session = [], "", ""
+    for i, ln in enumerate(lines, 1):
+        if m := re.search(r"pipe_through\s+(.+)", ln):
+            piped = m.group(1)
+        elif re.match(r"\s*scope\b", ln):
+            piped = ""
+        if m := re.match(r"\s*live_session\s+(.+)", ln):
+            session = m.group(1)
+        elif session and re.match(r"\s*end\b", ln) and len(ln) - len(ln.lstrip()) <= 4:
+            session = ""
+        m = PHOENIX_ROUTE.match(ln)
+        if m and module:
+            target = (m.group(3) or "").split(".")[-1]
+            auth = (
+                (AUTH.search(piped) and f"pipe_through {piped.strip()}")
+                or (AUTH.search(session) and f"live_session {session.strip()[:60]}")
+                or (target in plugs and f"{target}: plug {plugs[target]}")
+                or ""
+            )
+            verb = "ANY" if m.group(1) in ("live", "resources", "forward") else m.group(1).upper()
+            out.append(Entry(module["id"], verb, m.group(2), "Phoenix", file, i, auth))
+    return out
+
+
 def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
     cache: dict[str, list[str]] = {}
     by_file: dict[str, list[dict]] = {}
     for f in g["functions"]:
         by_file.setdefault(f["file"], []).append(f)
     entries: list[Entry] = []
+    rust_guards: set[str] = set()  # request guards that check a token or session (`impl FromRequest for Headers`)
+    for f in (f for f in by_file if f.endswith(".rs")):
+        rust_text = "\n".join(_read(root, cache, f))
+        rust_guards |= {m.group(1) for m in RUST_GUARD.finditer(rust_text) if AUTH.search(rust_text[m.end() : m.end() + 3000])}
+    phoenix_plugs: dict[str, str] = {}  # controller or LiveView short name -> the auth plug / on_mount hook it uses
+    for f in (f for f in by_file if f.endswith(".ex")):
+        ex_text = "\n".join(_read(root, cache, f))
+        mod = re.search(r"^\s*defmodule\s+([\w.]+)", ex_text, re.M)
+        guard = next((m.group(1) for m in re.finditer(r"^\s*(?:plug|on_mount)\s+([\w.:]+)", ex_text, re.M)
+                      if AUTH.search(m.group(1))), "")  # fmt: skip
+        if mod and guard:
+            phoenix_plugs[mod.group(1).split(".")[-1]] = guard
     rails = _RailsControllers(root, [f for f in by_file if f.endswith("_controller.rb") or "controllers/concerns/" in f], cache)
     aliases = {}  # FastAPI: CurrentUser = Annotated[User, Depends(get_current_user)]
     for file in by_file:
@@ -265,7 +394,13 @@ def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
                     if f["kind"] == "module" or not (NEXT_METHOD.match(f["name"]) or f.get("exported")):
                         continue
                     body = "\n".join(lines[f["line"] - 1 : f["end"]])
-                    auth = re.search(r"getServerSession|getToken|auth\(\)|currentUser|requireAuth|clerk|withAuth", body)
+                    auth = re.search(
+                        r"getServerSession|getToken|auth\(\)|currentUser|requireAuth|clerk|withAuth|"
+                        r"verify\w*(?:user|access|auth|session|token)\w*\(|"
+                        r"constructEvent\(|verify\w*signature|webhooks?\.verify",  # a webhook checks its signature
+                        body,
+                        re.I,
+                    )
                     path = "/" + re.sub(r"^.*?(?:pages/api|app)/|/?route\.[jt]sx?$|\.[jt]sx?$", "", file)
                     method = f["name"] if NEXT_METHOD.match(f["name"]) else "ANY"
                     entries.append(Entry(f["id"], method, path, "Next.js", file, f["line"], auth.group(0) if auth else ""))
@@ -283,6 +418,14 @@ def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
                     entries.append(
                         Entry(f["id"], verb, m.group(2) or "", "Spring", file, f["line"], auth.group(0) if auth else "")
                     )
+        elif file.endswith(".php"):
+            entries += _php_entries(file, lines, text, module, fns)
+        elif file.endswith(".rs"):
+            entries += _rust_entries(file, lines, text, module, named, fns, rust_guards)
+        elif file.endswith(".cs"):
+            entries += _aspnet_entries(file, lines, text, module, fns)
+        elif file.endswith(".ex") and file.endswith("router.ex"):
+            entries += _phoenix_entries(file, lines, module, phoenix_plugs)
         elif file.endswith(".go"):
             for i, ln in enumerate(lines, 1):
                 m = GO_ROUTE.search(ln)

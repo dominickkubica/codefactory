@@ -24,6 +24,8 @@ from pathlib import Path
 from .paths import is_test
 
 MAX_READ = 400_000  # bytes per file read for sensitive-data detection: past that it's data or generated
+# examples, demos, tests and end-to-end harnesses: they show or check the product, they aren't it
+EXAMPLE_DIR = re.compile(r"(?:^|/)(?:examples?|samples?|demos?|docs?|tests?|e2e|playwright|cypress|fixtures|benchmarks?)/", re.I)
 SKIP_DIRS = {"node_modules", ".git", ".codefactory", ".venv", "venv", "dist", "build", "Pods", ".expo"}
 
 # category -> (specific APIs: one use is enough; words: in at least two files; dependencies that mean it on their own).
@@ -32,7 +34,7 @@ SENSITIVE: dict[str, tuple[str, str, tuple[str, ...]]] = {
     "health and fitness": (
         r"\bHealthKit\b|\bHKHealthStore\b|\bHKQuantityType\w*|\bHKWorkout\w*|\bHealthConnect\w*|\bhealth_connect\b",
         r"\bheart_?rate\w*|\bheartRate\w*|\bblood_?(?:pressure|glucose|oxygen)\w*|\bbodyFat\w*|\bbody_?fat\w*|"
-        r"\bbody_?weight\w*|\bbodyWeight\w*|\bmenstrua\w*|\bmedications?\b|\bdiagnos[ie]s\b|\bsymptoms?\b|"
+        r"\bbody_?weight\w*|\bbodyWeight\w*|\bmenstrua\w*|(?<!Icons\.)\bmedications?\b|\bdiagnos[ie]s\b|"
         r"\bcalories\b|\bworkouts?\b|\bsleep_?(?:stage|score)\w*",
         ("react-native-health", "@kingstinct/react-native-healthkit", "react-native-health-connect", "expo-health"),
     ),
@@ -71,6 +73,12 @@ SENSITIVE: dict[str, tuple[str, str, tuple[str, ...]]] = {
          "firebase-admin", "@supabase/supabase-js", "supabase"),
     ),
 }  # fmt: skip
+# generated code and translations: their words are strings for the UI, not data the app handles
+NOT_PRODUCT_TEXT = re.compile(
+    r"(?:^|/)(?:i18n|l10n|locales?|translations?|lang|gen|generated)/|\.(?:g|gen|generated|freezed)\.\w+$|"
+    r"(?:^|[/_.-])generated[_.-]|strings_\w+\.\w+$",
+    re.I,
+)
 # comments and string literals, removed before looking for words (newlines kept, so line numbers stay right)
 NOT_CODE = re.compile(
     r'"""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\'|/\*[\s\S]*?\*/|"(?:\\.|[^"\\\n])*"|\'(?:\\.|[^\'\\\n])*\'|`(?:\\.|[^`\\])*`|//[^\n]*|#[^\n]*'
@@ -89,14 +97,19 @@ LOCAL_DB = {
     "realm-kotlin": "Realm", "io.realm.kotlin": "Realm", "objectbox": "ObjectBox", "sqflite": "sqflite", "hive": "Hive",
     "isar": "Isar", "drift": "Drift",
 }  # fmt: skip
-TEMPLATING = {"spring-boot-starter-thymeleaf", "thymeleaf", "jinja2", "django", "rails", "actionview", "ejs", "pug",
-              "handlebars", "express-handlebars", "nunjucks", "freemarker", "twig",
-              "spring-boot-starter-freemarker", "htmx"}  # fmt: skip
+TEMPLATING = {
+    "spring-boot-starter-thymeleaf", "thymeleaf", "jinja2", "django", "rails", "actionview", "ejs", "pug", "handlebars",
+    "express-handlebars", "nunjucks", "freemarker", "twig", "spring-boot-starter-freemarker", "htmx",
+    "laravel/framework", "symfony/twig-bundle", "inertiajs/inertia-laravel", "phoenix_live_view", "phoenix_html",
+    "rocket_dyn_templates", "askama", "tera", "microsoft.aspnetcore.components.web",
+}  # fmt: skip
 WEB_UI = {"react", "vue", "svelte", "@angular/core", "solid-js", "preact", "next", "nuxt", "@sveltejs/kit", "astro"}
 DESKTOP = {"electron": "Electron", "@tauri-apps/api": "Tauri", "pyqt5": "PyQt", "pyqt6": "PyQt", "pyside6": "PySide",
            "wxpython": "wxPython", "kivy": "Kivy"}  # fmt: skip
-PIPELINE = {"pandas", "polars", "duckdb", "pyspark", "apache-airflow", "dagster", "prefect", "dbt-core", "luigi",
-            "great-expectations"}  # fmt: skip
+PIPELINE = {
+    "pandas", "polars", "duckdb", "pyspark", "apache-airflow", "dagster", "prefect", "dbt-core", "luigi",
+    "great-expectations", "torch", "tensorflow", "jax", "scikit-learn", "xgboost", "lightgbm",
+}  # fmt: skip
 CLI_LIBS = {"click", "typer", "fire", "docopt", "commander", "yargs", "oclif", "@oclif/core", "cac", "meow"}
 WORKSPACES = {"packages", "apps", "services", "libs", "modules", "projects", "crates", "plugins"}
 # what a deploy job runs: a cloud CLI or action, not just the word "deploy"
@@ -176,8 +189,10 @@ def _manifests(root: Path) -> dict:
     """Dependencies and entry points from every manifest at the root, one folder down, and inside workspace folders
     (`packages/*`, `apps/*`, `services/*`…, where monorepos keep their parts)."""
     out: dict = {"deps": {}, "npm_bin": [], "py_scripts": [], "go_main": [], "rust_bin": False, "flutter": False,
-                 "pkg_main": [], "py_lib": False, "files": set(), "lib": [], "cli": [], "android": []}  # fmt: skip
-    top = [p for p in sorted(root.iterdir()) if p.is_dir() and p.name not in SKIP_DIRS and not p.name.startswith(".")]
+                 "pkg_main": [], "py_lib": False, "files": set(), "lib": [], "cli": [], "android": [],
+                 "swift_lib": False}  # fmt: skip
+    top = [p for p in sorted(root.iterdir()) if p.is_dir() and p.name not in SKIP_DIRS and not p.name.startswith(".")
+           and not EXAMPLE_DIR.search(p.name + "/")]  # fmt: skip
     nested = [c for d in top if d.name in WORKSPACES for c in sorted(d.iterdir()) if c.is_dir() and c.name not in SKIP_DIRS]
     for d in [root, *top, *nested[:60]]:
         rel = "" if d == root else d.relative_to(root).as_posix() + "/"
@@ -234,6 +249,8 @@ def _manifests(root: Path) -> dict:
         for name in DEPLOY_FILES:
             if (d / name).is_file():
                 out["files"].add(f"{rel}{name}")
+        for docker in sorted([*d.glob("Dockerfile.*"), *d.glob("docker/Dockerfile*")])[:1]:  # Dockerfile.alpine, docker/
+            out["files"].add(docker.relative_to(root).as_posix())
     catalog = root / "gradle" / "libs.versions.toml"  # Gradle version catalogs: where Android projects list libraries
     if catalog.is_file():
         text = catalog.read_text(encoding="utf-8", errors="replace")
@@ -295,11 +312,18 @@ def _other_manifests(d: Path, rel: str, out: dict) -> None:
         except ValueError:
             data = {}
         for dep in data.get("require", {}):
+            out["deps"].setdefault(dep.lower(), f"{rel}composer.json")  # the full name: "laravel/framework"
             out["deps"].setdefault(dep.split("/")[-1].lower(), f"{rel}composer.json")
         if data.get("type") == "library":
             out["lib"].append(f"{rel}composer.json (type library)")
         if data.get("bin"):
             out["cli"].append(f"{rel}composer.json bin")
+    if (d / "mix.exs").is_file():  # Elixir: {:phoenix, "~> 1.7"}
+        for dep in re.findall(r"\{:(\w+),", read(d / "mix.exs")):
+            out["deps"].setdefault(dep, f"{rel}mix.exs")
+    if (d / "Package.swift").is_file() and re.search(r"\.library\(", read(d / "Package.swift")):
+        out["lib"].append(f"{rel}Package.swift (.library product)")
+        out["swift_lib"] = True
     for csproj in sorted(d.glob("*.csproj"))[:3]:
         text = read(csproj)
         if "<OutputType>Exe" in text and "Sdk.Web" not in text:
@@ -353,15 +377,26 @@ def _head(root: Path, rel: str, size: int = 4000) -> str:
 SCHEMA_CONTACT = re.compile(
     r"""t\.(?:string|citext|text)\s+["'](?:email|phone(?:_number)?|first_name|last_name|date_of_birth|address)["']|"""
     r"CREATE TABLE[^;]{0,800}?\b(?:email|phone(?:_number)?|first_name|last_name|date_of_birth)\b|"
-    r"^\s*(?:email|phone|phoneNumber|firstName|lastName|dateOfBirth)\s+String\b",
+    r"^\s*(?:email|phone|phoneNumber|firstName|lastName|dateOfBirth)\s+String\b|"
+    r"\$table->(?:string|text|date|char)\(\s*['\"](?:email|phone(?:_number)?|first_name|last_name|birthdate|"
+    r"date_of_birth|address|street|postal_code)['\"]",
     re.I | re.M,
 )
 
 
 def _schema_contact(root: Path, texts: dict[str, str]) -> list[str]:
-    files = [f for f in texts if re.search(r"(?:^|/)(?:schema\.rb|structure\.sql)$|(?:^|/)migrations?/", f)]
+    files = [f for f in texts if re.search(r"(?:^|/)(?:schema\.rb|structure\.sql)$|(?:^|/)migrations?/", f)][:400]
     extra = []
-    for pattern in ("**/schema.prisma", "db/*.sql", "**/migrations/*.sql", "schema.sql", "db/schema.rb", "*/db/schema.rb"):
+    for pattern in (
+        "**/schema.prisma",
+        "db/*.sql",
+        "**/migrations/*.sql",
+        "schema.sql",
+        "db/schema.rb",
+        "*/db/schema.rb",
+        "database/migrations/*.php",
+        "priv/repo/migrations/*.exs",
+    ):
         extra += [p_.relative_to(root).as_posix() for p_ in root.glob(pattern) if not SKIP_DIRS & set(p_.relative_to(root).parts)]
     for fid in files + sorted(set(extra))[:40]:
         text = texts.get(fid) or _head(root, fid, MAX_READ)
@@ -405,31 +440,33 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None) -> Pro
 
     # what it is
     roles: list[tuple[str, list[str]]] = []
-    wrapped_mobile: list[str] = []
-    mobile = has("expo", "react-native") or (["pubspec.yaml (Flutter)"] if m["flutter"] else [])
-    if not mobile:
-        apple = [
-            f for f in _swift_files(root, files) if re.search(r"\bimport (?:SwiftUI|UIKit)\b", texts.get(f) or _head(root, f))
-        ]
-        android = [
-            p_.relative_to(root).as_posix()
-            for p_ in root.glob("**/AndroidManifest.xml")
-            if not SKIP_DIRS & set(p_.relative_to(root).parts)
-        ][:1]
-        mobile = [f"{apple[0]} (SwiftUI/UIKit)"] if apple else (m["android"] or android)
-        wrapper = has("@capacitor/core", "@capacitor/ios", "cordova", "@ionic/core")
-        if mobile and (wrapper or (has(*WEB_UI) and len(apple) < 10)):  # a web app's thin native shell
-            wrapped_mobile = mobile
-            mobile = []
-    if mobile:
-        roles.append(("mobile app", [f"{x} in {deps[x]}" if x in deps else x for x in mobile]))
-    web_ui = [f"{d} in {deps[d]}" for d in has(*WEB_UI)]
-    templates = [f"{d} in {deps[d]} (server-rendered pages)" for d in has(*TEMPLATING)]
     # endpoints in top-level examples, docs or benchmarks show what a library can do, not what this project serves
     # (only near the top: `org/springframework/samples/petclinic` is a Java package, not an examples folder)
     endpoints = [
         e for e in surface.entries if not re.match(r"(?:[^/]+/)?(?:examples?|samples?|demos?|docs?|benchmarks?)/", e.file)
     ]
+    wrapped_mobile: list[str] = []
+    mobile = has("expo", "react-native") or (["pubspec.yaml (Flutter)"] if m["flutter"] else [])
+    if not mobile:
+        apple = [
+            f
+            for f in _swift_files(root, files)
+            if not EXAMPLE_DIR.search(f) and re.search(r"\bimport (?:SwiftUI|UIKit)\b", texts.get(f) or _head(root, f))
+        ]
+        android = [
+            rel
+            for p_ in root.glob("**/AndroidManifest.xml")
+            if not SKIP_DIRS & set(p_.relative_to(root).parts) and not EXAMPLE_DIR.search(rel := p_.relative_to(root).as_posix())
+        ][:1]
+        mobile = [f"{apple[0]} (SwiftUI/UIKit)"] if apple else (m["android"] or android)
+        wrapper = has("@capacitor/core", "@capacitor/ios", "cordova", "@ionic/core")
+        if mobile and (wrapper or (has(*WEB_UI) and len(apple) < 10) or len(endpoints) >= 5 or m["swift_lib"]):
+            wrapped_mobile = mobile  # a web app's native shell, a server project's client, or a Swift package's demo
+            mobile = []
+    if mobile:
+        roles.append(("mobile app", [f"{x} in {deps[x]}" if x in deps else x for x in mobile]))
+    web_ui = [f"{d} in {deps[d]}" for d in has(*WEB_UI)]
+    templates = [f"{d} in {deps[d]} (server-rendered pages)" for d in has(*TEMPLATING)]
     frameworks = sorted({e.framework for e in endpoints})
     if endpoints and (web_ui or templates) and not mobile:
         roles.append(("web app", [f"{len(endpoints)} HTTP endpoints ({', '.join(frameworks)})", (web_ui or templates)[0]]))
@@ -458,11 +495,24 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None) -> Pro
         role = ("data pipeline", [f"{x} in {deps[x]}" for x in pipeline[:3]])
         # a few endpoints (an internal tool, a status page) don't make a pipeline repository a web service
         roles.insert(0, role) if roles and roles[0][0] == "web service" else roles.append(role)
+    if (
+        not roles
+        and not m["lib"]
+        and not m["py_lib"]
+        and not m["pkg_main"]
+        and not any(
+            (root / x).is_file() for x in ("package.json", "pyproject.toml", "setup.py", "Cargo.toml", "go.mod", "pom.xml")
+        )
+    ):
+        ml = [f for f in files if f.endswith(".py") and re.search(r"^\s*(?:import|from)\s+(?:torch|tensorflow|jax|pandas|polars|"
+              r"sklearn|numpy)\b", texts.get(f, ""), re.M) and "__main__" in texts.get(f, "")]  # fmt: skip
+        if ml:  # no manifest at all: scripts that train or transform data
+            roles.append(("data pipeline", [f"`{ml[0]}` imports a data or ML library and runs as a script"]))
     if not roles and (m["lib"] or m["py_lib"] or m["pkg_main"] or (not m["rust_bin"] and (root / "Cargo.toml").is_file())):
         roles.append(("library", (m["lib"] + m["pkg_main"])[:1] or ["a package manifest and no app or entry point"]))
     p.endpoints = len(endpoints)
     if wrapped_mobile:
-        roles.append(("mobile app", [f"{wrapped_mobile[0]}, a native shell around the web app"]))
+        roles.append(("mobile app", [f"{wrapped_mobile[0]}, a client of the rest"]))
     if roles:
         p.kind, p.kind_evidence = roles[0]
         p.also = [r for r, _ in roles[1:] if r != p.kind]
@@ -483,11 +533,18 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None) -> Pro
 
     # where it runs, who reaches it
     deployed = sorted(m["files"])
-    side_server = p.kind in ("data pipeline", "command-line tool", "library") and len(endpoints) <= 5
+    # the main role decides where it runs: an app's (or a tool's) own small server is a part of it, not what it is
+    side_server = (p.kind in ("data pipeline", "command-line tool", "library") and len(endpoints) <= 5) or p.kind in (
+        "mobile app",
+        "desktop app",
+    )
     if (endpoints and not side_server) or (deployed and p.kind in ("web app", "web service")):
         if deployed:
             p.deployment = "deployed server"
-            p.deployment_evidence = [f"{x} ({DEPLOY_FILES.get(x.split('/')[-1], 'CI deploy')})" for x in deployed[:3]]
+            p.deployment_evidence = [
+                f"{x} ({DEPLOY_FILES.get(x.split('/')[-1], 'Docker' if 'Dockerfile' in x else 'CI deploy')})"
+                for x in deployed[:3]
+            ]
         else:
             p.deployment = {"local": "local server", "configurable": "LAN server", "open": "network server"}.get(
                 surface.exposure, "network server"
@@ -499,7 +556,8 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None) -> Pro
             p.deployment_evidence = [f"data kept on the device ({', '.join(p.stores)}), no server in the repository"]
         else:
             p.deployment = "client app"
-            p.deployment_evidence = ["no local database and no server in the repository: it talks to a backend elsewhere"]
+            p.deployment_evidence = ["no local database and no server in the repository (online features, if any, use "
+                                     "a service elsewhere)"]  # fmt: skip
     elif p.kind in ("command-line tool", "library", "data pipeline", "desktop app"):
         p.deployment = "user's machine"
         p.deployment_evidence = [f"a {p.kind}: runs where it's installed"]
@@ -525,7 +583,7 @@ def detect(root: Path, g: dict, surface=None, config: dict | None = None) -> Pro
         p.users_evidence = ["whoever runs it"]
 
     # what it holds
-    code = {fid: code_only(text) for fid, text in texts.items()}
+    code = {fid: code_only(text) for fid, text in texts.items() if not NOT_PRODUCT_TEXT.search(fid)}
     schema = _schema_contact(root, texts)
     for category, (strong, words, dep_names) in SENSITIVE.items():
         found = [f"{d} in {deps[d]}" for d in dep_names if d in deps][:2]

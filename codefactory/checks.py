@@ -47,8 +47,12 @@ class Check:
 
 PATTERNS: dict[str, list[re.Pattern]] = {
     "secret": [
-        # a key block, not a sentence about one: no END marker on the same line ("wrapped within -----BEGIN … END-----")
-        re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----(?![^\n]*-----END)"),
+        # a key block: the header ends its line, or key data follows it in a string. Not a sentence about one
+        # ("wrapped within -----BEGIN … END-----") or a format check (`starts_with("-----BEGIN PRIVATE KEY-----")`)
+        re.compile(
+            r"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----[ \t]*$|"
+            r"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----(?:\\r)?\\n[A-Za-z0-9+/=]{16,}"
+        ),
         re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
         re.compile(r"\b(?:ghp|gho|ghu|ghs)_[A-Za-z0-9]{36}\b"),
         re.compile(r"\bxox[abpr]-[A-Za-z0-9-]{10,}"),
@@ -419,6 +423,21 @@ def _python_deps(pyproject: str) -> list[str]:
     return [re.split(r"[\s<>=!~\[;@]", s, maxsplit=1)[0].lower() for s in specs if isinstance(s, str) and s]
 
 
+def _holds_secret(env: Path) -> bool:
+    """An env file with a real value for a secret-looking key (a template with `APP_KEY=` empty isn't a leak)."""
+    try:
+        text = env.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    for m in re.finditer(
+        r"^\s*(?:export\s+)?(\w*(?:KEY|SECRET|TOKEN|PASSWORD|PASSWD|PWD|CREDENTIAL)\w*)[ \t]*=[ \t]*(.*)$", text, re.M | re.I
+    ):
+        value = m.group(2).strip().strip("'\"")
+        if len(value) >= 6 and not re.search(PLACEHOLDER + r"|^\$\{?\w+|changethis|secret$|password$", value, re.I):
+            return True
+    return False
+
+
 def scan_repo(root: Path) -> dict:
     info: dict = {
         "ci": [],
@@ -510,7 +529,9 @@ def scan_repo(root: Path) -> dict:
     info["readme"] = next((f for f in ("README.md", "README.rst", "README.txt", "README") if (root / f).exists()), None)
     info["license"] = next((f for f in ("LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING") if (root / f).exists()), None)
     info["env_files"] = [
-        p.name for p in root.glob(".env*") if p.is_file() and not p.name.endswith((".example", ".sample", ".template"))
+        p.name
+        for p in root.glob(".env*")
+        if p.is_file() and not p.name.endswith((".example", ".sample", ".template", ".dist")) and _holds_secret(p)
     ]
     if info["readme"]:
         t = (root / info["readme"]).read_text(encoding="utf-8", errors="replace").lower()

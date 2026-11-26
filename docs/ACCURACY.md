@@ -165,6 +165,20 @@ A second round covered other kinds of projects:
 | gotify/server (Go + React) | web app, deployed, multi-user, passwords | files in one Go package reported as "changing together without importing each other" (a package needs no imports) |
 | owid/etl (data pipeline) | data pipeline (also CLI, web service), user's machine | three FastAPI endpoints in an internal tool made it a "web service"; `xoxb-not-a-real-token` in a test reported as a Slack token |
 
+A third round added frameworks and kinds not yet seen:
+
+| Repository | Profile after fixes | What it caught in codefactory |
+|---|---|---|
+| shadcn-ui/taxonomy (Next.js) | web app, multi-user, financial, contact details, passwords | a handler checking access with `verifyCurrentUserHasAccessToPost()` and a Stripe webhook checking its signature counted as unprotected |
+| monicahq/monica (Laravel) | web app, deployed, multi-user, contact details, financial | Laravel routes (and `middleware('auth')` groups) not found; contacts in migrations (`$table->string('first_name')`) missed; a `.env.docker` template with an empty key reported as committed secrets; SQL from one of two fixed fragments reported as injection; Laravel's model/factory pairs reported as import loops |
+| dani-garcia/vaultwarden (Rust) | web app, deployed, multi-user, passwords | Rocket routes not found, and its `Headers` request guard not seen as auth; a Playwright harness's package.json taken as the product; `HashMap.insert` read as a database write (four "unprotected writes" that were caches) |
+| dotnet/eShop (ASP.NET) | web service (also a mobile client), multi-user | minimal-API and controller routes not found, so its MAUI client was taken as the product |
+| localsend/localsend (Flutter) | mobile app | "health data" from a generated translation file and an icon name; a format check (`starts_with("-----BEGIN PRIVATE KEY-----")`) reported as a key; Kotlin's `catch (_: Exception) {}` reported as swallowed; module cycles inside one Rust crate reported as import loops; generated bridge code as the top hotspots |
+| marktext/marktext (Electron) | desktop app | translation files reported as coupled (they change together by design). Its one High finding, a shell command built from a file path, is real |
+| Alamofire/Alamofire (Swift) | library | `Package.swift` not read, so its Example app made it a mobile app |
+| plausible/analytics (Phoenix) | web app, deployed, multi-user, contact details, passwords | Phoenix routes not found; auth in controller plugs and `live_session` not seen |
+| karpathy/nanoGPT | data pipeline | no manifest: unknown |
+
 Of the review findings checked by hand on these repositories, the false ones were fixed (four security findings in
 round 1; in round 2, every Critical and High one) and the rest held: Loop's key in history, the FastAPI template's
 committed `.env`, PetClinic's unauthenticated write endpoints. The hotspots matched what the projects' histories show: Actual's transactions table (40 changes,

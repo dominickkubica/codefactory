@@ -3,6 +3,37 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.19.0 · 2026-11-26
+
+A third round of public repositories: new frameworks, and the false findings they showed (see docs/ACCURACY.md).
+
+### Added
+- Attack surface for **Laravel** (routes files, `middleware('auth')` groups) and **Symfony** (`#[Route]`,
+  `#[IsGranted]`), **Rust** (Rocket and Actix attributes, Axum routers; request guards whose `FromRequest` checks a
+  token or session count as auth), **ASP.NET** (minimal APIs with `RequireAuthorization()` groups, controllers with
+  `[Authorize]`) and **Phoenix** (router, `pipe_through`, `live_session`, controller plugs).
+- Profile: `Package.swift` libraries, `mix.exs`, full Composer names, Dockerfile variants, server-rendered pages in
+  Laravel, Phoenix, Rocket and Blazor; scripts with no manifest that import a data or ML library are a data pipeline.
+- A receiver declared as a repository, DAO, entity manager or database context is a database (Spring Data's
+  `owners.save()`, Room's `dao.insert()`, Core Data's `context.save()`).
+
+### Fixed
+- `insert`, `save`, `update`, `select` on an unknown object are database calls only in Ruby and PHP (Active Record,
+  Eloquent); in Rust, Go, Java, Kotlin and C# they're usually collections.
+- Next.js handlers that call a `verify…Access/User/Session(…)` check, and webhooks that check a signature
+  (`constructEvent`), count as protected.
+- Committed env files are reported only when one holds a real value for a secret-looking key, not for templates.
+- A private-key header counts only as a key block (ending its line, or followed by key data), not a format check.
+- `catch (_: Exception) {}` (and `ignored`, `expected`) is deliberate.
+- Import loops skip Rust (a crate may cycle), test helpers, and factories and seeders.
+- Variables set to one of two string literals (`$x = cond ? 'a' : 'b'`) are safe in SQL.
+- Code execution in a data pipeline is ranked Medium, as in a command-line tool.
+- Profile: example, test and end-to-end folders aren't the product; a server project's mobile client and a Swift
+  package's demo app don't make it a mobile app; generated and translation files don't count as sensitive data; an
+  app's own small server doesn't change where it runs; "client app" no longer claims a backend.
+- Hotspots and coupling skip vendored libraries (jQuery, DataTables…), generated code (`frb_generated.*`) and
+  translation files; Rust files in one folder are one module.
+
 ## 0.18.2 · 2026-11-25
 
 Fixes from a second round of public repositories: Rails, Django, Kotlin Android, two Go services and a data pipeline

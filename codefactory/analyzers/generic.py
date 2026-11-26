@@ -88,10 +88,34 @@ IO_RECEIVER = re.compile(
 )
 IO_NAME = re.compile(
     r"(?:^|[.:>])(?:query|execute|executeQuery|executeUpdate|exec_query|rawQuery|QueryRow|QueryContext|ExecContext|"
-    r"Exec|urlopen|fetch|findById|findOne|findAll|find_by|where|save!?|create!?|update!?|destroy|insert|select|"
+    r"Exec|urlopen|fetch|findById|findOne|findAll|find_by|"
     r"Get|Post|Do|send|request|download|upload|read_to_string|readFile|writeFile|File\.(?:read|write|open)\w*|"
     r"fopen|fread|fwrite|curl_exec|file_get_contents|sqlite3_exec|PQexec)$"
 )
+# ORM verbs (Active Record, Eloquent): in Ruby and PHP `x.save` / `->update()` is a database call; in Rust, Go, Java,
+# Kotlin or C# `map.insert(k, v)`, `set.update()` or `list.select()` is a collection
+ORM_NAME = re.compile(r"(?:^|[.:>])(?:where|save!?|create!?|update!?|destroy|insert|select|delete!?)$")
+ORM_LANGS = (".rb", ".php")
+# a receiver declared as a repository, DAO, entity manager or database context: `owners.save(o)` where
+# `OwnerRepository owners` (Spring Data), `dao.insert(x)` (Room), `context.save()` (Core Data)
+IO_TYPE = re.compile(r"(?:Repository|Repo|Dao|DAO|Mapper|EntityManager|JdbcTemplate|DbContext|ManagedObjectContext|"
+                     r"ModelContext|Realm|SQLiteDatabase|Connection|DataSource|Session|Client)$")  # fmt: skip
+IO_VERB = re.compile(r"(?:^|[.:>])(?:find\w*|get\w*|save\w*|delete\w*|remove\w*|insert\w*|update\w*|upsert\w*|"
+                     r"query\w*|exists\w*|count\w*|fetch\w*|execute\w*|persist|merge|flush|commit)$")  # fmt: skip
+
+
+# Core Data, SwiftData and Realm: saving or fetching through a context is disk I/O
+SWIFT_STORE = re.compile(r"(?:^|\.)(?:context|viewContext|managedObjectContext|backgroundContext|moc|modelContext|realm)\."
+                         r"(?:save|fetch\w*|delete|insert|perform\w*|count|write|objects|add)$")  # fmt: skip
+
+
+def _typed_io(callee: str, types: dict[str, str]) -> bool:
+    parts = [p for p in re.split(r"\.|->|::|\?\.", callee) if p]
+    if len(parts) < 2:
+        return False
+    receiver = parts[-2].lstrip("$_")
+    typ = types.get(receiver) or types.get("_" + receiver) or ""
+    return bool(IO_TYPE.search(typ))
 
 
 # Ruby on Rails: ActiveRecord class methods load from the database (`Report.find(id)` in a loop is the N+1)
@@ -348,6 +372,9 @@ def link(g: Graph, parsed: dict[str, dict], associations: re.Pattern | None = No
                 if not cands and (
                     IO_RECEIVER.search(callee)
                     or IO_NAME.search(callee)
+                    or (src.split("::")[0].endswith(ORM_LANGS) and ORM_NAME.search(callee))
+                    or (src.split("::")[0].endswith(".swift") and SWIFT_STORE.search(callee))
+                    or (_typed_io(callee, types) and (ORM_NAME.search(callee) or IO_VERB.search(callee)))
                     or (src.split("::")[0].endswith(".rb") and AR.search(callee))
                     or (associations and src.split("::")[0].endswith(".rb") and associations.search(callee))
                 ):
