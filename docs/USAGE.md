@@ -521,9 +521,9 @@ are only hints. In practice:
 Every command prints `file:line`, and `--json` is available on `flags`, `plan`, `context`, `trace`, `path` and `query`.
 
 **Cloud sessions** (Claude Code on the web) start from a fresh machine each time. The hook installs codefactory
-there, as long as the machine can reach GitHub and the codefactory repository is public; for a private copy, attach
-the codefactory repository to the session (the hook then installs that checkout) or add the install to the cloud
-environment's setup script.
+there from PyPI, which cloud environments reach by default. To use your own copy instead, attach the codefactory
+repository to the session (the hook then installs that checkout), or add the install to the cloud environment's
+setup script.
 
 ## Asking questions: trace, path, context, SQL
 
