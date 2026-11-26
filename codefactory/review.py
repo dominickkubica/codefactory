@@ -21,6 +21,7 @@ from .brief import View
 from .checks import scan_repo, scan_sources, test_reach
 from .config import load_config
 from .coverage import measured
+from .infra import scan as infra_scan
 from .paths import is_script, is_test
 from .plan import make_plan
 from .privacy import scan as privacy_scan
@@ -95,6 +96,7 @@ class Review:
         self.scan.update(extra)  # CI, Docker, mobile config and git history: same shape, same silencing
         self.scan.update(privacy_scan(root, [f["id"] for f in g["files"]]))  # personal data, Apple privacy rules
         self.scan.update(apple_scan(root, [f["id"] for f in g["files"]]))  # Swift crashes, cycles, main-thread I/O
+        self.scan.update(infra_scan(root, set(load_config(root).ignore)))  # shell, Make, YAML, HTML, Pkl, patches
         self.online, self.vulns, self.deps_note = online, [], ""
         self._apply_silence(load_config(root).silence)
         self.surface = surface(root, g, self.v)
@@ -280,7 +282,7 @@ class Review:
             if hits:
                 ev, more = _ev(hits)
                 self.add(title, sev, "Security", ev, impact, fix, _effort(len(hits), len({e.file for e in hits})), more)
-        for key, title, sev, area, impact, fix in APPLE_CHECKS:
+        for key, title, sev, area, impact, fix in APPLE_CHECKS + INFRA_CHECKS:
             hits = s[key].hits
             if hits:
                 ev, more = _ev(hits)
@@ -1353,6 +1355,56 @@ CI_HINT = [".github/workflows", ".gitlab-ci.yml", ".circleci", "Jenkinsfile"]
 SECURITY_KEYS = {"secret", "eval", "shell", "tls_off", "raw_html", "sql_built", "history_secret", "secret_key_literal",
                  "jwt_unverified", "weak_cipher", "weak_hash", "weak_random", "cors_any", "insecure_cookie", "debug_on",
                  "sensitive_storage", "docker_secret", "gha_injection"}  # fmt: skip
+
+INFRA_CHECKS = [
+    ("config_secret", "Credentials in configuration files", "Critical", "Security",
+     "YAML, Makefiles, Pkl, Terraform and other config files are shared, copied into images and pasted into tickets; a "
+     "key in one is as leaked as one in the code.",
+     "Rotate it, then read it from the environment or a secret manager (Pkl: `read(\"env:NAME\")`; Compose and "
+     "Kubernetes: secrets)."),
+    ("compose_secret", "Passwords written into docker-compose", "Medium", "Security",
+     "Everyone with the repository has them, and the same file tends to reach staging and production.",
+     "Use an `.env` file that isn't committed, `${VAR}` substitution, or Compose `secrets:`."),
+    ("k8s_secret", "Kubernetes Secrets committed with their values", "High", "Security",
+     "A Secret's `data` is only base64: anyone with the repository can read it.",
+     "Keep the values out of git: Sealed Secrets, SOPS, External Secrets, or create them at deploy time."),
+    ("shell_pipe", "Downloads piped straight into a shell", "Medium", "Security",
+     "Runs whatever the server sends at that moment, with no checksum: a compromised or spoofed host runs code on "
+     "every machine that runs this.",
+     "Download to a file, check its checksum or signature, then run it; or use a package manager."),
+    ("html_no_sri", "Third-party scripts without integrity hashes", "Medium", "Security",
+     "If the CDN is compromised or the file changes, the page runs the new code with your users' sessions.",
+     "Add `integrity=\"sha384-…\"` and `crossorigin=\"anonymous\"`, or serve the file yourself."),
+    ("html_mixed", "Pages loading scripts, styles or forms over plain HTTP", "Medium", "Security",
+     "Anyone on the network can change them in transit; browsers block most of it on HTTPS pages, so it also breaks.",
+     "Use https:// (or a relative URL)."),
+    ("compose_exposed", "Databases published on every interface (docker-compose)", "Medium", "Security",
+     "`5432:5432` listens on all of the host's addresses, not just this machine: on a server or a laptop on public "
+     "Wi-Fi, the database is reachable by others.",
+     "Bind to localhost (`127.0.0.1:5432:5432`), or don't publish the port and let services talk on the Compose network."),
+    ("compose_privileged", "Privileged containers or the host's network (docker-compose)", "Medium", "Security",
+     "A privileged container (or one on the host network) can reach the host itself: a break-in goes straight through.",
+     "Drop `privileged`/`network_mode: host`; grant only the capabilities it needs (`cap_add`)."),
+    ("k8s_privileged", "Privileged or root containers (Kubernetes)", "Medium", "Security",
+     "A break-in in the container becomes root on the node.",
+     "Set `privileged: false`, `allowPrivilegeEscalation: false`, `runAsNonRoot: true`."),
+    ("k8s_host", "Pods using the node's network, processes or files (Kubernetes)", "Medium", "Security",
+     "hostNetwork, hostPID, hostIPC and hostPath give the pod a view into the node and everything else on it.",
+     "Remove them unless the workload is a node agent that truly needs them."),
+    ("shell_rm_var", "`rm -rf` on a variable that may be empty", "Medium", "Reliability",
+     "If the variable is unset or empty, `rm -rf \"$DIR/\"` deletes from the filesystem root.",
+     "Use `\"${DIR:?}/\"` (fails when empty), or `set -u` at the top of the script."),
+    ("shell_eval", "Shell `eval` of a variable", "Medium", "Security",
+     "Whatever the variable holds is run as shell code: spaces, `;` and `$(…)` in it all execute.",
+     "Call the command directly with its arguments, or use an array."),
+    ("go_server_timeout", "HTTP servers without timeouts (Go)", "Low", "Reliability",
+     "`http.ListenAndServe` and a bare `http.Server` never time out: slow clients hold connections open until the "
+     "server runs out (Slowloris).",
+     "Use an `http.Server` with `ReadHeaderTimeout` (and Read/Write/IdleTimeout)."),
+    ("config_http", "Plain-HTTP URLs in configuration (Pkl, TOML, Terraform…)", "Low", "Security",
+     "Packages, endpoints or registries fetched over HTTP can be swapped in transit.",
+     "Use https://."),
+]  # fmt: skip
 
 APPLE_CHECKS = [
     ("main_thread_io", "Disk or database work on the main thread (Swift)", "Medium", "Performance",

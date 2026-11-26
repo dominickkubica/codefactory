@@ -3,6 +3,26 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## 0.20.0 · 2026-11-26
+
+Shell, Make, YAML, HTML, Pkl, more Go, and patches.
+
+### Added
+- **Configuration files** (YAML, TOML, INI, `.properties`, Pkl, Terraform, Makefiles, patches) are searched for
+  credentials, including unquoted ones (`REGISTRY_PASSWORD = …`, `password: …`).
+- **Shell scripts and Makefile recipes:** downloads piped into a shell, `rm -rf` on a shell or Make variable that may
+  be empty, `eval` of a variable.
+- **docker-compose:** privileged or host-network containers, databases published on every interface, passwords in
+  `environment:`. **Kubernetes:** privileged or root containers, host network/PID/IPC/paths, Secrets committed with
+  their values.
+- **HTML:** scripts, styles, frames, images and forms over plain HTTP; CDN scripts without integrity hashes.
+- **Pkl, TOML, Terraform:** plain-HTTP URLs to registries and packages.
+- **Go:** `InsecureSkipVerify`, `math/rand` for tokens, `exec.Command("sh", "-c", …)` with a built command, HTTP
+  servers with no timeouts.
+- **`codefactory diff --patch FILE`** (or `-`): check the lines a unified diff adds, without the repository.
+- The accuracy benchmark gained 26 cases and 26 look-alikes for these (all at 100%); tuned against them and 24 public
+  repositories, where 8 findings remained, all real.
+
 ## 0.19.0 · 2026-11-26
 
 A third round of public repositories: new frameworks, and the false findings they showed (see docs/ACCURACY.md).

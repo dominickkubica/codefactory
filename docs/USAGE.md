@@ -173,9 +173,9 @@ The review ranks findings for it. Each change is listed with its default severit
 | Local-first | Important code no test reaches (with writes) | High | the device holds the only copy of the data |
 | Mobile app | Plain-HTTP URLs | Medium | iOS and Android block them by default |
 | Mobile app | No error boundary | High | an uncaught error closes the app |
-| Health, financial or account data | Personal data in logs or plain storage | High | special category under privacy law and app-store rules |
+| Health or financial data | Personal data in logs or plain storage | High | special category under privacy law and app-store rules |
 | Health data | Personal data sent to analytics | Critical | consent, and in the US a possible reportable breach |
-| Command-line tool | Shell commands / eval | Medium | runs with its own user's rights |
+| Command-line tool or data pipeline | Shell commands / eval | Medium | runs with its own user's rights |
 | Server on this machine only | Request data reaches dangerous calls | High | whoever can send requests can already run code |
 | Deployed server | Endpoints that change data without auth | High | it runs where others can reach it |
 | Local or LAN server with open writes | CORS * | High | any web page the user opens can drive it |
@@ -249,10 +249,35 @@ Uncommitted work counts. Findings are matched by kind + file + function (graph f
 text (source checks), not by line number. A new finding in a file the change didn't touch (a function that became
 unused because its caller was deleted) is shown with that note.
 
+**A patch on its own.** `codefactory diff --patch pr.diff` (or `-` to read stdin) checks the lines a unified
+diff adds, without the repository: a pull request downloaded with `gh pr diff 42 > pr.diff`, `git diff main`, a
+mailing-list patch, or a change an AI agent proposes. Every line check runs (credentials, SQL built from strings,
+shell, eval, raw HTML, weak crypto, personal data in logs, Swift, and the shell, YAML, HTML and config checks), and
+each finding points at its line in the new file. Graph findings (loops, copies, unused code) need the whole
+repository: use `--base` for those. `--json`, `--github` and `--fail-on` work the same.
+
 The repository is also a GitHub Action (`uses: dominickkubica/codefactory@v0`, which follows releases; a
 release tag such as `@v0.17.0` or a commit SHA pins one; inputs `base`, `fail-on`, `comment`,
 `languages`). It posts one comment per pull request and updates it on every push; check out with
 `fetch-depth: 0` so the base commit is there.
+
+## Shell, Make, YAML, HTML and configuration
+
+Files that aren't application code but decide how it's built, shipped and served:
+
+| Files | Checks |
+|---|---|
+| Any config file (YAML, TOML, INI, `.properties`, Pkl, Terraform, Makefiles, `.patch`) | credentials: the source patterns, plus unquoted `password: …` / `TOKEN = …` with a real-looking value (`${VAR}`, `$(shell …)`, `read("env:…")` and placeholders don't count). Critical |
+| Shell scripts and Makefile recipes | a download piped into a shell (`curl … \| sh`, not inside an `echo '…'` hint); `rm -rf` on a shell or Make variable that may be empty (`"$DIR/"`, `$(BUILD)/`), unless `${DIR:?}` or `set -u`; `eval "$VAR"` (not `eval "$(ssh-agent -s)"`) |
+| docker-compose | `privileged: true`, `network_mode: host`; databases (PostgreSQL, MySQL, Redis, MongoDB…) published on every interface (`5432:5432`, not `127.0.0.1:5432:5432`); passwords written into `environment:` (`${VAR}`, `*_FILE` and paths don't count) |
+| Kubernetes | `privileged`/`allowPrivilegeEscalation: true`, `runAsUser: 0`; `hostNetwork`, `hostPID`, `hostIPC`, `hostPath`; a `Secret` committed with `data`/`stringData` |
+| HTML | scripts, stylesheets, frames, images and forms over plain HTTP (localhost aside); third-party CDN scripts without an `integrity` hash |
+| Pkl, TOML, INI, Terraform | plain-HTTP URLs to registries, packages, endpoints |
+| Go (with the source checks) | `InsecureSkipVerify: true`; `math/rand` for tokens; `exec.Command("sh", "-c", x)` with a built command; `http.ListenAndServe` or an `http.Server` with no timeouts |
+
+Test folders, examples, demos and end-to-end harnesses (Playwright, Cypress) are skipped except for credentials, and
+`.github/workflows` has its own checks. A "missing `set -e`" check was tried and dropped: on 24 public repositories
+its 15 findings were scripts that handle errors on purpose.
 
 ## Software bill of materials: sbom
 

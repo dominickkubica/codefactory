@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: Wint3r-Is-C0ming-2024
+      POSTGRES_USER: app
+    ports:
+      - "5432:5432"
+  cache:
+    image: redis:7
+    ports:
+      - "127.0.0.1:6379:6379"
+  api:
+    image: example/api:1.4
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD}
+      SECRET_KEY_FILE: /run/secrets/key
+    ports:
+      - "8080:8080"
+  agent:
+    image: example/agent:2
+    privileged: true
+  sidecar:
+    image: example/sidecar:2
+    network_mode: host

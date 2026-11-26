@@ -77,6 +77,7 @@ PATTERNS: dict[str, list[re.Pattern]] = {
         re.compile(r"(?<![\w.])(?:system|exec|spawn|IO\.popen|shell_exec|passthru)\s*\(?\s*\"[^\"]*(?:#|\$)\{"),
         re.compile(r"`[^`]*#\{[^}]+\}[^`]*`|%x[({][^)}]*#\{"),
         re.compile(r"(?<![\w.])exec(?:Sync)?\s*\(\s*(?:`[^`]*\$\{|[\"'][^\"']*[\"']\s*\+)"),  # child_process exec()
+        re.compile(r"exec\.Command(?:Context)?\((?:\s*ctx\s*,)?\s*\"(?:ba|z)?sh\"\s*,\s*\"-c\"\s*,(?!\s*\"[^\"]*\"\s*\))"),  # Go
     ],
     "tls_off": [
         re.compile(r"verify\s*=\s*False"),
@@ -84,6 +85,7 @@ PATTERNS: dict[str, list[re.Pattern]] = {
         re.compile(r"NODE_TLS_REJECT_UNAUTHORIZED"),
         re.compile(r"ssl\._create_unverified_context"),
         re.compile(r"CERT_NONE"),
+        re.compile(r"InsecureSkipVerify:\s*true"),  # Go
     ],
     "raw_html": [
         re.compile(r"dangerouslySetInnerHTML"),
@@ -142,6 +144,8 @@ PATTERNS.update(
         "weak_random": [
             re.compile(r"(?<![\w.])random\.(?:random|randint|choice|choices|getrandbits|randrange)\("),
             re.compile(r"Math\.random\(\)"),
+            # Go's math/rand (crypto/rand has none of these): rand.Intn, rand.Int63, rand.Uint64…
+            re.compile(r"(?<![\w.])rand\.(?:Intn|Int63n?|Int31n?|Uint32|Uint64|Float64|Perm|Shuffle)\("),
         ],
         "secret_key_literal": [
             re.compile(r"^\s*(?:SECRET_KEY|JWT_SECRET(?:_KEY)?|SESSION_SECRET)\s*=\s*['\"][^'\"]{6,}['\"]"),
@@ -160,7 +164,8 @@ PATTERNS.update(
 # child_process (a shell) and Ruby's and PHP's replace or start a process.
 ONLY_IN = {
     PATTERNS["eval"][2]: (".py",),
-    PATTERNS["shell"][-1]: (".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"),
+    PATTERNS["shell"][-2]: (".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"),
+    PATTERNS["shell"][-1]: (".go",),
 }
 COMMENT_LINE = re.compile(r"\s*(?:#|//|\*|/\*|<!--|--\s)")
 # words that say a credential-looking value isn't real ("xoxb-not-a-real-token", "sk_test_fake…", "<your key>")
@@ -168,7 +173,7 @@ PLACEHOLDER = r"(?i)example|placeholder|dummy|xxxx|your[_-]|changeme|<|not[-_ ]?
 # Checks for built-ins only some languages have: Go's eval() or Java's exec() are ordinary functions.
 LANG_ONLY = {
     "eval": (".py", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".rb", ".php"),
-    "shell": (".py", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".rb", ".php"),
+    "shell": (".py", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".rb", ".php", ".go"),
 }
 # In tests, keys are fixtures (a PEM block in an example, "secret = 'xxxx…'"): only real credential formats count there,
 # because a live AWS, GitHub, Slack, Stripe or Google key in a test is as leaked as anywhere else.
@@ -240,7 +245,16 @@ def _ignored(lines: list[str], i: int, key: str, file_kinds: set[str] | None) ->
     return False
 
 
-CHECK_KEYS = [*PATTERNS, "sql_built", "module_state", "fetch_no_timeout", "hosts", "error_boundary", "swallowed_ok"]
+CHECK_KEYS = [
+    *PATTERNS,
+    "sql_built",
+    "module_state",
+    "fetch_no_timeout",
+    "hosts",
+    "error_boundary",
+    "swallowed_ok",
+    "go_server_timeout",
+]
 
 
 def scan_sources(root: Path, files: list[str]) -> dict[str, Check]:
@@ -264,7 +278,16 @@ def _scan_one(root: str, fid: str) -> dict:
 
 
 def _scan(root: Path, files: list[str]) -> dict[str, Check]:
-    keys = [*PATTERNS, "sql_built", "module_state", "fetch_no_timeout", "hosts", "error_boundary", "swallowed_ok"]
+    keys = [
+        *PATTERNS,
+        "sql_built",
+        "module_state",
+        "fetch_no_timeout",
+        "hosts",
+        "error_boundary",
+        "swallowed_ok",
+        "go_server_timeout",
+    ]
     out = {k: Check(k) for k in keys}
     for fid in files:
         if not fid.endswith(SRC_EXT):
@@ -356,6 +379,15 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
             ln = next(i for i, text in enumerate(lines, 1) if re.search(r"(?<![\w.])fetch\s*\(", text))
             out["fetch_no_timeout"].hits.append(Evidence(fid, ln, _excerpt(lines[ln - 1])))
         if not test and fid.endswith(".go"):  # the default client never times out
+            server = next(
+                (m for m in re.finditer(r"\bhttp\.ListenAndServe(?:TLS)?\(|&?http\.Server\{", text)
+                 if not COMMENT_LINE.match(lines[text.count("\n", 0, m.start())])),
+                None,
+            )  # fmt: skip
+            if server and not re.search(r"ReadHeaderTimeout|ReadTimeout|TimeoutHandler", text):
+                ln = text.count("\n", 0, server.start()) + 1
+                if hit("go_server_timeout", ln):
+                    out["go_server_timeout"].hits.append(Evidence(fid, ln, _excerpt(lines[ln - 1])))
             for i, line in enumerate(lines, 1):
                 code = line.split("//", 1)[0]
                 if re.search(r"\bhttp\.(?:Get|Post|Head|PostForm)\(", code) and hit("fetch_no_timeout", i):

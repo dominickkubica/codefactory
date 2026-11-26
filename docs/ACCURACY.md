@@ -48,6 +48,11 @@ association) that must stay quiet.
 <!-- bench:tuning:start -->
 | Check | Found | Missed | False alarms | Look-alikes | Precision | Recall |
 |---|--:|--:|--:|--:|--:|--:|
+| `compose_exposed` | 1 | 0 | 0 | 2 | 100% | 100% |
+| `compose_privileged` | 2 | 0 | 0 | 0 | 100% | 100% |
+| `compose_secret` | 1 | 0 | 0 | 2 | 100% | 100% |
+| `config_http` | 1 | 0 | 0 | 2 | 100% | 100% |
+| `config_secret` | 3 | 0 | 0 | 3 | 100% | 100% |
 | `cors_any` | 3 | 0 | 0 | 1 | 100% | 100% |
 | `debug_on` | 1 | 0 | 0 | 1 | 100% | 100% |
 | `docker_latest` | 1 | 0 | 0 | 0 | 100% | 100% |
@@ -59,10 +64,16 @@ association) that must stay quiet.
 | `gha_injection` | 1 | 0 | 0 | 2 | 100% | 100% |
 | `gha_pr_target` | 1 | 0 | 0 | 0 | 100% | 100% |
 | `gha_unpinned` | 1 | 0 | 0 | 2 | 100% | 100% |
+| `go_server_timeout` | 1 | 0 | 0 | 0 | 100% | 100% |
+| `html_mixed` | 3 | 0 | 0 | 3 | 100% | 100% |
+| `html_no_sri` | 1 | 0 | 0 | 2 | 100% | 100% |
 | `insecure_cookie` | 2 | 0 | 0 | 3 | 100% | 100% |
 | `io_in_loop` | 6 | 0 | 0 | 3 | 100% | 100% |
 | `ios_privacy_manifest` | 1 | 0 | 0 | 0 | 100% | 100% |
 | `jwt_unverified` | 2 | 0 | 0 | 1 | 100% | 100% |
+| `k8s_host` | 2 | 0 | 0 | 0 | 100% | 100% |
+| `k8s_privileged` | 1 | 0 | 0 | 2 | 100% | 100% |
+| `k8s_secret` | 1 | 0 | 0 | 1 | 100% | 100% |
 | `main_thread_io` | 1 | 0 | 0 | 1 | 100% | 100% |
 | `plain_http` | 6 | 0 | 0 | 4 | 100% | 100% |
 | `privacy_analytics` | 1 | 0 | 0 | 1 | 100% | 100% |
@@ -70,20 +81,23 @@ association) that must stay quiet.
 | `privacy_storage` | 2 | 0 | 0 | 2 | 100% | 100% |
 | `quadratic_scan` | 1 | 0 | 0 | 1 | 100% | 100% |
 | `raw_html` | 2 | 0 | 0 | 2 | 100% | 100% |
-| `secret` | 3 | 0 | 0 | 2 | 100% | 100% |
+| `secret` | 3 | 0 | 0 | 3 | 100% | 100% |
 | `secret_key_literal` | 1 | 0 | 0 | 1 | 100% | 100% |
 | `sensitive_storage` | 1 | 0 | 0 | 1 | 100% | 100% |
-| `shell` | 4 | 0 | 0 | 4 | 100% | 100% |
+| `shell` | 5 | 0 | 0 | 5 | 100% | 100% |
+| `shell_eval` | 1 | 0 | 0 | 1 | 100% | 100% |
+| `shell_pipe` | 2 | 0 | 0 | 3 | 100% | 100% |
+| `shell_rm_var` | 3 | 0 | 0 | 2 | 100% | 100% |
 | `sql_built` | 5 | 0 | 0 | 7 | 100% | 100% |
 | `swallowed` | 5 | 0 | 0 | 2 | 100% | 100% |
 | `swift_force` | 2 | 0 | 0 | 1 | 100% | 100% |
 | `swift_retain_cycle` | 1 | 0 | 0 | 2 | 100% | 100% |
 | `taint` | 5 | 0 | 0 | 3 | 100% | 100% |
-| `tls_off` | 2 | 0 | 0 | 1 | 100% | 100% |
+| `tls_off` | 3 | 0 | 0 | 1 | 100% | 100% |
 | `weak_cipher` | 1 | 0 | 0 | 1 | 100% | 100% |
 | `weak_hash` | 4 | 0 | 0 | 3 | 100% | 100% |
-| `weak_random` | 2 | 0 | 0 | 2 | 100% | 100% |
-| **All** | **83** | **0** | **0** | **64** | **100%** | **100%** |
+| `weak_random` | 3 | 0 | 0 | 3 | 100% | 100% |
+| **All** | **109** | **0** | **0** | **90** | **100%** | **100%** |
 <!-- bench:tuning:end -->
 
 ### Held-out part

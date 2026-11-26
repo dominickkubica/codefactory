@@ -29,6 +29,7 @@ an option is rejected, run `codefactory update` (it also refreshes this file to 
 | What kind of project is this, and what's risky about it? | `codefactory profile` (kind, where it runs, users, sensitive data, with evidence; the review ranks findings for it) |
 | Where does change happen / what to refactor first? | `codefactory hotspots` (complex code changed often, files that change together without importing each other) |
 | Reviewing a branch or pull request: what does this change add? | `codefactory diff --base main` (new and fixed findings, matched by identity, not line) |
+| Checking a patch or proposed change without the repository | `codefactory diff --patch change.diff` (or `-` for stdin): the line checks on the lines it adds |
 | Dependency inventory or supply-chain questions | `codefactory sbom -o sbom.cdx.json` (CycloneDX, every pinned dependency with its package URL; offline) |
 | A finding is intended (confirmed safe, deliberate) | `codefactory accept <kind> <file> --why "…"` or `codefactory accept <plan task id> --why "…"` (writes a rule to `factory.toml`; the user decides whether to commit it) |
 | Showing the human | `codefactory view -o <file>.html` (an interactive factory-floor map; lenses for duplication, efficiency, size) |

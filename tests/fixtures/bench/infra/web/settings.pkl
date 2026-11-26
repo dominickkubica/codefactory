@@ -1,0 +1,5 @@
+amends "package://pkg.pkl-lang.org/pkl-k8s/k8s@1.0.1#/k8s.pkl"
+registryUrl = "http://registry.internal-mirror.net/v2"
+docsLink = "https://pkl-lang.org/main/current/index.html"
+apiToken = "pkl_tok_8f3a91c2e7d64b05a1f9"
+dbPassword = read("env:DB_PASSWORD")

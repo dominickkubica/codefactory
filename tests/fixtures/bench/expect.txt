@@ -226,3 +226,57 @@ holdout/rb/users_controller.rb | weak_hash | Digest::MD5.hexdigest(password)
 holdout/Dockerfile | docker_latest | FROM gcr.io/distroless/static
 holdout/Dockerfile | ~docker_root | FROM gcr.io/distroless/static
 holdout/Dockerfile | ~docker_latest | FROM golang:1.22
+
+# ---- shell, Make, YAML, HTML, Pkl, patches and Go (written with the checks; tuned against them and 24 repositories)
+infra/scripts/deploy.sh | shell_pipe | install.sh | sudo bash
+infra/scripts/deploy.sh | ~shell_pipe | To install the CLI yourself
+infra/scripts/deploy.sh | ~shell_pipe | curl -fsSLo installer.sh
+infra/scripts/deploy.sh | shell_rm_var | rm -rf "$BUILD_DIR/"
+infra/scripts/deploy.sh | ~shell_rm_var | ${CACHE_DIR:?}
+infra/scripts/deploy.sh | ~shell_rm_var | rm -rf ./dist/
+infra/scripts/deploy.sh | shell_eval | eval "$DEPLOY_CMD"
+infra/scripts/deploy.sh | ~shell_eval | eval "$(ssh-agent -s)"
+infra/scripts/deploy.sh | ~secret | export DEPLOY_TOKEN
+infra/Makefile | config_secret | REGISTRY_PASSWORD =
+infra/Makefile | ~config_secret | API_TOKEN ?=
+infra/Makefile | shell_pipe | setup | bash
+infra/Makefile | ~shell_pipe | @echo "or run:
+infra/Makefile | shell_rm_var | rm -rf $(BUILD)/
+infra/Makefile | shell_rm_var | rm -rf $$OUT_DIR/
+infra/compose.yaml | compose_secret | POSTGRES_PASSWORD:
+infra/compose.yaml | ~compose_secret | DB_PASSWORD: ${DB_PASSWORD}
+infra/compose.yaml | ~compose_secret | SECRET_KEY_FILE:
+infra/compose.yaml | compose_exposed | "5432:5432"
+infra/compose.yaml | ~compose_exposed | "127.0.0.1:6379:6379"
+infra/compose.yaml | ~compose_exposed | "8080:8080"
+infra/compose.yaml | compose_privileged | privileged: true
+infra/compose.yaml | compose_privileged | network_mode: host
+infra/k8s/app.yaml | k8s_secret | name: app-secrets
+infra/k8s/app.yaml | ~k8s_secret | name: from-vault
+infra/k8s/app.yaml | k8s_host | hostNetwork: true
+infra/k8s/app.yaml | k8s_privileged | privileged: true
+infra/k8s/app.yaml | ~k8s_privileged | allowPrivilegeEscalation: false
+infra/k8s/app.yaml | ~k8s_privileged | runAsUser: 1000
+infra/k8s/app.yaml | k8s_host | hostPath:
+infra/web/index.html | html_mixed | http://cdn.styles-hub.net/theme.css
+infra/web/index.html | html_no_sri | cdn.jsdelivr.net/npm/chart.js
+infra/web/index.html | ~html_no_sri | unpkg.com/htmx.org
+infra/web/index.html | ~html_no_sri | /static/app.js
+infra/web/index.html | ~html_mixed | livereload.js
+infra/web/index.html | html_mixed | payments.example-pay.com/charge
+infra/web/index.html | ~html_mixed | action="/login"
+infra/web/index.html | ~html_mixed | old-blog.example-site.org
+infra/web/index.html | html_mixed | images.photo-cdn.net/banner.png
+infra/web/settings.pkl | config_http | registryUrl =
+infra/web/settings.pkl | ~config_http | docsLink =
+infra/web/settings.pkl | ~config_http | amends "package://
+infra/web/settings.pkl | config_secret | apiToken =
+infra/web/settings.pkl | ~config_secret | dbPassword = read("env:DB_PASSWORD")
+infra/web/change.patch | config_secret | +aws_key: AKIA
+infra/web/change.patch | ~config_secret | -aws_key: none
+go/server.go | tls_off | InsecureSkipVerify: true
+go/server.go | weak_random | resetToken := rand.Int63()
+go/server.go | ~weak_random | rand.Intn(100)
+go/server.go | shell | exec.Command("sh", "-c", cmd)
+go/server.go | ~shell | "make build"
+go/server.go | go_server_timeout | http.ListenAndServe(":8080", h)

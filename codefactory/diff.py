@@ -108,6 +108,10 @@ def items(root: Path, graph: dict) -> list[Item]:
     from .apple import scan as apple_scan
 
     checks.update(apple_scan(root, [f["id"] for f in graph["files"]]))
+    from .config import load_config
+    from .infra import scan as infra_scan
+
+    checks.update(infra_scan(root, set(load_config(root).ignore)))
     for kind, check in checks.items():
         if kind not in RULES:
             continue
@@ -159,7 +163,12 @@ def markdown(result: dict, limit: int = 30, owners=None) -> str:
     head = (
         f"**codefactory:** {len(new)} new finding{'s' if len(new) != 1 else ''}"
         + (f" ({', '.join(f'{counts[s]} {s}' for s in ('high', 'warn', 'info') if counts[s])})" if new else "")
-        + f", {len(fixed)} fixed, compared with `{result['base'][:10]}`."
+        + (
+            f" in the {result['added']:,} lines this patch adds ({len(changed)} files; line checks only, graph checks "
+            "need the repository)."
+            if result.get("patch")
+            else f", {len(fixed)} fixed, compared with `{result['base'][:10]}`."
+        )
     )
     lines = [head, ""]
     if new:
@@ -168,7 +177,11 @@ def markdown(result: dict, limit: int = 30, owners=None) -> str:
             where = f"`{i.file}:{i.line}`" + (f" {i.function}" if i.function else "")
             if owners and (who := owners.of(i.file)):
                 where += " · " + " ".join(who)
-            note = "" if i.file in changed else " (a file this change didn't touch: a consequence, such as a caller removed)"
+            note = (
+                ""
+                if i.file in changed or result.get("patch")
+                else " (a file this change didn't touch: a consequence, such as a caller removed)"
+            )
             lines.append(f"| {i.severity} | {i.message.replace('|', '/')} | {where}{note} |")
         if len(new) > limit:
             lines.append(f"| | … {len(new) - limit} more | |")

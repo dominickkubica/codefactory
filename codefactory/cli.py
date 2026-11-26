@@ -380,9 +380,16 @@ def cmd_diff(a) -> int:
     """What this change adds: new findings compared with the base branch (merge-base), for pull requests."""
     from . import diff
 
-    root = _repo(a.path)
-    base = a.base or diff.default_base(root)
-    result = diff.run(root, base, lambda p: load_graph(p, a.lang, not a.no_cache))
+    if a.patch:  # a unified diff on its own: check the lines it adds
+        from .patch import check
+
+        text = sys.stdin.read() if a.patch == "-" else Path(a.patch).read_text(encoding="utf-8", errors="replace")
+        result = check(text)
+        root = Path(a.path)
+    else:
+        root = _repo(a.path)
+        base = a.base or diff.default_base(root)
+        result = diff.run(root, base, lambda p: load_graph(p, a.lang, not a.no_cache))
     level = SEVERITY_ORDER.get(a.fail_on, -1)  # "never": nothing blocks
     blocking = [i for i in result["new"] if SEVERITY_ORDER.get(i.severity, 2) <= level]
     if a.json:
@@ -661,6 +668,8 @@ Run `codefactory <command> --help` for a command's options.""",
         if name == "diff":
             s.add_argument("--base", help="the branch, tag or commit to compare with (default: origin/HEAD, main or master)")
             s.add_argument("--comment", metavar="FILE", help="also write the pull-request comment (Markdown) to FILE")
+            s.add_argument("--patch", metavar="FILE",
+                           help="check the lines a unified diff adds (a .diff or .patch file, - for stdin)")  # fmt: skip
             s.add_argument("--github", action="store_true", help="print GitHub Actions annotations for new findings")
             s.add_argument("--fail-on", choices=["high", "warn", "info", "never"], default="never",
                            help="exit 1 when new findings at this level or worse appear (default: never)")  # fmt: skip

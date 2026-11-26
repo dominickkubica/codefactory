@@ -1,0 +1,6 @@
+diff --git a/config.yml b/config.yml
+--- a/config.yml
++++ b/config.yml
+@@ -1,2 +1,2 @@
+-aws_key: none
++aws_key: AKIAZ7Q3V5X1B9N2M4L8

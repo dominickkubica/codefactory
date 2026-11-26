@@ -17,7 +17,11 @@ from pathlib import Path
 
 CORPUS = Path(__file__).parent / "fixtures" / "bench"
 GRAPH_KINDS = ("io_in_loop", "quadratic_scan", "sequential_await", "taint")
-SKIP = {"swallowed_ok", "hosts", "error_boundary", "module_state"}  # bookkeeping, or not about correctness
+SKIP = {"swallowed_ok", "hosts", "error_boundary", "module_state"}
+NEW_PART = (
+    "infra/",
+    "go/server.go",
+)  # round 4: shell, Make, YAML, HTML, Pkl, patches, more Go  # bookkeeping, or not about correctness
 
 
 def labels() -> tuple[set[tuple[str, int, str]], set[tuple[str, int, str]]]:
@@ -48,7 +52,10 @@ def findings() -> set[tuple[str, int, str]]:
         if p.is_file() and ".codefactory" not in p.parts and p.name != "expect.txt" and p.suffix != ".json"
     )
     out: set[tuple[str, int, str]] = set()
-    for scan in (_scan(CORPUS, files), privacy_scan(CORPUS, files), apple_scan(CORPUS, files), scan_config(CORPUS)):
+    from codefactory.infra import scan as infra_scan
+
+    for scan in (_scan(CORPUS, files), privacy_scan(CORPUS, files), apple_scan(CORPUS, files), scan_config(CORPUS),
+                 infra_scan(CORPUS)):  # fmt: skip
         for key, check in scan.items():
             if key not in SKIP:
                 out |= {(e.file, e.line, key) for e in check.hits}

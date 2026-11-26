@@ -338,6 +338,97 @@ RULES: dict[str, tuple] = {
         ["privacy"],
         "5.0",
     ),
+    "config_secret": (
+        "ConfigCredential",
+        "Credential in a configuration file",
+        "Rotate it; read it from the environment.",
+        "high",
+        ["security"],
+        "9.0",
+    ),
+    "compose_secret": (
+        "ComposePassword",
+        "Password in docker-compose",
+        "Use an .env file or Compose secrets.",
+        "warn",
+        ["security"],
+        "7.5",
+    ),
+    "k8s_secret": (
+        "CommittedK8sSecret",
+        "Kubernetes Secret committed with values",
+        "Keep values out of git.",
+        "high",
+        ["security"],
+        "7.5",
+    ),
+    "shell_pipe": (
+        "CurlPipeShell",
+        "Download piped into a shell",
+        "Verify a checksum before running.",
+        "warn",
+        ["security", "supply-chain"],
+        "6.5",
+    ),
+    "html_no_sri": (
+        "NoSubresourceIntegrity",
+        "Third-party script without integrity",
+        "Add integrity=.",
+        "warn",
+        ["security", "supply-chain"],
+        "6.1",
+    ),
+    "html_mixed": ("MixedContent", "Resource or form over plain HTTP", "Use https://.", "warn", ["security"], "5.3"),
+    "compose_exposed": (
+        "ExposedDatabasePort",
+        "Database port published on every interface",
+        "Bind to 127.0.0.1.",
+        "warn",
+        ["security"],
+        "6.5",
+    ),
+    "compose_privileged": (
+        "PrivilegedCompose",
+        "Privileged container or host network",
+        "Drop privileges.",
+        "warn",
+        ["security"],
+        "6.0",
+    ),
+    "k8s_privileged": (
+        "PrivilegedPod",
+        "Privileged or root container",
+        "runAsNonRoot, no privilege escalation.",
+        "warn",
+        ["security"],
+        "6.0",
+    ),
+    "k8s_host": (
+        "HostNamespacePod",
+        "Pod using host network, PID, IPC or paths",
+        "Remove host access.",
+        "warn",
+        ["security"],
+        "6.0",
+    ),
+    "shell_rm_var": (
+        "RmRfEmptyVariable",
+        "rm -rf on a variable that may be empty",
+        'Use "${VAR:?}".',
+        "warn",
+        ["reliability"],
+        None,
+    ),
+    "shell_eval": ("ShellEval", "Shell eval of a variable", "Run the command directly.", "warn", ["security"], "6.0"),
+    "go_server_timeout": (
+        "GoServerNoTimeout",
+        "HTTP server without timeouts",
+        "Set ReadHeaderTimeout.",
+        "info",
+        ["reliability"],
+        None,
+    ),
+    "config_http": ("ConfigPlainHttp", "Plain-HTTP URL in configuration", "Use https://.", "info", ["security"], None),
     "main_thread_io": (
         "MainThreadIO",
         "Disk or database work on the main thread",
@@ -506,6 +597,10 @@ def build_sarif(graph: dict, root: Path | None = None, new_keys: Counter | None 
         from .apple import scan as apple_scan
 
         checks.update(apple_scan(root, [f["id"] for f in graph["files"]]))
+        from .config import load_config
+        from .infra import scan as infra_scan
+
+        checks.update(infra_scan(root, set(load_config(root).ignore)))
         for key, check in checks.items():
             if key not in RULES:
                 continue

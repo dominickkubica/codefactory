@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+type: Opaque
+data:
+  password: cGFzc3dvcmQxMjM=
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: from-vault
+type: Opaque
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+spec:
+  template:
+    spec:
+      hostNetwork: true
+      containers:
+        - name: app
+          image: example/app:1.0
+          securityContext:
+            privileged: true
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+        - name: helper
+          image: example/helper:1.0
+          securityContext:
+            runAsUser: 1000
+      volumes:
+        - name: logs
+          hostPath:
+            path: /var/log

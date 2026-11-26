@@ -54,6 +54,8 @@ codefactory plan                 # what to fix first, ranked; then: codefactory 
   | Security | Every HTTP endpoint and whether it checks who's asking; endpoints that change data without an auth check; risky lines (SQL built from strings, shell, `eval`, raw HTML) ranked by whether a request reaches them, with the route → … → line chain; leaked credentials, including ones deleted but still in git history; debug mode, CORS `*`, insecure cookies, unverified JWTs, weak crypto and random numbers; unsafe CI workflows, root containers, secrets in images; known-vulnerable dependencies (`--online`) |
   | Reliability | Swallowed errors, network calls without a timeout, missing error boundaries |
   | Apple platforms | Swift: disk or database work on the main thread, retain cycles in stored closures, `try!`/`as!`; entitlements that weaken code signing |
+  | Shell, Make, YAML, HTML, Pkl | Credentials in config files (quoted or not); `curl … \| sh`, `rm -rf "$DIR/"` with an empty variable, `eval` of a variable (scripts and Makefile recipes); docker-compose and Kubernetes: privileged or host-network containers, databases published on every interface, committed passwords and Secrets; HTML: scripts and forms over plain HTTP, CDN scripts without integrity hashes; plain-HTTP URLs in Pkl, TOML and Terraform |
+  | Patches | `codefactory diff --patch pr.diff` checks the lines a unified diff adds, with no repository: a downloaded pull request, a mailing-list patch, an AI agent's proposed change |
   | Delivery | No CI or CI without tests, floating dependency versions, no lockfile, no runtime pin |
 
 - **Assess.** Before judging, it works out what the project is: a local-first mobile app, a deployed API with

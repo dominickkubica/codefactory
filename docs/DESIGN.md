@@ -341,6 +341,27 @@ resources the code uses with the usage descriptions declared anywhere (Info.plis
 plugins that add them), and native uses of required-reason APIs with the presence of a privacy manifest. On a real
 Expo app it found its watch extension's `UserDefaults` use without a manifest.
 
+## Shell, Make, YAML, HTML, Pkl and patches
+
+`infra.py` walks the files that aren't application code (YAML, TOML, INI, Pkl, Terraform, Makefiles, shell, HTML,
+`.diff`/`.patch`), skipping dependencies and build output, and applies line checks: credentials (the source patterns,
+and an unquoted form for config files that needs a digit in the value and skips `${…}`, `$(…)` and placeholders);
+shell risks in scripts and in Makefile recipes (lines starting with a tab); docker-compose (detected by a top-level
+`services:`) and Kubernetes (`apiVersion:` and `kind:`) risks; HTML resources over plain HTTP and CDN scripts
+without `integrity`; and plain-HTTP URLs in config. A compose file or a Kubernetes Secret doesn't also get the
+generic credential finding, so one password is one finding.
+
+`codefactory diff --patch` (`patch.py`) parses a unified diff into the lines each file gains, at their new line
+numbers, writes them into a temporary folder (blank lines elsewhere) and runs every line check there, keeping the
+hits on added lines. Checks that look at neighbouring lines (SQL text after the call, a guard above) see only what
+the patch adds, so they can miss context the repository would give.
+
+Run on 24 public repositories, the new checks first produced 30 findings; 22 were noise and were fixed or dropped
+(scripts without `set -e`, a shebang's `-u` not read as `set -u`, an install hint inside `echo '…'`, a Go server in
+a comment, a Playwright harness's compose file). The 8 that remained were real: databases published on every
+interface, committed demo passwords and a Kubernetes Secret, a curl-into-shell installer, a Go server with no
+timeouts.
+
 ## Apple platforms
 
 `apple.py` checks Swift for what crashes or stalls an app: `try!` and `as!`; closures that `self` keeps (Combine
