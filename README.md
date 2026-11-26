@@ -144,7 +144,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: dominickkubica/codefactory@v0   # follows releases; or pin v0.17.0 or a commit SHA
+      - uses: dominickkubica/codefactory@v0   # follows releases; or pin v0.20.1 or a commit SHA
         with: { fail-on: high }
 ```
 
