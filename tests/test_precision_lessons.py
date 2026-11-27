@@ -234,6 +234,18 @@ class StructureTest(unittest.TestCase):
         r.run()
         self.assertFalse([f for f in r.findings if f.title.startswith("Unused code")])
 
+    def test_a_test_named_for_the_file_reaches_it(self):  # feature tests reach controllers through the router
+        root = repo({
+            "app/crud.py": "import sqlite3\n\n\ndef create_item(conn, x):\n    conn.execute('INSERT INTO t VALUES (?)', (x,))\n"
+                           "    conn.commit()\n",
+            "app/other.py": "import sqlite3\n\n\ndef purge(conn):\n    conn.execute('DELETE FROM t')\n    conn.commit()\n",
+            "tests/test_crud.py": "def test_create(client):\n    assert client.post('/items').status_code == 200\n",
+        })  # fmt: skip
+        r = Review(build(root, cache=False).to_dict(), root)
+        reached = {fid.split("::")[-1] for fid in r.reached}
+        self.assertIn("create_item", reached)
+        self.assertNotIn("purge", reached)
+
     def test_an_import_only_for_javadoc_is_not_a_dependency(self):
         root = repo({
             "p/Converter.java": "package p;\nimport p.Body;\n/** See {@link Body}. */\npublic interface Converter { int x(); }\n",

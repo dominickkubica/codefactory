@@ -181,6 +181,18 @@ class Review:
         # call graph can't tell which class's method runs, and "no test reaches it" was wrong for most of these
         out |= {fid for fid, f in self.v.fn.items() if f["kind"] == "method" and f["name"] in called
                 and not is_test(f["file"])}  # fmt: skip
+        # a test named for the file (ValueListItemPositionControllerTest.php, accounts_spec.rb, test_crud.py): request
+        # specs and feature tests reach controllers through the router, which the call graph can't follow
+        def stem(path: str, test: bool) -> str:
+            s = path.rsplit("/", 1)[-1].split(".", 1)[0].lower()
+            if test:
+                s = re.sub(r"^test_|_test$|_spec$|tests?$|spec$|\.test$|\.spec$", "", s)
+            return re.sub(r"_?controller$|_?handler$|_?view$|_?views$|_?service$", "", s.replace("-", "_"))
+
+        tested_stems = {stem(f, True) for f in files}
+        tested_stems.discard("")
+        out |= {fid for fid, f in self.v.fn.items() if not is_test(f["file"]) and len(stem(f["file"], False)) > 3
+                and stem(f["file"], False) in tested_stems}  # fmt: skip
         # migrations: a test run builds its database by applying them (pytest-django, Rails, Laravel)
         out |= {fid for fid, f in self.v.fn.items() if re.search(r"(?:^|/)(?:migrations|db/migrate)/", f["file"])}
         return out

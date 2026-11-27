@@ -5,6 +5,40 @@ change command-line output.
 
 ## Unreleased
 
+### Measured precision on real code
+
+729 reported locations from the 76 corpus repositories, sampled per check and labeled by reading the code (labels and
+reasons in `tools/corpus/labels.json`, rubric in `docs/ACCURACY.md`; a second reviewer agreed on 87% of a blind
+sample). `python tools/precision.py score` re-scores them against the current code. The first measurement was 43%
+right; the false-positive patterns it found are fixed, each with a regression test (`tests/test_precision_lessons.py`).
+
+- **Data flow for JavaScript and TypeScript** (`codefactory/jstaint.py`, with the language pack): request data in
+  Express, Koa, Fastify, Next.js route handlers and Nest controllers followed through variables, closures and helper
+  functions to shell commands, SQL text, `eval`, file paths, outgoing requests, redirects and HTML in a response.
+  Tagged SQL templates, argument lists, `parseInt`/`Number`, allow-lists, validators, fixed hosts, local and
+  query-string-only redirects, and records looked up from a database aren't flows. Held-out first measurement: 7 of 9
+  flows, no false ones.
+- **Routes and auth**: NestJS controllers (`@UseGuards`, custom auth decorators, global guards and `@Public()`),
+  Utopia PHP (Appwrite, `scope` labels), Next.js `middleware.ts` and its matcher, Express middleware written inline in
+  `app.use(…)`, and Rails base controllers per namespace. Reads (`GET`) and routes in doc comments aren't "endpoints
+  that change data"; first-run setup, health checks and webhooks are public by design.
+- **Context**: development, test, benchmark and example setups (dev containers, sandboxes, `docker-compose.dev.yml`,
+  Playwright images, compose files that only start a developer's databases, build stages) aren't the deployment;
+  CI services' passwords and demo defaults aren't secrets; stand-in vendor keys (`sk_live_AAAA…`) and keys a comment
+  says are public aren't leaks.
+- **Patterns**: parser methods named `eval`, fixed `new Function` bodies, ruamel's safe YAML; sanitized or constant
+  HTML; namespaces, Docker service names, private addresses and links aren't plain-HTTP requests; casts of the app's
+  own storyboard, nib and Info.plist values can't crash; repository names, device IDs and a server's own address
+  aren't personal data; `.catch(() => null)` that the code goes on to check, optional imports and expected parse
+  failures aren't silently swallowed; escaped identifiers, generated placeholders and query builders aren't SQL
+  injection; TLS turned off only by a user's option, and JWT expiry and issuer peeks, aren't findings.
+- **Structure**: unused code counts names used in strings and template files (`.vue`, `.blade.php`) and Rust
+  attributes, and a method with no callers stays a hint; methods tests call by name and migrations count as tested;
+  frozen dated copies, build outputs and small edited copies aren't "copied logic"; TypeScript imports used only as
+  types and Java imports only for a Javadoc link aren't dependencies; an import loop shows a real chain of imports.
+
+### Corpus round 5
+
 Checked against 76 public repositories (`docs/CORPUS.md`, `tools/corpus.py`): every one analyzed without a crash or a
 timeout, its Critical and High findings looked at, and about 60 false-positive patterns fixed, each with a regression
 test.

@@ -116,7 +116,7 @@ def sample(args) -> int:
         by_check[hit["check"]].append(k)
     added = 0
     for check, keys in sorted(by_check.items()):
-        have = [k for k in keys if k in labels]
+        have = [k for k in keys if k in labels and labels[k].get("round", 1) == args.round]
         want = args.per_check - len(have)
         if want <= 0:
             continue
@@ -133,7 +133,7 @@ def sample(args) -> int:
             if per_repo[hit["repo"]] >= args.per_repo:
                 continue
             per_repo[hit["repo"]] += 1
-            labels[k] = {**hit, "label": None, "why": ""}
+            labels[k] = {**hit, "label": None, "why": "", "round": args.round}
             want -= 1
             added += 1
     save(labels)
@@ -156,7 +156,8 @@ def batch(args) -> int:
     labels = load()
     wanted = set(args.checks.split("|")) if args.checks else None
     todo = [(k, v) for k, v in sorted(labels.items(), key=lambda kv: (kv[1]["check"], kv[0]))
-            if v["label"] is None and (wanted is None or v["check"] in wanted)][: args.limit]  # fmt: skip
+            if v["label"] is None and (wanted is None or v["check"] in wanted)
+            and (args.round is None or v.get("round", 1) == args.round)][: args.limit]  # fmt: skip
     out = []
     for k, v in todo:
         out.append(f"### {k}\n\nCheck: {v['check']} ({v['severity']})  \nRepository checkout: "
@@ -199,8 +200,12 @@ def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
     return (c - r) / d, (c + r) / d
 
 
-def score(_args=None, quiet: bool = False) -> list[dict]:
+def score(_args=None, quiet: bool = False, round_: int | None = None) -> list[dict]:
     labels, now = load(), reported()
+    if round_ is None and _args is not None:
+        round_ = getattr(_args, "round", None)
+    if round_ is not None:
+        labels = {k: v for k, v in labels.items() if v.get("round", 1) == round_}
     total = defaultdict(int)
     for hit in now.values():
         total[hit["check"]] += 1
@@ -238,8 +243,8 @@ def score(_args=None, quiet: bool = False) -> list[dict]:
 def report(args) -> int:
     """Rewrite the table in docs/ACCURACY.md: per check, precision when first labeled (every sample was reported then)
     and now (the labeled locations the current code still reports), with what changed in between."""
-    rows = score(quiet=True)
-    labels = load()
+    rows = score(quiet=True, round_=1)
+    labels = {k: v for k, v in load().items() if v.get("round", 1) == 1}
     first: dict[str, list[int]] = defaultdict(lambda: [0, 0])
     for v in labels.values():
         if v["label"] in ("true", "false"):
@@ -263,6 +268,21 @@ def report(args) -> int:
         now = f"{r['precision']:.0%}" if r["n"] else "–"
         ci = f"{r['low']:.0%}–{r['high']:.0%}" if r["n"] else ""
         table.append(f"| {r['check']} | {was} | {now} | {ci} | {r['n']} | {r['fixed']} | {r['lost']} |")
+    held = [r for r in score(quiet=True, round_=2) if r["n"]]
+    if held:
+        hk, hn = sum(r["true"] for r in held), sum(r["n"] for r in held)
+        lo, hi = wilson(hk, hn)
+        table += [
+            "",
+            f"**Held out**: {hn} more locations, sampled and labeled after the fixes, that no fix was made against: "
+            f"**{hk} right ({hk / hn:.0%}, 95% interval {lo:.0%}–{hi:.0%})**. This is the number to expect on code "
+            "codefactory hasn't been tuned on.",
+            "",
+            "| Check | Held out | 95% interval | Labeled |",
+            "|---|--:|--:|--:|",
+        ]
+        for r in sorted(held, key=lambda r: (-(r["precision"] or 0), -r["n"], r["check"])):
+            table.append(f"| {r['check']} | {r['precision']:.0%} | {r['low']:.0%}–{r['high']:.0%} | {r['n']} |")
     text = ACCURACY.read_text(encoding="utf-8")
     start, end = "<!-- precision:start -->", "<!-- precision:end -->"
     if start not in text:
@@ -280,14 +300,17 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("sample")
     s.add_argument("--per-check", type=int, default=25)
     s.add_argument("--per-repo", type=int, default=3)
+    s.add_argument("--round", type=int, default=1, help="1: the sample fixes were made against; 2+: held out, labeled after")
     b = sub.add_parser("batch")
     b.add_argument("out")
     b.add_argument("--checks", default=None, help="check names separated by |")
     b.add_argument("--limit", type=int, default=60)
     b.add_argument("--around", type=int, default=12)
+    b.add_argument("--round", type=int, default=None)
     m = sub.add_parser("merge")
     m.add_argument("files", nargs="+")
-    sub.add_parser("score")
+    sc = sub.add_parser("score")
+    sc.add_argument("--round", type=int, default=None)
     sub.add_parser("report")
     args = p.parse_args(argv)
     return {"sample": sample, "batch": batch, "merge": merge, "score": lambda a: (score(a), 0)[1], "report": report}[args.cmd](

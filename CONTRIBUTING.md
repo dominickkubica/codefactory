@@ -46,6 +46,16 @@ changed, fix false positives generically with a regression test (`tests/test_lar
 decided in `tools/corpus/triage.json` (`clean`, `fixed` or `open`, with a note). To grow the corpus, add repositories
 to `repos.txt` and run with `--new`.
 
+### Precision
+
+`tools/corpus/labels.json` holds reported locations from the corpus, each labeled right or wrong by reading the code,
+with the reason (the rubric is in `docs/ACCURACY.md`). After a change to a check, re-run the corpus and then
+`python tools/precision.py score`: per check, the precision of what's still reported, the wrong locations the change
+removed and the right ones it lost. A lost right one is a regression unless the reason says otherwise.
+`python tools/precision.py report` rewrites the table in `docs/ACCURACY.md`. For a new check or new repositories,
+`python tools/precision.py sample` adds unlabeled locations, `batch OUT.md` writes them with the code around each for
+a reviewer, and `merge FILE.json` takes the labels back.
+
 If a change alters findings on purpose, `tests/test_golden.py` fails: run
 `CODEFACTORY_UPDATE_GOLDEN=1 python -m unittest tests.test_golden` and check the diff in `tests/golden/` before
 committing it. An unexpected line there is a bug caught early.

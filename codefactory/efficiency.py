@@ -56,7 +56,7 @@ def _name(fn) -> str:
 
 NETWORK = re.compile(r"(^|\.)(fetch|urlopen)$|axios|requests\.|httpx|aiohttp|http|supabase|firestore", re.I)
 READS = re.compile(
-    r"getAll|getFirst|getEach|fetchone|fetchall|fetchmany|(^|\.)(query|select|find\w*|get|getItem\w*|"
+    r"getAll|getFirst|getEach|fetchone|fetchall|fetchmany|(^|\.)(query\w*|rawQuery|Query\w*|select|find\w*|get|getItem\w*|"
     r"read\w*|scalars?|from)$|objects\.(get|filter|all)|\(.SELECT",
     re.I,
 )
@@ -91,9 +91,18 @@ def kind_of(sink: str) -> str:
         return "network"
     if FILES.search(sink):
         return "file"
-    return "read" if READS.search(sink) else "write"
+    if READS.search(sink):
+        return "read"
+    # a write only when the call says so (an INSERT, save, commit, put, set…): an I/O-looking call that says neither
+    # (`resolve_attribute`, `add_line`, `preg_match` reached by a name match) was the source of most wrong "writes
+    # inside loops" on the corpus
+    return "write" if WRITE_SQL.search(sink) or WRITE_CALL.search(sink) else "other"
 
 
+WRITE_CALL = re.compile(r"(^|\.)(?:insert\w*|update\w*|upsert\w*|save\w*|delete\w*|destroy|remove\w*|create\w*|put\w*|"
+                        r"set\w*|write\w*|append\w*|add\w*|commit|persist|flush|exec(?:ute)?\w*|send\w*|post\w*|"
+                        r"patch\w*|store\w*|push\w*|incr\w*|decr\w*|expire|publish|enqueue|Exec\w*|Update\w*|"
+                        r"Save\w*|Delete\w*|Insert\w*|Create\w*|Set\w*|Put\w*|Add\w*|run(?:Async|Sync)?|transact\w*)\b")
 WRITE_SQL = re.compile(r"INSERT|UPDATE|DELETE|REPLACE|UPSERT|commit|save|put|set|write|create|add|remove|delete", re.I)
 READ_NAME = re.compile(r"^_?(read|get|load|fetch|list|find|count|select|query|lookup|latest|recent|stored)", re.I)
 
@@ -191,8 +200,8 @@ def efficiency_flags(g: Graph) -> list[Flag]:
         where = f"line {lines[0]}" + (f" and {len(lines) - 1} more" if len(lines) > 1 else "")
         sink = reach[what][1] if what in by_id else what
         kind = kind_through(sink, _path_names(what, reach, by_id))
-        if kind == "wait":
-            continue  # sleeping between rounds is pacing (rate limits, polling), chosen on purpose
+        if kind in ("wait", "other"):
+            continue  # sleeping between rounds is pacing (rate limits, polling); `other` isn't known to be I/O at all
         if kind == "write" and (fid, what) not in outside_tx:
             continue  # writes batched inside one transaction: the advice would be to do what it already does
         sev = "warn" if kind in ("network", "read") else "info"

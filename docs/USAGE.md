@@ -390,6 +390,22 @@ parameters (its text is a constant); a `Depends()` value; anything read back fro
 later, "second-order" injection, isn't followed). `sys.argv` and `input()` aren't sources either: whoever runs a
 program already has its rights. Severity: Critical for SQL, shell and code execution, High for the rest.
 
+## Data flow (JavaScript and TypeScript)
+
+The same finding for JavaScript and TypeScript, with the language pack installed (it parses with tree-sitter).
+Sources: `req.query`, `.params`, `.body`, `.cookies`, `.headers` (Express, Fastify, Hapi's `.payload`), Koa's
+`ctx.query` and `ctx.request.body`, `await request.json()` / `formData()` / `searchParams` in a Next.js route
+handler and its `params`, and Nest parameters decorated `@Body()`, `@Query()`, `@Param()` or `@Headers()`. Sinks:
+`child_process.exec` (and `spawn` with `shell: true`), SQL text (`.query()`, `.raw()`, `$queryRawUnsafe`…), `eval`,
+`new Function`, `vm`, `fs` paths and `res.sendFile`, `fetch`/`axios`/`got`/`http.request` URLs, redirects, and HTML
+written into a response.
+
+Not flows: tagged SQL templates (`` sql`… ${x}` ``, Prisma's `$queryRaw`), an argument list (`execFile`, `spawn`),
+`parseInt`/`Number`/`encodeURIComponent`/`path.basename`, a value checked by an allow-list (`if (!allowed.includes(x))
+return`), compared to a constant, or passed through a validator; a request to a fixed host (`` `https://api.x.com/${id}` ``),
+a redirect to a path on the same site or with request data only in its query string; a record looked up with the value
+(`findOne`, `loadShare(...)`); a Nest parameter through `ParseIntPipe`.
+
 ## Privacy
 
 | Check | What it finds |

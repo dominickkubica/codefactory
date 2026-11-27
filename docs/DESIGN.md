@@ -333,6 +333,18 @@ query's parameters. Both had made a safe file-serving endpoint look like a path 
 standard library, where every `sys.argv` → `open()` in a command-line tool showed up as a flow: arguments and typed
 input come from whoever runs the program, so only network requests are sources.
 
+## Data flow for JavaScript and TypeScript
+
+`jstaint.py` is the same analysis on tree-sitter's syntax trees, so it runs whether or not a TypeScript compiler is
+installed. A unit is a named function, a function passed inline (an Express handler, a `.forEach` callback) or a file's
+top level; an inline function starts with the variables of the unit around it, so a closure sees them, but two
+handlers in one file don't share variables (they did in a first version, and on Outline that made a file upload's path
+look like it came from another route's query). Calls are resolved to units by name: same file first, then an imported
+name defined once. Measured on the corpus, three rules carried most of the precision: a method of an object that isn't
+the tainted value returns that object's answer, not the text (`service.process(body)`, `stripe.sessions.create(…)`);
+a record looked up with request data is the database's (`findOne`, `loadPublicShare({ id })`); and a URL whose host
+is fixed (a literal `https://host/`, a constant base, a leading `/`) can't be pointed elsewhere by what follows.
+
 ## Privacy
 
 `privacy.py` looks for personal data by name in the arguments of log, analytics and storage calls (string text is

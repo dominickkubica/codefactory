@@ -43,6 +43,15 @@ model definitions to see. codefactory now reads `has_many` declarations; the hel
 would have in a real app (`models/user.rb`), and a look-alike (`u.items.count` on an attribute that isn't an
 association) that must stay quiet.
 
+Data flow for JavaScript and TypeScript (`codefactory/jstaint.py`) got its own held-out file, `holdout/js/flows.js`
+(Fastify and Koa: shell, file paths, SQL, outgoing requests, redirects, `eval` and HTML in a reply, with a parsed
+number, `path.basename`, an allow-list lookup, a fixed host, a local redirect and an argument list as look-alikes),
+labeled before the analysis first ran on it. First measurement: 7 of 9 flows found, none of the 6 look-alikes
+reported. The two misses were real defects, since fixed: `axios.get(url)` was taken for SQL (sqlite's `db.get`) and
+dropped, and `reply.type("text/html").send(…)` wasn't seen as writing the response. The same file caught two older
+checks out: a shell command built only from a `parseInt` value reported as injection, and `axios` calls without a
+timeout not reported at all. Both fixed.
+
 ### Tuning part
 
 <!-- bench:tuning:start -->
@@ -109,22 +118,23 @@ association) that must stay quiet.
 | `debug_on` | 1 | 0 | 0 | 0 | 100% | 100% |
 | `docker_latest` | 1 | 0 | 0 | 1 | 100% | 100% |
 | `docker_root` | 0 | 0 | 0 | 1 | – | – |
-| `fetch_no_timeout` | 2 | 0 | 0 | 1 | 100% | 100% |
+| `eval` | 1 | 0 | 0 | 0 | 100% | 100% |
+| `fetch_no_timeout` | 4 | 0 | 0 | 1 | 100% | 100% |
 | `insecure_cookie` | 1 | 0 | 0 | 0 | 100% | 100% |
 | `io_in_loop` | 6 | 0 | 0 | 1 | 100% | 100% |
 | `main_thread_io` | 1 | 0 | 0 | 0 | 100% | 100% |
 | `plain_http` | 1 | 0 | 0 | 0 | 100% | 100% |
 | `privacy_log` | 3 | 0 | 0 | 2 | 100% | 100% |
 | `secret` | 1 | 0 | 0 | 0 | 100% | 100% |
-| `shell` | 3 | 0 | 0 | 1 | 100% | 100% |
-| `sql_built` | 5 | 0 | 0 | 4 | 100% | 100% |
+| `shell` | 5 | 0 | 0 | 3 | 100% | 100% |
+| `sql_built` | 6 | 0 | 0 | 5 | 100% | 100% |
 | `swallowed` | 2 | 0 | 0 | 2 | 100% | 100% |
 | `swift_force` | 1 | 0 | 0 | 1 | 100% | 100% |
 | `swift_retain_cycle` | 1 | 0 | 0 | 1 | 100% | 100% |
-| `taint` | 1 | 0 | 0 | 0 | 100% | 100% |
+| `taint` | 10 | 0 | 0 | 6 | 100% | 100% |
 | `weak_hash` | 5 | 0 | 0 | 1 | 100% | 100% |
 | `weak_random` | 2 | 0 | 0 | 2 | 100% | 100% |
-| **All** | **38** | **0** | **0** | **18** | **100%** | **100%** |
+| **All** | **53** | **0** | **0** | **27** | **100%** | **100%** |
 <!-- bench:holdout:end -->
 
 ### What it doesn't cover
@@ -134,6 +144,72 @@ association) that must stay quiet.
   in the corpus; their behavior is covered by unit tests and the golden snapshots in `tests/golden`.
 - A corpus is small next to real code. Each label is one idiom; real code has more. Treat the numbers as "the
   idioms listed are handled", and the spot checks below as the evidence for real code.
+
+## Precision on real code
+
+The benchmark says the idioms in it are handled; it can't say how often a finding is right on code nobody wrote for
+it. This section can. Locations reported on the [corpus](CORPUS.md) are sampled per check (at most 25 per check and 3
+per repository, the more serious first) and each one is labeled by reading the code, with the reason kept beside the
+label in `tools/corpus/labels.json`. `python tools/precision.py score` re-reads the labels against what the current
+code reports, so a change to a check shows at once which wrong findings it removed and which right ones it lost.
+Checks whose claim is true by construction (a missing README, an unpinned version, a long function) aren't sampled.
+
+<!-- precision:start -->
+<!-- precision:end -->
+
+### What the first measurement found
+
+Most wrong findings weren't wrong about the line; they were about the wrong kind of code. A published database
+port or a password in `docker-compose.yml` is real in a deployment, and in an open-source repository it is almost
+always a developer's local database or a CI service container: 0 of 45 such locations were right. The same held for
+dev containers, sandboxes, benchmark setups, starter templates and test fixtures. The rest were three kinds:
+names that only look like the risky call (a parser method called `eval`, `TaskQueue.execute`, a local `fetch`),
+values made safe on the way (identifier quoting, a validator, a fixed host, an option the user has to turn on), and
+structure the call graph can't see (a method called through its interface, a route reached by a request test, a
+name used in a `.vue` file). Each pattern is fixed generically and pinned by a test in
+`tests/test_precision_lessons.py`, next to a true case that must stay reported.
+
+### How far to trust these numbers
+
+- **Labels.** Each location was labeled by a reviewer agent reading the code to the rubric below; 40 of them,
+  picked at random, were labeled again independently: the two agreed on 34 of 39 (87%; one was left unsure), and the
+  disagreements went both ways.
+- **Tuned vs held out.** The fixes were made against the first sample, so its "now" column flatters: it says the
+  patterns found are gone, not how a new repository will look. The held-out sample (when present above) was drawn
+  and labeled after the fixes and is the honest estimate.
+- **Sample size.** 25 per check at most, so a check's interval is wide; the overall figure is the tight one.
+- **What's left out.** Recall isn't measured here (that needs knowing what wasn't reported; the benchmark does it),
+  and checks whose claim is true by construction (a missing README, an unpinned version) aren't sampled.
+
+### How a location is labeled
+
+A location is **right** when the code there does what the finding says and is the kind of code the finding is meant
+for, so the question in its "verify" text is worth asking. It is **wrong** when the claim doesn't hold for this code.
+Reachability and exploitability aren't judged: a shell command built from a value that is right there in the
+function counts as right even if that value is safe in practice, because that is the question the finding hands
+the reader. Per check:
+
+| Check | Right when | Wrong when |
+|---|---|---|
+| Shell commands, SQL, code execution, raw HTML | a value that isn't a constant reaches the shell string, SQL text, `eval`/`exec`/`pickle`/unsafe YAML or the HTML sink | every interpolated value is a constant or comes from a fixed list; no shell is involved (`execFile`, an argument list); the name only looks like the sink (a method called `eval`, `RegExp.exec`); a sanitizer or `SafeLoader` is applied |
+| Data flows (taint) | the traced path exists and nothing on it validates or escapes the value | a step in the path doesn't happen, or the value is checked on the way |
+| Credentials, config secrets, CI and compose passwords | the value looks like a working secret | a placeholder, test or example value, a public client ID or key, a value read from the environment |
+| TLS or JWT checks off | verification is off by default or always | it's off only when someone sets an option for it, or the code verifies some other way |
+| Network calls without a timeout | the call can wait forever: no timeout argument, client default or abort signal | a timeout is set anywhere on the path, or it isn't a network call |
+| Queries or requests inside loops | each iteration issues a query or request (through the call chain shown), with the count set by data | the chain doesn't reach I/O, or the loop is a retry, poll or paging loop |
+| Writes / file operations inside loops | each iteration writes or does file I/O that could be grouped | the loop runs once or a fixed few times, or the call isn't I/O |
+| Errors silently swallowed | a broad catch discards the error without logging, rethrowing or returning it | the error is logged, rethrown or turned into a value the caller checks, or the catch is for one expected error |
+| Module-level mutable state | the module-level value is reassigned or mutated after import | it's never changed after it's set up, or it's a type or constant |
+| Import loops | every edge of the loop is an import that runs when the module loads | an edge is type-only (`import type`, `TYPE_CHECKING`) or inside a function, or the loop doesn't exist |
+| Unused code | nothing calls or refers to the function | it's called, exported as public API of a library, invoked by a framework (route, hook, override, decorator, reflection) or used by a test |
+| Important code no test reaches | no test calls it directly or through its callers | a test reaches it |
+| Copied logic | the bodies are the same logic and could share one function | the similarity is only shape (boilerplate, generated code, different behavior) |
+| Endpoints that change data without an auth check | the endpoint changes data and no authentication applies to it | auth applies (middleware, guard, decorator, base class), or it's public by design and checks something else (sign-in, a signed webhook) |
+| CORS, cookies, cleartext HTTP, plain-HTTP URLs | the setting is on in configuration that ships, or the code requests a plain `http://` address on the internet | it's development-only configuration, or the address is local, an example, a namespace or a link in text |
+| Containers and compose | the image that ships runs as root; a database port is published on every interface | the stage is a build stage that doesn't ship; the base image runs as a non-root user |
+| Weak hash or random | it protects something: a password, token, signature or secret | it's a checksum, cache key, ETag or other non-security use |
+| Personal data in logs or storage | the value logged or stored is personal data (email, phone, name, address, health) | the name suggests it but the value isn't |
+| Swift crashes, retain cycles, privacy manifest | the force-unwrap can fail on real input; the closure kept by `self` captures `self` strongly; the app ships on iOS and uses the API with no manifest | the value can't fail; the capture is weak or the closure isn't kept; the target isn't an iOS app |
 
 ## Spot checks on real code
 

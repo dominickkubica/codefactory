@@ -18,8 +18,9 @@ lets triage at 1,000 repositories be a sample instead of a full read.
    - Done: 729 locations labeled across 50 checks (`tools/corpus/labels.json`), a second reviewer agreeing on 87% of
      a blind sample. First measurement: 43% right. About 25 false-positive patterns fixed, each with a regression
      test (`tests/test_precision_lessons.py`).
-   - Left: re-score on a fresh corpus run, publish the table, label the new JS/TS data-flow findings, and take the
-     checks still under 50% to a decision (fix further, demote to a hint, or drop).
+   - Left: re-score on a fresh corpus run and publish the table; label a fresh held-out sample (locations nobody
+     tuned against) for the honest number; take the checks still under 50% to a decision (fix further, demote to a
+     hint, or drop).
 
 ## Next
 
