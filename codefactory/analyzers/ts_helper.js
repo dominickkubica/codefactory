@@ -25,10 +25,12 @@ const skipped = (f) => {
   return parts.slice(0, -1).some((p) => ignore.has(p) || (p.startsWith(".") && p !== "." && p !== "..")) || /\.d\.[mc]?ts$|\.min\.[mc]?js$/.test(f) || !EXT.test(f) || rel(f).startsWith("..") || outside(f);
 };
 
+const pkgFiles = []; // codefactory: ignore module_state — the same one run
 function walkDir(dir, out) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     if (e.isDirectory()) { if (!ignore.has(e.name)) walkDir(path.join(dir, e.name), out); }
     else if (EXT.test(e.name)) out.push(path.join(dir, e.name));
+    else if (e.name === "package.json") pkgFiles.push(path.join(dir, e.name));
   }
   return out;
 }
@@ -48,10 +50,85 @@ if (cfgPath && path.resolve(path.dirname(cfgPath)) === path.resolve(root)) {
   }
 }
 const all = new Set([...fileNames, ...walkDir(root, [])].map((f) => path.resolve(f)).filter((f) => !skipped(f)));
-const program = ts.createProgram([...all], options);
+
+// Workspace packages (a monorepo's "@org/ui/components/button"): resolved through node_modules links that a fresh
+// checkout doesn't have. Found by their package.json "name", then its "exports" (or main fields), when TypeScript's
+// own resolution finds nothing; only ever a file of this repository.
+const packages = new Map();
+const depth = (f) => f.split(path.sep).length;
+const hidden = (f) => rel(f).split("/").slice(0, -1).some((p) => ignore.has(p) || (p.startsWith(".") && p !== "."));
+for (const p of pkgFiles.filter((f) => !hidden(f) && !outside(f))
+  .sort((a, b) => depth(a) - depth(b) || (a < b ? -1 : 1))) {
+  try {
+    const json = JSON.parse(fs.readFileSync(p, "utf8"));
+    if (typeof json.name === "string" && json.name && !packages.has(json.name)) {
+      packages.set(json.name, { dir: path.dirname(p), json });
+    }
+  } catch { /* not a package */ }
+}
+const CONDITIONS = ["types", "source", "import", "module", "default", "require", "node", "browser"];
+const conditionsOf = (v) => [...CONDITIONS.filter((c) => c in v),
+  ...Object.keys(v).filter((c) => !CONDITIONS.includes(c))];
+const targetsOf = (v) => typeof v === "string" ? [v] : Array.isArray(v) ? v.flatMap(targetsOf) :
+  v && typeof v === "object" ? conditionsOf(v).flatMap((c) => targetsOf(v[c])) : [];
+function fileAt(f) {
+  for (const b of [f, f.replace(/\.[mc]?jsx?$/, "")]) { // (a "./x.js" written for a "./x.ts")
+    const tries = [b, ...[".ts", ".tsx", ".mts", ".js", ".jsx", ".mjs"].map((x) => b + x),
+      ...[".ts", ".tsx", ".js", ".jsx"].map((x) => path.join(b, "index" + x))];
+    for (const c of tries) if (all.has(path.resolve(c))) return path.resolve(c);
+  }
+  return null;
+}
+function workspaceFile(spec) {
+  if (/^[./]/.test(spec)) return null;
+  const parts = spec.split("/");
+  const name = spec.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
+  const pkg = packages.get(name);
+  if (!pkg) return null;
+  const sub = "." + spec.slice(name.length), ex = pkg.json.exports;
+  let targets = [];
+  if (ex !== undefined && ex !== null) {
+    const subpaths = typeof ex === "object" && !Array.isArray(ex) && Object.keys(ex).some((k) => k.startsWith("."));
+    const map = subpaths ? ex : { ".": ex };
+    if (map[sub] !== undefined) targets = targetsOf(map[sub]);
+    else for (const [k, v] of Object.entries(map)) { // "./components/*": "./src/components/*.tsx"
+      const star = k.indexOf("*"), pre = k.slice(0, star), post = k.slice(star + 1);
+      if (star < 0 || !sub.startsWith(pre) || !sub.endsWith(post) || sub.length < pre.length + post.length) continue;
+      const mid = sub.slice(pre.length, sub.length - post.length);
+      targets = targetsOf(v).map((t) => t.split("*").join(mid));
+      break;
+    }
+  } else if (sub === ".") {
+    targets = ["types", "typings", "source", "module", "main"].map((k) => pkg.json[k])
+      .filter((t) => typeof t === "string");
+    targets.push("index");
+  } else targets = [sub];
+  for (const t of targets) { const f = fileAt(path.resolve(pkg.dir, t)); if (f) return f; }
+  return null;
+}
+const host = ts.createCompilerHost(options);
+const resolutionCache = ts.createModuleResolutionCache(root, (f) => host.getCanonicalFileName(f), options);
+function resolveFull(spec, from, mode, redirected) {
+  const r = ts.resolveModuleName(spec, from, options, host, resolutionCache, redirected, mode);
+  if (r.resolvedModule) return r;
+  const f = workspaceFile(spec);
+  if (!f) return r;
+  const resolvedModule = { resolvedFileName: f, extension: ts.extensionFromPath(f), isExternalLibraryImport: false };
+  return { resolvedModule };
+}
+host.resolveModuleNameLiterals = (lits, from, redirected, opts, sf) => lits.map((lit) => {
+  let mode;
+  try {
+    mode = ts.getModeForUsageLocation(sf, lit, (redirected && redirected.commandLine.options) || opts);
+  } catch { mode = undefined; }
+  return resolveFull(lit.text, from, mode, redirected);
+});
+host.getModuleResolutionCache = () => resolutionCache;
+const program = ts.createProgram([...all], options, host);
 const checker = program.getTypeChecker();
 const sources = program.getSourceFiles().filter((sf) => all.has(path.resolve(sf.fileName)));
 
+const sourceById = new Map();
 const files = [], functions = [], fnByNode = new Map(), calls = new Map(), refs = new Map(), imports = new Set();
 const sites = [], ioOf = new Map();
 const unresolvedProps = new Set();
@@ -289,6 +366,7 @@ for (const sf of sources) {
     kind: "module", decorated: false, exported: false, shape: "", tokens: "", dynamic: false, public: false, io: [] };
   functions.push(top);
   fnByNode.set(sf, top);
+  sourceById.set(id, sf);
   const seen = new Map();
   const visit = (n, owner, cls) => {
     let next = owner, nextCls = cls;
@@ -296,8 +374,11 @@ for (const sf of sources) {
     if (isFnLike(n)) {
       // A function written inline as an object property or JSX prop inside another function ({ onPress: () => … },
       // headerRight: () => …) is a callback handed to something else: part of the function around it.
+      // (A getter or setter of an object literal is a method of it: `pm.info.requestName` is read by property access.)
+      const literalMember = (ts.isMethodDeclaration(n) || ts.isGetAccessor(n) || ts.isSetAccessor(n)) &&
+        !!n.parent && ts.isObjectLiteralExpression(n.parent);
       const inline = owner && owner.kind !== "module" && n.parent &&
-        (ts.isPropertyAssignment(n.parent) || ts.isJsxExpression(n.parent) || (ts.isMethodDeclaration(n) && ts.isObjectLiteralExpression(n.parent)));
+        (ts.isPropertyAssignment(n.parent) || ts.isJsxExpression(n.parent) || literalMember);
       const name = inline ? null : nameOf(n);
       if (name) {
         const prefix = cls && (ts.isMethodDeclaration(n) || ts.isConstructorDeclaration(n) || ts.isGetAccessor(n) ||
@@ -308,7 +389,7 @@ for (const sf of sources) {
         seen.set(qual, true);
         // A function stored in a module-level object ({ label, onPress: () => … }) is handed around as data and
         // called by whatever receives it: never reported as unused.
-        const asData = n.parent && (ts.isPropertyAssignment(n.parent) || (ts.isMethodDeclaration(n) && ts.isObjectLiteralExpression(n.parent)));
+        const asData = n.parent && (ts.isPropertyAssignment(n.parent) || literalMember);
         const fn = { id: fid, file: id, name, qualname: qual, line, end, loc: end - line + 1,
           kind: prefix && prefix === cls ? "method" : "function", decorated: !!(ts.canHaveDecorators(n) && ts.getDecorators(n)?.length),
           exported: !!asData || isDefaultExport(n) || (n.parent && ts.isVariableDeclaration(n.parent) && isDefaultExport(n.parent.parent.parent)),
@@ -436,7 +517,7 @@ function ownerOf(n) {
   return null;
 }
 function resolveModule(spec, sf) {
-  const r = ts.resolveModuleName(spec, sf.fileName, options, ts.sys).resolvedModule;
+  const r = resolveFull(spec, sf.fileName, undefined, undefined).resolvedModule;
   if (!r || r.isExternalLibraryImport) return null;
   const f = path.resolve(r.resolvedFileName);
   return all.has(f) ? rel(f) : null;
@@ -489,6 +570,26 @@ for (const sf of sources) {
       const dst = resolveModule(n.arguments[0].text, sf);
       const owner = ownerOf(n);
       if (dst && dst !== fileId && (!owner || owner.kind === "module")) imports.add(`${fileId}\u0000${dst}`);
+    } else if (ts.isCallExpression(n) && n.expression.kind === ts.SyntaxKind.ImportKeyword && n.arguments[0] &&
+               ts.isStringLiteralLike(n.arguments[0])) {
+      // import("./x"): the caller runs the module and uses what it exports (lazy(() => import("./Page")) renders its
+      // default export). Only an import outside any function loads with the file (a lazy one can't form a loop).
+      const dst = resolveModule(n.arguments[0].text, sf);
+      const src = ownerOf(n);
+      if (dst && dst !== fileId) {
+        let lazy = false;
+        for (let p = n.parent; p && !lazy; p = p.parent) lazy = isFnLike(p);
+        if (!lazy) imports.add(`${fileId}\u0000${dst}`);
+        const target = sourceById.get(dst);
+        let dflt = null;
+        try {
+          const mod = target && checker.getSymbolAtLocation(target);
+          dflt = mod && checker.getExportsOfModule(mod).find((s) => s.escapedName === "default");
+        } catch { /* no module symbol: a script */ }
+        for (const f of [target && fnByNode.get(target), dflt && fnForSymbol(dflt)]) {
+          if (src && f && f !== src) bump(refs, `${src.id}\u0000${f.id}`);
+        }
+      }
     } else if (isCall) {
       const src = ownerOf(n), dst = calleeOf(n);
       if (src && ts.isCallExpression(n) && ts.isElementAccessExpression(n.expression)) linkTable(n, src);
@@ -527,6 +628,13 @@ for (const sf of sources) {
         const src = ownerOf(n);
         if (src && dst && dst !== src) bump(refs, `${src.id}\u0000${dst.id}`);
       }
+    }
+    // $watch(x, function watchGroupAction() {…}): a named function expression passed as an argument is a callback,
+    // handed on by the function around it (its name is only visible inside itself)
+    if (ts.isFunctionExpression(n) && n.name && fnByNode.has(n) && n.parent &&
+        (ts.isCallExpression(n.parent) || ts.isNewExpression(n.parent)) && (n.parent.arguments || []).includes(n)) {
+      const src = ownerOf(n);
+      if (src) bump(refs, `${src.id}\u0000${fnByNode.get(n).id}`);
     }
     ts.forEachChild(n, visit);
   };
