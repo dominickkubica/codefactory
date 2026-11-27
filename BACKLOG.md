@@ -26,7 +26,12 @@ lets triage at 1,000 repositories be a sample instead of a full read.
    - Done (round 3 → 4): endpoints without an auth check (0 of 7) and Swift `try!`/`as!` (0 of 4) are hints. Kaizen:
      import loops (C# namespaces, PHP short names, Ruby gems: 11 wrong gone), Python packages under `lib/`
      (streamlit unused code 234 → 18), Compose previews, published packages' API. None right lost.
-   - Next: round-4 held-out sample on a fresh corpus run, labeled after, reported per severity.
+   - Done: round 4 held out: **65%** (72 of 110, 95% interval 56–74%). Medium 78%, High 57%, Low 37%.
+   - Next (kaizen from round 4): raw HTML from constant markup or a sanitizer a few lines away; SQL guarded by a regex
+     check above it or built from literals every caller passes; PHP import links that don't exist (appwrite
+     `Utopia\Image\*`, laravel `RedisManager`); tests that reach code through a PHPUnit data provider, a dynamic
+     `import()` or Django `reverse()`; unused-code callers in visitors and `./*` package exports; findings that name
+     a route which doesn't reach the call (`/healthz` reaching TypeORM DDL). Then round 5.
 
 ## Next
 

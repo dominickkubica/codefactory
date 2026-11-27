@@ -39,6 +39,13 @@ honest figure for code codefactory hasn't been tuned on, and the target for the 
   frozen dated copies, build outputs and small edited copies aren't "copied logic"; TypeScript imports used only as
   types and Java imports only for a Javadoc link aren't dependencies; an import loop shows a real chain of imports.
 
+### Round 4 held out: 65%
+
+A fresh corpus run on the kaizen code (76 of 76, no crash or timeout) and a fourth held-out sample of 110 counted
+locations, labeled after the fixes: **72 right (65%, 95% interval 56–74%)**, from 58% in round 3 and 52% in round 2.
+Medium findings 78%, High 57%. `tools/precision.py report` keeps each earlier round's published figure instead of
+recomputing it with today's hint list.
+
 ### Kaizen: small fixes, each checked where it matters
 
 After the held-out sample, one false-positive pattern at a time, each with a regression test and checked by

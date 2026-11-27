@@ -36,6 +36,9 @@ from corpus import CACHE, HERE, repos  # noqa: E402
 LABELS = HERE / "labels.json"
 ACCURACY = ROOT / "docs" / "ACCURACY.md"
 SEVERITIES = ("Critical", "High", "Medium", "Low", "Info")
+# Held-out rounds as published (right, counted locations), frozen once the next round's fixes begin: recomputing
+# them with today's hint list would drop the checks that did worst and flatter the past.
+PUBLISHED = {2: (79, 153), 3: (77, 132)}
 
 # claims that are true by construction (a count, a missing file, a version string): nothing to measure
 MECHANICAL = re.compile(
@@ -310,6 +313,9 @@ def report(args) -> int:
     rounds = sorted({v.get("round", 1) for v in load().values()} - {1})
     history = []
     for rnd in rounds:  # every location of the round was reported when it was drawn: its labels are the measurement
+        if rnd in PUBLISHED:  # a check moved to the hints later doesn't rewrite what a round measured
+            history.append(f"round {rnd}: {PUBLISHED[rnd][0]}/{PUBLISHED[rnd][1]} ({PUBLISHED[rnd][0] / PUBLISHED[rnd][1]:.0%})")
+            continue
         got = [v["label"] == "true" for v in load().values()
                if v.get("round", 1) == rnd and v["label"] in ("true", "false") and not is_hint(v["check"])]  # fmt: skip
         if got:
