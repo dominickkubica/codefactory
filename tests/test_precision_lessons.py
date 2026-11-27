@@ -115,6 +115,21 @@ class PatternTest(unittest.TestCase):
         self.assertEqual([f for f, _ in hits(found, "shell")], ["bad.js"])
         self.assertEqual([f for f, _ in hits(found, "raw_html")], ["bad.js"])
 
+    def test_hashes_that_only_name_things_and_more_expected_failures(self):
+        found = self.scan({
+            "models.py": "def bucket_for_email(email):\n    salted = (email + settings.SECRET_KEY).encode()\n"
+                         "    hashed = hashlib.sha1(salted).hexdigest()\n    return TokenBucket.authorize(hashed)\n",
+            "pw.py": "def hash_password(password):\n    return hashlib.md5(password.encode()).hexdigest()\n",
+            "copy.tsx": "function copy(t) {\n  navigator.clipboard.writeText(t).catch(() => {})\n}\n",
+            "panel.tsx": "const items = ids.map((id) => emojis.fetch(id).catch(() => undefined));\n",
+            "init.py": "def setup():\n    try:\n        import greenlet\n        check(greenlet.__version__)\n    except Exception:\n        pass\n",
+        })  # fmt: skip
+        self.assertEqual([f for f, _ in hits(found, "weak_hash")], ["pw.py"])
+        self.assertFalse(hits(found, "swallowed"))
+        for line in ('"docs_url": "http://www.vertica.com/",', "examples: [{ example: '\"Check out http://n8n.io\".extractUrl()' }]",
+                     'add_preloaded("http://w3id.org/security/v1") do'):  # fmt: skip
+            self.assertFalse(internet_http(line), line)
+
     def test_plain_http_that_no_one_requests(self):
         for line in ('xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"', "'http://superset:8088'", "'http://10.1.15.216:2283/api'",
                      '"http://example.com/test"', 'id: "http://purl.org/dc/terms/created"', '<a href="http://mitm.it/">',

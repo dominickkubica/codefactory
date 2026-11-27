@@ -30,7 +30,8 @@ TRAILING_COMMENT = re.compile(r"(?:\)|\}|;|\bpass)\s*(?://|#)\s*\S")
 EXPECTED_THROW = re.compile(
     r"JSON\.parse|(?:set|release)PointerCapture|realpath|customElements\.define|decodeURIComponent|new URL\(|"
     r"\bimport\(|require\(|\bstat(?:Sync)?\(|\baccess(?:Sync)?\(|\blstat|inspect\.signature|\.resolve\(|"
-    r"\bint\(|\bfloat\(|json\.loads|\.decode\(|urlparse|resolve_?url|\bresolve\("
+    r"\bint\(|\bfloat\(|json\.loads|\.decode\(|urlparse|resolve_?url|\bresolve\(|localStorage|sessionStorage|"
+    r"clipboard|writeText|navigator\.share"
 )
 VALUE = r"(?:null|undefined|\[\]|\{\}|false|0|''|\"\"|None)"
 
@@ -40,6 +41,10 @@ def expected_failure(lines: list[str], i: int) -> str | None:
     dependency or makes a call whose one expected failure is handled by doing nothing; or the catch turns the failure
     into a value (`.catch(() => null)`) the statement goes on to use."""
     line = lines[i - 1]
+    if re.search(r"\.catch\(", line) and EXPECTED_THROW.search(line.split(".catch(")[0]):
+        return "expected failure"  # navigator.clipboard.writeText(x).catch(() => {}): a permission that may be refused
+    if re.search(rf"=>\s*[^{{;]*\.catch\(\s*(?:\(\s*\w*\s*\)|\w+)\s*=>\s*{VALUE}\s*\)", line):
+        return "fallback"  # ids.map((id) => fetch(id).catch(() => undefined)): the arrow returns the value
     if re.search(rf"\.catch\(\s*(?:\(\s*\w*\s*\)|\w+)\s*=>\s*{VALUE}\s*\)", line):
         start = i - 1
         while start > 0 and not re.search(r"[;{}]\s*$", lines[start - 1]) and i - start < 8:
@@ -52,8 +57,8 @@ def expected_failure(lines: list[str], i: int) -> str | None:
         ln = lines[back]
         if re.match(r"\s*(?:try\s*:|try\s*\{|\}\s*try\s*\{)\s*$", ln) or re.search(r"\btry\s*\{", ln):
             text = "\n".join(body)
-            if body and all(re.match(r"\s*(?:import |from \S+ import )", b) or not b.strip() for b in body):
-                return "optional import"
+            if body and re.match(r"\s*(?:import |from \S+ import )", next((b for b in body if b.strip()), "")):
+                return "optional import"  # `try: import greenlet …`: probing for an optional dependency
             # (not `return JSON.parse(x)` in an empty catch: the caller gets nothing and isn't told why; nor a bare
             # `except:`, which also swallows Ctrl-C)
             bare = re.match(r"\s*except\s*:", line)

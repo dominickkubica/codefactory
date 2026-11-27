@@ -398,7 +398,8 @@ NAMESPACE_HOSTS = re.compile(
 )
 LINK_CONTEXT = re.compile(
     r"\bhref\s*[=:]|\bxmlns\b|targetNamespace|\bcredits?\b|@see\b|@link\b|\bid\s*[:=]\s*[\"']http|\bto\s*=\s*[\"']http|"
-    r"TermDefinition|\bnamespace\b|\bschemaLocation\b|\bhomepage\b|\blicen[cs]e\b|\bcitation\b|\bsource_?url\b.*#",
+    r"TermDefinition|\bnamespace\b|\bschemaLocation\b|\bhomepage\b|\blicen[cs]e\b|\bcitation\b|\bsource_?url\b.*#|"
+    r"\bdocs?_?url\b|\bdocumentation\b|\bexamples?\s*:|add_preloaded|\bwebsite\b|\binfo_?url\b|\breference\b",
     re.I,
 )
 
@@ -507,6 +508,22 @@ def _safe_html(lines: list[str], i: int) -> bool:
 # languages whose strings interpolate `{name}` (Python f-strings, C#'s $"…", PHP's "{$x}", Ruby's #{x}, Kotlin and
 # Dart's ${x}, Swift's \(x))
 BRACE_LANGS = (".py", ".cs", ".php", ".rb", ".kt", ".kts", ".dart", ".scala", ".groovy", ".swift")
+
+
+NOT_SECURITY = re.compile(r"bucket|rate_?limit|throttl|cache|refresh_key|etag|fingerprint|dedup|checksum|"
+                          r"\bnonce\b\s*:\s*Math|cnonce|SignatureNonce", re.I)  # fmt: skip
+
+
+def _keyed_not_secured(lines: list[str], i: int) -> bool:
+    """The hash or random value only names something: the line, or the function it's in (up to 25 lines up), says
+    it's a rate-limit bucket, a cache key, an ETag or a fingerprint."""
+    if NOT_SECURITY.search(lines[i - 1]):
+        return True
+    for j in range(i - 2, max(-1, i - 26), -1):
+        if FUNC_HEADER.match(lines[j]):
+            body = "\n".join(lines[j : min(len(lines), i + 12)])
+            return NOT_SECURITY.search(body) is not None and not re.search(r"passw|hmac|signature", body, re.I)
+    return False
 
 
 def looks_random(value: str) -> bool:
@@ -718,6 +735,8 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                         header = next((h for h in reversed(lines[max(0, i - 7) : i - 1]) if FUNC_HEADER.match(h)), "")
                         if key not in WEAK_CONTEXT_FROM_FUNCTION or not CONTEXT[key].search(header):
                             continue
+                    if key in ("weak_hash", "weak_random") and _keyed_not_secured(lines, i):
+                        continue  # a hash for a rate-limit bucket, a cache or refresh key: an identifier, not protection
                     if key == "secret" and re.search(PLACEHOLDER, line):
                         continue
                     if key == "secret" and _not_a_working_key(lines, i):

@@ -6,7 +6,8 @@ import functools
 import re
 from pathlib import Path
 
-TEST_DIRS = ("tests", "test", "testing", "__tests__", "__mocks__", "spec", "t", "testdata", "fixtures")  # t/: celery's
+TEST_DIRS = ("tests", "test", "testing", "__tests__", "__mocks__", "spec", "t", "testdata", "fixtures", "playwright",
+             "cypress")  # t/: celery's; playwright/, cypress/: end-to-end suites
 # a folder or file named for tests among other words: e2e-auth-server/, test-utils/, prepare-v1-test-db.mjs
 TEST_TOKEN = re.compile(r"(?:^|[-_.])(?:e2e|tests?|testing)(?:[-_.]|$)", re.I)
 SCRIPT_DIRS = ("scripts", "script", "tools", "bin", "benchmarks", "benchmarking", "build-logic", "buildSrc")
