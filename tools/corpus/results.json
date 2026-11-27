@@ -241,7 +241,7 @@
  },
  "actualbudget/actual": {
   "status": "ok",
-  "seconds": 61.9,
+  "seconds": 61.8,
   "commit": "cf95cfe",
   "kind": "web app",
   "deployment": "deployed server",
@@ -251,7 +251,7 @@
    "Low": 5
   },
   "serious": [
-   "High: 18 errors silently swallowed",
+   "High: 17 errors silently swallowed",
    "High: Import loops (12)"
   ]
  },
@@ -269,7 +269,7 @@
  },
  "apache/superset": {
   "status": "ok",
-  "seconds": 169.5,
+  "seconds": 157.6,
   "commit": "3758941",
   "kind": "web app",
   "deployment": "deployed server",
@@ -285,7 +285,7 @@
  },
  "appwrite/appwrite": {
   "status": "ok",
-  "seconds": 282.2,
+  "seconds": 290.0,
   "commit": "26642a47",
   "kind": "web app",
   "deployment": "deployed server",
@@ -296,7 +296,7 @@
   },
   "serious": [
    "High: Environment files committed",
-   "High: 38 errors silently swallowed",
+   "High: 35 errors silently swallowed",
    "High: Import loops (20)"
   ],
   "notes": [
@@ -354,7 +354,7 @@
  },
  "calcom/cal.com": {
   "status": "ok",
-  "seconds": 83.6,
+  "seconds": 80.8,
   "commit": "ae027bb",
   "kind": "web app",
   "deployment": "deployed server",
@@ -449,7 +449,7 @@
  },
  "directus/directus": {
   "status": "ok",
-  "seconds": 66.2,
+  "seconds": 60.5,
   "commit": "4856582",
   "kind": "web app",
   "deployment": "deployed server",
@@ -545,7 +545,7 @@
  },
  "excalidraw/excalidraw": {
   "status": "ok",
-  "seconds": 58.8,
+  "seconds": 54.4,
   "commit": "dabd83c",
   "kind": "web front-end",
   "deployment": "browser",
@@ -671,7 +671,7 @@
  },
  "getsentry/sentry-python": {
   "status": "ok",
-  "seconds": 9.1,
+  "seconds": 12.4,
   "commit": "566beb0",
   "kind": "library",
   "deployment": "user's machine",
@@ -697,7 +697,7 @@
  },
  "go-gitea/gitea": {
   "status": "ok",
-  "seconds": 50.0,
+  "seconds": 46.0,
   "commit": "14d2bdc",
   "kind": "web app",
   "deployment": "deployed server",
@@ -834,7 +834,7 @@
  },
  "immich-app/immich": {
   "status": "ok",
-  "seconds": 55.3,
+  "seconds": 43.3,
   "commit": "a51a438",
   "kind": "mobile app",
   "deployment": "client app",
@@ -1146,7 +1146,7 @@
  },
  "mastodon/mastodon": {
   "status": "ok",
-  "seconds": 52.1,
+  "seconds": 50.7,
   "commit": "db13cc1",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1204,7 +1204,7 @@
  },
  "mitmproxy/mitmproxy": {
   "status": "ok",
-  "seconds": 38.7,
+  "seconds": 41.3,
   "commit": "0466185",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1318,7 +1318,7 @@
  },
  "outline/outline": {
   "status": "ok",
-  "seconds": 62.7,
+  "seconds": 70.2,
   "commit": "13c6c77",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1334,7 +1334,7 @@
  },
  "owid/etl": {
   "status": "ok",
-  "seconds": 69.3,
+  "seconds": 59.2,
   "commit": "9a2e7d68",
   "kind": "data pipeline",
   "deployment": "user's machine",
@@ -1582,7 +1582,7 @@
  },
  "shadcn-ui/ui": {
   "status": "ok",
-  "seconds": 61.8,
+  "seconds": 58.9,
   "commit": "0e5b2e6",
   "kind": "web app",
   "deployment": "network server",
@@ -1747,7 +1747,7 @@
  },
  "tldraw/tldraw": {
   "status": "ok",
-  "seconds": 82.0,
+  "seconds": 74.3,
   "commit": "94466fd",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1840,7 +1840,7 @@
  },
  "vitejs/vite": {
   "status": "ok",
-  "seconds": 23.1,
+  "seconds": 19.7,
   "commit": "adc761d",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -1850,7 +1850,7 @@
    "Low": 3
   },
   "serious": [
-   "High: 16 errors silently swallowed",
+   "High: 15 errors silently swallowed",
    "High: Import loops (2)"
   ]
  },
@@ -1887,7 +1887,7 @@
  },
  "withastro/astro": {
   "status": "ok",
-  "seconds": 27.9,
+  "seconds": 28.6,
   "commit": "3e3e70f",
   "kind": "web front-end",
   "deployment": "browser",
@@ -1897,7 +1897,7 @@
    "Low": 2
   },
   "serious": [
-   "High: 37 errors silently swallowed",
+   "High: 33 errors silently swallowed",
    "High: Import loops (8)"
   ]
  }
