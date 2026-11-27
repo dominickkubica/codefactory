@@ -82,11 +82,19 @@ def exports() -> dict[str, dict]:
     return out
 
 
-def reported() -> dict[str, dict]:
-    """Every location reported now: key -> {repo, check, severity, location}."""
+def is_hint(check: str) -> bool:
+    """A check listed as a hint, not counted as a finding (codefactory.review.HINT)."""
+    sys.path.insert(0, str(ROOT))
+    from codefactory.review import HINT
+
+    return HINT.match(check.replace("N ", "1 ")) is not None
+
+
+def reported(hints: bool = False) -> dict[str, dict]:
+    """Every location reported now: key -> {repo, check, severity, location}. With hints, the hints' locations too."""
     out = {}
     for repo, doc in exports().items():
-        for f in doc["findings"]:
+        for f in doc["findings"] + (doc.get("hints", []) if hints else []):
             check = check_of(f["title"])
             if MECHANICAL.match(check):
                 continue
@@ -241,7 +249,8 @@ def score(_args=None, quiet: bool = False, round_: int | None = None) -> list[di
         else:
             r[v["label"]] += 1
     out = []
-    for r in rows.values():
+    for r in list(rows.values()):
+        r["hint"] = is_hint(r["check"])
         n = r["true"] + r["false"]
         r["n"] = n
         r["precision"] = r["true"] / n if n else None
@@ -254,10 +263,13 @@ def score(_args=None, quiet: bool = False, round_: int | None = None) -> list[di
             p = "  –  " if r["precision"] is None else f"{r['precision']:5.0%}"
             ci = "" if not r["n"] else f"{r['low']:.0%}–{r['high']:.0%}"
             print(f"{r['check'][:62]:62} {p} {ci:>13} {r['n']:4} {r['fixed']:5} {r['lost']:4} {r['todo']:4}")
-        k = sum(r["true"] for r in out)
-        n = sum(r["n"] for r in out)
+        k = sum(r["true"] for r in out if not r["hint"])
+        n = sum(r["n"] for r in out if not r["hint"])
         if n:
-            print(f"\nall labeled and still reported: {k}/{n} = {k / n:.0%}")
+            print(f"\ncounted findings (hints left out): {k}/{n} = {k / n:.0%}")
+        hints = sorted({r["check"] for r in out if r["hint"]})
+        if hints:
+            print("hints, not counted: " + "; ".join(hints))
     return out
 
 

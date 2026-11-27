@@ -76,7 +76,8 @@ class ExportTest(unittest.TestCase):
         self.assertEqual(sum(f"job{n}.py:" in n1 for n in range(9)), 9)  # every location, not the first six
         self.assertNotIn("more", n1)
         self.assertNotIn("Batch the writes", section)  # filed under the writes finding, not the N+1 one
-        self.assertIn("Batch the writes in remove", text.split("· Writes inside loops in 1 place", 1)[1])
+        self.assertIn("**Writes inside loops in 1 place**", text.split("## Hints", 1)[1])  # a hint, not a finding
+        self.assertIn("Batch the writes in remove", text.split("## Other ready-made fixes", 1)[1])
 
     def test_json_and_stable_ids(self):
         root = project()

@@ -187,6 +187,8 @@ def build(r, graph: dict, root: Path) -> dict:
         "uncommitted": bool(_git(root, "status", "--porcelain")), "profile": r.profile.summary(),
         "scope": {"files": len(files), "lines": sum(x["loc"] for x in files), "languages": graph.get("language", "")},
         "limits": r.limits(), "findings": findings,
+        "hints": [{"title": f.title, "severity": f.severity, "area": f.area,
+                   "locations": [_located(root, e, code) for e in f.evidence]} for f in getattr(r, "hints", [])],
         "other_fixes": [_task(t) for t in tasks if t["id"] not in filed],
     }  # fmt: skip
 
@@ -234,6 +236,11 @@ def markdown(doc: dict) -> str:
             ]
             out += [_task_md(t) for t in f["fixes"]]
         out.append("")
+    if doc.get("hints"):
+        out += ["## Hints", "", "Not findings: checks that are right less than half the time on real code, because the "
+                "answer depends on what the code doesn't show (how big a list gets, whether a file deploys). Glance, don't "
+                "triage.", ""]
+        out += [f"- **{h['title']}**: " + "; ".join(h["locations"][:5]) for h in doc["hints"]] + [""]
     if doc["other_fixes"]:
         out += ["## Other ready-made fixes", ""] + [_task_md(t) for t in doc["other_fixes"]] + [""]
     out += ["## What this audit didn't check", ""] + [f"- {x}" for x in doc["limits"]]

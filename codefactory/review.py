@@ -111,6 +111,12 @@ def _sample_severity(sev: str, hits) -> str:
     return sev
 
 
+HINT = re.compile(
+    r"Writes inside loops|File or program operations inside loops|Array searches inside loops|"
+    r"Databases published on every interface|Plain-HTTP URLs in"
+)
+
+
 class Review:
     def __init__(self, g: dict, root: Path, online: bool = False, full: bool = False):
         self.full = full  # every location of every finding (the audit export), not the first few (the report)
@@ -1023,6 +1029,11 @@ class Review:
             if hot:
                 f.data["hotspot"] = hot
         self.findings.sort(key=lambda f: (SEV.index(f.severity), not f.data.get("hotspot"), -len(f.evidence) - f.more))
+        # checks whose answer depends on what the code can't show (how big a list gets, whether a compose file deploys,
+        # whether anyone requests a URL): measured right less than half the time on real repositories, so they're
+        # listed as hints, not counted as findings (docs/ACCURACY.md)
+        self.hints = [f for f in self.findings if HINT.match(f.title)]
+        self.findings = [f for f in self.findings if not HINT.match(f.title)]
 
     def _test_files(self) -> int:
         on_disk = sum(1 for f in getattr(self, "sources", []) if is_test(f))
@@ -1198,6 +1209,13 @@ class Review:
                         + ": fixing it here pays off soonest."
                     )
                 out.append("")
+        if getattr(self, "hints", None):
+            out += ["### Hints", "", "Not counted as findings: these checks are right less than half the time on real code "
+                    "(docs/ACCURACY.md), because the answer depends on what the code doesn't show. Worth a glance.", ""]
+            for f in self.hints:
+                out += [f"- **{f.title}**: " + "; ".join(f.evidence[:3]) + (f" … and {len(f.evidence) - 3 + f.more} more"
+                                                                          if len(f.evidence) > 3 or f.more else "")]  # fmt: skip
+            out.append("")
         out += self._by_owner()
         out += ["## 6. What is working", ""] + [f"- {w}" for w in self.strengths()] + [""]
         out += ["## 7. Testing and release gaps", ""]
