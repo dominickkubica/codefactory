@@ -41,7 +41,7 @@ SEVERITIES = ("Critical", "High", "Medium", "Low", "Info")
 VULNERABLE_BY_DESIGN = {"juice-shop/juice-shop", "OWASP/NodeGoat", "WebGoat/WebGoat"}
 # Held-out rounds as published (right, counted locations), frozen once the next round's fixes begin: recomputing
 # them with today's hint list would drop the checks that did worst and flatter the past.
-PUBLISHED = {2: (79, 153), 3: (77, 132)}
+PUBLISHED = {2: (79, 153), 3: (77, 132), 4: (72, 110)}
 
 # claims that are true by construction (a count, a missing file, a version string): nothing to measure
 MECHANICAL = re.compile(

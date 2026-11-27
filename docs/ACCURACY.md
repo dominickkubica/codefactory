@@ -233,6 +233,15 @@ Checks whose claim is true by construction (a missing README, an unpinned versio
 | Credentials committed in source | 0% | 0%–66% | 2 |
 <!-- precision:end -->
 
+### Round 5, by severity and check
+
+68 of 96 right (71%, 95% interval 61–79%). By severity: Critical 0 of 1, High 13 of 20 (65%), Medium 40 of 56
+(71%), Low 15 of 19 (79%). Unused code went from 2 of 8 in round 4 to 6 of 8, untested code from 3 of 8 to 6 of 8,
+import loops from 6 of 8 to 7 of 8. Still weak: swallowed errors, raw HTML and copied logic (4 of 8 each), root
+containers (4 of 7: base images whose shipped image sets a user, entrypoints that drop privileges with `su-exec`).
+Two of the four swallowed-error misses (a query-cache prefetch, a promise handled later) were already fixed by
+changes made in parallel with this round, before the labels came in; they count against this round all the same.
+
 ### Round 4, by severity and check
 
 By severity: Critical 1 of 3, High 13 of 23 (57%), Medium 51 of 65 (78%), Low 7 of 19 (37%). Security checks 38 of

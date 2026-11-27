@@ -39,6 +39,25 @@ honest figure for code codefactory hasn't been tuned on, and the target for the 
   frozen dated copies, build outputs and small edited copies aren't "copied logic"; TypeScript imports used only as
   types and Java imports only for a Javadoc link aren't dependencies; an import loop shows a real chain of imports.
 
+### Round 5 held out: 71%
+
+Corpus run on the round-4 kaizen code (76 of 76), and a fifth held-out sample of 96 counted locations labeled after
+the fixes: **68 right (71%, 95% interval 61–79%)**, from 65% in round 4, 58% in round 3 and 52% in round 2.
+The corpus list grows to 126 repositories (50 more, JS/TS backends first); deliberately vulnerable training apps
+(Juice Shop, NodeGoat, WebGoat) are kept out of precision samples.
+
+### Parallel kaizen
+
+- JS/TS graph: dynamic `import("./x")` links the module it loads; bare imports of the repository's own workspace
+  packages resolve without node_modules (`@shared/ui/components/button`); a named function expression passed as an
+  argument is used; object-literal getters are treated like its methods.
+- JS/TS data flow: calls into injected services (`this.files.save(dto)` in a Nest controller) are followed into the
+  service; tRPC `input` is a source; destructured request parts and per-item callbacks over request lists are
+  followed.
+- Untested code: a PHP test calling `$transport->write()` or `Class::open()` reaches the method.
+- Swallowed errors: a no-op `.catch` on a promise awaited or handed to `Promise.allSettled` later, and a catch on a
+  React Query prefetch (`ensureQueryData`), are deliberate.
+
 ### Kaizen after round 4
 
 From the round-4 held-out misses, each checked on the repositories it touches (about 25 wrong locations gone, none
