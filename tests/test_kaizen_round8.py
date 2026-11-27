@@ -136,6 +136,21 @@ class Round8Test(unittest.TestCase):
                  "for chart in charts:"]  # fmt: skip
         self.assertFalse(_few_written_out(lines, 5, "charts"))
 
+    # from running codefactory on itself
+
+    def test_typed_sequences_are_placeholder_keys(self):
+        fake = "sk_" + "live_" + "abcdefghijklmnopqrstuvwx"  # (split: a scanner reading this file shouldn't see one)
+        real = "sk_" + "live_" + "51Hq8ZtLmX9vR2pK7wN4bYc"
+        found = self.scan({"tests/cfg.js": f'const API_KEY = "{fake}";\n', "tests/live.js": f'const API_KEY = "{real}";\n'})
+        self.assertEqual(at(found, "secret"), [("tests/live.js", 1)])
+
+    def test_html_sinks_only_in_web_files(self):
+        found = self.scan({
+            "analyzer.py": 'if attr.startswith("dangerouslySetInnerHTML"):\n    hits.append("innerHTML = x")\n',
+            "Page.tsx": "export const P = ({ h }) => <div dangerouslySetInnerHTML={{ __html: h }} />;\n",
+        })  # fmt: skip
+        self.assertEqual(at(found, "raw_html"), [("Page.tsx", 1)])
+
 
 if __name__ == "__main__":
     unittest.main()

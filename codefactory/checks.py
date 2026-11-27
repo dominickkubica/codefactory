@@ -165,6 +165,8 @@ PATTERNS.update(
 )
 # Single patterns that mean something else in other languages: Python's exec() runs code; JavaScript's exec() is
 # child_process (a shell) and Ruby's and PHP's replace or start a process.
+WEB_FILES = (".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".mts", ".cts", ".vue", ".svelte", ".astro", ".html", ".htm",
+             ".mdx", ".php", ".erb", ".ejs", ".hbs", ".njk", ".twig", ".jinja", ".j2", ".cshtml", ".razor")  # fmt: skip
 ONLY_IN = {
     PATTERNS["eval"][2]: (".py",),
     PATTERNS["eval"][4]: (".py",),  # yaml.load: js-yaml 4 removed the unsafe loader, so in JavaScript it's safe
@@ -172,13 +174,17 @@ ONLY_IN = {
     PATTERNS["shell"][-1]: (".go",),
     PATTERNS["shell"][4]: (".rb", ".php", ".pl", ".sh", ".bash", ".py"),  # `"…#{x}"` / `"…${x}"` in a double-quoted string
     PATTERNS["shell"][5]: (".rb",),  # Ruby's backticks and %x(): in JavaScript a backtick is a template string
+    # dangerouslySetInnerHTML, innerHTML, v-html: markup and script files, not an analyzer's Python naming them
+    **{PATTERNS["raw_html"][k]: WEB_FILES for k in (0, 1, 2)},
 }
 COMMENT_LINE = re.compile(r"\s*(?:#|//|\*|/\*|<!--|--\s)")
 # words that say a credential-looking value isn't real ("xoxb-not-a-real-token", "sk_test_fake…", "<your key>")
 PLACEHOLDER = (
     r"(?i)example|placeholder|dummy|xxxx|your[_-]|changeme|<|not[-_ ]?a[-_ ]?real|fake|redacted|sample|mock|"
     r"['\"](?:e2e|test)[-_]|['\"]0{8,}|['\"]abcd(?:ef)?[0-9]*(?:abcd|1234)|"  # `e2e-test-secret`, all zeros, `abcd…1234`
-    r"['\"]([A-Za-z0-9])\1{7,}['\"]"  # one character over and over (`SECRET_KEY = "AAAAAAAAAAAAAAAAAAAA"` in a test config)
+    r"['\"]([A-Za-z0-9])\1{7,}['\"]|"  # one character over and over (`SECRET_KEY = "AAAAAAAAAAAAAAAAAAAA"` in a test config)
+    # eight letters or digits in order (`sk_live_abcdefghijklmnop`, `ghp_aBcDeFgHiJ…0123456789`): typed, never random
+    + "|".join(w[i : i + 8] for w in ("abcdefghijklmnopqrstuvwxyz", "0123456789") for i in range(len(w) - 7))
 )
 # Checks for built-ins only some languages have: Go's eval() or Java's exec() are ordinary functions.
 LANG_ONLY = {
