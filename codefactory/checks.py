@@ -12,6 +12,7 @@ import os
 import re
 import subprocess
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -793,6 +794,198 @@ def _axios_default_timeout(root: Path, files: list[str]) -> bool:
     return False
 
 
+# `_sql_built` found the line isn't worth any other check either (a `"$x"` in a language without `$` interpolation)
+SKIP_LINE: list[str] = []
+
+
+def _sql_built(line: str, lines: list[str], i: int, m: re.Match, fid: str) -> list[str] | None:
+    """For a line whose SQL_CALL matched (m): the values put into the SQL text that might not be fixed, or None when
+    nothing is built into it (constant text, numbers, values from a fixed list). SKIP_LINE: stop checking this line."""
+    stmt = " ".join(lines[i - 1 : i + 4])
+    literal = re.search(r"""(["'`])((?:(?!\1)[^\\]|\\.)*)\1""", stmt[m.start() :])
+    # (the SQL words must be in the call's text: `queue.execute("MockWebServer …")` names a task, not a query)
+    callee = line[m.start() : m.start(1)]  # (Rails' `where("email = …")`: the method is the SQL word)
+    if SQL_WORD.search(stmt) and (literal is None or SQL_WORD.search(literal.group(2) + " " + callee)
+                                  or m.group(1).startswith("fmt.")):  # fmt: skip
+        py_format = not m.group(1).startswith("`")  # {name}: Python f-strings (and Ruby's #{name})
+        start = m.end() - 1 if m.group(1).endswith("#{") else m.end()  # keep Ruby's brace
+        body = stmt[start : start + 600]
+        if not py_format:  # just this template literal, not the code after it
+            body = re.split(r"(?<!\\)`", body, maxsplit=1)[0]
+        elif not fid.endswith(".py"):  # a statement ends at `;`: the next lines are other code
+            body = body.split(";", 1)[0]
+        names = [a or (b if py_format else "") for a, b in INTERP.findall(body)]
+        names = [n for n in names if n]
+        if py_format and not fid.endswith(BRACE_LANGS):
+            names = []  # `{ … }` after a Go or Java call is a block, not interpolation (`return err`)
+        if m.group(1).endswith("#{"):  # Ruby: #{params[:email]} (a colon is fine inside)
+            names = re.findall(r"\{([^}]+)\}", body.split('"')[0])
+        dollar = m.group(1).startswith('"') and "$" in m.group(1) and "#{" not in m.group(1)
+        if dollar:  # "$name" is interpolation in Kotlin, Dart, PHP, Groovy and Scala, not elsewhere
+            if not fid.endswith(DOLLAR_LANGS):
+                return SKIP_LINE
+            names += re.findall(r"\$\{?([A-Za-z_][\w.]*)", stmt[m.start(1) : m.start(1) + 600].split('"')[1])
+        safe = safe_names(lines, i)
+        risky = [n for n in names if not CONSTANT.match(n.strip()) and not interp_safe(n, safe)]
+        sprintf = m.group(1).startswith("fmt.")  # %s / %v pasted in; %d can't carry SQL
+        concat = m.group(1).endswith("+")
+        if concat:  # "… id = " + id: risky unless every value joined in is a number
+            segment = body.split(";")[0]
+            joined = re.findall(r"(?:^|\+)\s*([A-Za-z_$][\w$.]*(?:\(\))?)\s*(?=\+|\)|,|$)", segment)
+            only_text = not re.search(r"(?:^|\+)\s*[A-Za-z_$(]", re.sub(r"\"(?:[^\"\\]|\\.)*\"|'(?:[^'\\]|\\.)*'", "''", segment))
+            concat = not only_text and (not joined or any(not interp_safe(n, safe) for n in joined))  # (text
+            # joined to text, a statement split over lines, has nothing in it to inject)
+        if risky or sprintf or concat or m.group(1).endswith("%") or ".format" in m.group(1):
+            return risky
+    return None
+
+
+def _tail_checks(fid: str, text: str, lines: list[str], hit: Callable[[str, int], bool], out: dict[str, Check]) -> None:
+    """The whole-file checks of product code, by language: requests without a timeout (fetch, axios, Go's default
+    client, Python's requests), Go servers without timeouts, Python's broad `except: pass` and `global`."""
+    if (
+        fid.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"))  # the web's fetch; elsewhere it's any name
+        and re.search(r"(?<![\w.])fetch\s*\(", text)
+        and not re.search(r"\bsignal\b|AbortSignal\.timeout|timeout", text)
+    ):
+        # the first real call: not a comment, a function or method of that name, a data: or extension URL, or a
+        # file bundled with the code (`fetch(new URL("./font.ttf", import.meta.url))`)
+        ln = next((i for i, text in enumerate(lines, 1) if re.search(r"(?<![\w.])fetch\s*\(", text)
+                   and not COMMENT_LINE.match(text) and not re.search(
+                       r"function\s+fetch\b|\bfetch\s*\([^)]*:\s*[\w<>\[\]]+[^)]*\)\s*[:{;]|import\.meta\.url|"
+                       r"data:|dataUrl|chrome-extension://|moz-extension://|blob:", " ".join(lines[i - 1 : i + 1]))),
+                  None)  # fmt: skip
+        if ln:
+            out["fetch_no_timeout"].hits.append(Evidence(fid, ln, _excerpt(lines[ln - 1])))
+    if (
+        fid.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"))
+        and re.search(r"\baxios\b", text)
+        and not re.search(r"\btimeout\b|\bsignal\b", text)  # (axios.create({ timeout }), defaults.timeout, a signal)
+    ):  # axios waits forever by default, like fetch
+        for i, line in enumerate(lines, 1):
+            call = re.search(r"\baxios(?:\.(?:get|post|put|patch|delete|head|request))?\s*\(", line)
+            if call and hit("fetch_no_timeout", i):
+                out["fetch_no_timeout"].hits.append(Evidence(fid, i, _excerpt(line)))
+    if fid.endswith(".go"):  # the default client never times out
+        server = next(
+            (m for m in re.finditer(r"(?<![\w.])http\.ListenAndServe(?:TLS)?\(|&?(?<![\w.])http\.Server\{", text)
+             if not COMMENT_LINE.match(lines[text.count("\n", 0, m.start())])),
+            None,
+        )  # fmt: skip
+        if server and not re.search(r"ReadHeaderTimeout|ReadTimeout|TimeoutHandler", text):
+            ln = text.count("\n", 0, server.start()) + 1
+            if hit("go_server_timeout", ln):
+                out["go_server_timeout"].hits.append(Evidence(fid, ln, _excerpt(lines[ln - 1])))
+        for i, line in enumerate(lines, 1):
+            code = line.split("//", 1)[0]
+            if re.search(r"\bhttp\.(?:Get|Post|Head|PostForm)\(", code) and hit("fetch_no_timeout", i):
+                out["fetch_no_timeout"].hits.append(Evidence(fid, i, _excerpt(line)))
+    if fid.endswith(".py"):
+        for i, line in enumerate(lines, 1):
+            if (
+                i < len(lines)
+                and re.match(r"\s*except\s*(?:\(?\s*(?:Exception|BaseException)\b[^:#]*)?:\s*$", line)  # broad only
+                and lines[i].strip() == "pass"
+                and not swallow_intent(line + " " + lines[i], lines[i - 2] if i > 1 else "")
+                and not expected_failure(lines, i)
+                and hit("swallowed", i)
+            ):
+                out["swallowed"].hits.append(Evidence(fid, i, _excerpt(line + " " + lines[i].strip())))
+            if re.search(r"\brequests\.(get|post|put|patch|delete|head)\s*\(", line) and "timeout" not in " ".join(
+                lines[i - 1 : i + 3]
+            ):
+                out["fetch_no_timeout"].hits.append(Evidence(fid, i, _excerpt(line)))
+            if re.match(r"^\s+global\s+\w+", line):
+                out["module_state"].hits.append(Evidence(fid, i, _excerpt(line)))
+
+
+def _dismissed(key: str, line: str, lines: list[str], i: int, fid: str, text: str) -> bool:
+    """A pattern matched line i, but what it describes isn't there: the reasons, check by check, a hit is let go."""
+    if key == "eval" and (
+        re.search(r"\bfunction\s+eval\s*\(|\bdef\s+eval\s*\(|['\"][^'\"]*\beval\(\)[^'\"]*['\"]", line)
+        or _method_named_eval(lines, i)
+    ):
+        return True  # a method named eval (a parser node's, a Redis client's), or "eval()'d code" in a string
+    if key == "eval" and _fixed_code(line, text):
+        return True  # new Function("return import(x)"), exec(open("config.py").read()), ruamel's safe load
+    if key == "insecure_cookie" and re.search(r"(?i)(?:csrf|xsrf)\w*[^\n]*http_?only|http_?only[^\n]*(?:csrf|xsrf)", line):
+        return True  # a CSRF cookie the page's script must read: HttpOnly would break it, by design
+    if key == "insecure_cookie" and re.search(r"#[^\n]*force_ssl|//[^\n]*force_?ssl", line, re.I):
+        return True  # (Rails) `secure: false, # … set by force_ssl`: the flag comes from force_ssl
+    if key == "insecure_cookie" and re.search(r"\?\s*[\w.]+\s*:\s*false\b", line):
+        return True  # copying another cookie's own flag (an HTTP client's cookie jar), not setting one
+    if key == "secret_key_literal" and re.match(r"\s*(\w+)\s*=\s*['\"]\1['\"]", line):
+        return True  # an enum whose value is its own name (hoppscotch's InfraConfig.JWT_SECRET)
+    if key == "secret_key_literal" and re.search(r"\{\{|\{%|<%=|\$\{", line):
+        return True  # a project template's placeholder (`SECRET_KEY = "{{ secret_key }}"`), filled in later
+    if key == "jwt_unverified" and _token_question(lines, i, text):
+        return True  # `is_saleor_token`: a yes/no peek at who issued it, in a file that verifies tokens
+    if key == "tls_off" and (line.lstrip().startswith(("import ", "from "))
+                             or re.match(r"""\s*['"]\w+['"]\s*:\s*(?:\w+\.)?CERT_NONE\b""", line)
+                             or re.search(r"(?:==|!=|\bis\s+(?:not\s+)?)\s*(?:\w+\.)?CERT_NONE\b", line)
+                             or re.search(r"\.get_ciphers\(\)", line)
+                             or re.match(r"\s*if\s*\(?\s*!?\w*(?:verify|skip|insecure|unsafe|unauthori[sz]ed|"
+                                         r"allow\w*cert)\w*\s*\)?\s*(?:\)|:|\{|return\b)", line, re.I)
+                             or re.match(r"""\s*[A-Z_][A-Z0-9_]*\s*=\s*[rbuf]?['"]""", line)):  # fmt: skip
+        return True  # importing the constant, a name-to-constant table, a warning message's text
+    if key == "tls_off" and (
+        re.search(r"\bif\s+\w[\w.]*\s+else\b|\?\s*\w+\s*:", line)
+        or re.search(
+            r"(?i)\w*(?:verify|insecure|ssl|tls|cert|skip|ignore|unauthori[sz]ed)\w*\s*(?:===?\s*true\s*)?(?:&&|\?)",
+            line,
+        )
+        or _under_tls_setting(lines, i)
+        or OWN_VERIFY.search("\n".join(lines[max(0, i - 7) : i + 6]))
+    ):
+        return True  # chosen by a setting (`CERT_REQUIRED if verify else CERT_NONE`): the user's option
+    if key == "shell" and fid.endswith(".rb") and i in _ruby_heredoc_lines(lines):
+        return True  # Markdown in a heredoc (a description's `#{payload_path}`), not a command
+    if key == "shell" and fid.endswith(".rb") and re.search(r'"[^"]*`[^`"]*#\{[^}]+\}[^`"]*`[^"]*"', line):
+        return True  # backticks inside a message string ("append `--trace` to the `#{cmd}` command")
+    if key == "shell" and (subs := re.findall(r"\$\{([^}]+)\}", line)) and "`" in line:
+        safe = safe_names(lines, i)
+        if all(interp_safe(s, safe) for s in subs):
+            return True  # every value in the command is a number or from a fixed list (parseInt, …)
+    if key in ("raw_html", "sql_built", "shell", "eval") and _in_comment(lines, i):
+        return True  # prose about the call ("This usage of dangerouslySetInnerHTML is safe since…")
+    if key == "shell" and fid.endswith(".py") and "shell" in line and _fixed_shell(lines, i):
+        return True  # `subprocess.run("git log -1 HEAD", shell=True)`: a fixed command, nothing to inject
+    if key == "raw_html" and (CONSTANT_HTML.search(line) or _safe_html(lines, i) or _constant_after(lines, i)):
+        return True  # a fixed string, built-in theme CSS, or sanitized first: no one's data can get into it
+    if key == "raw_html" and re.search(r"mark_safe\(.*\bsettings\.[A-Z_]+", line):
+        return True  # the site's own configuration, not user data
+    if key == "plain_http" and (re.match(r"\s*(?:\*|//|#|/\*)", line) or not internet_http(line)):
+        return True  # an example in a doc comment, a Docker service, a namespace, a link for people
+    if key in CONTEXT and not CONTEXT[key].search(line):
+        header = next((h for h in reversed(lines[max(0, i - 7) : i - 1]) if FUNC_HEADER.match(h)), "")
+        if key not in WEAK_CONTEXT_FROM_FUNCTION or not CONTEXT[key].search(header):
+            return True
+    if key in ("weak_hash", "weak_random") and _keyed_not_secured(lines, i):
+        return True  # a hash for a rate-limit bucket, a cache or refresh key: an identifier, not protection
+    if key == "weak_hash" and re.search(r"(?i)pwned\s*passwords|haveibeenpwned|\bhibp\b", text):
+        return True  # the Pwned Passwords range API takes a SHA-1 prefix (k-anonymity): the protocol, not a choice
+    if key == "cors_any" and (_in_outbound_request(lines, i) or "configureServer" in text):
+        return True  # a header sent *to* another API (opsgenie), or Vite's dev-server middleware
+    if key == "sensitive_storage" and re.search(STORED_NOTHING, line):
+        return True  # setItem("jwt", ""): clearing it, or a timestamp beside it; nothing secret is stored
+    if key == "weak_cipher" and re.search(r"(?i)\bRSA/ECB/", line):
+        return True  # JCA's "RSA/ECB/…" names no block mode: RSA encrypts one block, ECB is a placeholder
+    if key == "secret" and (
+        re.search(r"(?:^|/)\.?gitleaks(?:ignore|\.toml)$|(?:^|/)(?:__)?mocks?(?:__)?(?:/|\.[jt]sx?$)", fid)
+        or (_comment_line(line) and not any(p.search(line) for p in VENDOR_PATTERNS))
+        or re.search(r"(?i)\bnot (?:a |really )?secret\b", line)
+    ):
+        return True  # a scanner's allowlist, a mock, an example in a comment, a value its line calls public
+    if key == "secret" and re.search(PLACEHOLDER, line):
+        return True
+    if key == "secret" and _not_a_working_key(lines, i):
+        return True  # sk_live_AAAA…, ghp_ABCdef1234…: a test's stand-in; or a key its comment says is public
+    if key == "secret" and COMMENT_LINE.match(line) and "PRIVATE KEY-----" in line:
+        return True  # a key block shown in a doc comment (okhttp's KDoc): an example of the format
+    # the generic `token = "…"` rule only: a vendor key or a key block is leaked anywhere
+    return key == "secret" and not any(p.search(line) for p in VENDOR_PATTERNS) and _named_not_secret(fid, lines, i)
+
+
 def _scan_one(root: str, fid: str) -> dict:
     found = _scan(Path(root), [fid])
     return {k: {"hits": [[e.line, e.text] for e in c.hits], "data": c.data} for k, c in found.items() if c.hits or c.data}
@@ -849,91 +1042,8 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                 if key != "secret" and (COMMENT_LINE.match(line) or i in prose):
                     continue  # prose about a pattern ("mark_safe() it at the end") isn't the code; a key is leaked anywhere
                 if any(p.search(line) and (p not in ONLY_IN or fid.endswith(ONLY_IN[p])) for p in pats) and hit(key, i):
-                    if key == "eval" and (
-                        re.search(r"\bfunction\s+eval\s*\(|\bdef\s+eval\s*\(|['\"][^'\"]*\beval\(\)[^'\"]*['\"]", line)
-                        or _method_named_eval(lines, i)
-                    ):
-                        continue  # a method named eval (a parser node's, a Redis client's), or "eval()'d code" in a string
-                    if key == "eval" and _fixed_code(line, text):
-                        continue  # new Function("return import(x)"), exec(open("config.py").read()), ruamel's safe load
-                    if key == "insecure_cookie" and re.search(
-                        r"(?i)(?:csrf|xsrf)\w*[^\n]*http_?only|http_?only[^\n]*(?:csrf|xsrf)", line
-                    ):
-                        continue  # a CSRF cookie the page's script must read: HttpOnly would break it, by design
-                    if key == "insecure_cookie" and re.search(r"#[^\n]*force_ssl|//[^\n]*force_?ssl", line, re.I):
-                        continue  # (Rails) `secure: false, # … set by force_ssl`: the flag comes from force_ssl
-                    if key == "insecure_cookie" and re.search(r"\?\s*[\w.]+\s*:\s*false\b", line):
-                        continue  # copying another cookie's own flag (an HTTP client's cookie jar), not setting one
-                    if key == "secret_key_literal" and re.match(r"\s*(\w+)\s*=\s*['\"]\1['\"]", line):
-                        continue  # an enum whose value is its own name (hoppscotch's InfraConfig.JWT_SECRET)
-                    if key == "secret_key_literal" and re.search(r"\{\{|\{%|<%=|\$\{", line):
-                        continue  # a project template's placeholder (`SECRET_KEY = "{{ secret_key }}"`), filled in later
-                    if key == "jwt_unverified" and _token_question(lines, i, text):
-                        continue  # `is_saleor_token`: a yes/no peek at who issued it, in a file that verifies tokens
-                    if key == "tls_off" and (line.lstrip().startswith(("import ", "from "))
-                                             or re.match(r"""\s*['"]\w+['"]\s*:\s*(?:\w+\.)?CERT_NONE\b""", line)
-                                             or re.search(r"(?:==|!=|\bis\s+(?:not\s+)?)\s*(?:\w+\.)?CERT_NONE\b", line)
-                                             or re.search(r"\.get_ciphers\(\)", line)
-                                             or re.match(r"\s*if\s*\(?\s*!?\w*(?:verify|skip|insecure|unsafe|unauthori[sz]ed|"
-                                                         r"allow\w*cert)\w*\s*\)?\s*(?:\)|:|\{|return\b)", line, re.I)
-                                             or re.match(r"""\s*[A-Z_][A-Z0-9_]*\s*=\s*[rbuf]?['"]""", line)):  # fmt: skip
-                        continue  # importing the constant, a name-to-constant table, a warning message's text
-                    if key == "tls_off" and (
-                        re.search(r"\bif\s+\w[\w.]*\s+else\b|\?\s*\w+\s*:", line)
-                        or re.search(
-                            r"(?i)\w*(?:verify|insecure|ssl|tls|cert|skip|ignore|unauthori[sz]ed)\w*\s*(?:===?\s*true\s*)?(?:&&|\?)",
-                            line,
-                        )
-                        or _under_tls_setting(lines, i)
-                        or OWN_VERIFY.search("\n".join(lines[max(0, i - 7) : i + 6]))
-                    ):
-                        continue  # chosen by a setting (`CERT_REQUIRED if verify else CERT_NONE`): the user's option
-                    if key == "shell" and fid.endswith(".rb") and i in _ruby_heredoc_lines(lines):
-                        continue  # Markdown in a heredoc (a description's `#{payload_path}`), not a command
-                    if key == "shell" and fid.endswith(".rb") and re.search(r'"[^"]*`[^`"]*#\{[^}]+\}[^`"]*`[^"]*"', line):
-                        continue  # backticks inside a message string ("append `--trace` to the `#{cmd}` command")
-                    if key == "shell" and (subs := re.findall(r"\$\{([^}]+)\}", line)) and "`" in line:
-                        safe = safe_names(lines, i)
-                        if all(interp_safe(s, safe) for s in subs):
-                            continue  # every value in the command is a number or from a fixed list (parseInt, …)
-                    if key in ("raw_html", "sql_built", "shell", "eval") and _in_comment(lines, i):
-                        continue  # prose about the call ("This usage of dangerouslySetInnerHTML is safe since…")
-                    if key == "shell" and fid.endswith(".py") and "shell" in line and _fixed_shell(lines, i):
-                        continue  # `subprocess.run("git log -1 HEAD", shell=True)`: a fixed command, nothing to inject
-                    if key == "raw_html" and (CONSTANT_HTML.search(line) or _safe_html(lines, i) or _constant_after(lines, i)):
-                        continue  # a fixed string, built-in theme CSS, or sanitized first: no one's data can get into it
-                    if key == "raw_html" and re.search(r"mark_safe\(.*\bsettings\.[A-Z_]+", line):
-                        continue  # the site's own configuration, not user data
-                    if key == "plain_http" and (re.match(r"\s*(?:\*|//|#|/\*)", line) or not internet_http(line)):
-                        continue  # an example in a doc comment, a Docker service, a namespace, a link for people
-                    if key in CONTEXT and not CONTEXT[key].search(line):
-                        header = next((h for h in reversed(lines[max(0, i - 7) : i - 1]) if FUNC_HEADER.match(h)), "")
-                        if key not in WEAK_CONTEXT_FROM_FUNCTION or not CONTEXT[key].search(header):
-                            continue
-                    if key in ("weak_hash", "weak_random") and _keyed_not_secured(lines, i):
-                        continue  # a hash for a rate-limit bucket, a cache or refresh key: an identifier, not protection
-                    if key == "weak_hash" and re.search(r"(?i)pwned\s*passwords|haveibeenpwned|\bhibp\b", text):
-                        continue  # the Pwned Passwords range API takes a SHA-1 prefix (k-anonymity): the protocol, not a choice
-                    if key == "cors_any" and (_in_outbound_request(lines, i) or "configureServer" in text):
-                        continue  # a header sent *to* another API (opsgenie), or Vite's dev-server middleware
-                    if key == "sensitive_storage" and re.search(STORED_NOTHING, line):
-                        continue  # setItem("jwt", ""): clearing it, or a timestamp beside it; nothing secret is stored
-                    if key == "weak_cipher" and re.search(r"(?i)\bRSA/ECB/", line):
-                        continue  # JCA's "RSA/ECB/…" names no block mode: RSA encrypts one block, ECB is a placeholder
-                    if key == "secret" and (
-                        re.search(r"(?:^|/)\.?gitleaks(?:ignore|\.toml)$|(?:^|/)(?:__)?mocks?(?:__)?(?:/|\.[jt]sx?$)", fid)
-                        or (_comment_line(line) and not any(p.search(line) for p in VENDOR_PATTERNS))
-                        or re.search(r"(?i)\bnot (?:a |really )?secret\b", line)
-                    ):
-                        continue  # a scanner's allowlist, a mock, an example in a comment, a value its line calls public
-                    if key == "secret" and re.search(PLACEHOLDER, line):
+                    if _dismissed(key, line, lines, i, fid, text):
                         continue
-                    if key == "secret" and _not_a_working_key(lines, i):
-                        continue  # sk_live_AAAA…, ghp_ABCdef1234…: a test's stand-in; or a key its comment says is public
-                    if key == "secret" and COMMENT_LINE.match(line) and "PRIVATE KEY-----" in line:
-                        continue  # a key block shown in a doc comment (okhttp's KDoc): an example of the format
-                    if key == "secret" and not any(p.search(line) for p in VENDOR_PATTERNS) and _named_not_secret(fid, lines, i):
-                        continue  # the generic `token = "…"` rule only: a vendor key or a key block is leaked anywhere
                     if key == "swallowed" and (
                         why := swallow_intent(line, lines[i - 2] if i > 1 else "") or expected_failure(lines, i)
                     ):
@@ -941,45 +1051,12 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                         continue
                     out[key].hits.append(Evidence(fid, i, redact(_excerpt(line)) if key == "secret" else _excerpt(line)))
             if sql_here and not in_migration and (m := SQL_CALL.search(line)) and hit("sql_built", i):
-                stmt = " ".join(lines[i - 1 : i + 4])
-                literal = re.search(r"""(["'`])((?:(?!\1)[^\\]|\\.)*)\1""", stmt[m.start() :])
-                # (the SQL words must be in the call's text: `queue.execute("MockWebServer …")` names a task, not a query)
-                callee = line[m.start() : m.start(1)]  # (Rails' `where("email = …")`: the method is the SQL word)
-                if SQL_WORD.search(stmt) and (literal is None or SQL_WORD.search(literal.group(2) + " " + callee)
-                                              or m.group(1).startswith("fmt.")):  # fmt: skip
-                    py_format = not m.group(1).startswith("`")  # {name}: Python f-strings (and Ruby's #{name})
-                    start = m.end() - 1 if m.group(1).endswith("#{") else m.end()  # keep Ruby's brace
-                    body = stmt[start : start + 600]
-                    if not py_format:  # just this template literal, not the code after it
-                        body = re.split(r"(?<!\\)`", body, maxsplit=1)[0]
-                    elif not fid.endswith(".py"):  # a statement ends at `;`: the next lines are other code
-                        body = body.split(";", 1)[0]
-                    names = [a or (b if py_format else "") for a, b in INTERP.findall(body)]
-                    names = [n for n in names if n]
-                    if py_format and not fid.endswith(BRACE_LANGS):
-                        names = []  # `{ … }` after a Go or Java call is a block, not interpolation (`return err`)
-                    if m.group(1).endswith("#{"):  # Ruby: #{params[:email]} (a colon is fine inside)
-                        names = re.findall(r"\{([^}]+)\}", body.split('"')[0])
-                    dollar = m.group(1).startswith('"') and "$" in m.group(1) and "#{" not in m.group(1)
-                    if dollar:  # "$name" is interpolation in Kotlin, Dart, PHP, Groovy and Scala, not elsewhere
-                        if not fid.endswith(DOLLAR_LANGS):
-                            continue
-                        names += re.findall(r"\$\{?([A-Za-z_][\w.]*)", stmt[m.start(1) : m.start(1) + 600].split('"')[1])
-                    safe = safe_names(lines, i)
-                    risky = [n for n in names if not CONSTANT.match(n.strip()) and not interp_safe(n, safe)]
-                    sprintf = m.group(1).startswith("fmt.")  # %s / %v pasted in; %d can't carry SQL
-                    concat = m.group(1).endswith("+")
-                    if concat:  # "… id = " + id: risky unless every value joined in is a number
-                        segment = body.split(";")[0]
-                        joined = re.findall(r"(?:^|\+)\s*([A-Za-z_$][\w$.]*(?:\(\))?)\s*(?=\+|\)|,|$)", segment)
-                        only_text = not re.search(
-                            r"(?:^|\+)\s*[A-Za-z_$(]", re.sub(r"\"(?:[^\"\\]|\\.)*\"|'(?:[^'\\]|\\.)*'", "''", segment)
-                        )
-                        concat = not only_text and (not joined or any(not interp_safe(n, safe) for n in joined))  # (text
-                        # joined to text, a statement split over lines, has nothing in it to inject)
-                    if risky or sprintf or concat or m.group(1).endswith("%") or ".format" in m.group(1):
-                        out["sql_built"].hits.append(Evidence(fid, i, _excerpt(line)))
-                        out["sql_built"].data.setdefault(f"{fid}:{i}", risky[:4])
+                risky = _sql_built(line, lines, i, m, fid)
+                if risky is SKIP_LINE:
+                    continue
+                if risky is not None:
+                    out["sql_built"].hits.append(Evidence(fid, i, _excerpt(line)))
+                    out["sql_built"].data.setdefault(f"{fid}:{i}", risky[:4])
             if hosts_here and "://" in line and not re.match(r"\s*(//|#|\*|/\*)", line):  # used, not just mentioned
                 for host in HOST.findall(line):
                     if host not in out["hosts"].data and not re.search(r"example\.|localhost|w3\.org|schema", host):
@@ -991,62 +1068,8 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                     templated = _template_lines(lines)
                 if i not in templated:  # (not page script inside a template literal: a VS Code webview's HTML)
                     out["module_state"].hits.append(Evidence(fid, i, _excerpt(line)))
-        if (
-            not test
-            and fid.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"))  # the web's fetch; elsewhere it's any name
-            and re.search(r"(?<![\w.])fetch\s*\(", text)
-            and not re.search(r"\bsignal\b|AbortSignal\.timeout|timeout", text)
-        ):
-            # the first real call: not a comment, a function or method of that name, a data: or extension URL, or a
-            # file bundled with the code (`fetch(new URL("./font.ttf", import.meta.url))`)
-            ln = next((i for i, text in enumerate(lines, 1) if re.search(r"(?<![\w.])fetch\s*\(", text)
-                       and not COMMENT_LINE.match(text) and not re.search(
-                           r"function\s+fetch\b|\bfetch\s*\([^)]*:\s*[\w<>\[\]]+[^)]*\)\s*[:{;]|import\.meta\.url|"
-                           r"data:|dataUrl|chrome-extension://|moz-extension://|blob:", " ".join(lines[i - 1 : i + 1]))),
-                      None)  # fmt: skip
-            if ln:
-                out["fetch_no_timeout"].hits.append(Evidence(fid, ln, _excerpt(lines[ln - 1])))
-        if (
-            not test
-            and fid.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"))
-            and re.search(r"\baxios\b", text)
-            and not re.search(r"\btimeout\b|\bsignal\b", text)  # (axios.create({ timeout }), defaults.timeout, a signal)
-        ):  # axios waits forever by default, like fetch
-            for i, line in enumerate(lines, 1):
-                call = re.search(r"\baxios(?:\.(?:get|post|put|patch|delete|head|request))?\s*\(", line)
-                if call and hit("fetch_no_timeout", i):
-                    out["fetch_no_timeout"].hits.append(Evidence(fid, i, _excerpt(line)))
-        if not test and fid.endswith(".go"):  # the default client never times out
-            server = next(
-                (m for m in re.finditer(r"(?<![\w.])http\.ListenAndServe(?:TLS)?\(|&?(?<![\w.])http\.Server\{", text)
-                 if not COMMENT_LINE.match(lines[text.count("\n", 0, m.start())])),
-                None,
-            )  # fmt: skip
-            if server and not re.search(r"ReadHeaderTimeout|ReadTimeout|TimeoutHandler", text):
-                ln = text.count("\n", 0, server.start()) + 1
-                if hit("go_server_timeout", ln):
-                    out["go_server_timeout"].hits.append(Evidence(fid, ln, _excerpt(lines[ln - 1])))
-            for i, line in enumerate(lines, 1):
-                code = line.split("//", 1)[0]
-                if re.search(r"\bhttp\.(?:Get|Post|Head|PostForm)\(", code) and hit("fetch_no_timeout", i):
-                    out["fetch_no_timeout"].hits.append(Evidence(fid, i, _excerpt(line)))
-        if not test and fid.endswith(".py"):
-            for i, line in enumerate(lines, 1):
-                if (
-                    i < len(lines)
-                    and re.match(r"\s*except\s*(?:\(?\s*(?:Exception|BaseException)\b[^:#]*)?:\s*$", line)  # broad only
-                    and lines[i].strip() == "pass"
-                    and not swallow_intent(line + " " + lines[i], lines[i - 2] if i > 1 else "")
-                    and not expected_failure(lines, i)
-                    and hit("swallowed", i)
-                ):
-                    out["swallowed"].hits.append(Evidence(fid, i, _excerpt(line + " " + lines[i].strip())))
-                if re.search(r"\brequests\.(get|post|put|patch|delete|head)\s*\(", line) and "timeout" not in " ".join(
-                    lines[i - 1 : i + 3]
-                ):
-                    out["fetch_no_timeout"].hits.append(Evidence(fid, i, _excerpt(line)))
-                if re.match(r"^\s+global\s+\w+", line):
-                    out["module_state"].hits.append(Evidence(fid, i, _excerpt(line)))
+        if not test:
+            _tail_checks(fid, text, lines, hit, out)
     return out
 
 
