@@ -304,9 +304,18 @@ BUILD_OUTPUT = re.compile(r"(?:^|/)(?:priv/static|dist|build|out|public/build|st
 
 def deliberate_copies(files: list[str]) -> bool:
     """Copies made on purpose: one file per dated version (a data pipeline's frozen steps, `2024-12-06/x.py` and
-    `2026-05-22/x.py`; `reader/v2` and `reader/v3` sharing code is still worth merging),
+    `2026-05-22/x.py`; `reader/v2` and `reader/v3` sharing code is still worth merging), per-crate build scripts,
     build outputs, vendored code, or examples and starter templates that each stand alone."""
     if all(BUILD_OUTPUT.search(f) or is_vendored(f) or is_sample_code(f) for f in files):
         return True
-    dirs = {VERSION_PART.sub("V", f.rsplit("/", 1)[0]) for f in files}
-    return len(dirs) == 1 and len({f.rsplit("/", 1)[0] for f in files}) == len(files) and "V" in next(iter(dirs))
+    names = {f.rsplit("/", 1)[-1] for f in files}
+    if names == {"build.rs"}:
+        return True  # Cargo build scripts: one per crate, each the same few lines of scaffold
+    folders = [f.rsplit("/", 1)[0] for f in files]
+    if len(set(folders)) < len(files):
+        return False
+    dirs = {VERSION_PART.sub("V", d) for d in folders}
+    # (also the same step re-dated under a renamed source: `cdc/2026-11-06/x.py` from `reports/2025-03-14/x.py`)
+    if len(dirs) == 1 and "V" in next(iter(dirs)):
+        return True
+    return len(names) == 1 and all(VERSION_PART.search(d) for d in folders)

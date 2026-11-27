@@ -231,6 +231,18 @@ def _used_imports(imports: list[str], text: str) -> list[str]:
     return out
 
 
+def _bound(node) -> bool:
+    """The function in `fn.call(this, …)` / `.apply` / `.bind`: called, so its name is kept like a direct call's."""
+    member, prop = node.parent, node.parent.child_by_field_name("property")
+    return (
+        prop is not None
+        and prop.text in (b"call", b"apply", b"bind")
+        and member.child_by_field_name("object") == node
+        and member.parent is not None
+        and member.parent.child_by_field_name("function") == member
+    )
+
+
 def walk(source: bytes, parser, rel: str) -> dict:
     """Functions (with calls, loops and structure tokens), imports and the file's top-level calls."""
     tree = parser.parse(source)
@@ -244,6 +256,8 @@ def walk(source: bytes, parser, rel: str) -> dict:
         if depth > MAX_DEPTH:
             continue
         if COMMENT.search(t):
+            if fn is not None and not source[source.rfind(b"\n", 0, node.start_byte) + 1 : node.start_byte].strip():
+                fn["doc"] += node.end_point[0] - node.start_point[0] + 1  # a comment on its own lines isn't code
             continue
         owner = fn if fn is not None else out["top"]
         if IMPORT.match(t) and fn is None:
@@ -268,6 +282,7 @@ def walk(source: bytes, parser, rel: str) -> dict:
                 "refs": set(),
                 "branches": 0,
                 "tokens": [],
+                "doc": 0,
             }
             out["functions"].append(rec)
             for c in reversed(node.children):
@@ -311,7 +326,8 @@ def walk(source: bytes, parser, rel: str) -> dict:
                 # kept, so small functions that merely share a shape don't look like copies
                 parent = node.parent
                 keep = t != "identifier" or (
-                    parent is not None and (CALL.match(parent.type) or parent.child_by_field_name("function") == node)
+                    parent is not None
+                    and (CALL.match(parent.type) or parent.child_by_field_name("function") == node or _bound(node))
                 )
                 fn["tokens"].append(text if keep else "ID")
             elif NUMBER.search(t):

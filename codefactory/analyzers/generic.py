@@ -379,6 +379,7 @@ def link(g: Graph, parsed: dict[str, dict], associations: re.Pattern | None = No
                     exported=f["public"] or f["name"] in ENTRY_NAMES,
                     shape=f["shape"],
                     tokens=f["tokens"],
+                    doc=f.get("doc", 0),
                     branches=f.get("branches", 0),
                 )
             )

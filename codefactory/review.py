@@ -129,6 +129,44 @@ def _variants(files: list[str]) -> bool:
     return len(differing) == 1 and differing[0] < len(parts[0]) - 1
 
 
+VERSION_DIR = re.compile(r"^[vV](\d+)$")
+SHARED_MODULE = re.compile(r"^_?(?:shared|common|utils|helpers)\.\w+$")
+ROUTE_HOOK = re.compile(r"\bRoute\.use(?:Params|Search|LoaderData|LoaderDeps|RouteContext|Match)\(")
+
+
+def _frozen_versions(files: list[str], known: set[str]) -> bool:
+    """Each copy in its own version folder of one component, each folder a whole implementation named for its version
+    (n8n's `Sheet/v1/GoogleSheetsV1.node.ts`, `Sheet/v2/GoogleSheetsV2.node.ts`): old versions are frozen on purpose.
+    (A dump format's `reader/v2/mod.rs` and `reader/v3/mod.rs` are one live reader: still worth merging.)"""
+    folders = set()
+    for f in files:
+        parts = f.split("/")
+        i = next((i for i, p in enumerate(parts[:-1]) if VERSION_DIR.match(p)), None)
+        if i is None:
+            return False
+        folders.add("/".join(parts[: i + 1]))
+    if len(folders) < len(files) or len({d.rsplit("/", 1)[0] for d in folders}) != 1:
+        return False
+    named = set()  # version folders holding a file named for their version: `v2/GoogleSheetsV2.node.ts`
+    for k in known:
+        folder, _, name = k.rpartition("/")
+        v = VERSION_DIR.match(folder.rpartition("/")[2])
+        if v and re.match(rf"\w*[a-zA-Z][vV]{v.group(1)}\.", name):
+            named.add(folder)
+    return folders <= named
+
+
+def _step_template(where: list[dict], known: set[str]) -> bool:
+    """The runner-called entry (`run` / `main`) of side-by-side step files whose real logic lives in the folder's shared
+    module (an ETL's `war/2023-01-18/{sorokin_1937,kaye_1985}.py` next to `shared.py`): a template, not logic."""
+    files = [w["file"] for w in where]
+    folders = {f.rpartition("/")[0] for f in files}
+    if len(set(files)) < len(files) or len(folders) != 1 or not all(w.get("name") in ("run", "main") for w in where):
+        return False
+    folder = next(iter(folders))
+    return any(k.rpartition("/")[0] == folder and SHARED_MODULE.match(k.rpartition("/")[2]) for k in known)
+
+
 class Review:
     def __init__(self, g: dict, root: Path, online: bool = False, full: bool = False):
         self.full = full  # every location of every finding (the audit export), not the first few (the report)
@@ -794,7 +832,7 @@ class Review:
                 "factory.toml ([rules] forbid).",
                 "S",
             )
-        copies = [t for t in self.tasks if self._copied(t)
+        copies = [t for t in self.tasks if self._copied(t) and not self._scaffold(t)
                   and not all(self._rust_test(w["file"], w.get("line", 0)) for w in t["where"])]  # fmt: skip
         if copies:
             saved = sum(int(m.group(1)) for t in copies if (m := re.search(r"~(\d+) lines", t["title"])))
@@ -1430,10 +1468,32 @@ class Review:
         m = re.search(r"(\d+)% similar", task["title"])
         lines = re.search(r"~(\d+) lines", task["title"])
         # a near copy of a few lines is boilerplate more often than logic (a DI constructor, a one-line action):
-        # measured on 76 repositories, small identical copies were real and small edited ones weren't
-        if m and lines and int(lines.group(1)) < 12:
+        # measured on 76 repositories, small identical copies were real and small edited ones (up to 15 lines of code
+        # under its comments: a handler differing in what it converts and returns) weren't
+        if m and lines and int(lines.group(1)) < 16:
             return False
         return not m or int(m.group(1)) >= 85
+
+    def _scaffold(self, task: dict) -> bool:
+        """Copies the repository's layout makes on purpose: frozen version folders, step templates, file routes."""
+        files = [w["file"] for w in task["where"]]
+        known = self.__dict__.setdefault("_known", {f["id"] for f in self.g["files"]})
+        if _frozen_versions(files, known) or _step_template(task["where"], known):
+            return True
+        lines = re.search(r"~(\d+) lines", task["title"])
+        # a file route's few-line component reading its own `Route.useParams()`: each binds its own route
+        return bool(lines and int(lines.group(1)) < 12 and all(self._route_bound(w) for w in task["where"]))
+
+    def _route_bound(self, w: dict) -> bool:
+        """A component reading the route object its own file declares (TanStack Router's `Route.useParams()`)."""
+        end = (self.v.fn.get(f"{w['file']}::{w.get('name', '')}") or {}).get("end", w["line"] + 12)
+        cache = self.__dict__.setdefault("_rs_lines", {})  # (shared with _rust_test: the same file text)
+        if w["file"] not in cache:
+            try:
+                cache[w["file"]] = (self.root / w["file"]).read_text(encoding="utf-8", errors="replace").splitlines()
+            except OSError:
+                cache[w["file"]] = []
+        return bool(ROUTE_HOOK.search("\n".join(cache[w["file"]][max(0, w["line"] - 1) : end])))
 
     def _di_provider(self, f: dict) -> bool:
         """A dependency-injection provider (Dagger/Hilt `@Provides`, Spring `@Bean`): one line of wiring the framework

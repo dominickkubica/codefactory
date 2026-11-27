@@ -24,7 +24,7 @@ class Function:
     public: bool = False  # TS/JS `export`: in a file nothing imports, a framework's entry point (a route, a screen)
     io: list[str] = field(default_factory=list)  # database, file or network calls it makes itself (callee names)
     tokens: str = ""  # structure tokens for near-duplicate detection; emptied after flags run
-    doc: int = 0  # lines of its docstring (counted in loc, but not code)
+    doc: int = 0  # lines of its docstring or own-line comments (counted in loc, but not code)
     branches: int = 0  # decision points (if, loops, case, catch, and/or): how hard it is to follow
 
 
