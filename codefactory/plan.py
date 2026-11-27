@@ -147,10 +147,10 @@ class Planner:
             if group in seen:
                 continue
             seen.add(group)
-            members = [self.v.fn[i] for i in group if i in self.v.fn]
+            members = [self.v.fn[i] for i in sorted(group) if i in self.v.fn]  # (sorted: stable output)
             if len(members) < 2 or all(is_test(m["file"]) for m in members):
                 continue  # (copies only between tests: listed by `flags` as info, not a task to do first)
-            flags = [x for t in group for x in by_target.get((f["kind"], t), [])]
+            flags = [x for t in sorted(group) for x in by_target.get((f["kind"], t), [])]
             exact = f["kind"] == "duplicate"
             # keep the copy in the layer the others can depend on (rightmost), then the most-called one
             home = max(

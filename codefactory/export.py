@@ -172,9 +172,7 @@ def build(r, graph: dict, root: Path) -> dict:
     for f in order:
         cited = _cited(f.evidence)  # (once per finding, not once per task)
         mine = [
-            t
-            for t in tasks
-            if (rx := _finding_of(t)) and re.search(rx, f.title) and t["id"] not in filed and _covers(t, cited)
+            t for t in tasks if (rx := _finding_of(t)) and re.search(rx, f.title) and t["id"] not in filed and _covers(t, cited)
         ]
         filed |= {t["id"] for t in mine}
         findings.append({

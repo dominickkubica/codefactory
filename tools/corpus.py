@@ -1,6 +1,6 @@
 """The public-repository corpus: every repository codefactory has been checked against, and what became of it.
 
-    python tools/corpus.py run [--jobs 8] [--only owner/repo,...] [--new]   clone (shallow) and analyze
+    python tools/corpus.py run [--jobs N] [--only owner/repo,...] [--new]   clone (shallow) and analyze (jobs: one per core)
     python tools/corpus.py report                                          rewrite docs/CORPUS.md
 
 `tools/corpus/repos.txt` lists the repositories (owner/repo, one per line, `#` comments). Each run clones into
@@ -192,7 +192,7 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run")
-    r.add_argument("--jobs", type=int, default=8)
+    r.add_argument("--jobs", type=int, default=os.cpu_count() or 4)  # (more jobs than cores: big repositories time out)
     r.add_argument("--only", default=None)
     r.add_argument("--new", action="store_true", help="only repositories with no result yet")
     sub.add_parser("report")
