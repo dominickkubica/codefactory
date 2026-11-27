@@ -1,0 +1,1128 @@
+{
+ "repo": "maybe-finance/maybe",
+ "commit": "77b5469832758d1cbee1a940f3012a1ae1c74cd3",
+ "locations": {
+  "Copied logic in N group (~N lines)|app/components/DS/menu_controller.js:98": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 3 copies of stopAutoUpdate (identical, ~12 lines): `app/components/DS/menu_controller.js:98`, `app/components/DS/tooltip_controller.js:61`, `app/javascript/controllers/tooltip_controller.js:60`"
+  },
+  "Copied logic in N group (~N lines)|app/controllers/webhooks_controller.rb:21": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between plaid, plaid_eu (identical, ~15 lines): `app/controllers/webhooks_controller.rb:5`, `app/controllers/webhooks_controller.rb:21`"
+  },
+  "Copied logic in N group (~N lines)|app/javascript/controllers/import_controller.js:100": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between #enableCustomColumnFieldset, #enableSignedAmountFieldset (90% similar, ~18 lines): `app/javascript/controllers/import_controller.js:81`, `app/javascript/controllers/import_controller.js:100`"
+  },
+  "Copied logic in N group (~N lines)|app/models/family/auto_categorizer.rb:66": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge AutoCategorizer.transactions_input, AutoMerchantDetector.transactions_input (identical, ~11 lines): `app/models/family/auto_categorizer.rb:66`, `app/models/family/auto_merchant_detector.rb:81`"
+  },
+  "Copied logic in N group (~N lines)|app/models/holding/forward_calculator.rb:39": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge ForwardCalculator.transform_portfolio, ReverseCalculator.transform_portfolio (identical, ~13 lines): `app/models/holding/forward_calculator.rb:39`, `app/models/holding/reverse_calculator.rb:43`"
+  },
+  "Copied logic in N group (~N lines)|app/models/holding/forward_calculator.rb:53": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge ForwardCalculator.build_holdings, ReverseCalculator.build_holdings (identical, ~19 lines): `app/models/holding/forward_calculator.rb:53`, `app/models/holding/reverse_calculator.rb:57`"
+  },
+  "Copied logic in N group (~N lines)|app/models/income_statement/category_stats.rb:21": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge CategoryStats.sanitized_query_sql, FamilyStats.sanitized_query_sql (identical, ~10 lines): `app/models/income_statement/category_stats.rb:21`, `app/models/income_statement/family_stats.rb:20`"
+  },
+  "Copied logic in N group (~N lines)|db/migrate/20240201184212_create_users.rb:2": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge CreateInstitutions.change, CreateSessions.change, CreateTaggings.change, CreateUsers.change (85% similar, ~27 lines): `db/migrate/20240201184212_create_users.rb:2`, `db/migrate/20240522151453_create_taggings.rb:2`, `db/migrate/20240612164751_create_institutions.rb:2`, `db/migrate/20241003163448_create_sessions.rb:2`"
+  },
+  "Copied logic in N group (~N lines)|db/migrate/20250623162207_update_outdated_timezones.rb:12": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between down, up (identical, ~9 lines): `db/migrate/20250623162207_update_outdated_timezones.rb:22`, `db/migrate/20250623162207_update_outdated_timezones.rb:12`"
+  },
+  "Important code no test reaches (N function)|app/components/DS/button.rb:22": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/components/DS/button.rb:22` Button.merged_opts: does I/O (merged_opts.delete) — `def merged_opts`"
+  },
+  "Important code no test reaches (N function)|app/components/DS/buttonish.rb:60": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/components/DS/buttonish.rb:60` Buttonish.initialize: does I/O (opts.delete) — `def initialize(variant: :primary, size: :md, href: nil, text: nil, icon: nil, icon_position: :left, full_width: false, frame: nil, **opts)`"
+  },
+  "Important code no test reaches (N function)|app/components/DS/dialog.rb:98": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/components/DS/dialog.rb:98` Dialog.merged_opts: does I/O (merged_opts.delete) — `def merged_opts`"
+  },
+  "Important code no test reaches (N function)|app/components/DS/link.rb:13": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/components/DS/link.rb:13` Link.merged_opts: does I/O (merged_opts.delete) — `def merged_opts`"
+  },
+  "Important code no test reaches (N function)|app/components/DS/menu_item.rb:48": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/components/DS/menu_item.rb:48` MenuItem.merged_opts: does I/O (merged_opts.delete) — `def merged_opts`"
+  },
+  "Important code no test reaches (N function)|app/components/DS/tabs_controller.js:43": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/components/DS/tabs_controller.js:43` #updateSessionPreference: does I/O (fetch) — `#updateSessionPreference(selectedTabId) {`"
+  },
+  "Important code no test reaches (N function)|app/controllers/budget_categories_controller.rb:44": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/controllers/budget_categories_controller.rb:44` BudgetCategoriesController.set_budget: does I/O (Current.family.budgets.find_by) — `def set_budget`"
+  },
+  "Important code no test reaches (N function)|app/controllers/budget_categories_controller.rb:9": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/controllers/budget_categories_controller.rb:9` BudgetCategoriesController.show: does I/O (@recent_transactions.where) — `def show`"
+  },
+  "Important code no test reaches (N function)|app/controllers/concerns/accountable_resource.rb:25": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/controllers/concerns/accountable_resource.rb:25` AccountableResource.show: does I/O (params.fetch) — `def show`"
+  },
+  "Important code no test reaches (N function)|app/controllers/concerns/authentication.rb:30": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/controllers/concerns/authentication.rb:30` Authentication.find_session_by_cookie: does I/O (Session.find_by) — `def find_session_by_cookie`"
+  },
+  "Important code no test reaches (N function)|app/controllers/concerns/authentication.rb:46": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/controllers/concerns/authentication.rb:46` Authentication.self_hosted_first_login?: does I/O (User.count) — `def self_hosted_first_login?`"
+  },
+  "Important code no test reaches (N function)|app/controllers/concerns/impersonatable.rb:9": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/controllers/concerns/impersonatable.rb:9` Impersonatable.create_impersonation_session_log: does I/O (Current.session.active_impersonator_session, Current.session.active_impersonator_session.logs.create!) — `def create_impersonation_session_log`"
+  },
+  "Important code no test reaches (N function)|app/controllers/concerns/self_hostable.rb:15": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/controllers/concerns/self_hostable.rb:15` SelfHostable.self_hosted_first_login?: does I/O (User.count) — `def self_hosted_first_login?`"
+  },
+  "Important code no test reaches (N function)|app/controllers/concerns/store_location.rb:17": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/controllers/concerns/store_location.rb:17` StoreLocation.handle_not_found: does I/O (session.delete) — `def handle_not_found`"
+  },
+  "Important code no test reaches (N function)|app/controllers/concerns/store_location.rb:32": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/controllers/concerns/store_location.rb:32` StoreLocation.clear_previous_path: does I/O (session.delete) — `def clear_previous_path`"
+  },
+  "Important code no test reaches (N function)|app/controllers/mfa_controller.rb:29": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/controllers/mfa_controller.rb:29` MfaController.verify_code: does I/O (User.find_by, session.delete) — `def verify_code`"
+  },
+  "Important code no test reaches (N function)|app/helpers/settings_helper.rb:19": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/helpers/settings_helper.rb:19` SettingsHelper.adjacent_setting: does I/O (send) — `def adjacent_setting(current_path, offset)`"
+  },
+  "Important code no test reaches (N function)|app/helpers/styled_form_builder.rb:47": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/helpers/styled_form_builder.rb:47` StyledFormBuilder.toggle: does I/O (object.send) — `def toggle(method, options = {}, checked_value = \"1\", unchecked_value = \"0\")`"
+  },
+  "Important code no test reaches (N function)|app/javascript/controllers/app_layout_controller.js:43": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/app_layout_controller.js:43` #updateUserPreference: does I/O (fetch) — `#updateUserPreference(field, value) {`"
+  },
+  "Important code no test reaches (N function)|app/jobs/destroy_job.rb:4": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/jobs/destroy_job.rb:4` DestroyJob.perform: does I/O (model.update!) — `def perform(model)`"
+  },
+  "Important code no test reaches (N function)|app/jobs/import_market_data_job.rb:13": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/jobs/import_market_data_job.rb:13` ImportMarketDataJob.perform: does I/O (opts.fetch) — `def perform(opts)`"
+  },
+  "Important code no test reaches (N function)|app/models/assistant/function.rb:62": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/assistant/function.rb:62` Function.family_category_names: does I/O (family.categories.pluck) — `def family_category_names`"
+  },
+  "Important code no test reaches (N function)|app/models/assistant/function.rb:70": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/assistant/function.rb:70` Function.family_merchant_names: does I/O (family.merchants.pluck) — `def family_merchant_names`"
+  },
+  "Important code no test reaches (N function)|app/models/assistant/function.rb:74": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/assistant/function.rb:74` Function.family_tag_names: does I/O (family.tags.pluck) — `def family_tag_names`"
+  },
+  "Important code no test reaches (N function)|app/models/balance_sheet/sync_status_monitor.rb:17": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/balance_sheet/sync_status_monitor.rb:17` SyncStatusMonitor.syncing_account_ids: does I/O (Rails.cache.fetch, Sync.visible.where) — `def syncing_account_ids`"
+  },
+  "Important code no test reaches (N function)|app/models/demo/generator.rb:11": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/demo/generator.rb:11` Generator.initialize: does I/O (ENV.fetch) — `def initialize(seed: ENV.fetch(\"DEMO_DATA_SEED\", nil))`"
+  },
+  "Important code no test reaches (N function)|app/models/demo/generator.rb:113": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/demo/generator.rb:113` Generator.clear_all_data!: does I/O (Family.count) — `def clear_all_data!`"
+  },
+  "Important code no test reaches (N function)|app/models/demo/generator.rb:1171": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/demo/generator.rb:1171` Generator.reconcile_balances!: does I/O (@home.entries.create!, @honda_accord.entries.create!) — `def reconcile_balances!(family)`"
+  },
+  "Important code no test reaches (N function)|app/models/demo/generator.rb:121": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/demo/generator.rb:121` Generator.create_family_and_users!: does I/O (Family.create!, family.users.create!) — `def create_family_and_users!(family_name, email, onboarded:, subscribed:)`"
+  },
+  "Important code no test reaches (N function)|app/models/demo/generator.rb:156": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/demo/generator.rb:156` Generator.create_realistic_categories!: does I/O (family.categories.create!) — `def create_realistic_categories!(family)`"
+  },
+  "Important code no test reaches (N function)|app/models/demo/generator.rb:190": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/demo/generator.rb:190` Generator.create_realistic_accounts!: does I/O (family.accounts.create!) — `def create_realistic_accounts!(family)`"
+  },
+  "Important code no test reaches (N function)|app/models/demo/generator.rb:294": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/demo/generator.rb:294` Generator.generate_budget_auto_fill!: does I/O (Category.find, budget.budget_categories.sum) — `def generate_budget_auto_fill!(family)`"
+  },
+  "Important code no test reaches (N function)|app/models/demo/generator.rb:573": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/demo/generator.rb:573` Generator.generate_investment_transactions!: does I/O (Security.create!, Security.first) — `def generate_investment_transactions!`"
+  },
+  "Important code no test reaches (N function)|app/models/demo/generator.rb:856": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/demo/generator.rb:856` Generator.create_transaction!: does I/O (account.entries.create!) — `def create_transaction!(account, amount, name, category, date)`"
+  },
+  "Important code no test reaches (N function)|app/models/demo/generator.rb:869": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/demo/generator.rb:869` Generator.create_investment_transaction!: does I/O (account.entries.create!) — `def create_investment_transaction!(account, security, qty, price, date, name)`"
+  },
+  "Important code no test reaches (N function)|app/models/demo/generator.rb:879": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/demo/generator.rb:879` Generator.create_transfer!: does I/O (Transfer.create!, from_account.entries.create!) — `def create_transfer!(from_account, to_account, amount, name, date)`"
+  },
+  "Important code no test reaches (N function)|app/models/demo/generator.rb:897": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/demo/generator.rb:897` Generator.load_securities!: does I/O (Security.create!, Security.exists?) — `def load_securities!`"
+  },
+  "Important code no test reaches (N function)|app/models/demo/generator.rb:907": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/demo/generator.rb:907` Generator.sync_family_accounts!: does I/O (Sync.create!) — `def sync_family_accounts!(family)`"
+  },
+  "Important code no test reaches (N function)|app/models/import.rb:198": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/import.rb:198` Import.has_unassigned_account?: does I/O (mappings.accounts.where) — `def has_unassigned_account?`"
+  },
+  "Important code no test reaches (N function)|app/models/import.rb:85": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/import.rb:85` Import.revert: does I/O (update!) — `def revert`"
+  },
+  "Important code no test reaches (N function)|app/models/import/account_mapping.rb:27": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/import/account_mapping.rb:27` AccountMapping.values_count: does I/O (import.rows.where) — `def values_count`"
+  },
+  "Important code no test reaches (N function)|app/models/import/account_mapping.rb:35": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/import/account_mapping.rb:35` AccountMapping.create_mappable!: does I/O (save!) — `def create_mappable!`"
+  },
+  "Important code no test reaches (N function)|app/models/import/account_mapping.rb:5": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/import/account_mapping.rb:5` AccountMapping.mappables_by_key: does I/O (import.family.accounts.where) — `def mappables_by_key(import)`"
+  },
+  "Important code no test reaches (N function)|app/models/import/account_type_mapping.rb:18": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/import/account_type_mapping.rb:18` AccountTypeMapping.values_count: does I/O (import.rows.where) — `def values_count`"
+  },
+  "Important code no test reaches (N function)|app/models/import/category_mapping.rb:25": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/import/category_mapping.rb:25` CategoryMapping.values_count: does I/O (import.rows.where) — `def values_count`"
+  },
+  "Important code no test reaches (N function)|app/models/import/category_mapping.rb:3": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/import/category_mapping.rb:3` CategoryMapping.mappables_by_key: does I/O (import.family.categories.where) — `def mappables_by_key(import)`"
+  },
+  "Important code no test reaches (N function)|app/models/import/category_mapping.rb:33": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/import/category_mapping.rb:33` CategoryMapping.create_mappable!: does I/O (save!) — `def create_mappable!`"
+  },
+  "Important code no test reaches (N function)|app/models/import/tag_mapping.rb:3": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/import/tag_mapping.rb:3` TagMapping.mappables_by_key: does I/O (import.family.tags.where) — `def mappables_by_key(import)`"
+  },
+  "Important code no test reaches (N function)|app/models/import/tag_mapping.rb:34": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/import/tag_mapping.rb:34` TagMapping.create_mappable!: does I/O (save!) — `def create_mappable!`"
+  },
+  "Important code no test reaches (N function)|app/models/mint_import.rb:80": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/mint_import.rb:80` MintImport.set_mappings: does I/O (save!) — `def set_mappings`"
+  },
+  "Important code no test reaches (N function)|app/models/plaid_item/webhook_processor.rb:12": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/plaid_item/webhook_processor.rb:12` WebhookProcessor.process: does I/O (plaid_item.update!) — `def process`"
+  },
+  "Important code no test reaches (N function)|app/models/provider/plaid_sandbox.rb:21": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/provider/plaid_sandbox.rb:21` PlaidSandbox.fire_webhook: does I/O (client.sandbox_item_fire_webhook) — `def fire_webhook(item, type: \"TRANSACTIONS\", code: \"SYNC_UPDATES_AVAILABLE\")`"
+  },
+  "Important code no test reaches (N function)|app/models/provider/plaid_sandbox.rb:31": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/provider/plaid_sandbox.rb:31` PlaidSandbox.reset_login: does I/O (client.sandbox_item_reset_login) — `def reset_login(item)`"
+  },
+  "Important code no test reaches (N function)|app/models/rule/action_executor/set_transaction_category.rb:10": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/rule/action_executor/set_transaction_category.rb:10` SetTransactionCategory.execute: does I/O (family.categories.find_by_id) — `def execute(transaction_scope, value: nil, ignore_attribute_locks: false)`"
+  },
+  "Important code no test reaches (N function)|app/models/rule/action_executor/set_transaction_category.rb:6": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/rule/action_executor/set_transaction_category.rb:6` SetTransactionCategory.options: does I/O (family.categories.pluck) — `def options`"
+  },
+  "Important code no test reaches (N function)|app/models/rule/action_executor/set_transaction_merchant.rb:10": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/rule/action_executor/set_transaction_merchant.rb:10` SetTransactionMerchant.execute: does I/O (family.merchants.find_by_id) — `def execute(transaction_scope, value: nil, ignore_attribute_locks: false)`"
+  },
+  "Important code no test reaches (N function)|app/models/rule/action_executor/set_transaction_merchant.rb:6": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/rule/action_executor/set_transaction_merchant.rb:6` SetTransactionMerchant.options: does I/O (family.merchants.pluck) — `def options`"
+  },
+  "Important code no test reaches (N function)|app/models/rule/action_executor/set_transaction_tags.rb:10": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/rule/action_executor/set_transaction_tags.rb:10` SetTransactionTags.execute: does I/O (family.tags.find_by_id) — `def execute(transaction_scope, value: nil, ignore_attribute_locks: false)`"
+  },
+  "Important code no test reaches (N function)|app/models/rule/action_executor/set_transaction_tags.rb:6": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/rule/action_executor/set_transaction_tags.rb:6` SetTransactionTags.options: does I/O (family.tags.pluck) — `def options`"
+  },
+  "Network calls without a timeout|app/components/DS/tabs_controller.js:44": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/components/DS/tabs_controller.js:44` fetch(\"/current_session\", {"
+  },
+  "Network calls without a timeout|app/javascript/controllers/app_layout_controller.js:44": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/app_layout_controller.js:44` fetch(`/users/${this.userIdValue}`, {"
+  },
+  "Network calls without a timeout|app/javascript/controllers/plaid_controller.js:31": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/plaid_controller.js:31` fetch(`/plaid_items/${this.itemIdValue}/sync`, {"
+  },
+  "Network calls without a timeout|app/javascript/services/currencies_service.js:3": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/javascript/services/currencies_service.js:3` return fetch(`/currencies/${id}.json`).then((response) => response.json());"
+  },
+  "Queries or requests inside loops (N) in N place|app/controllers/pages_controller.rb:82": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/controllers/pages_controller.rb:82` PagesController.build_cashflow_sankey_data: PagesController.build_cashflow_sankey_data calls BudgetCategory.category() inside a loop (line 82 and 7 more), and that reaches PERIODS[key].fetch() — `next if ct.category.parent_id.present?`"
+  },
+  "Queries or requests inside loops (N) in N place|app/helpers/application_helper.rb:117": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/helpers/application_helper.rb:117` ApplicationHelper.calculate_total: ApplicationHelper.calculate_total calls EntryableResource.entryable() inside a loop (line 117 and 1 more), and that reaches Current.family.accounts.find_by() — `i.entryable.is_a?(Transaction) &&`"
+  },
+  "Queries or requests inside loops (N) in N place|app/helpers/application_helper.rb:73": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/helpers/application_helper.rb:73` ApplicationHelper.totals_by_currency: ApplicationHelper.totals_by_currency calls ApplicationHelper.calculate_total() inside a loop (line 73), and that reaches Current.family.accounts.find_by() — `.transform_values { |item| calculate_total(item, money_method, negate) }`"
+  },
+  "Queries or requests inside loops (N) in N place|app/helpers/entries_helper.rb:16": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/helpers/entries_helper.rb:16` EntriesHelper.entries_by_date: EntriesHelper.entries_by_date calls EntryableResource.entryable() inside a loop (line 16), and that reaches Current.family.accounts.find_by() — `e.entryable.transfer_as_inflow.present?`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/account_import.rb:7": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/account_import.rb:7` AccountImport.import!: AccountImport.import! calls mappings.account_types.find_by() inside a loop (line 7) — `mapping = mappings.account_types.find_by(key: row.…`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/assistant/function/get_income_statement.rb:101": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/assistant/function/get_income_statement.rb:101` GetIncomeStatement.to_ai_category_totals: GetIncomeStatement.to_ai_category_totals calls BudgetCategory.category() inside a loop (line 101), and that reaches PERIODS[key].fetch() — `name: st.category.name,`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/assistant/function/get_transactions.rb:164": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/assistant/function/get_transactions.rb:164` GetTransactions.call: GetTransactions.call calls BudgetCategory.category() inside a loop (line 164), and that reaches PERIODS[key].fetch() — `category: txn.category&.name,`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/balance/sync_cache.rb:24": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/balance/sync_cache.rb:24` SyncCache.converted_entries: SyncCache.converted_entries calls Money.exchange_to() inside a loop (line 24), and that reaches find_by() — `converted_entry.amount = converted_entry.amount_money.exchange_to(`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/balance/sync_cache.rb:37": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/balance/sync_cache.rb:37` SyncCache.converted_holdings: SyncCache.converted_holdings calls Money.exchange_to() inside a loop (line 37), and that reaches find_by() — `converted_holding.amount = converted_holding.amount_money.exchange_to(`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/budget.rb:106": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/budget.rb:106` Budget.income_category_totals: Budget.income_category_totals calls BudgetCategory.category() inside a loop (line 106), and that reaches PERIODS[key].fetch() — `income_totals.category_totals.reject { |ct| ct.category.subcategory? || ct.total.zero? }.sort_by(&:weight).reverse`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/budget.rb:110": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/budget.rb:110` Budget.expense_category_totals: Budget.expense_category_totals calls BudgetCategory.category() inside a loop (line 110), and that reaches PERIODS[key].fetch() — `expense_totals.category_totals.reject { |ct| ct.category.subcategory? || ct.total.zero? }.sort_by(&:weight).reverse`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/budget.rb:140": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/budget.rb:140` Budget.to_donut_segments_json: Budget.to_donut_segments_json calls BudgetCategory.category() inside a loop (line 140), and that reaches PERIODS[key].fetch() — `{ color: bc.category.color, amount: budget_category_actual_spending(bc), id: bc.id }`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/budget_category.rb:18": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/budget_category.rb:18` BudgetCategory.Group.for: BudgetCategory.Group.for calls BudgetCategory.category() inside a loop (line 18 and 2 more), and that reaches PERIODS[key].fetch() — `top_level_categories = budget_categories.select { |budget_category| budget_category.category.parent_id.nil? }`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/budget_category.rb:96": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/budget_category.rb:96` BudgetCategory.siblings: BudgetCategory.siblings calls BudgetCategory.category() inside a loop (line 96), and that reaches PERIODS[key].fetch() — `budget.budget_categories.select { |bc| bc.category.parent_id == category.parent_id && bc.id != id }`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/demo/generator.rb:318": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/demo/generator.rb:318` Generator.generate_budget_auto_fill!: Generator.generate_budget_auto_fill! calls Category.find() inside a loop (line 318) — `category = Category.find(cat_id)`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/entry.rb:92": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/entry.rb:92` Entry.bulk_update!: Entry.bulk_update! calls EntryableResource.entryable() inside a loop (line 92), and that reaches Current.family.accounts.find_by() — `entry.entryable.lock_attr!(:tag_ids) if entry.transaction? && entry.transaction.tags.any?`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/family/auto_categorizer.rb:55": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/family/auto_categorizer.rb:55` AutoCategorizer.user_categories_input: AutoCategorizer.user_categories_input calls IncomeStatement.categories() inside a loop (line 55), and that reaches PERIODS[key].fetch() — `family.categories.map do |category|`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/family/auto_transfer_matchable.rb:68": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/family/auto_transfer_matchable.rb:68` AutoTransferMatchable.auto_match_transfers!: AutoTransferMatchable.auto_match_transfers! calls Transaction.find() inside a loop (line 68 and 5 more) — `Transaction.find(match.inflow_transaction_id).update!(kind: \"funds_movement\")`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/holding/forward_calculator.rb:16": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/holding/forward_calculator.rb:16` ForwardCalculator.calculate: ForwardCalculator.calculate calls ForwardCalculator.transform_portfolio() inside a loop (line 16), and that reaches Current.family.accounts.find_by() — `next_portfolio = transform_portfolio(current_portfolio, trades, direction: :forward)`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/holding/forward_calculator.rb:17": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/holding/forward_calculator.rb:17` ForwardCalculator.calculate: ForwardCalculator.calculate calls ForwardCalculator.build_holdings() inside a loop (line 17), and that reaches find_by() — `holdings += build_holdings(next_portfolio, date)`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/holding/forward_calculator.rb:43": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/holding/forward_calculator.rb:43` ForwardCalculator.transform_portfolio: ForwardCalculator.transform_portfolio calls EntryableResource.entryable() inside a loop (line 43), and that reaches Current.family.accounts.find_by() — `trade = trade_entry.entryable`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/holding/forward_calculator.rb:55": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/holding/forward_calculator.rb:55` ForwardCalculator.build_holdings: ForwardCalculator.build_holdings calls PortfolioCache.get_price() inside a loop (line 55), and that reaches find_by() — `price = portfolio_cache.get_price(security_id, date, source: price_source)`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/holding/materializer.rb:41": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/holding/materializer.rb:41` Materializer.purge_stale_holdings: Materializer.purge_stale_holdings calls EntryableResource.entryable() inside a loop (line 41), and that reaches Current.family.accounts.find_by() — `portfolio_security_ids = account.entries.trades.map { |entry| entry.entryable.security_id }.uniq`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/holding/portfolio_cache.rb:97": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/holding/portfolio_cache.rb:97` PortfolioCache.load_prices: PortfolioCache.load_prices calls EntryableResource.entryable() inside a loop (line 97 and 2 more), and that reaches Current.family.accounts.find_by() — `.select { |t| t.entryable.security_id == security.id }`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/holding/portfolio_snapshot.rb:25": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/holding/portfolio_snapshot.rb:25` PortfolioSnapshot.build_portfolio: PortfolioSnapshot.build_portfolio calls account.holdings.select() inside a loop (line 25)"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/holding/reverse_calculator.rb:33": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/holding/reverse_calculator.rb:33` ReverseCalculator.calculate_holdings: ReverseCalculator.calculate_holdings calls ReverseCalculator.transform_portfolio() inside a loop (line 33), and that reaches Current.family.accounts.find_by() — `previous_portfolio = transform_portfolio(current_portfolio, today_trades, direction: :reverse)`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/holding/reverse_calculator.rb:36": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/holding/reverse_calculator.rb:36` ReverseCalculator.calculate_holdings: ReverseCalculator.calculate_holdings calls ReverseCalculator.build_holdings() inside a loop (line 36), and that reaches find_by() — `holdings += build_holdings(current_portfolio, date, price_source: date == Date.current ? \"holding\" : nil)`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/holding/reverse_calculator.rb:47": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/holding/reverse_calculator.rb:47` ReverseCalculator.transform_portfolio: ReverseCalculator.transform_portfolio calls EntryableResource.entryable() inside a loop (line 47), and that reaches Current.family.accounts.find_by() — `trade = trade_entry.entryable`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/holding/reverse_calculator.rb:59": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/holding/reverse_calculator.rb:59` ReverseCalculator.build_holdings: ReverseCalculator.build_holdings calls PortfolioCache.get_price() inside a loop (line 59), and that reaches find_by() — `price = portfolio_cache.get_price(security_id, date, source: price_source)`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/import.rb:163": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/import.rb:163` Import.sync_mappings: Import.sync_mappings calls MappingsController.mappable() inside a loop (line 163), and that reaches mappable_class.find_by() — `mapping.mappable = mappable`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/import/category_mapping.rb:12": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/import/category_mapping.rb:12` CategoryMapping.selectable_values: CategoryMapping.selectable_values calls IncomeStatement.categories() inside a loop (line 12), and that reaches PERIODS[key].fetch() — `family_categories = import.family.categories.alphabetically.map { |category| [ category.name, category.id ] }`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/income_statement.rb:65": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/income_statement.rb:65` IncomeStatement.build_period_total: IncomeStatement.build_period_total calls IncomeStatement.totals_query() inside a loop (line 65), and that reaches Rails.cache.fetch() — `totals = totals_query(transactions_scope: family.transactions.visible.in_period(period)).select { |t| t.classification == classification }`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/income_statement.rb:95": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/income_statement.rb:95` IncomeStatement.build_period_total: IncomeStatement.build_period_total calls BudgetCategory.category() inside a loop (line 95), and that reaches PERIODS[key].fetch() — `total: category_totals.reject { |ct| ct.category.subcategory? }.sum(&:total),`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/mint_import.rb:28": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/mint_import.rb:28` MintImport.import!: MintImport.import! calls Mapping.mappable_for() inside a loop (line 28 and 2 more), and that reaches find_by() — `account = mappings.accounts.mappable_for(row.account)`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/mint_import.rb:29": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/mint_import.rb:29` MintImport.import!: MintImport.import! calls IncomeStatement.categories() inside a loop (line 29), and that reaches PERIODS[key].fetch() — `category = mappings.categories.mappable_for(row.category)`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/period.rb:85": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/period.rb:85` Period.all: Period.all calls Period.from_key() inside a loop (line 85), and that reaches PERIODS[key].fetch() — `PERIODS.map { |key, period| from_key(key) }`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/period.rb:89": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/period.rb:89` Period.as_options: Period.as_options calls Period.label_short() inside a loop (line 89), and that reaches key_metadata.fetch() — `all.map { |period| [ period.label_short, period.key ] }`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/period.rb:95": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/period.rb:95`: top-level code in period.rb calls Period.from_key() inside a loop (line 95), and that reaches PERIODS[key].fetch() — `from_key(key)`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/provider/synth.rb:231": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/provider/synth.rb:231` Synth.paginate: Synth.paginate calls Synth.fetch_page() inside a loop (line 231), and that reaches client.get() — `response = fetch_page(url, page, params)`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/trade_import.rb:10": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/trade_import.rb:10` TradeImport.import!: TradeImport.import! calls Mapping.mappable_for() inside a loop (line 10), and that reaches find_by() — `mappings.accounts.mappable_for(row.account)`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/transaction_import.rb:10": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/transaction_import.rb:10` TransactionImport.import!: TransactionImport.import! calls Mapping.mappable_for() inside a loop (line 10 and 2 more), and that reaches find_by() — `mappings.accounts.mappable_for(row.account)`"
+  },
+  "Queries or requests inside loops (N) in N place|app/models/transaction_import.rb:13": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/models/transaction_import.rb:13` TransactionImport.import!: TransactionImport.import! calls IncomeStatement.categories() inside a loop (line 13), and that reaches PERIODS[key].fetch() — `category = mappings.categories.mappable_for(row.category)`"
+  },
+  "Raw HTML injected into pages|app/javascript/controllers/confirm_dialog_controller.js:41": {
+   "check": "Raw HTML injected into pages",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/javascript/controllers/confirm_dialog_controller.js:41` this.subtitleTarget.innerHTML =  (no endpoint reaches it)"
+  },
+  "Unused code (N function)|app/components/DS/dialog_controller.js:20": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/components/DS/dialog_controller.js:20` clickOutside — `clickOutside(e) {`"
+  },
+  "Unused code (N function)|app/components/DS/menu_controller.js:29": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/components/DS/menu_controller.js:29` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|app/components/DS/tooltip_controller.js:24": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/components/DS/tooltip_controller.js:24` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/auto_submit_form_controller.js:18": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/auto_submit_form_controller.js:18` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/bulk_select_controller.js:24": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/bulk_select_controller.js:24` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/bulk_select_controller.js:28": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/bulk_select_controller.js:28` bulkEditDrawerHeaderTargetConnected — `bulkEditDrawerHeaderTargetConnected(element) {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/bulk_select_controller.js:81": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/bulk_select_controller.js:81` selectedIdsValueChanged — `selectedIdsValueChanged() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/chat_controller.js:10": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/chat_controller.js:10` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/color_avatar_controller.js:12": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/color_avatar_controller.js:12` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/color_select_controller.js:15": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/color_select_controller.js:15` selectionValueChanged — `selectionValueChanged() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/color_select_controller.js:46": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/color_select_controller.js:46` #options — `get #options() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/confirm_dialog_controller.js:8": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/confirm_dialog_controller.js:8` handleConfirm — `handleConfirm(rawData) {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/donut_chart_controller.js:24": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/donut_chart_controller.js:24` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/donut_chart_controller.js:30": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/donut_chart_controller.js:30` #data — `get #data() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/file_upload_controller.js:18": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/file_upload_controller.js:18` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/hotkey_controller.js:10": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/hotkey_controller.js:10` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/hotkey_controller.js:14": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/hotkey_controller.js:14` navigateBack — `navigateBack(event) {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/mobile_cell_interaction_controller.js:134": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/mobile_cell_interaction_controller.js:134` selectCell — `selectCell(event) {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/mobile_cell_interaction_controller.js:17": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/mobile_cell_interaction_controller.js:17` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/preserve_scroll_controller.js:21": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/preserve_scroll_controller.js:21` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/sankey_chart_controller.js:20": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/sankey_chart_controller.js:20` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/selectable_link_controller.js:9": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/selectable_link_controller.js:9` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/theme_controller.js:10": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/theme_controller.js:10` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/theme_controller.js:15": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/theme_controller.js:15` userPreferenceValueChanged — `userPreferenceValueChanged() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/time_series_chart_controller.js:28": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/time_series_chart_controller.js:28` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/tooltip_controller.js:26": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/tooltip_controller.js:26` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|app/javascript/controllers/turbo_frame_timeout_controller.js:16": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`app/javascript/controllers/turbo_frame_timeout_controller.js:16` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|vendor/javascript/@simonwep--pickr.js:3": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/javascript/@simonwep--pickr.js:3` E._bindEvents.e — `var t={};!function(u,h){t=h()}(self,(()=>(()=>{var t={d:(u,h)=>{for(var d in h)t.o(h,d)&&!t.o(u,d)&&Object.defineProperty(u,d,{enumerable:!0,get:h[d]})},o:(t…`"
+  },
+  "Unused code (N function)|vendor/javascript/d3-shape.js:3": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/javascript/d3-shape.js:3` custom.cardinal — `import t from\"d3-path\";var n=\"undefined\"!==typeof globalThis?globalThis:\"undefined\"!==typeof self?self:global;var i={};(function(n,e){e(i,t)})(i,(function(t,…`"
+  },
+  "Writes inside loops in N place|app/helpers/settings_helper.rb:20": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/helpers/settings_helper.rb:20` SettingsHelper.adjacent_setting — `visible_settings = SETTINGS_ORDER.select { |setting| setting[:condition].nil? || send(setting[:condition]) }`"
+  },
+  "Writes inside loops in N place|app/models/account_import.rb:18": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/account_import.rb:18` AccountImport.import! — `account.save!`"
+  },
+  "Writes inside loops in N place|app/models/account_import.rb:21": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/account_import.rb:21` AccountImport.import! — `result = manager.set_opening_balance(balance: row.amount.to_d)`"
+  },
+  "Writes inside loops in N place|app/models/balance/chart_series_builder.rb:50": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/balance/chart_series_builder.rb:50` ChartSeriesBuilder.build_series_for — `value: Money.new(datum.send(column), currency),`"
+  },
+  "Writes inside loops in N place|app/models/budget.rb:75": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/budget.rb:75` Budget.sync_budget_categories — `budget_categories.create!(`"
+  },
+  "Writes inside loops in N place|app/models/concerns/enrichable.rb:41": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/concerns/enrichable.rb:41` Enrichable.enrich_attributes — `self.send(\"#{attr}=\", value)`"
+  },
+  "Writes inside loops in N place|app/models/concerns/enrichable.rb:45": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/concerns/enrichable.rb:45` Enrichable.enrich_attributes — `log_enrichment(attribute_name: attr, attribute_value: value, source: source, metadata: metadata)`"
+  },
+  "Writes inside loops in N place|app/models/concerns/enrichable.rb:71": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/concerns/enrichable.rb:71` Enrichable.lock_saved_attributes! — `lock_attr!(attr)`"
+  },
+  "Writes inside loops in N place|app/models/concerns/monetizable.rb:8": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/concerns/monetizable.rb:8` Monetizable.monetize — `value = self.send(field, **args)`"
+  },
+  "Writes inside loops in N place|app/models/demo/generator.rb:360": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/demo/generator.rb:360` Generator.generate_salary_history! — `create_transfer!(@chase_checking, @marcus_savings, savings_amount, \"Auto-Save 10% of Paycheck\", date)`"
+  },
+  "Writes inside loops in N place|app/models/demo/generator.rb:588": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/demo/generator.rb:588` Generator.generate_401k_trades! — `create_trade_for(@vanguard_401k, security, 1_200, date, \"401k Employee\")`"
+  },
+  "Writes inside loops in N place|app/models/demo/generator.rb:601": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/demo/generator.rb:601` Generator.generate_brokerage_trades! — `create_trade_for(@schwab_brokerage, security, rand(400..1_000), trade_date, \"Brokerage Purchase\")`"
+  },
+  "Writes inside loops in N place|app/models/demo/generator.rb:614": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/demo/generator.rb:614` Generator.generate_roth_trades! — `create_trade_for(@fidelity_roth_ira, security, (500 / 3.0), trade_date, \"Roth IRA Contribution\")`"
+  },
+  "Writes inside loops in N place|app/models/demo/generator.rb:626": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/demo/generator.rb:626` Generator.generate_uk_isa_trades! — `create_trade_for(@uk_isa, security, (400 / 3.0), trade_date, \"ISA Investment\", price_range: 60..150)`"
+  },
+  "Writes inside loops in N place|app/models/demo/generator.rb:689": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/demo/generator.rb:689` Generator.generate_additional_savings_transfers! — `create_transfer!(@chase_checking, @marcus_savings, amount, \"Extra Savings Transfer\", date)`"
+  },
+  "Writes inside loops in N place|app/models/demo/generator.rb:728": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/demo/generator.rb:728` Generator.generate_monthly_ally_transfers! — `create_transfer!(@chase_checking, @ally_checking, 300, \"Monthly Ally Transfer\", transfer_date)`"
+  },
+  "Writes inside loops in N place|app/models/demo/generator.rb:738": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/demo/generator.rb:738` Generator.generate_quarterly_fx_transfers! — `create_transfer!(@chase_checking, @eu_checking, 2_000, \"Quarterly FX Transfer\", transfer_date)`"
+  },
+  "Writes inside loops in N place|app/models/demo/generator.rb:773": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/demo/generator.rb:773` Generator.generate_credit_card_cycles! — `amex_total     = generate_credit_card_charges(@amex_gold,     date_cursor, amex_count)`"
+  },
+  "Writes inside loops in N place|app/models/demo/generator.rb:786": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/demo/generator.rb:786` Generator.generate_credit_card_cycles! — `create_transfer!(@chase_checking, @amex_gold, amex_payment, \"Amex Payment\", payment_date)`"
+  },
+  "Writes inside loops in N place|app/models/demo/generator.rb:909": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/demo/generator.rb:909` Generator.sync_family_accounts! — `sync = Sync.create!(syncable: account)`"
+  },
+  "Writes inside loops in N place|app/models/demo/generator.rb:948": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/demo/generator.rb:948` Generator.generate_loan_payments! — `make_loan_payment!(`"
+  },
+  "Writes inside loops in N place|app/models/entry.rb:89": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/entry.rb:89` Entry.bulk_update! — `entry.update! bulk_attributes`"
+  },
+  "Writes inside loops in N place|app/models/entry.rb:92": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/entry.rb:92` Entry.bulk_update! — `entry.entryable.lock_attr!(:tag_ids) if entry.transaction? && entry.transaction.tags.any?`"
+  },
+  "Writes inside loops in N place|app/models/family/auto_categorizer.rb:35": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/family/auto_categorizer.rb:35` AutoCategorizer.auto_categorize — `transaction.enrich_attribute(`"
+  },
+  "Writes inside loops in N place|app/models/family/auto_categorizer.rb:42": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/family/auto_categorizer.rb:42` AutoCategorizer.auto_categorize — `transaction.lock_attr!(:category_id)`"
+  },
+  "Writes inside loops in N place|app/models/family/auto_merchant_detector.rb:47": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/family/auto_merchant_detector.rb:47` AutoMerchantDetector.auto_detect — `transaction.enrich_attribute(`"
+  },
+  "Writes inside loops in N place|app/models/family/auto_merchant_detector.rb:56": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/family/auto_merchant_detector.rb:56` AutoMerchantDetector.auto_detect — `transaction.lock_attr!(:merchant_id)`"
+  },
+  "Writes inside loops in N place|app/models/family/auto_transfer_matchable.rb:63": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/family/auto_transfer_matchable.rb:63` AutoTransferMatchable.auto_match_transfers! — `Transfer.create!(`"
+  },
+  "Writes inside loops in N place|app/models/family/syncer.rb:19": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/family/syncer.rb:19` Syncer.perform_sync — `syncable.sync_later(parent_sync: sync, window_start_date: sync.window_start_date, window_end_date: sync.window_end_date)`"
+  },
+  "Writes inside loops in N place|app/models/import.rb:168": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/import.rb:168` Import.sync_mappings — `updated_mappings.each { |m| m.save(validate: false) }`"
+  },
+  "Writes inside loops in N place|app/models/mint_import.rb:41": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/mint_import.rb:41` MintImport.import! — `entry.save!`"
+  },
+  "Writes inside loops in N place|app/models/plaid_account/investments/holdings_processor.rb:29": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/plaid_account/investments/holdings_processor.rb:29` HoldingsProcessor.process — `holding.save!`"
+  },
+  "Writes inside loops in N place|app/models/plaid_account/investments/transactions_processor.rb:12": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/plaid_account/investments/transactions_processor.rb:12` TransactionsProcessor.process — `find_or_create_cash_entry(transaction)`"
+  },
+  "Writes inside loops in N place|app/models/plaid_account/investments/transactions_processor.rb:14": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/plaid_account/investments/transactions_processor.rb:14` TransactionsProcessor.process — `find_or_create_trade_entry(transaction)`"
+  },
+  "Writes inside loops in N place|app/models/plaid_item.rb:65": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/plaid_item.rb:65` PlaidItem.schedule_account_syncs — `account.sync_later(`"
+  },
+  "Writes inside loops in N place|app/models/plaid_item/importer.rb:47": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/plaid_item/importer.rb:47` Importer.fetch_and_import_accounts_data — `PlaidAccount::Importer.new(`"
+  },
+  "Writes inside loops in N place|app/models/provider/plaid.rb:107": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/provider/plaid.rb:107` Plaid.get_transactions — `response = client.transactions_sync(request)`"
+  },
+  "Writes inside loops in N place|app/models/provider/registry.rb:78": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/provider/registry.rb:78` Registry.providers — `available_providers.map { |p| self.class.send(p) }`"
+  },
+  "Writes inside loops in N place|app/models/rule/action_executor/set_transaction_category.rb:20": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/rule/action_executor/set_transaction_category.rb:20` SetTransactionCategory.execute — `txn.enrich_attribute(`"
+  },
+  "Writes inside loops in N place|app/models/rule/action_executor/set_transaction_merchant.rb:20": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/rule/action_executor/set_transaction_merchant.rb:20` SetTransactionMerchant.execute — `txn.enrich_attribute(`"
+  },
+  "Writes inside loops in N place|app/models/rule/action_executor/set_transaction_name.rb:19": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/rule/action_executor/set_transaction_name.rb:19` SetTransactionName.execute — `txn.entry.enrich_attribute(`"
+  },
+  "Writes inside loops in N place|app/models/rule/action_executor/set_transaction_tags.rb:20": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/rule/action_executor/set_transaction_tags.rb:20` SetTransactionTags.execute — `txn.enrich_attribute(`"
+  },
+  "Writes inside loops in N place|app/models/security/health_checker.rb:26": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`app/models/security/health_checker.rb:26` HealthChecker.check_all — `new(security).run_check`"
+  }
+ }
+}

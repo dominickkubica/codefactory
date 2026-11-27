@@ -8,3 +8,5 @@ factory.html
 *.db
 .codefactory/
 .claude/worktrees/
+tools/golden/local.txt
+tools/golden/local/

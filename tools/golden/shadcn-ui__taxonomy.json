@@ -1,0 +1,54 @@
+{
+ "repo": "shadcn-ui/taxonomy",
+ "commit": "298a8857c7128a0d121e7f699dfd729f23b3966d",
+ "locations": {
+  "Copied logic in N group (~N lines)|components/ui/command.tsx:129": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "Merge CommandShortcut, ContextMenuShortcut, MenubarShortcut (identical, ~28 lines): `components/ui/command.tsx:129`, `components/ui/context-menu.tsx:168`, `components/ui/menubar.tsx:203`"
+  },
+  "Network calls without a timeout|app/(marketing)/page.tsx:10": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`app/(marketing)/page.tsx:10` const response = await fetch("
+  },
+  "Network calls without a timeout|components/billing-form.tsx:37": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`components/billing-form.tsx:37` const response = await fetch(\"/api/users/stripe\")"
+  },
+  "Network calls without a timeout|components/editor.tsx:91": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`components/editor.tsx:91` const response = await fetch(`/api/posts/${post.id}`, {"
+  },
+  "Network calls without a timeout|components/post-create-button.tsx:24": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`components/post-create-button.tsx:24` const response = await fetch(\"/api/posts\", {"
+  },
+  "Network calls without a timeout|components/post-operations.tsx:29": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`components/post-operations.tsx:29` const response = await fetch(`/api/posts/${postId}`, {"
+  },
+  "Network calls without a timeout|components/user-name-form.tsx:49": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`components/user-name-form.tsx:49` const response = await fetch(`/api/users/${user.id}`, {"
+  },
+  "No error boundary around the UI|React-based (Next.js, React); no ErrorBoundary / componentDidCatch found in the source": {
+   "check": "No error boundary around the UI",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "React-based (Next.js, React); no ErrorBoundary / componentDidCatch found in the source"
+  }
+ }
+}

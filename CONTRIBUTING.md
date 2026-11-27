@@ -56,6 +56,12 @@ removed and the right ones it lost. A lost right one is a regression unless the 
 `python tools/precision.py sample` adds unlabeled locations, `batch OUT.md` writes them with the code around each for
 a reviewer, and `merge FILE.json` takes the labels back.
 
+The labels only cover the locations someone sampled. `python tools/golden.py diff` re-analyzes a fixed set of
+repositories at pinned commits (seven corpus ones, plus any local ones added with `golden.py pin NAME PATH`) and lists
+every location added, removed, or moved between finding and hint since the snapshot. A removal fails the diff until
+`golden.py accept --why "..."` records why it's right to lose; the reasons stay in `tools/golden/reasons.jsonl`. Run it
+before pushing a change to a check: it turns "did this help here and hurt elsewhere" into a check.
+
 If a change alters findings on purpose, `tests/test_golden.py` fails: run
 `CODEFACTORY_UPDATE_GOLDEN=1 python -m unittest tests.test_golden` and check the diff in `tests/golden/` before
 committing it. An unexpected line there is a bug caught early.

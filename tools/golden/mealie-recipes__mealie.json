@@ -1,0 +1,1134 @@
+{
+ "repo": "mealie-recipes/mealie",
+ "commit": "feb3323839b75ff9571fc8110f710d63b718fa56",
+ "locations": {
+  "Copied logic in N group (~N lines)|frontend/app/composables/store/use-category-store.ts:12": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge resetCategoryStore, resetFoodStore, resetHouseholdStore, resetTagStore, resetToolStore (identical, ~28 lines): `frontend/app/composables/store/use-category-store.ts:12`, `frontend/app/composables/store/use-food-store.ts:12`, `frontend/app/composables/store/use-household-store.ts:12`, `frontend/app/composables/store/use-tag-store.ts:12`, `frontend/app/composables/store/use-tool-store.ts:17`"
+  },
+  "Copied logic in N group (~N lines)|mealie/db/db_setup.py:64": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge generate_session, session_context (identical, ~7 lines): `mealie/db/db_setup.py:80`, `mealie/db/db_setup.py:64`"
+  },
+  "Copied logic in N group (~N lines)|mealie/repos/repository_group.py:59": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge RepositoryGroup.get_by_slug_or_id, RepositoryHousehold.get_by_slug_or_id (identical, ~11 lines): `mealie/repos/repository_group.py:59`, `mealie/repos/repository_household.py:81`"
+  },
+  "Copied logic in N group (~N lines)|mealie/routes/recipe/recipe_crud_routes.py:215": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge RecipeController.create_recipe_from_html_or_json, RecipeController.create_recipe_from_image, RecipeController.create_recipe_with_ai, RecipeController.parse_recipe_url (98% similar, ~35 lines): `mealie/routes/recipe/recipe_crud_routes.py:215`, `mealie/routes/recipe/recipe_crud_routes.py:551`, `mealie/routes/recipe/recipe_crud_routes.py:441`, `mealie/routes/recipe/recipe_crud_routes.py:247`"
+  },
+  "Copied logic in N group (~N lines)|mealie/routes/recipe/recipe_crud_routes.py:707": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge RecipeController.patch_one, RecipeController.update_last_made, RecipeController.update_one (93% similar, ~40 lines): `mealie/routes/recipe/recipe_crud_routes.py:755`, `mealie/routes/recipe/recipe_crud_routes.py:803`, `mealie/routes/recipe/recipe_crud_routes.py:707`"
+  },
+  "Copied logic in N group (~N lines)|mealie/routes/recipe/recipe_crud_routes.py:730": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge RecipeController.patch_many, RecipeController.update_many (95% similar, ~23 lines): `mealie/routes/recipe/recipe_crud_routes.py:778`, `mealie/routes/recipe/recipe_crud_routes.py:730`"
+  },
+  "Copied logic in N group (~N lines)|mealie/schema/_mealie/mealie_model.py:119": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge MealieModel.cast, cast (identical, ~6 lines): `mealie/schema/_mealie/mealie_model.py:119`, `mealie/schema/mapper.py:16`"
+  },
+  "Copied logic in N group (~N lines)|mealie/schema/_mealie/mealie_model.py:130": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge MealieModel.map_to, mapper (identical, ~7 lines): `mealie/schema/_mealie/mealie_model.py:130`, `mealie/schema/mapper.py:4`"
+  },
+  "Copied logic in N group (~N lines)|mealie/schema/cookbook/cookbook.py:51": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge CookBookCreate.validate_query_filter_string, PlanRulesCreate.validate_query_filter_string (identical, ~11 lines): `mealie/schema/cookbook/cookbook.py:51`, `mealie/schema/meal_plan/plan_rules.py:62`"
+  },
+  "Copied logic in N group (~N lines)|mealie/schema/cookbook/cookbook.py:85": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge CookBookOut.validate_query_filter, PlanRulesOut.validate_query_filter (identical, ~8 lines): `mealie/schema/cookbook/cookbook.py:85`, `mealie/schema/meal_plan/plan_rules.py:92`"
+  },
+  "Copied logic in N group (~N lines)|mealie/schema/household/household.py:93": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge HouseholdOut.convert_group_to_name, UserBase.convert_group_to_name, UserBase.convert_household_to_name (identical, ~16 lines): `mealie/schema/household/household.py:93`, `mealie/schema/user/user.py:149`, `mealie/schema/user/user.py:159`"
+  },
+  "Copied logic in N group (~N lines)|mealie/schema/recipe/recipe_ingredient.py:248": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge IngredientFoodOut.convert_households_to_slugs, _household_slugs (identical, ~8 lines): `mealie/schema/recipe/recipe_ingredient.py:248`, `mealie/schema/recipe/recipe_organizers.py:26`"
+  },
+  "Copied logic in N group (~N lines)|mealie/schema/response/pagination.py:90": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge AppriseEventListener.merge_query_parameters, PaginationBase.merge_query_parameters (identical, ~8 lines): `mealie/schema/response/pagination.py:90`, `mealie/services/event_bus_service/event_bus_listeners.py:115`"
+  },
+  "Copied logic in N group (~N lines)|mealie/services/migrations/_migration_base.py:122": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge BaseMigrator._save_all_entries, RecipeBulkScraperService._save_all_entries (91% similar, ~25 lines): `mealie/services/migrations/_migration_base.py:122`, `mealie/services/scraper/recipe_bulk_scraper.py:54`"
+  },
+  "Copied logic in N group (~N lines)|mealie/services/migrations/chowdown.py:23": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge ChowdownMigrator.get_zip_base_path, NextcloudMigrator.get_zip_base_path (identical, ~10 lines): `mealie/services/migrations/chowdown.py:23`, `mealie/services/migrations/nextcloud.py:54`"
+  },
+  "Copied logic in N group (~N lines)|mealie/services/migrations/plantoeat.py:37": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of get_value_as_string_or_none (identical, ~9 lines): `mealie/services/migrations/plantoeat.py:37`, `mealie/services/migrations/recipekeeper.py:46`"
+  },
+  "Endpoints that change data without an auth check (N)|mealie/routes/recipe/recipe_crud_routes.py:441": {
+   "check": "Endpoints that change data without an auth check (N)",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`POST /recipes/create/ai` (`mealie/routes/recipe/recipe_crud_routes.py:441`) → changes data in `RecipeDataService.write_image` (`staged_image_path.write_bytes`)"
+  },
+  "Endpoints that change data without an auth check (N)|mealie/routes/recipe/recipe_crud_routes.py:470": {
+   "check": "Endpoints that change data without an auth check (N)",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`POST /recipes/create/ai/stream` (`mealie/routes/recipe/recipe_crud_routes.py:470`) → changes data in `RecipeDataService.write_image` (`staged_image_path.write_bytes`)"
+  },
+  "Endpoints that change data without an auth check (N)|mealie/routes/recipe/recipe_crud_routes.py:551": {
+   "check": "Endpoints that change data without an auth check (N)",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`POST /recipes/create/image` (`mealie/routes/recipe/recipe_crud_routes.py:551`) → changes data in `RecipeDataService.write_image` (`staged_image_path.write_bytes`)"
+  },
+  "Endpoints that change data without an auth check (N)|mealie/routes/recipe/timeline_events.py:178": {
+   "check": "Endpoints that change data without an auth check (N)",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`PUT /timeline/events/{item_id}/image` (`mealie/routes/recipe/timeline_events.py:178`) → changes data in `RecipeDataService.write_image` (`staged_image_path.write_bytes`)"
+  },
+  "File or program operations inside loops in N place|dev/code-generation/gen_py_schema_exports.py:100": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`dev/code-generation/gen_py_schema_exports.py:100` main — `render_python_template(template, template_path, {\"module\": module})`"
+  },
+  "File or program operations inside loops in N place|dev/code-generation/gen_py_schema_exports.py:69": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`dev/code-generation/gen_py_schema_exports.py:69` Modules.__post_init__ — `pfile = PyFile(file)`"
+  },
+  "File or program operations inside loops in N place|dev/code-generation/gen_ts_types.py:69": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`dev/code-generation/gen_ts_types.py:69` generate_global_components_types — `components = [component.stem for component in path.glob(\"*.vue\")]`"
+  },
+  "File or program operations inside loops in N place|dev/code-generation/unit_systems.py:211": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`dev/code-generation/unit_systems.py:211` is_customary_system — `return any(rung.unit in customary for dimension in UnitDimension for rung in rungs_for(system, dimension))`"
+  },
+  "File or program operations inside loops in N place|dev/code-generation/unit_systems.py:230": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`dev/code-generation/unit_systems.py:230` rungs_for — `seed_key=seed…,`"
+  },
+  "File or program operations inside loops in N place|dev/code-generation/unit_systems.py:261": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`dev/code-generation/unit_systems.py:261` build_table — `dimension.value: [asdict(rung) for rung in rungs_for(system, dimension)] for dimension in UnitDimension`"
+  },
+  "File or program operations inside loops in N place|dev/code-generation/unit_systems.py:267": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`dev/code-generation/unit_systems.py:267` build_table — `\"customary_systems\": [system.value for system in UnitSystem if is_customary_system(system)],`"
+  },
+  "File or program operations inside loops in N place|mealie/routes/admin/admin_maintenance.py:25": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/routes/admin/admin_maintenance.py:25` clean_images — `for image in image_dir.iterdir():`"
+  },
+  "File or program operations inside loops in N place|mealie/routes/admin/admin_maintenance.py:49": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/routes/admin/admin_maintenance.py:49` clean_recipe_folders — `shutil.rmtree(recipe_dir)`"
+  },
+  "File or program operations inside loops in N place|mealie/services/backups_v2/backup_v2.py:84": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/services/backups_v2/backup_v2.py:84` BackupV2._copy_data — `shutil.copyfile(f, self.directories.DATA_DIR / f.name)`"
+  },
+  "File or program operations inside loops in N place|mealie/services/backups_v2/backup_v2.py:87": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/services/backups_v2/backup_v2.py:87` BackupV2._copy_data — `shutil.rmtree(self.directories.DATA_DIR / f.name)`"
+  },
+  "File or program operations inside loops in N place|mealie/services/backups_v2/backup_v2.py:88": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/services/backups_v2/backup_v2.py:88` BackupV2._copy_data — `shutil.copytree(f, self.directories.DATA_DIR / f.name)`"
+  },
+  "File or program operations inside loops in N place|mealie/services/event_bus_service/publisher.py:34": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/services/event_bus_service/publisher.py:34` ApprisePublisher.publish — `get_logger().warning(\"Skipped a notifier whose schema is not in APPRISE_ALLOWED_SCHEMAS\")`"
+  },
+  "File or program operations inside loops in N place|mealie/services/openai/openai.py:357": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/services/openai/openai.py:357` OpenAIService.get_prompts — `default_content = self.get_default_prompt(name)`"
+  },
+  "File or program operations inside loops in N place|mealie/services/recipe/ai_recipe_service.py:118": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/services/recipe/ai_recipe_service.py:118` AIRecipeService._store_images — `shutil.copyfileobj(image.file, buffer)`"
+  },
+  "File or program operations inside loops in N place|mealie/services/scraper/recipe_scraper.py:158": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/services/scraper/recipe_scraper.py:158` RecipeScraper._scrape_with_strategies — `await self._enrich(`"
+  },
+  "Import loops (N)|mealie/schema/recipe/recipe.py": {
+   "check": "Import loops (N)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "mealie/schema/recipe/recipe.py → mealie/schema/recipe/recipe_ingredient.py → mealie/schema/recipe/recipe.py"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_py_pytest_data_paths.py:42": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_py_pytest_data_paths.py:42` get_data_paths: does I/O (p.iterdir, path.iterdir) — `def get_data_paths(path: Path) -> list[DataDir]:`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_py_pytest_data_paths.py:65": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_py_pytest_data_paths.py:65` rename_non_compliant_paths: does I/O (p.iterdir) — `def rename_non_compliant_paths():`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_py_pytest_data_paths.py:98": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_py_pytest_data_paths.py:98` main: does I/O (subprocess.run) — `def main():`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_py_pytest_routes.py:47": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_py_pytest_routes.py:47` dump_open_api: does I/O (open) — `def dump_open_api(app: FastAPI):`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_py_pytest_routes.py:55": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_py_pytest_routes.py:55` read_template: does I/O (open) — `def read_template(file: Path):`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_py_pytest_routes.py:60": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_py_pytest_routes.py:60` generate_python_templates: does I/O (open) — `def generate_python_templates(static_paths: list[PathObject], function_paths: list[PathObject]):`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_py_schema_exports.py:64": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_py_schema_exports.py:64` Modules.__post_init__: does I/O (self.directory.glob) — `def __post_init__(self):`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_py_schema_exports.py:78": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_py_schema_exports.py:78` find_modules: does I/O (root.iterdir) — `def find_modules(root: pathlib.Path) -> list[Modules]:`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_py_schema_exports.py:88": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_py_schema_exports.py:88` main: does I/O (subprocess.run) — `def main() -> None:`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_ts_locales.py:145": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_ts_locales.py:145` inject_nuxt_values: does I/O (datetime_dir.glob, locales_dir.glob) — `def inject_nuxt_values():`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_ts_locales.py:181": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_ts_locales.py:181` inject_registration_validation_values: does I/O (locales_dir.glob) — `def inject_registration_validation_values():`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_ts_locales.py:208": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_ts_locales.py:208` _get_local_progress: does I/O (open) — `def _get_local_progress() -> dict[str, int]:`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_ts_locales.py:268": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_ts_locales.py:268` generate_locales_ts_file: does I/O (open) — `def generate_locales_ts_file():`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_ts_locales.py:278": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_ts_locales.py:278` remove_crowdin_approvals: does I/O (open) — `def remove_crowdin_approvals():`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_ts_locales.py:67": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_ts_locales.py:67` CrowdinApi.get_projects: does I/O (requests.get) — `def get_projects(self) -> Response:`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_ts_locales.py:70": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_ts_locales.py:70` CrowdinApi.get_project: does I/O (requests.get) — `def get_project(self) -> Response:`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_ts_locales.py:78": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_ts_locales.py:78` CrowdinApi.get_progress: does I/O (requests.get) — `def get_progress(self) -> dict[str, int]:`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_ts_locales.py:86": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_ts_locales.py:86` CrowdinApi._request: does I/O (requests.request, time.sleep) — `def _request(self, method: str, path: str, **params) -> Response:`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_ts_types.py:54": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_ts_types.py:54` generate_global_components_types: does I/O (destination_file.write_text, path.glob) — `def generate_global_components_types() -> None:`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_ts_types.py:88": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_ts_types.py:88` generate_typescript_types: does I/O (open, schema_path.iterdir) — `def generate_typescript_types() -> None:  # noqa: C901`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/gen_ts_unit_systems.py:75": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_ts_unit_systems.py:75` generate_unit_systems_ts_file: does I/O (open) — `def generate_unit_systems_ts_file():`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/unit_systems.py:182": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/unit_systems.py:182` _seed_unit_keys: does I/O (open) — `def _seed_unit_keys() -> frozenset[str]:`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/utils/anonymize_backups.py:68": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/utils/anonymize_backups.py:68` anonymize_database_json: does I/O (open) — `def anonymize_database_json(input_filepath: str, output_filepath: str):`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/utils/template.py:14": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/utils/template.py:14` render_python_template: does I/O (dest.write_text, template_file.read_text), called from 2 files — `def render_python_template(template_file: Path | str, dest: Path, data: dict):`"
+  },
+  "Important code no test reaches (N function)|dev/code-generation/utils/template.py:81": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/utils/template.py:81` inject_inline: does I/O (open) — `def inject_inline(file_path: Path, key: str, code: list[str]) -> None:`"
+  },
+  "Important code no test reaches (N function)|frontend/app/plugins/app-info.client.ts:5": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/app/plugins/app-info.client.ts:5` setup: does I/O (axios.get) — `async setup() {`"
+  },
+  "Important code no test reaches (N function)|frontend/app/plugins/theme.ts:20": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/app/plugins/theme.ts:20` fetchTheme: does I/O (fetch) — `async function fetchTheme(): Promise<ThemeConfig | undefined> {`"
+  },
+  "Important code no test reaches (N function)|mealie/db/db_setup.py:16": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/db/db_setup.py:16` set_sqlite_pragma_journal_wal: does I/O (cursor.execute) — `def set_sqlite_pragma_journal_wal(dbapi_connection, connection_record):`"
+  },
+  "Important code no test reaches (N function)|mealie/db/db_setup.py:34": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/db/db_setup.py:34` set_sqlite_pragma_testing: does I/O (cursor.execute) — `def set_sqlite_pragma_testing(dbapi_connection, connection_record):`"
+  },
+  "Important code no test reaches (N function)|mealie/db/models/household/shopping_list.py:216": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/db/models/household/shopping_list.py:216` update_shopping_lists: does I/O (local_session.commit, local_session.query) — `def update_shopping_lists(session: orm.Session, _):`"
+  },
+  "Important code no test reaches (N function)|mealie/db/models/recipe/recipe.py:294": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/db/models/recipe/recipe.py:294` calculate_rating: does I/O (scalar, session.query) — `def calculate_rating(mapper, connection, target: RecipeModel):`"
+  },
+  "Important code no test reaches (N function)|mealie/db/models/users/user_to_recipe.py:36": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/db/models/users/user_to_recipe.py:36` update_recipe_rating: does I/O (session.query) — `def update_recipe_rating(session: Session, target: UserToRecipe):`"
+  },
+  "Important code no test reaches (N function)|mealie/db/models/users/user_to_recipe.py:49": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/db/models/users/user_to_recipe.py:49` update_recipe_rating_on_insert_or_delete: does I/O (session.commit) — `def update_recipe_rating_on_insert_or_delete(_, connection: Connection, target: UserToRecipe):`"
+  },
+  "Important code no test reaches (N function)|mealie/repos/repository_factory.py:103": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/repos/repository_factory.py:103` RepositoryCategories.get_empty: does I/O (scalars, self.session.execute) — `def get_empty(self) -> Sequence[Category]:`"
+  },
+  "Important code no test reaches (N function)|mealie/repos/repository_factory.py:145": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/repos/repository_factory.py:145` RepositoryTags.get_empty: does I/O (scalars, self.session.execute) — `def get_empty(self) -> Sequence[Tag]:`"
+  },
+  "Important code no test reaches (N function)|mealie/repos/repository_factory.py:182": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/repos/repository_factory.py:182` RepositoryTools.get_empty: does I/O (scalars, self.session.execute) — `def get_empty(self) -> Sequence[Tool]:`"
+  },
+  "Important code no test reaches (N function)|mealie/repos/repository_factory.py:209": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/repos/repository_factory.py:209` RepositoryMultiPurposeLabels.get_empty: does I/O (scalars, self.session.execute) — `def get_empty(self) -> Sequence[MultiPurposeLabel]:`"
+  },
+  "Important code no test reaches (N function)|mealie/repos/repository_foods.py:33": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/repos/repository_foods.py:33` RepositoryFood.get_empty: does I/O (scalars, self.session.execute) — `def get_empty(self) -> Sequence[IngredientFoodModel]:`"
+  },
+  "Important code no test reaches (N function)|mealie/repos/repository_generic.py:127": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/repos/repository_generic.py:127` RepositoryGeneric.multi_query: does I/O (scalars, self.session.execute) — `def multi_query(`"
+  },
+  "Important code no test reaches (N function)|mealie/repos/repository_generic.py:284": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/repos/repository_generic.py:284` RepositoryGeneric.delete_many: does I/O (scalars, self.session.commit) — `def delete_many(self, values: Iterable) -> list[Schema]:`"
+  },
+  "Important code no test reaches (N function)|mealie/repos/repository_generic.py:302": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/repos/repository_generic.py:302` RepositoryGeneric.delete_all: does I/O (self.session.commit) — `def delete_all(self) -> None:`"
+  },
+  "Important code no test reaches (N function)|mealie/repos/repository_household.py:112": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/repos/repository_household.py:112` RepositoryHouseholdRecipes.get_by_recipe: does I/O (scalars, self.session.execute) — `def get_by_recipe(self, recipe_id: UUID4) -> HouseholdRecipeOut | None:`"
+  },
+  "Important code no test reaches (N function)|mealie/repos/repository_meals.py:95": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/repos/repository_meals.py:95` RepositoryMeals.reorder: does I/O (scalars, self.session.commit) — `def reorder(self, days: list[PlanEntryReorderUpdate]) -> None:`"
+  },
+  "Important code no test reaches (N function)|mealie/repos/repository_recipes.py:186": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/repos/repository_recipes.py:186` RepositoryRecipes.delete_many: does I/O (scalars, self.session.commit) — `def delete_many(self, values: Iterable) -> list[RecipeOut]:`"
+  },
+  "Important code no test reaches (N function)|mealie/repos/repository_recipes.py:211": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/repos/repository_recipes.py:211` RepositoryRecipes.delete_image: does I/O (self.session.commit) — `def delete_image(self, slug: str, _: str | None = None):`"
+  },
+  "Important code no test reaches (N function)|mealie/repos/repository_recipes.py:520": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/repos/repository_recipes.py:520` RepositoryRecipes.get_random: does I/O (scalars, self.session.execute) — `def get_random(self, limit=1) -> list[RecipeOut]:`"
+  },
+  "Important code no test reaches (N function)|mealie/repos/repository_users.py:19": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/repos/repository_users.py:19` RepositoryUsers.update_password: does I/O (self.session.commit) — `def update_password(self, id, password: str):`"
+  },
+  "Important code no test reaches (N function)|mealie/repos/repository_users.py:90": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/repos/repository_users.py:90` RepositoryUserRatings.get_by_recipe: does I/O (scalars, self.session.execute) — `def get_by_recipe(self, recipe_id: UUID4, favorites_only=False) -> list[UserRatingOut]:`"
+  },
+  "Important code no test reaches (N function)|mealie/routes/_base/permissions.py:70": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/routes/_base/permissions.py:70` require, called from 15 files — `def require(perm: Perm) -> Any:`"
+  },
+  "Important code no test reaches (N function)|mealie/routes/admin/admin_maintenance.py:55": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/routes/admin/admin_maintenance.py:55` tail_log: does I/O (open) — `def tail_log(log_file: Path, n: int) -> list[str]:`"
+  },
+  "Important code no test reaches (N function)|mealie/services/recipe/recipe_service.py:100": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/services/recipe/recipe_service.py:100` RecipeService.can_update: does I/O (self.repos.session.execute) — `def can_update(self, recipe_slugs: list[str]) -> bool:`"
+  },
+  "Important code no test reaches (N function)|mealie/services/recipe/recipe_service.py:258": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/services/recipe/recipe_service.py:258` RecipeService._transform_category_or_tag: does I/O (repo.create) — `def _transform_category_or_tag(self, data: dict, repo: RepositoryGeneric) -> dict | None:`"
+  },
+  "Important code no test reaches (N function)|mealie/services/recipe/recipe_service.py:83": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/services/recipe/recipe_service.py:83` RecipeService.can_delete: does I/O (self.group_recipes.session.scalar) — `def can_delete(self, recipe_slugs: list[str]) -> bool:`"
+  },
+  "Important code no test reaches (N function)|mealie/services/scheduler/runner.py:20": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/services/scheduler/runner.py:20` repeat_every: does I/O (asyncio.sleep) — `def repeat_every(`"
+  },
+  "Important code no test reaches (N function)|mealie/services/scheduler/tasks/purge_password_reset.py:13": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/services/scheduler/tasks/purge_password_reset.py:13` purge_password_reset_tokens: does I/O (session.commit, session.execute) — `def purge_password_reset_tokens():`"
+  },
+  "Important code no test reaches (N function)|mealie/services/scheduler/tasks/purge_registration.py:14": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/services/scheduler/tasks/purge_registration.py:14` purge_group_registration: does I/O (session.commit, session.execute) — `def purge_group_registration():`"
+  },
+  "Module-level mutable state (N place)|frontend/app/composables/use-auth-backend.ts:41": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/app/composables/use-auth-backend.ts:41` let refreshTimer: ReturnType<typeof setTimeout> | null = null;"
+  },
+  "Module-level mutable state (N place)|frontend/app/composables/use-auth-backend.ts:42": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/app/composables/use-auth-backend.ts:42` let refreshInFlight: Promise<void> | null = null;"
+  },
+  "Module-level mutable state (N place)|frontend/app/composables/use-auth-backend.ts:43": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/app/composables/use-auth-backend.ts:43` let refreshRetries = 0;"
+  },
+  "Module-level mutable state (N place)|frontend/app/composables/use-global-i18n.ts:3": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/app/composables/use-global-i18n.ts:3` let i18n: Composer | null = null;"
+  },
+  "Module-level mutable state (N place)|frontend/app/lib/sanitize/markdown.ts:55": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/app/lib/sanitize/markdown.ts:55` let currentIframeHosts: string[] = [];"
+  },
+  "Module-level mutable state (N place)|frontend/app/plugins/theme.ts:18": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/app/plugins/theme.ts:18` let __cachedTheme: ThemeConfig | undefined;"
+  },
+  "Module-level mutable state (N place)|mealie/core/config.py:25": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/core/config.py:25` global PRODUCTION, TESTING, BASE_DIR, DATA_DIR"
+  },
+  "Module-level mutable state (N place)|mealie/core/logger/config.py:52": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/core/logger/config.py:52` global __conf"
+  },
+  "Module-level mutable state (N place)|mealie/core/release_checker.py:43": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/core/release_checker.py:43` global _LAST_RESET"
+  },
+  "Module-level mutable state (N place)|mealie/core/root_logger.py:18": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/core/root_logger.py:18` global __root_logger"
+  },
+  "Module-level mutable state (N place)|mealie/db/db_setup.py:25": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/db/db_setup.py:25` global settings"
+  },
+  "Module-level mutable state (N place)|mealie/db/db_setup.py:37": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/db/db_setup.py:37` global settings"
+  },
+  "Module-level mutable state (N place)|mealie/db/db_setup.py:72": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/db/db_setup.py:72` global SessionLocal"
+  },
+  "Module-level mutable state (N place)|mealie/db/db_setup.py:89": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/db/db_setup.py:89` global SessionLocal"
+  },
+  "Module-level mutable state (N place)|mealie/routes/spa/__init__.py:202": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/routes/spa/__init__.py:202` global __contents"
+  },
+  "Module-level mutable state (N place)|mealie/routes/spa/__init__.py:278": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/routes/spa/__init__.py:278` global __contents"
+  },
+  "Module-level mutable state (N place)|mealie/services/scheduler/tasks/post_webhooks.py:29": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/services/scheduler/tasks/post_webhooks.py:29` global last_ran"
+  },
+  "N error silently swallowed|frontend/nuxt.config.ts:56": {
+   "check": "N error silently swallowed",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/nuxt.config.ts:56` innerHTML: `(function(){try{var d=localStorage.getItem('vueuse-color-scheme');var m=d==='dark'||(d!=='light'&&matchMedia('(prefers-color-…"
+  },
+  "N error silently swallowed|mealie/db/models/_model_utils/datetime.py:47": {
+   "check": "N error silently swallowed",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/db/models/_model_utils/datetime.py:47` except Exception: pass"
+  },
+  "N error silently swallowed|mealie/services/migrations/myrecipebox.py:111": {
+   "check": "N error silently swallowed",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/services/migrations/myrecipebox.py:111` except Exception: pass"
+  },
+  "Network calls without a timeout|dev/code-generation/gen_ts_locales.py:68": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_ts_locales.py:68` return requests.get(\"https://api.crowdin.com/api/v2/projects\", headers=self.headers)"
+  },
+  "Network calls without a timeout|dev/code-generation/gen_ts_locales.py:71": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_ts_locales.py:71` return requests.get(f\"https://api.crowdin.com/api/v2/projects/{self.project_id}\", headers=self.headers)"
+  },
+  "Network calls without a timeout|dev/code-generation/gen_ts_locales.py:79": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_ts_locales.py:79` response = requests.get("
+  },
+  "Network calls without a timeout|frontend/app/composables/use-auth-backend.ts:142": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/app/composables/use-auth-backend.ts:142` const response = await $axios.post(\"/api/auth/token\", credentials, {"
+  },
+  "Network calls without a timeout|frontend/app/composables/use-auth-backend.ts:210": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/app/composables/use-auth-backend.ts:210` const response = await $axios.post(\"/api/auth/refresh\", null, { suppressAlert: true });"
+  },
+  "Network calls without a timeout|frontend/app/plugins/theme.ts:24": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/app/plugins/theme.ts:24` const response = await fetch(route);"
+  },
+  "Queries or requests inside loops (N) in N place|dev/code-generation/gen_ts_locales.py:119": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_ts_locales.py:119` CrowdinApi.remove_all_approvals: CrowdinApi.remove_all_approvals calls CrowdinApi._get_all() inside a loop (line 119), and that reaches requests.request() — `for approval in self._get_all(\"/approvals\", fileId=file[\"id\"], languageId=language)`"
+  },
+  "Queries or requests inside loops (N) in N place|dev/code-generation/gen_ts_locales.py:99": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`dev/code-generation/gen_ts_locales.py:99` CrowdinApi._get_all: CrowdinApi._get_all calls CrowdinApi._request() inside a loop (line 99), and that reaches requests.request() — `page = self._request(\"GET\", path, limit=500, offset=len(items), **params).json()[\"data\"]`"
+  },
+  "Queries or requests inside loops (N) in N place|mealie/alembic/versions/2023-02-21-22.03.19_b04a08da2108_added_shopping_list_label_settings.py:51": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/alembic/versions/2023-02-21-22.03.19_b04a08da2108_added_shopping_list_label_settings.py:51` populate_shopping_lists_multi_purpose_labels: populate_shopping_lists_multi_purpose_labels calls session.query() inside a loop (line 51) — `labels = session.query(MultiPurposeLabel).filter(MultiPurposeLabel.group_id == ShoppingList.group_id).all()`"
+  },
+  "Queries or requests inside loops (N) in N place|mealie/alembic/versions/2024-02-23-16.15.07_2298bb460ffd_added_user_to_shopping_list.py:66": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/alembic/versions/2024-02-23-16.15.07_2298bb460ffd_added_user_to_shopping_list.py:66` populate_shopping_list_users: populate_shopping_list_users calls find_user_id_for_group() inside a loop (line 66), and that reaches session.execute() — `user_id = find_user_id_for_group(group_id)`"
+  },
+  "Queries or requests inside loops (N) in N place|mealie/alembic/versions/2024-07-12-16.16.29_feecc8ffb956_add_households.py:156": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/alembic/versions/2024-07-12-16.16.29_feecc8ffb956_add_households.py:156` create_households_for_groups: create_households_for_groups calls create_household() inside a loop (line 156), and that reaches fetchone() — `group_id_household_id_map[group_id] = create_household(session, group_id)`"
+  },
+  "Queries or requests inside loops (N) in N place|mealie/alembic/versions/2024-07-12-16.16.29_feecc8ffb956_add_households.py:71": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/alembic/versions/2024-07-12-16.16.29_feecc8ffb956_add_households.py:71` dedupe_cookbook_slugs: dedupe_cookbook_slugs calls fetchall() inside a loop (line 71) — `cookbook_ids = session.execute(sql, {\"slug\": slug, \"group_id\": group_id}).fetchall()`"
+  },
+  "Queries or requests inside loops (N) in N place|mealie/alembic/versions/2025-02-09-15.31.00_7cf3054cbbcc_remove_instructions_index.py:117": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/alembic/versions/2025-02-09-15.31.00_7cf3054cbbcc_remove_instructions_index.py:117` truncate_normalized_fields: truncate_normalized_fields calls session.query() inside a loop (line 117) — `for record in session.query(model).all():`"
+  },
+  "Queries or requests inside loops (N) in N place|mealie/db/models/_model_utils/auto_init.py:127": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/db/models/_model_utils/auto_init.py:127` handle_one_to_many_list: handle_one_to_many_list calls scalars() inside a loop (line 127) — `existing_elem = session.execute(stmt).scalars().one_or_none()`"
+  },
+  "Queries or requests inside loops (N) in N place|mealie/db/models/_model_utils/auto_init.py:213": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/db/models/_model_utils/auto_init.py:213` auto_init: auto_init calls handle_one_to_many_list() inside a loop (line 213), and that reaches scalars() — `instances = handle_one_to_many_list(session, get_attr, relation_cls, val, group_id)`"
+  },
+  "Queries or requests inside loops (N) in N place|mealie/db/models/_model_utils/auto_init.py:235": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/db/models/_model_utils/auto_init.py:235` auto_init: auto_init calls scalars() inside a loop (line 235) — `instance = session.execute(stmt).scalars().one_or_none()`"
+  },
+  "Queries or requests inside loops (N) in N place|mealie/db/models/_model_utils/auto_init.py:243": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/db/models/_model_utils/auto_init.py:243` auto_init: auto_init calls handle_many_to_many() inside a loop (line 243), and that reaches scalars() — `instances = handle_many_to_many(session, get_attr, relation_cls, val, group_id)`"
+  },
+  "Queries or requests inside loops (N) in N place|mealie/db/models/household/shopping_list.py:231": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/db/models/household/shopping_list.py:231` update_shopping_lists: update_shopping_lists calls local_session.query() inside a loop (line 231) — `shopping_list = local_session.query(ShoppingList).filter(ShoppingList.id == shopping_list_id).first()`"
+  },
+  "Queries or requests inside loops (N) in N place|mealie/db/models/recipe/recipe.py:219": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/db/models/recipe/recipe.py:219` RecipeModel.__init__: RecipeModel.__init__ calls RecipeIngredientModel.__init__() inside a loop (line 219), and that reaches scalars() — `RecipeIngredientModel(**ingr, session=session, group_id=self.group_id) for ingr in recipe_ingredient`"
+  },
+  "Queries or requests inside loops (N) in N place|mealie/repos/repository_recipes.py:146": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/repos/repository_recipes.py:146` RepositoryRecipes.create: RepositoryRecipes.create calls self.session.scalar() inside a loop (line 146) — `exists = self.session.scalar(`"
+  },
+  "Queries or requests inside loops (N) in N place|mealie/services/event_bus_service/publisher.py:62": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/services/event_bus_service/publisher.py:62` WebhookPublisher.publish: WebhookPublisher.publish calls post() inside a loop (line 62), and that reaches httpx.Client() — `r = safehttp.post(`"
+  },
+  "Queries or requests inside loops (N) in N place|mealie/services/household_services/shopping_lists.py:408": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mealie/services/household_services/shopping_lists.py:408` ShoppingListService.bulk_update_items: ShoppingListService.bulk_update_items calls ShoppingListService.restore_recipe_references() inside a loop (line 408), and that reaches scalars() — `self.restore_recipe_references(list_id, recipe_ids)`"
+  },
+  "Request data reaches dangerous calls (N proven flow)|mealie/routes/_base/pdf.py:21": {
+   "check": "Request data reaches dangerous calls (N proven flow)",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`mealie/routes/_base/pdf.py:21` pdf_file_response: parameter `item_id` of GET /{item_id}/pdf → GroupCookbookController.get_one_as_pdf → pdf_file_response(renderer) → FileResponse() — `return FileResponse(`"
+  },
+  "Request data reaches dangerous calls (N proven flow)|mealie/routes/recipe/exports.py:39": {
+   "check": "Request data reaches dangerous calls (N proven flow)",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`mealie/routes/recipe/exports.py:39` RecipeExportController.get_recipe_as_format: parameter `slug` of GET /{slug}/exports → RecipeExportController.get_recipe_as_format → FileResponse() — `return FileResponse(file, background=BackgroundTask(rmtree, temp_path))`"
+  },
+  "Unused code (N function)|dev/code-generation/utils/anonymize_backups.py:68": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`dev/code-generation/utils/anonymize_backups.py:68` anonymize_database_json — `def anonymize_database_json(input_filepath: str, output_filepath: str):`"
+  },
+  "Unused code (N function)|dev/code-generation/utils/open_api_parser.py:103": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`dev/code-generation/utils/open_api_parser.py:103` OpenAPIParser._fill_schema_references — `def _fill_schema_references(self, raw_modules: dict) -> dict:`"
+  },
+  "Unused code (N function)|frontend/app/composables/use-group-recipe-actions.ts:30": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`frontend/app/composables/use-group-recipe-actions.ts:30` useGroupRecipeActionData — `export function useGroupRecipeActionData() {`"
+  },
+  "Unused code (N function)|frontend/app/composables/use-utils.ts:15": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`frontend/app/composables/use-utils.ts:15` titleCase — `export const titleCase = function (str: string) {`"
+  },
+  "Unused code (N function)|frontend/app/lib/api/base/route.ts:6": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`frontend/app/lib/api/base/route.ts:6` overrideParts — `export function overrideParts(host: string, prefix: string) {`"
+  },
+  "Unused code (N function)|mealie/core/dependencies/dependencies.py:230": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/core/dependencies/dependencies.py:230` temporary_file — `def temporary_file(ext: str = \"\") -> Callable[[], Generator[tempfile._TemporaryFileWrapper]]:`"
+  },
+  "Unused code (N function)|mealie/core/dependencies/dependencies.py:35": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/core/dependencies/dependencies.py:35` is_logged_in — `def is_logged_in(token: str = Depends(oauth2_scheme_soft_fail), session=Depends(generate_session)) -> bool:`"
+  },
+  "Unused code (N function)|mealie/core/dependencies/dependencies.py:92": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/core/dependencies/dependencies.py:92` try_get_current_user — `def try_get_current_user(`"
+  },
+  "Unused code (N function)|mealie/core/settings/settings.py:599": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/core/settings/settings.py:599` app_settings_constructor — `def app_settings_constructor(data_dir: Path, production: bool, env_file: Path, env_encoding=\"utf-8\") -> AppSettings:`"
+  },
+  "Unused code (N function)|mealie/db/models/recipe/shared.py:17": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/db/models/recipe/shared.py:17` defaut_expires_at_time — `def defaut_expires_at_time() -> datetime:`"
+  },
+  "Unused code (N function)|mealie/routes/admin/admin_maintenance.py:55": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/routes/admin/admin_maintenance.py:55` tail_log — `def tail_log(log_file: Path, n: int) -> list[str]:`"
+  },
+  "Unused code (N function)|mealie/schema/_mealie/datetime_parse.py:109": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/schema/_mealie/datetime_parse.py:109` parse_date — `def parse_date(value: date | str | bytes | int | float) -> date:`"
+  },
+  "Unused code (N function)|mealie/schema/_mealie/datetime_parse.py:141": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/schema/_mealie/datetime_parse.py:141` parse_time — `def parse_time(value: time | str | bytes | int | float) -> time:`"
+  },
+  "Unused code (N function)|mealie/schema/_mealie/mealie_model.py:216": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/schema/_mealie/mealie_model.py:216` extract_uuids — `def extract_uuids(models: Sequence[HasUUID]) -> list[UUID4]:`"
+  },
+  "Unused code (N function)|mealie/schema/make_dependable.py:11": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/schema/make_dependable.py:11` make_dependable — `def make_dependable(cls):`"
+  },
+  "Unused code (N function)|mealie/services/migrations/copymethat.py:16": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/services/migrations/copymethat.py:16` parse_recipe_tags — `def parse_recipe_tags(tags: list) -> list[str]:`"
+  },
+  "Unused code (N function)|mealie/services/migrations/recipekeeper.py:46": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/services/migrations/recipekeeper.py:46` get_value_as_string_or_none — `def get_value_as_string_or_none(dictionary: dict, key: str):`"
+  },
+  "Unused code (N function)|mealie/services/parser_services/ingredient_parser.py:323": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/services/parser_services/ingredient_parser.py:323` get_parser — `def get_parser(`"
+  },
+  "Unused code (N function)|mealie/services/parser_services/parser_utils/string_utils.py:23": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/services/parser_services/parser_utils/string_utils.py:23` remove_footnote_markers — `def remove_footnote_markers(ing_str: str) -> str:`"
+  },
+  "Unused code (N function)|mealie/services/parser_services/parser_utils/string_utils.py:32": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/services/parser_services/parser_utils/string_utils.py:32` check_char — `def check_char(char, *eql) -> bool:`"
+  },
+  "Unused code (N function)|mealie/services/parser_services/parser_utils/string_utils.py:9": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/services/parser_services/parser_utils/string_utils.py:9` move_parens_to_end — `def move_parens_to_end(ing_str) -> str:`"
+  },
+  "Unused code (N function)|mealie/services/parser_services/parser_utils/unit_utils.py:131": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/services/parser_services/parser_utils/unit_utils.py:131` merge_quantity_and_unit — `def merge_quantity_and_unit[T: IngredientUnitCreate](`"
+  },
+  "Unused code (N function)|mealie/services/scheduler/tasks/purge_group_exports.py:37": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/services/scheduler/tasks/purge_group_exports.py:37` purge_excess_files — `def purge_excess_files() -> None:`"
+  },
+  "Unused code (N function)|mealie/services/urls/url_constructors.py:19": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/services/urls/url_constructors.py:19` shopping_list_url — `def shopping_list_url(shopping_list_id: UUID4 | str, base_url: str | None) -> str:`"
+  },
+  "Unused code (N function)|mealie/services/urls/url_constructors.py:24": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/services/urls/url_constructors.py:24` tag_url — `def tag_url(tag_slug: str, base_url: str | None) -> str:`"
+  },
+  "Unused code (N function)|mealie/services/urls/url_constructors.py:29": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/services/urls/url_constructors.py:29` category_url — `def category_url(category_slug: str, base_url: str | None) -> str:`"
+  },
+  "Unused code (N function)|mealie/services/urls/url_constructors.py:34": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`mealie/services/urls/url_constructors.py:34` tool_url — `def tool_url(tool_slug: str, base_url: str | None) -> str:`"
+  },
+  "Writes inside loops in N place|mealie/alembic/versions/2023-08-06-21.00.34_04ac51cbe9a4_added_group_slug.py:39": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/alembic/versions/2023-08-06-21.00.34_04ac51cbe9a4_added_group_slug.py:39` populate_group_slugs — `session.execute(`"
+  },
+  "Writes inside loops in N place|mealie/alembic/versions/2023-09-01-14.55.42_0341b154f79a_added_normalized_unit_and_food_names.py:37": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/alembic/versions/2023-09-01-14.55.42_0341b154f79a_added_normalized_unit_and_food_names.py:37` populate_normalized_fields — `session.execute(`"
+  },
+  "Writes inside loops in N place|mealie/alembic/versions/2023-10-04-14.29.26_dded3119c1fe_added_unique_constraints.py:201": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/alembic/versions/2023-10-04-14.29.26_dded3119c1fe_added_unique_constraints.py:201` _remove_duplicates_from_m2m_tables — `_remove_duplicates_from_m2m_table(session, table_meta)`"
+  },
+  "Writes inside loops in N place|mealie/alembic/versions/2025-02-09-15.31.00_7cf3054cbbcc_remove_instructions_index.py:125": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/alembic/versions/2025-02-09-15.31.00_7cf3054cbbcc_remove_instructions_index.py:125` truncate_normalized_fields — `session.commit()`"
+  },
+  "Writes inside loops in N place|mealie/alembic/versions/2026-05-10-18.44.53_c7427796f7b6_more_aggresive_normalization.py:33": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/alembic/versions/2026-05-10-18.44.53_c7427796f7b6_more_aggresive_normalization.py:33` _update_table — `session.execute(text(f\"UPDATE {table} SET {set_clause} WHERE id = :id\"), {**updates, \"id\": id_})`"
+  },
+  "Writes inside loops in N place|mealie/alembic/versions/2026-05-18-16.27.05_2187537c52b8_add_table_for_ai_providers.py:118": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/alembic/versions/2026-05-18-16.27.05_2187537c52b8_add_table_for_ai_providers.py:118` create_providers — `conn.execute(`"
+  },
+  "Writes inside loops in N place|mealie/alembic/versions/2026-05-18-16.27.05_2187537c52b8_add_table_for_ai_providers.py:129": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/alembic/versions/2026-05-18-16.27.05_2187537c52b8_add_table_for_ai_providers.py:129` create_providers — `create_provider(settings_id, default_provider_id, model, openai_settings)`"
+  },
+  "Writes inside loops in N place|mealie/alembic/versions/2026-05-18-16.27.05_2187537c52b8_add_table_for_ai_providers.py:85": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/alembic/versions/2026-05-18-16.27.05_2187537c52b8_add_table_for_ai_providers.py:85` create_provider — `conn.execute(`"
+  },
+  "Writes inside loops in N place|mealie/alembic/versions/2026-09-03-16.12.44_4b91d3a7c0e2_backfill_recipe_image_column.py:85": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/alembic/versions/2026-09-03-16.12.44_4b91d3a7c0e2_backfill_recipe_image_column.py:85` upgrade — `session.execute(`"
+  },
+  "Writes inside loops in N place|mealie/alembic/versions/2026-09-24-13.16.56_27621d27c7e1_add_structured_recipe_times.py:191": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/alembic/versions/2026-09-24-13.16.56_27621d27c7e1_add_structured_recipe_times.py:191` upgrade — `session.execute(text(f\"UPDATE recipes SET {assignments} WHERE id = :id\"), {**updates, \"id\": recipe_id})`"
+  },
+  "Writes inside loops in N place|mealie/alembic/versions/2026-09-24-13.16.56_27621d27c7e1_add_structured_recipe_times.py:206": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/alembic/versions/2026-09-24-13.16.56_27621d27c7e1_add_structured_recipe_times.py:206` downgrade — `rows = session.execute(`"
+  },
+  "Writes inside loops in N place|mealie/alembic/versions/2026-10-31-16.43.22_071e03b4f851_backfill_missing_ai_provider_settings.py:40": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/alembic/versions/2026-10-31-16.43.22_071e03b4f851_backfill_missing_ai_provider_settings.py:40` upgrade — `conn.execute(`"
+  },
+  "Writes inside loops in N place|mealie/db/fixes/fix_group_with_no_name.py:43": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/db/fixes/fix_group_with_no_name.py:43` fix_group_with_no_name — `_do_fix(session, group, counter)`"
+  },
+  "Writes inside loops in N place|mealie/db/init_db.py:96": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/db/init_db.py:96` main — `if connect(session):`"
+  },
+  "Writes inside loops in N place|mealie/db/models/_model_utils/auto_init.py:127": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/db/models/_model_utils/auto_init.py:127` handle_one_to_many_list — `existing_elem = session.execute(stmt).scalars().one_or_none()`"
+  },
+  "Writes inside loops in N place|mealie/db/models/_model_utils/auto_init.py:235": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/db/models/_model_utils/auto_init.py:235` auto_init — `instance = session.execute(stmt).scalars().one_or_none()`"
+  },
+  "Writes inside loops in N place|mealie/repos/repository_cookbooks.py:32": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/repos/repository_cookbooks.py:32` RepositoryCookbooks.create_many — `return [self.create(entry) for entry in data]`"
+  },
+  "Writes inside loops in N place|mealie/repos/repository_cookbooks.py:53": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/repos/repository_cookbooks.py:53` RepositoryCookbooks.update_many — `return [self.update(entry.id if isinstance(entry, CookBookOut) else entry[\"id\"], entry) for entry in data]`"
+  },
+  "Writes inside loops in N place|mealie/repos/repository_group.py:39": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/repos/repository_group.py:39` RepositoryGroup.create_many — `return [self.create(new_group) for new_group in data]`"
+  },
+  "Writes inside loops in N place|mealie/repos/repository_household.py:52": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/repos/repository_household.py:52` RepositoryHousehold.create_many — `return [self.create(new_household) for new_household in data]`"
+  },
+  "Writes inside loops in N place|mealie/repos/repository_recipes.py:194": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/repos/repository_recipes.py:194` RepositoryRecipes.delete_many — `results.append(self._delete_recipe(recipe_in_db))`"
+  },
+  "Writes inside loops in N place|mealie/repos/repository_recipes.py:283": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/repos/repository_recipes.py:283` RepositoryRecipes._resolve_organizer — `existing = self.session.execute(sa.select(model).where(in_group, name_matches)).scalar_one_or_none()`"
+  },
+  "Writes inside loops in N place|mealie/repos/repository_recipes.py:346": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/repos/repository_recipes.py:346` RepositoryRecipes.update — `existing = self.session.execute(`"
+  },
+  "Writes inside loops in N place|mealie/repos/repository_recipes.py:360": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mealie/repos/repository_recipes.py:360` RepositoryRecipes.update — `resolved.append(self._resolve_organizer(model, organizer[\"name\"]))`"
+  }
+ }
+}

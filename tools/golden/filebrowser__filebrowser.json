@@ -1,0 +1,156 @@
+{
+ "repo": "filebrowser/filebrowser",
+ "commit": "833d908884d5c801f30f5c098d7977177eb3a36b",
+ "locations": {
+  "Container runs as root|Dockerfile.s6:1": {
+   "check": "Container runs as root",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Dockerfile.s6:1` no USER after ghcr.io/linuxserver/baseimage-alpine:3.23 — `FROM ghcr.io/linuxserver/baseimage-alpine:3.23`"
+  },
+  "Copied logic in N group (~N lines)|frontend/src/utils/buttons.ts:27": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "Merge done, success (87% similar, ~20 lines): `frontend/src/utils/buttons.ts:27`, `frontend/src/utils/buttons.ts:48`"
+  },
+  "Dependency loops (N)|frontend/src/api/utils.ts": {
+   "check": "Dependency loops (N)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "frontend/src/api/utils.ts → frontend/src/utils/auth.ts → frontend/src/api/utils.ts (3 files in the loop)"
+  },
+  "Important code no test reaches (N function)|frontend/src/utils/auth.ts:51": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/src/utils/auth.ts:51` login: does I/O (fetch) — `export async function login(`"
+  },
+  "Important code no test reaches (N function)|frontend/src/utils/auth.ts:98": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/src/utils/auth.ts:98` signup: does I/O (fetch) — `export async function signup(username: string, password: stri… {`"
+  },
+  "Important code no test reaches (N function)|http/http.go:21": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`http/http.go:21` NewHandler: does I/O (api.Handle, api.PathPrefix) — `func NewHandler(`"
+  },
+  "Important code no test reaches (N function)|storage/bolt/share.go:28": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`storage/bolt/share.go:28` shareBackend.FindByUserID: does I/O (s.db.Select) — `func (s shareBackend) FindByUserID(id uint) ([]*share.Link, error) {`"
+  },
+  "Important code no test reaches (N function)|storage/bolt/share.go:48": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`storage/bolt/share.go:48` shareBackend.GetPermanent: does I/O (s.db.Select) — `func (s shareBackend) GetPermanent(path string, id uint) (*share.Link, error) {`"
+  },
+  "Important code no test reaches (N function)|storage/bolt/share.go:58": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`storage/bolt/share.go:58` shareBackend.Gets: does I/O (s.db.Select) — `func (s shareBackend) Gets(path string, id uint) ([]*share.Link, error) {`"
+  },
+  "Important code no test reaches (N function)|storage/bolt/users.go:104": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`storage/bolt/users.go:104` usersBackend.DeleteByID: does I/O (st.db.DeleteStruct) — `func (st usersBackend) DeleteByID(id uint) error {`"
+  },
+  "Important code no test reaches (N function)|storage/bolt/users.go:108": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`storage/bolt/users.go:108` usersBackend.DeleteByUsername: does I/O (st.db.DeleteStruct) — `func (st usersBackend) DeleteByUsername(username string) error {`"
+  },
+  "Important code no test reaches (N function)|storage/bolt/users.go:117": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`storage/bolt/users.go:117` usersBackend.CountAdmins: does I/O (bucket.Cursor, st.db.Codec) — `func (st usersBackend) CountAdmins() (int, error) {`"
+  },
+  "Important code no test reaches (N function)|storage/bolt/users.go:21": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`storage/bolt/users.go:21` usersBackend.GetBy: does I/O (st.db.One) — `func (st usersBackend) GetBy(i interface{}) (user *users.User, err error) {`"
+  },
+  "Important code no test reaches (N function)|storage/bolt/users.go:77": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`storage/bolt/users.go:77` usersBackend.Update: does I/O (st.db.UpdateField) — `func (st usersBackend) Update(user *users.User, fields ...string) error {`"
+  },
+  "Network calls without a timeout|frontend/src/api/utils.ts:30": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/src/api/utils.ts:30` res = await fetch(`${baseURL}${url}`, {"
+  },
+  "Queries or requests inside loops (N) in N place|frontend/src/api/files.ts:192": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/src/api/files.ts:192` moveCopy: moveCopy calls resourceAction() inside a loop (line 192), and that reaches fetch() — `promises.push(resourceAction(url, \"PATCH\"));`"
+  },
+  "Queries or requests inside loops (N) in N place|http/commands.go:51": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`http/commands.go:51`: top-level code in commands.go calls conn.ReadMessage() inside a loop (line 51) — `_, msg, err := conn.ReadMessage()`"
+  },
+  "Raw HTML injected into pages|frontend/src/utils/buttons.ts:42": {
+   "check": "Raw HTML injected into pages",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`frontend/src/utils/buttons.ts:42` el.innerHTML = el?.dataset?.icon || \"\";  (no endpoint reaches it)"
+  },
+  "Raw HTML injected into pages|frontend/src/utils/buttons.ts:71": {
+   "check": "Raw HTML injected into pages",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`frontend/src/utils/buttons.ts:71` el.innerHTML = el?.dataset?.icon || \"\";  (no endpoint reaches it)"
+  },
+  "Tokens or passwords in unencrypted storage|frontend/src/utils/auth.ts:124": {
+   "check": "Tokens or passwords in unencrypted storage",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/src/utils/auth.ts:124` localStorage.setItem(\"jwt\", \"\");"
+  },
+  "Tokens or passwords in unencrypted storage|frontend/src/utils/auth.ts:15": {
+   "check": "Tokens or passwords in unencrypted storage",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/src/utils/auth.ts:15` localStorage.setItem(\"jwt\", token);"
+  },
+  "Writes inside loops in N place|http/commands.go:110": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`http/commands.go:110` — `if err := conn.WriteMessage(websocket.TextMessage, s.Bytes()); err != nil {`"
+  },
+  "Writes inside loops in N place|http/resource.go:382": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`http/resource.go:382` delThumbs — `if err := fileCache.Delete(ctx, previewCacheKey(file, size)); err != nil {`"
+  },
+  "Writes inside loops in N place|storage/bolt/share.go:102": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`storage/bolt/share.go:102` shareBackend.DeleteWithPathPrefix — `err = errors.Join(err, s.db.DeleteStruct(&share.Link{Hash: link.Hash}))`"
+  },
+  "Writes inside loops in N place|storage/bolt/users.go:88": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`storage/bolt/users.go:88` usersBackend.Update — `if err := st.db.UpdateField(user, field, val); err != nil {`"
+  }
+ }
+}

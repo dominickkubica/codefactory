@@ -1,0 +1,54 @@
+{
+ "repo": "fastapi/full-stack-fastapi-template",
+ "commit": "f8c6c147b12bb1c4d3253cc1b06f8b5ef81b10dd",
+ "locations": {
+  "Container runs as root|backend/Dockerfile:19": {
+   "check": "Container runs as root",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`backend/Dockerfile:19` no USER after python:3.14 — `FROM python:3.14`"
+  },
+  "Copied logic in N group (~N lines)|frontend/src/client/core/pathSerializer.gen.ts:28": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "Share one body between separatorArrayExplode, separatorObjectExplode (identical, ~12 lines): `frontend/src/client/core/pathSerializer.gen.ts:28`, `frontend/src/client/core/pathSerializer.gen.ts:54`"
+  },
+  "Copied logic in N group (~N lines)|frontend/src/components/Admin/DeleteUser.tsx:27": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "Merge DeleteItem, DeleteUser (86% similar, ~66 lines): `frontend/src/components/Admin/DeleteUser.tsx:27`, `frontend/src/components/Items/DeleteItem.tsx:27`"
+  },
+  "File or program operations inside loops in N place|hooks/post_gen_project.py:6": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`hooks/post_gen_project.py:6` — `data = path.read_bytes()`"
+  },
+  "File or program operations inside loops in N place|hooks/post_gen_project.py:8": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`hooks/post_gen_project.py:8` — `path.write_bytes(lf_data)`"
+  },
+  "Important code no test reaches (N function)|backend/app/api/deps.py:30": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`backend/app/api/deps.py:30` get_current_user: does I/O (session.get) — `def get_current_user(session: SessionDep, token: Toke… -> User:`"
+  },
+  "Important code no test reaches (N function)|frontend/src/client/client/client.gen.ts:12": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/src/client/client/client.gen.ts:12` createClient: does I/O (axios.create) — `export const createClient = (config: Config = {}): Client => {`"
+  },
+  "Tokens or passwords in unencrypted storage|frontend/src/hooks/useAuth.ts:45": {
+   "check": "Tokens or passwords in unencrypted storage",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`frontend/src/hooks/useAuth.ts:45` localStorage.setItem(\"access_token\", response.data.access_token)"
+  }
+ }
+}

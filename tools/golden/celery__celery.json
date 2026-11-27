@@ -1,0 +1,336 @@
+{
+ "repo": "celery/celery",
+ "commit": "14115f05e3201c571e3b3715aed10694bafce616",
+ "locations": {
+  "Copied logic in N group (~N lines)|celery/bin/amqp.py:114": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "Merge exchange_declare, exchange_delete, queue_bind (88% similar, ~27 lines): `celery/bin/amqp.py:89`, `celery/bin/amqp.py:114`, `celery/bin/amqp.py:137`"
+  },
+  "Copied logic in N group (~N lines)|celery/result.py:43": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "Share one body between allow_join_result, denied_join_result (identical, ~7 lines): `celery/result.py:43`, `celery/result.py:53`"
+  },
+  "Dynamic code execution (eval / exec / pickle / unsafe YAML)|celery/backends/database/__init__.py:298": {
+   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/backends/database/__init__.py:298` return pickle.loads(payload)"
+  },
+  "Dynamic code execution (eval / exec / pickle / unsafe YAML)|celery/utils/functional.py:436": {
+   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/utils/functional.py:436` exec(definition, namespace)"
+  },
+  "Dynamic code execution (eval / exec / pickle / unsafe YAML)|celery/utils/serialization.py:132": {
+   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/utils/serialization.py:132` exc_args, lambda v: pickle.loads(pickle.dumps(v))"
+  },
+  "Dynamic code execution (eval / exec / pickle / unsafe YAML)|celery/utils/serialization.py:164": {
+   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/utils/serialization.py:164` pickle.loads(pickle.dumps(exc))"
+  },
+  "Dynamic code execution (eval / exec / pickle / unsafe YAML)|celery/worker/state.py:364": {
+   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/worker/state.py:364` self._merge_revoked_v1(pickle.loads(self.decompress(zrevoked)))"
+  },
+  "File or program operations inside loops in N place|celery/security/certificate.py:110": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`celery/security/certificate.py:110` FSCertStore.__init__ — `with open(p) as f:`"
+  },
+  "File or program operations inside loops in N place|setup.py:95": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`setup.py:95` _reqs — `_pip_requirement(r) for r in (`"
+  },
+  "Important code no test reaches (N function)|docs/changelog_formatter.py:17": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`docs/changelog_formatter.py:17` read_changes_file: does I/O (open) — `def read_changes_file(filename):`"
+  },
+  "Important code no test reaches (N function)|examples/django/demoapp/tasks.py:24": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`examples/django/demoapp/tasks.py:24` count_widgets: does I/O (Widget.objects.count) — `def count_widgets():`"
+  },
+  "Important code no test reaches (N function)|examples/django/demoapp/tasks.py:29": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`examples/django/demoapp/tasks.py:29` rename_widget: does I/O (Widget.objects.get) — `def rename_widget(widget_id, name):`"
+  },
+  "Important code no test reaches (N function)|examples/eventlet/tasks.py:7": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`examples/eventlet/tasks.py:7` urlopen: does I/O (requests.get) — `def urlopen(url):`"
+  },
+  "Important code no test reaches (N function)|examples/eventlet/webcrawler.py:47": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`examples/eventlet/webcrawler.py:47` crawl: does I/O (requests.get) — `def crawl(url, seen=None):`"
+  },
+  "Important code no test reaches (N function)|examples/gevent/tasks.py:7": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`examples/gevent/tasks.py:7` urlopen: does I/O (requests.get) — `def urlopen(url):`"
+  },
+  "Important code no test reaches (N function)|extra/release/attribution.py:20": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/attribution.py:20` find_missing_authors: does I/O (open) — `def find_missing_authors(seen):`"
+  },
+  "Important code no test reaches (N function)|setup.py:64": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`setup.py:64` parse_dist_meta: does I/O (open) — `def parse_dist_meta():`"
+  },
+  "Important code no test reaches (N function)|setup.py:93": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`setup.py:93` _reqs: does I/O (open) — `def _reqs(*f):`"
+  },
+  "Module-level mutable state (N place)|celery/_state.py:184": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/_state.py:184` global app_or_default"
+  },
+  "Module-level mutable state (N place)|celery/_state.py:190": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/_state.py:190` global app_or_default"
+  },
+  "Module-level mutable state (N place)|celery/_state.py:56": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/_state.py:56` global _task_join_will_block"
+  },
+  "Module-level mutable state (N place)|celery/_state.py:88": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/_state.py:88` global default_app"
+  },
+  "Module-level mutable state (N place)|celery/concurrency/prefork.py:98": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/concurrency/prefork.py:98` global _process_hostname"
+  },
+  "Module-level mutable state (N place)|celery/loaders/base.py:240": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/loaders/base.py:240` global _RACE_PROTECTION"
+  },
+  "Module-level mutable state (N place)|celery/utils/debug.py:151": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/utils/debug.py:151` global _process"
+  },
+  "Module-level mutable state (N place)|celery/utils/log.py:41": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/utils/log.py:41` global _in_sighandler"
+  },
+  "Module-level mutable state (N place)|celery/worker/request.py:49": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/worker/request.py:49` global _does_debug"
+  },
+  "Module-level mutable state (N place)|celery/worker/request.py:50": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/worker/request.py:50` global _does_info"
+  },
+  "Module-level mutable state (N place)|celery/worker/state.py:263": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/worker/state.py:263` global bench_start"
+  },
+  "Module-level mutable state (N place)|celery/worker/state.py:264": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/worker/state.py:264` global bench_first"
+  },
+  "Module-level mutable state (N place)|celery/worker/state.py:275": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/worker/state.py:275` global all_count"
+  },
+  "Module-level mutable state (N place)|celery/worker/state.py:276": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/worker/state.py:276` global bench_start"
+  },
+  "Module-level mutable state (N place)|celery/worker/state.py:277": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`celery/worker/state.py:277` global bench_last"
+  },
+  "TLS certificate checks turned off|celery/backends/arangodb.py:48": {
+   "check": "TLS certificate checks turned off",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`celery/backends/arangodb.py:48` verify = False"
+  },
+  "Unused code (N function)|celery/app/defaults.py:388": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/app/defaults.py:388` _flatten_keys — `def _flatten_keys(ns, key, opt):`"
+  },
+  "Unused code (N function)|celery/app/task.py:1379": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/app/task.py:1379` Task._get_request — `def _get_request(self):`"
+  },
+  "Unused code (N function)|celery/apps/worker.py:78": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/apps/worker.py:78` active_thread_count — `def active_thread_count():`"
+  },
+  "Unused code (N function)|celery/backends/base.py:1674": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/backends/base.py:1674` DisabledBackend._is_disabled — `def _is_disabled(self, *args, **kwargs):`"
+  },
+  "Unused code (N function)|celery/beat.py:140": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/beat.py:140` ScheduleEntry._next_instance — `def _next_instance(self, last_run_at=None):`"
+  },
+  "Unused code (N function)|celery/concurrency/asynpool.py:1324": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/concurrency/asynpool.py:1324` AsynPool._process_cleanup_queues — `def _process_cleanup_queues(self, proc):`"
+  },
+  "Unused code (N function)|celery/concurrency/asynpool.py:1353": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/concurrency/asynpool.py:1353` AsynPool._process_register_queues — `def _process_register_queues(self, proc, queues):`"
+  },
+  "Unused code (N function)|celery/concurrency/asynpool.py:1368": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/concurrency/asynpool.py:1368` AsynPool._setup_queues — `def _setup_queues(self):`"
+  },
+  "Unused code (N function)|celery/concurrency/asynpool.py:1480": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/concurrency/asynpool.py:1480` AsynPool._help_stuff_finish_args — `def _help_stuff_finish_args(self):`"
+  },
+  "Unused code (N function)|celery/contrib/pytest.py:22": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/contrib/pytest.py:22` pytest_configure — `def pytest_configure(config):`"
+  },
+  "Unused code (N function)|celery/events/dispatcher.py:257": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/events/dispatcher.py:257` EventDispatcher._get_publisher — `def _get_publisher(self):`"
+  },
+  "Unused code (N function)|celery/events/dispatcher.py:260": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/events/dispatcher.py:260` EventDispatcher._set_publisher — `def _set_publisher(self, producer):`"
+  },
+  "Unused code (N function)|celery/local.py:450": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/local.py:450` reclassmethod — `def reclassmethod(method):`"
+  },
+  "Unused code (N function)|celery/utils/collections.py:182": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/utils/collections.py:182` DictAttribute._iterate_items — `def _iterate_items(self):`"
+  },
+  "Unused code (N function)|celery/utils/collections.py:188": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/utils/collections.py:188` DictAttribute._iterate_values — `def _iterate_values(self):`"
+  },
+  "Unused code (N function)|celery/utils/collections.py:340": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/utils/collections.py:340` ChainMap._iterate_items — `def _iterate_items(self):`"
+  },
+  "Unused code (N function)|celery/utils/collections.py:345": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/utils/collections.py:345` ChainMap._iterate_values — `def _iterate_values(self):`"
+  },
+  "Unused code (N function)|celery/utils/graph.py:207": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/utils/graph.py:207` DependencyGraph._iterate_items — `def _iterate_items(self):`"
+  },
+  "Unused code (N function)|celery/utils/threads.py:243": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/utils/threads.py:243` _LocalStack._get__ident_func__ — `def _get__ident_func__(self):`"
+  },
+  "Unused code (N function)|celery/utils/threads.py:246": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`celery/utils/threads.py:246` _LocalStack._set__ident_func__ — `def _set__ident_func__(self, value):`"
+  },
+  "Unused code (N function)|extra/bash-completion/celery.bash:1": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`extra/bash-completion/celery.bash:1` _celery_completion — `_celery_completion() {`"
+  }
+ }
+}

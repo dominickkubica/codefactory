@@ -1,0 +1,882 @@
+{
+ "repo": "dani-garcia/vaultwarden",
+ "commit": "dbd7829ed140ae3458abc97dedec9a4421ddff42",
+ "locations": {
+  "Container runs as root|docker/Dockerfile.alpine:130": {
+   "check": "Container runs as root",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`docker/Dockerfile.alpine:130` no USER after --platform=$TARGETPLATFORM — `FROM --platform=$TARGETPLATFORM docker.io/library/alpine:3.24`"
+  },
+  "Container runs as root|docker/Dockerfile.debian:170": {
+   "check": "Container runs as root",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`docker/Dockerfile.debian:170` no USER after --platform=$TARGETPLATFORM — `FROM --platform=$TARGETPLATFORM docker.io/library/debian:trixie-slim`"
+  },
+  "Container runs as root|docker/Dockerfile.j2:197": {
+   "check": "Container runs as root",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`docker/Dockerfile.j2:197` no USER after --platform=$TARGETPLATFORM — `FROM --platform=$TARGETPLATFORM {{ runtime_stage_image[base] }}`"
+  },
+  "Copied logic in N group (~N lines)|src/api/core/ciphers.rs:1147": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between post_collections_admin, post_collections_update (identical, ~9 lines): `src/api/core/ciphers.rs:1169`, `src/api/core/ciphers.rs:1147`"
+  },
+  "Copied logic in N group (~N lines)|src/api/core/ciphers.rs:1560": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge get_attachment, get_attachment_admin (identical, ~8 lines): `src/api/core/ciphers.rs:1560`, `src/api/core/ciphers.rs:1570`"
+  },
+  "Copied logic in N group (~N lines)|src/api/core/ciphers.rs:1899": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge post_attachment, post_attachment_admin (identical, ~9 lines): `src/api/core/ciphers.rs:1899`, `src/api/core/ciphers.rs:1910`"
+  },
+  "Copied logic in N group (~N lines)|src/api/core/ciphers.rs:1951": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge delete_attachment_admin, delete_attachment_post_admin (identical, ~17 lines): `src/api/core/ciphers.rs:1992`, `src/api/core/ciphers.rs:1951`"
+  },
+  "Copied logic in N group (~N lines)|src/api/core/ciphers.rs:2011": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge delete_cipher, delete_cipher_admin, delete_cipher_post, delete_cipher_post_admin, delete_cipher_put, delete_cipher_put_admin (87% similar, ~34 lines): `src/api/core/ciphers.rs:2053`, `src/api/core/ciphers.rs:2060`, `src/api/core/ciphers.rs:2011`, `src/api/core/ciphers.rs:2018`, `src/api/core/ciphers.rs:2032`, `src/api/core/ciphers.rs:2039`"
+  },
+  "Copied logic in N group (~N lines)|src/api/core/ciphers.rs:2018": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge delete_cipher_admin, delete_cipher_post_admin, delete_cipher_put_admin (identical, ~22 lines): `src/api/core/ciphers.rs:2060`, `src/api/core/ciphers.rs:2018`, `src/api/core/ciphers.rs:2039`"
+  },
+  "Copied logic in N group (~N lines)|src/api/core/ciphers.rs:2074": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge delete_cipher_selected, delete_cipher_selected_admin, delete_cipher_selected_post, delete_cipher_selected_post_admin, delete_cipher_selected_put, delete_cipher_selected_put_admin (87% similar, ~56 lines): `src/api/core/ciphers.rs:2074`, `src/api/core/ciphers.rs:2107`, `src/api/core/ciphers.rs:2085`, `src/api/core/ciphers.rs:2126`, `src/api/core/ciphers.rs:2096`, `src/api/core/ciphers.rs:2145`"
+  },
+  "Copied logic in N group (~N lines)|src/api/core/ciphers.rs:2107": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge delete_cipher_selected_admin, delete_cipher_selected_post_admin, delete_cipher_selected_put_admin (identical, ~32 lines): `src/api/core/ciphers.rs:2107`, `src/api/core/ciphers.rs:2126`, `src/api/core/ciphers.rs:2145`"
+  },
+  "Copied logic in N group (~N lines)|src/api/core/ciphers.rs:2174": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge restore_cipher_selected, restore_cipher_selected_admin (identical, ~8 lines): `src/api/core/ciphers.rs:2184`, `src/api/core/ciphers.rs:2174`"
+  },
+  "Copied logic in N group (~N lines)|src/api/core/ciphers.rs:2534": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between archive_multiple_ciphers, restore_multiple_ciphers, unarchive_multiple_ciphers (95% similar, ~48 lines): `src/api/core/ciphers.rs:2677`, `src/api/core/ciphers.rs:2534`, `src/api/core/ciphers.rs:2703`"
+  },
+  "Copied logic in N group (~N lines)|src/api/core/ciphers.rs:2613": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between archive_cipher, unarchive_cipher (89% similar, ~31 lines): `src/api/core/ciphers.rs:2613`, `src/api/core/ciphers.rs:2645`"
+  },
+  "Copied logic in N group (~N lines)|src/api/core/ciphers.rs:35": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 3 copies of routes (100% similar, ~86 lines): `src/api/core/ciphers.rs:35`, `src/api/core/emergency_access.rs:27`, `src/api/core/organizations.rs:37`"
+  },
+  "Copied logic in N group (~N lines)|src/api/core/events.rs:108": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge get_org_events, get_user_events (97% similar, ~28 lines): `src/api/core/events.rs:46`, `src/api/core/events.rs:108`"
+  },
+  "Copied logic in N group (~N lines)|src/api/core/organizations.rs:2785": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge restore_member, restore_member_vnext (identical, ~8 lines): `src/api/core/organizations.rs:2797`, `src/api/core/organizations.rs:2785`"
+  },
+  "Copied logic in N group (~N lines)|src/api/core/organizations.rs:3156": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge get_group, get_group_details (88% similar, ~19 lines): `src/api/core/organizations.rs:3240`, `src/api/core/organizations.rs:3156`"
+  },
+  "Copied logic in N group (~N lines)|src/api/push.rs:313": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between push_auth_request, push_auth_response (92% similar, ~17 lines): `src/api/push.rs:313`, `src/api/push.rs:331`"
+  },
+  "Copied logic in N group (~N lines)|src/db/models/attachment.rs:148": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge Attachment.delete_all_by_cipher, Cipher.delete_all_by_organization, Cipher.delete_all_by_user, Collection.delete_all_by_organization, EmergencyAccess.delete_all_by_grantee_email, EmergencyAccess.delete_all_by_user, Folder.delete_all_by_user, Group.delete_all_by_organization, Membership.delete_all_by_organization, Membership.delete_all_by_user, Send.delete_all_by_user (94% similar, ~60 lines): `src/db/models/attachment.rs:148`, `src/db/models/cipher.rs:603`, `src/db/models/cipher.rs:611`, `src/db/models/collection.rs:211`, `src/db/models/emergency_access.rs:256`, `src/db/models/emergency_access.rs:246`, `src/db/models/folder.rs:113`, `src/db/models/group.rs:186`, `src/db/models/organization.rs:1073`, `src/db/models/organization.rs:1080`, `src/db/models/send.rs:309`"
+  },
+  "Copied logic in N group (~N lines)|src/db/models/attachment.rs:160": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge Attachment.find_by_cipher, AuthRequest.find_by_user, AuthRequest.find_created_before, Cipher.find_by_org, Cipher.find_deleted_before, Collection.find_by_organization, Device.find_by_user, Device.find_push_devices_by_user, EmergencyAccess.find_all_by_grantee_uuid, EmergencyAccess.find_all_by_grantor_uuid, EmergencyAccess.find_all_confirmed_by_grantor_uuid, EmergencyAccess.find_all_invited_by_grantee_email, EmergencyAccess.find_all_recoveries_initiated, Folder.find_by_user, FolderCipher.find_by_folder, Group.find_by_organization, GroupUser.find_by_member, Membership.find_accepted_and_confirmed_by_user, Membership.find_any_state_by_user, Membership.find_by_org, Membership.find_by_org_and_type, Membership.find_by_user, Membership.find_confirmed_by_user, Membership.find_invited_by_user, OrgPolicy.find_by_org, Send.find_by_user, TwoFactor.find_by_user, TwoFactorIncomplete.find_logins_before (89% similar, ~239 lines): `src/db/models/attachment.rs:160`, `src/db/models/auth_request.rs:142`, `src/db/models/auth_request.rs:169`, `src/db/models/cipher.rs:1093`, `src/db/models/cipher.rs:1123`, `src/db/models/collection.rs:318`, `src/db/models/device.rs:204`, `src/db/models/device.rs:241`, `src/db/models/emergency_access.rs:346`, `src/db/models/emergency_access.rs:378`, `src/db/models/emergency_access.rs:388`, `src/db/models/emergency_access.rs:367`, `src/db/models/emergency_access.rs:290`, `src/db/models/folder.rs:131`, `src/db/models/folder.rs:207`, `src/db/models/group.rs:193`, `src/db/models/group.rs:513`, `src/db/models/org_policy.rs:183`, `src/db/models/organization.rs:1176`, `src/db/models/organization.rs:1216`, `src/db/models/organization.rs:1272`, `src/db/models/organization.rs:1313`, `src/db/models/organization.rs:1452`, `src/db/models/organization.rs:1165`, `src/db/models/organization.rs:1191`, `src/db/models/send.rs:327`, `src/db/models/two_factor.rs:129`, `src/db/models/two_factor_incomplete.rs:87`"
+  },
+  "Copied logic in N group (~N lines)|src/db/models/attachment.rs:170": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between size_by_org, size_by_user (94% similar, ~17 lines): `src/db/models/attachment.rs:200`, `src/db/models/attachment.rs:170`"
+  },
+  "Copied logic in N group (~N lines)|src/db/models/auth_request.rs:127": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge AuthRequest.find_by_user_and_requested_device, AuthRequest.find_by_uuid, AuthRequest.find_by_uuid_and_user, Cipher.find_by_uuid, Cipher.find_by_uuid_and_org, Collection.find_by_uuid, Collection.find_by_uuid_and_org, CollectionUser.find_by_collection_and_user, Device.find_by_refresh_token, Device.find_by_uuid, Device.find_by_uuid_and_user, Device.find_latest_active_by_user, EmergencyAccess.find_by_grantor_uuid_and_grantee_uuid_or_email, EmergencyAccess.find_by_uuid_and_grantee_email, EmergencyAccess.find_by_uuid_and_grantee_uuid, EmergencyAccess.find_by_uuid_and_grantor_uuid, EmergencyAccess.find_invited_by_grantee_email, Folder.find_by_uuid_and_user, FolderCipher.find_by_folder_and_cipher, Group.find_by_external_id_and_org, Group.find_by_uuid_and_org, Invitation.find_by_mail, Membership.find_by_external_id_and_org, Membership.find_by_user_and_org, Membership.find_by_uuid, Membership.find_by_uuid_and_org, Membership.find_confirmed_by_user_and_org, Membership.find_main_user_org, OrgPolicy.find_by_org_and_type, Organization.find_by_name, Organization.find_by_uuid, OrganizationApiKey.find_by_org_uuid, Send.find_by_uuid, Send.find_by_uuid_and_user, TwoFactor.find_by_user_and_type, TwoFactorDuoContext.find_by_state, TwoFactorIncomplete.find_by_user_and_device, User.find_by_mail, User.find_by_uuid, UserSignatureKeyPair.find_by_user (100% similar, ~344 lines): `src/db/models/auth_request.rs:152`, `src/db/models/auth_request.rs:127`, `src/db/models/auth_request.rs:131`, `src/db/models/cipher.rs:932`, `src/db/models/cipher.rs:936`, `src/db/models/collection.rs:224`, `src/db/models/collection.rs:335`, `src/db/models/collection.rs:835`, `src/db/models/device.rs:225`, `src/db/models/device.rs:211`, `src/db/models/device.rs:183`, `src/db/models/device.rs:230`, `src/db/models/emergency_access.rs:274`, `src/db/models/emergency_access.rs:331`, `src/db/models/emergency_access.rs:316`, `src/db/models/emergency_access.rs:301`, `src/db/models/emergency_access.rs:356`, `src/db/models/folder.rs:120`, `src/db/models/folder.rs:192`, `src/db/models/group.rs:221`, `src/db/models/group.rs:210`, `src/db/models/org_policy.rs:229`, `src/db/models/organization.rs:1563`, `src/db/models/organization.rs:1425`, `src/db/models/organization.rs:1147`, `src/db/models/organization.rs:1154`, `src/db/models/organization.rs:1436`, `src/db/models/organization.rs:1573`, `src/db/models/organization.rs:738`, `src/db/models/organization.rs:734`, `src/db/models/organization.rs:1610`, `src/db/models/send.rs:316`, `src/db/models/send.rs:320`, `src/db/models/two_factor.rs:140`, `src/db/models/two_factor_duo_context.rs:21`, `src/db/models/two_factor_incomplete.rs:76`, `src/db/models/user.rs:666`, `src/db/models/user.rs:575`, `src/db/models/user.rs:580`, `src/db/models/user_signature_key_pair.rs:111`"
+  },
+  "Copied logic in N group (~N lines)|src/db/models/auth_request.rs:188": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge AuthRequest.delete_all_by_user, CollectionCipher.delete_all_by_cipher, Device.delete_all_by_user, Favorite.delete_all_by_cipher, Favorite.delete_all_by_user, FolderCipher.delete_all_by_cipher, OrgPolicy.delete_all_by_organization, OrganizationApiKey.delete_all_by_organization, SsoUser.delete, TwoFactor.delete_all_by_user, TwoFactorIncomplete.delete_all_by_user, UserSignatureKeyPair.delete_all_by_user (88% similar, ~88 lines): `src/db/models/auth_request.rs:188`, `src/db/models/collection.rs:958`, `src/db/models/device.rs:174`, `src/db/models/favorite.rs:71`, `src/db/models/favorite.rs:81`, `src/db/models/folder.rs:174`, `src/db/models/org_policy.rs:244`, `src/db/models/organization.rs:1617`, `src/db/models/two_factor.rs:151`, `src/db/models/two_factor_incomplete.rs:114`, `src/db/models/user.rs:765`, `src/db/models/user_signature_key_pair.rs:121`"
+  },
+  "Copied logic in N group (~N lines)|src/db/models/cipher.rs:1086": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge Cipher.count_by_org, Cipher.count_owned_by_user, Collection.count_by_org, Device.check_user_has_push_device, Event.count_by_org, Group.count_by_org, Membership.count_by_org (89% similar, ~41 lines): `src/db/models/cipher.rs:1103`, `src/db/models/cipher.rs:1086`, `src/db/models/collection.rs:328`, `src/db/models/device.rs:252`, `src/db/models/event.rs:291`, `src/db/models/group.rs:203`, `src/db/models/organization.rs:1301`"
+  },
+  "Copied logic in N group (~N lines)|src/db/models/cipher.rs:1103": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge Cipher.count_by_org, Collection.count_by_org, Event.count_by_org, Group.count_by_org, Membership.count_by_org (identical, ~24 lines): `src/db/models/cipher.rs:1103`, `src/db/models/collection.rs:328`, `src/db/models/event.rs:291`, `src/db/models/group.rs:203`, `src/db/models/organization.rs:1301`"
+  },
+  "Copied logic in N group (~N lines)|src/db/models/cipher.rs:212": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between to_json, to_json_org_admin, to_json_org_admin_collections (88% similar, ~19 lines): `src/db/models/cipher.rs:212`, `src/db/models/cipher.rs:224`, `src/db/models/cipher.rs:234`"
+  },
+  "Copied logic in N group (~N lines)|src/db/models/cipher.rs:603": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge Cipher.delete_all_by_organization, Collection.delete_all_by_organization, Membership.delete_all_by_organization (identical, ~12 lines): `src/db/models/cipher.rs:603`, `src/db/models/collection.rs:211`, `src/db/models/organization.rs:1073`"
+  },
+  "Copied logic in N group (~N lines)|src/db/models/cipher.rs:611": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge Cipher.delete_all_by_user, Folder.delete_all_by_user, Membership.delete_all_by_user, Send.delete_all_by_user (identical, ~18 lines): `src/db/models/cipher.rs:611`, `src/db/models/folder.rs:113`, `src/db/models/organization.rs:1080`, `src/db/models/send.rs:309`"
+  },
+  "Copied logic in N group (~N lines)|src/db/models/collection.rs:715": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between find_by_org_and_coll_swap_user_uuid_with_member_uuid, find_by_organization_swap_user_uuid_with_member_uuid (89% similar, ~26 lines): `src/db/models/collection.rs:808`, `src/db/models/collection.rs:715`"
+  },
+  "Copied logic in N group (~N lines)|src/db/models/collection.rs:852": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge CollectionGroup.find_by_collection, CollectionGroup.find_by_group, CollectionGroup.find_by_user, CollectionUser.find_by_user, GroupUser.find_by_group, Membership.find_by_user_and_policy, OrgPolicy.find_accepted_and_confirmed_by_user, OrgPolicy.find_accepted_and_confirmed_by_user_and_active_policy, OrgPolicy.find_confirmed_by_user (91% similar, ~144 lines): `src/db/models/collection.rs:852`, `src/db/models/group.rs:395`, `src/db/models/group.rs:351`, `src/db/models/group.rs:369`, `src/db/models/group.rs:495`, `src/db/models/org_policy.rs:209`, `src/db/models/org_policy.rs:253`, `src/db/models/org_policy.rs:193`, `src/db/models/organization.rs:1463`"
+  },
+  "Copied logic in N group (~N lines)|src/db/models/emergency_access.rs:301": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between find_by_uuid_and_grantee_uuid, find_by_uuid_and_grantor_uuid (identical, ~14 lines): `src/db/models/emergency_access.rs:316`, `src/db/models/emergency_access.rs:301`"
+  },
+  "Copied logic in N group (~N lines)|src/db/models/emergency_access.rs:346": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between find_all_by_grantee_uuid, find_all_by_grantor_uuid (identical, ~9 lines): `src/db/models/emergency_access.rs:346`, `src/db/models/emergency_access.rs:378`"
+  },
+  "Copied logic in N group (~N lines)|src/db/models/event.rs:264": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge Event.delete, Invitation.delete, OrgPolicy.delete, SsoAuth.delete, TwoFactor.delete (88% similar, ~30 lines): `src/db/models/event.rs:264`, `src/db/models/org_policy.rs:174`, `src/db/models/sso_auth.rs:133`, `src/db/models/two_factor.rs:120`, `src/db/models/user.rs:657`"
+  },
+  "Copied logic in N group (~N lines)|src/db/models/event.rs:273": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between find_by_cipher_uuid, find_by_organization_uuid (96% similar, ~17 lines): `src/db/models/event.rs:328`, `src/db/models/event.rs:273`"
+  },
+  "Copied logic in N group (~N lines)|src/mail.rs:247": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between send_2fa_removed_from_org, send_change_email, send_emergency_access_invite_accepted, send_emergency_access_invite_confirmed, send_emergency_access_recovery_approved, send_emergency_access_recovery_rejected, send_invite_accepted, send_invite_confirmed, send_protected_action_token, send_single_org_removed_from_org, send_token (89% similar, ~120 lines): `src/mail.rs:247`, `src/mail.rs:577`, `src/mail.rs:375`, `src/mail.rs:388`, `src/mail.rs:401`, `src/mail.rs:454`, `src/mail.rs:481`, `src/mail.rs:495`, `src/mail.rs:665`, `src/mail.rs:260`, `src/mail.rs:564`"
+  },
+  "Copied logic in N group (~N lines)|src/ratelimit.rs:30": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between check_limit_admin, check_limit_login, check_limit_unauthenticated (89% similar, ~16 lines): `src/ratelimit.rs:48`, `src/ratelimit.rs:39`, `src/ratelimit.rs:30`"
+  },
+  "Copied logic in N group (~N lines)|src/static/scripts/datatables.js:1017": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between pluck, pluckOrder (88% similar, ~20 lines): `src/static/scripts/datatables.js:987`, `src/static/scripts/datatables.js:1017`"
+  },
+  "Important code no test reaches (N function)|src/api/admin.rs:676": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/api/admin.rs:676` has_http_access: does I/O (req.send) — `async fn has_http_access() -> bool {`"
+  },
+  "Important code no test reaches (N function)|src/api/core/two_factor/yubikey.rs:48": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/api/core/two_factor/yubikey.rs:48` HttpClientTransport.yubico_get: does I/O (self.client.get) — `async fn yubico_get(&self, url: &str) -> Result<Response, Self::Error> {`"
+  },
+  "Important code no test reaches (N function)|src/api/icons.rs:380": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/api/icons.rs:380` get_page_with_referer: does I/O (client.header, client.send) — `async fn get_page_with_referer(url: &str, referer: &str) -> Result<Response, Error> {`"
+  },
+  "Important code no test reaches (N function)|src/api/notifications.rs:384": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/api/notifications.rs:384` WebSocketUsers.send_update: does I/O (sender.send) — `async fn send_update(&self, user_id: &UserId, data: &Bytes) {`"
+  },
+  "Important code no test reaches (N function)|src/api/notifications.rs:629": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/api/notifications.rs:629` AnonymousWebSocketSubscriptions.send_update: does I/O (sender.send) — `async fn send_update(&self, token: &str, data: &Bytes) {`"
+  },
+  "Important code no test reaches (N function)|src/config.rs:1629": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/config.rs:1629` Config.update_config: does I/O (crate::api::invalidate_css_cache) — `pub async fn update_config(&self, other: ConfigBuilder, ignore_non_editable: bool) -> Result<(), Error> {`"
+  },
+  "Important code no test reaches (N function)|src/config.rs:1733": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/config.rs:1733` Config.delete_user_config: does I/O (crate::api::invalidate_css_cache) — `pub async fn delete_user_config(&self) -> Result<(), Error> {`"
+  },
+  "Important code no test reaches (N function)|src/db/mod.rs:103": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/db/mod.rs:103` DbConnManager.is_valid: does I/O (conn.ping) — `fn is_valid(&self, conn: &mut Self::Connection) -> Result<(), Self::Error> {`"
+  },
+  "Important code no test reaches (N function)|src/db/mod.rs:138": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/db/mod.rs:138` DbConnOptions.on_acquire: does I/O (conn.batch_execute) — `fn on_acquire(&self, conn: &mut DbConnInner) -> Result<(), diesel::r2d2::Error> {`"
+  },
+  "Important code no test reaches (N function)|src/db/mod.rs:154": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/db/mod.rs:154` DbConn.drop: does I/O (conn.batch_execute, conn.lock_owned) — `fn drop(&mut self) {`"
+  },
+  "Important code no test reaches (N function)|src/db/mod.rs:194": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/db/mod.rs:194` DbPool.from_config: does I/O (Pool::builder, diesel::connection::set_default_instrumentation) — `pub fn from_config() -> Result<Self, Error> {`"
+  },
+  "Important code no test reaches (N function)|src/db/mod.rs:337": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/db/mod.rs:337` DbConn.transaction: does I/O (conn.batch_execute), called from 3 files — `pub async fn transaction<F, Fut, T>(&self, operation: F) -> Result<T, Error>`"
+  },
+  "Important code no test reaches (N function)|src/db/mod.rs:513": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/db/mod.rs:513` run_migrations: does I/O (connection.run_pending_migrations) — `pub fn run_migrations(db_url: &str) -> Result<(), super::Error> {`"
+  },
+  "Important code no test reaches (N function)|src/db/mod.rs:541": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/db/mod.rs:541` run_migrations: does I/O (connection.run_pending_migrations) — `pub fn run_migrations(db_url: &str) -> Result<(), super::Error> {`"
+  },
+  "Important code no test reaches (N function)|src/db/mod.rs:562": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/db/mod.rs:562` run_migrations: does I/O (connection.run_pending_migrations) — `pub fn run_migrations(db_url: &str) -> Result<(), super::Error> {`"
+  },
+  "Important code no test reaches (N function)|src/db/models/organization.rs:237": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/db/models/organization.rs:237` lt, called from 9 files — `fn lt(&self, other: &MembershipType) -> bool {`"
+  },
+  "Important code no test reaches (N function)|src/error.rs:322": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/error.rs:322` Error.respond_to: does I/O (Cursor::new) — `fn respond_to(self, _: &Request<'_>) -> response::Result<'static> {`"
+  },
+  "Important code no test reaches (N function)|src/http_client.rs:384": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/http_client.rs:384` AwsReqwestConnector.call: does I/O (client.request, req_builder.send) — `fn call(&self, request: aws_smithy_runtime_api::client::orchestrator::HttpRequest) -> HttpConnectorFuture {`"
+  },
+  "Important code no test reaches (N function)|src/mail.rs:198": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/mail.rs:198` send_register_verify_email: does I/O (query.query) — `pub async fn send_register_verify_email(email: &str, token: &str) -> EmptyResult {`"
+  },
+  "Important code no test reaches (N function)|src/mail.rs:273": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/mail.rs:273` send_invite: does I/O (query.query) — `pub async fn send_invite(`"
+  },
+  "Important code no test reaches (N function)|src/mail.rs:332": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/mail.rs:332` send_emergency_access_invite: does I/O (query.query) — `pub async fn send_emergency_access_invite(`"
+  },
+  "Important code no test reaches (N function)|src/main.rs:122": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/main.rs:122` parse_args: does I/O (db::backup_sqlite) — `fn parse_args() {`"
+  },
+  "Important code no test reaches (N function)|src/main.rs:553": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/main.rs:553` launch_rocket: does I/O (api::admin_catchers, api::admin_routes) — `async fn launch_rocket(pool: db::DbPool, extra_debug: bool) -> Result<(), Error> {`"
+  },
+  "Important code no test reaches (N function)|src/main.rs:661": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/main.rs:661` schedule_jobs: does I/O (api::emergency_notification_reminder_job, api::emergency_request_timeout_job) — `fn schedule_jobs(pool: db::DbPool) {`"
+  },
+  "Important code no test reaches (N function)|src/main.rs:74": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/main.rs:74` main: does I/O (pool.get) — `async fn main() -> Result<(), Error> {`"
+  },
+  "Important code no test reaches (N function)|src/sso.rs:187": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/sso.rs:187` authorize_url: does I/O (Client::authorize_url) — `pub async fn authorize_url(`"
+  },
+  "Important code no test reaches (N function)|src/sso_client.rs:84": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/sso_client.rs:84` OidcHttpClient.call: does I/O (self.client.execute) — `fn call(&'c self, request: HttpRequest) -> Self::Future {`"
+  },
+  "Important code no test reaches (N function)|src/storage.rs:3": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/storage.rs:3` join_path: does I/O (s3::join_path) — `pub(crate) fn join_path(base: &str, child: &str) -> String {`"
+  },
+  "Important code no test reaches (N function)|src/util.rs:176": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/util.rs:176` Cors.on_response: does I/O (Cursor::new) — `async fn on_response<'r>(&self, request: &'r Request<'_>, response: &mut Response<'r>) {`"
+  },
+  "Important code no test reaches (N function)|src/util.rs:380": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/util.rs:380` BetterLogging.on_request: does I/O (uri.query) — `async fn on_request(&self, request: &mut Request<'_>, _data: &mut Data<'_>) {`"
+  },
+  "Important code no test reaches (N function)|src/util.rs:619": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/util.rs:619` get_active_web_release: does I/O (std::fs::read_to_string), called from 2 files — `pub fn get_active_web_release() -> String {`"
+  },
+  "Module-level mutable state (N place)|src/static/scripts/datatables.js:11326": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/static/scripts/datatables.js:11326` let _ready = false; *(script)*"
+  },
+  "Module-level mutable state (N place)|src/static/scripts/datatables.js:11327": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/static/scripts/datatables.js:11327` let _notice; *(script)*"
+  },
+  "Module-level mutable state (N place)|src/static/scripts/datatables.js:11328": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/static/scripts/datatables.js:11328` let _processingKey = false; *(script)*"
+  },
+  "Module-level mutable state (N place)|src/static/scripts/datatables.js:11329": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/static/scripts/datatables.js:11329` let _delayedReleaseDate = null; *(script)*"
+  },
+  "Module-level mutable state (N place)|src/static/scripts/datatables.js:11330": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/static/scripts/datatables.js:11330` let _delayedSoftware = null; *(script)*"
+  },
+  "Module-level mutable state (N place)|src/static/scripts/datatables.js:11337": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/static/scripts/datatables.js:11337` let _wm; *(script)*"
+  },
+  "Module-level mutable state (N place)|src/static/scripts/datatables.js:114": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/static/scripts/datatables.js:114` let _normalize = function (val, both) { *(script)*"
+  },
+  "Module-level mutable state (N place)|src/static/scripts/datatables.js:12084": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/static/scripts/datatables.js:12084` let __searchCounter = 0; *(script)*"
+  },
+  "Module-level mutable state (N place)|src/static/scripts/datatables.js:137": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/static/scripts/datatables.js:137` let _stripHtml = function (input, replacement = '') { *(script)*"
+  },
+  "Module-level mutable state (N place)|src/static/scripts/datatables.js:1467": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/static/scripts/datatables.js:1467` let _uidCounter = 1; *(script)*"
+  },
+  "Module-level mutable state (N place)|src/static/scripts/datatables.js:165": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/static/scripts/datatables.js:165` let _escapeHtml = function (val) { *(script)*"
+  },
+  "Module-level mutable state (N place)|src/static/scripts/datatables.js:5823": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/static/scripts/datatables.js:5823` let __filter_div; *(script)*"
+  },
+  "Module-level mutable state (N place)|src/static/scripts/datatables.js:5824": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/static/scripts/datatables.js:5824` let __filter_div_textContent; *(script)*"
+  },
+  "Raw HTML injected into pages|src/static/scripts/datatables.js:2479": {
+   "check": "Raw HTML injected into pages",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/static/scripts/datatables.js:2479` el.innerHTML = data;  (no endpoint reaches it) *(script)*"
+  },
+  "Tokens or passwords in unencrypted storage|src/static/scripts/admin_settings.js:181": {
+   "check": "Tokens or passwords in unencrypted storage",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/static/scripts/admin_settings.js:181` localStorage.setItem(\"admin_token_warning_closed\", d.getTime()); *(script)*"
+  },
+  "Unused code (N function)|src/error.rs:218": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/error.rs:218` serialize — `fn serialize(e: &impl Serialize, _msg: &str) -> String {`"
+  },
+  "Unused code (N function)|src/static/scripts/bootstrap.bundle.js:1240": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/bootstrap.bundle.js:1240` Carousel._configAfterMerge *(script)* — `_configAfterMerge(config) {`"
+  },
+  "Unused code (N function)|src/static/scripts/bootstrap.bundle.js:1614": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/bootstrap.bundle.js:1614` Collapse._configAfterMerge *(script)* — `_configAfterMerge(config) {`"
+  },
+  "Unused code (N function)|src/static/scripts/bootstrap.bundle.js:3694": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/bootstrap.bundle.js:3694` Dropdown._getConfig *(script)* — `_getConfig(config) {`"
+  },
+  "Unused code (N function)|src/static/scripts/bootstrap.bundle.js:3997": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/bootstrap.bundle.js:3997` Backdrop._configAfterMerge *(script)* — `_configAfterMerge(config) {`"
+  },
+  "Unused code (N function)|src/static/scripts/bootstrap.bundle.js:4933": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/bootstrap.bundle.js:4933` TemplateFactory._typeCheckConfig *(script)* — `_typeCheckConfig(config) {`"
+  },
+  "Unused code (N function)|src/static/scripts/bootstrap.bundle.js:5414": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/bootstrap.bundle.js:5414` Tooltip._getConfig *(script)* — `_getConfig(config) {`"
+  },
+  "Unused code (N function)|src/static/scripts/bootstrap.bundle.js:5538": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/bootstrap.bundle.js:5538` Popover._isWithContent *(script)* — `_isWithContent() {`"
+  },
+  "Unused code (N function)|src/static/scripts/bootstrap.bundle.js:5543": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/bootstrap.bundle.js:5543` Popover._getContentForTemplate *(script)* — `_getContentForTemplate() {`"
+  },
+  "Unused code (N function)|src/static/scripts/bootstrap.bundle.js:5672": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/bootstrap.bundle.js:5672` ScrollSpy._configAfterMerge *(script)* — `_configAfterMerge(config) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:1005": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:1005` addCircle *(script)* — `CanvasRenderer__prototype.h/*addCircle*/ = function addCircle (point, diameter, counterClockwise) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:1069": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:1069` addPolygon *(script)* — `SvgPath__prototype.g/*addPolygon*/ = function addPolygon (points) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:1083": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:1083` addCircle *(script)* — `SvgPath__prototype.h/*addCircle*/ = function addCircle (point, diameter, counterClockwise) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:1131": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:1131` setBackground *(script)* — `SvgRenderer__prototype.m/*setBackground*/ = function setBackground (fillColor) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:1141": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:1141` beginShape *(script)* — `SvgRenderer__prototype.O/*beginShape*/ = function beginShape (color) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:1148": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:1148` endShape *(script)* — `SvgRenderer__prototype.P/*endShape*/ = function endShape () { };`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:1154": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:1154` addPolygon *(script)* — `SvgRenderer__prototype.g/*addPolygon*/ = function addPolygon (points) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:1164": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:1164` addCircle *(script)* — `SvgRenderer__prototype.h/*addCircle*/ = function addCircle (point, diameter, counterClockwise) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:1215": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:1215` setBackground *(script)* — `SvgWriter__prototype.m/*setBackground*/ = function setBackground (fillColor, opacity) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:1227": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:1227` appendPath *(script)* — `SvgWriter__prototype.S/*appendPath*/ = function appendPath (color, dataString) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:1234": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:1234` toString *(script)* — `SvgWriter__prototype.toString = function toString () {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:1314": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:1314` setBackground *(script)* — `SvgElement__prototype.m/*setBackground*/ = function setBackground (fillColor, opacity) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:1329": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:1329` appendPath *(script)* — `SvgElement__prototype.S/*appendPath*/ = function appendPath (color, dataString) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:415": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:415` transformIconPoint *(script)* — `Transform.prototype.L/*transformIconPoint*/ = function transformIconPoint (x, y, w, h) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:451": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:451` addPolygon *(script)* — `Graphics__prototype.g/*addPolygon*/ = function addPolygon (points, invert) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:472": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:472` addCircle *(script)* — `Graphics__prototype.h/*addCircle*/ = function addCircle (x, y, size, invert) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:485": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:485` addRectangle *(script)* — `Graphics__prototype.i/*addRectangle*/ = function addRectangle (x, y, w, h, invert) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:503": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:503` addTriangle *(script)* — `Graphics__prototype.j/*addTriangle*/ = function addTriangle (x, y, w, h, r, invert) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:522": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:522` addRhombus *(script)* — `Graphics__prototype.N/*addRhombus*/ = function addRhombus (x, y, w, h, invert) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:961": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:961` setBackground *(script)* — `CanvasRenderer__prototype.m/*setBackground*/ = function setBackground (fillColor) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:973": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:973` beginShape *(script)* — `CanvasRenderer__prototype.O/*beginShape*/ = function beginShape (fillColor) {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:982": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:982` endShape *(script)* — `CanvasRenderer__prototype.P/*endShape*/ = function endShape () {`"
+  },
+  "Unused code (N function)|src/static/scripts/jdenticon-3.3.0.js:990": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/static/scripts/jdenticon-3.3.0.js:990` addPolygon *(script)* — `CanvasRenderer__prototype.g/*addPolygon*/ = function addPolygon (points) {`"
+  },
+  "Writes inside loops in N place|src/api/core/accounts.rs:1759": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/api/core/accounts.rs:1759` rotate_account — `rotate_cipher_data(saved_cipher, cipher_data, &headers, &conn, &nt).await?;`"
+  },
+  "Writes inside loops in N place|src/api/core/ciphers.rs:2236": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/api/core/ciphers.rs:2236` move_cipher_selected — `move_result = cipher.move_to_folder_without_revision_update(data.folder_id.clone(), user_id, &conn).await;`"
+  },
+  "Writes inside loops in N place|src/api/core/ciphers.rs:2476": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/api/core/ciphers.rs:2476` delete_multiple_ciphers — `if let error @ Err(_) = delete_cipher_by_uuid(&cipher_id, &headers, scope, &conn, &delete_options, &nt).await {`"
+  },
+  "Writes inside loops in N place|src/api/core/ciphers.rs:2545": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/api/core/ciphers.rs:2545` restore_multiple_ciphers — `match restore_cipher_by_uuid(&cipher_id, headers, true, scope, conn, nt).await {`"
+  },
+  "Writes inside loops in N place|src/api/core/ciphers.rs:2687": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/api/core/ciphers.rs:2687` archive_multiple_ciphers — `match archive_cipher(&cipher_id, headers, true, conn, nt).await {`"
+  },
+  "Writes inside loops in N place|src/api/core/ciphers.rs:2713": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/api/core/ciphers.rs:2713` unarchive_multiple_ciphers — `match unarchive_cipher(&cipher_id, headers, true, conn, nt).await {`"
+  },
+  "Writes inside loops in N place|src/api/core/ciphers.rs:961": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/api/core/ciphers.rs:961` post_ciphers_import — `update_cipher_from_data(&mut cipher, cipher_data, &headers, None, &conn, &nt, UpdateType::None, true, false)`"
+  },
+  "Writes inside loops in N place|src/api/core/emergency_access.rs:858": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/api/core/emergency_access.rs:858` emergency_request_timeout_job — `if let Err(e) = emer.update_access_status_and_save(status_initiated, status_approved, &now, &conn).await {`"
+  },
+  "Writes inside loops in N place|src/api/core/emergency_access.rs:952": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/api/core/emergency_access.rs:952` emergency_notification_reminder_job — `if let Err(e) = emer.update_last_notification_date_and_save(&now, &conn).await {`"
+  },
+  "Writes inside loops in N place|src/api/core/organizations.rs:1292": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/api/core/organizations.rs:1292` send_invite — `user.delete(&conn).await?;`"
+  },
+  "Writes inside loops in N place|src/api/core/organizations.rs:1534": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/api/core/organizations.rs:1534` bulk_confirm_invite — `let err_msg = match confirm_invite_impl(&org_id, &member_id, &user_key, &headers, &conn, &nt).await {`"
+  },
+  "Writes inside loops in N place|src/api/core/organizations.rs:1849": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/api/core/organizations.rs:1849` bulk_delete_member — `let err_msg = match delete_member_impl(&org_id, &member_id, &headers, &conn, &nt).await {`"
+  },
+  "Writes inside loops in N place|src/api/core/organizations.rs:2147": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/api/core/organizations.rs:2147` post_org_import — `update_cipher_from_data(`"
+  },
+  "Writes inside loops in N place|src/api/core/organizations.rs:3234": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/api/core/organizations.rs:3234` bulk_delete_groups — `delete_group_impl(&org_id, &group_id, &headers, &conn).await?;`"
+  },
+  "Writes inside loops in N place|src/api/core/organizations.rs:815": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/api/core/organizations.rs:815` bulk_delete_organization_collections — `delete_organization_collection_impl(&org_id, &col_id, &headers, &conn).await?;`"
+  },
+  "Writes inside loops in N place|src/api/notifications.rs:387": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/api/notifications.rs:387` WebSocketUsers.send_update — `if let Err(e) = sender.send(Message::binary(data.clone())).await {`"
+  },
+  "Writes inside loops in N place|src/api/notifications.rs:511": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/api/notifications.rs:511` WebSocketUsers.send_cipher_update — `self.send_update(uuid, &data).await;`"
+  },
+  "Writes inside loops in N place|src/api/notifications.rs:546": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/api/notifications.rs:546` WebSocketUsers.send_send_update — `self.send_update(uuid, &data).await;`"
+  },
+  "Writes inside loops in N place|src/api/notifications.rs:633": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/api/notifications.rs:633` AnonymousWebSocketSubscriptions.send_update — `if let Err(e) = sender.send(Message::binary(data.clone())).await {`"
+  },
+  "Writes inside loops in N place|src/db/models/attachment.rs:150": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/db/models/attachment.rs:150` Attachment.delete_all_by_cipher — `attachment.delete(conn).await?;`"
+  },
+  "Writes inside loops in N place|src/db/models/auth_request.rs:221": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/db/models/auth_request.rs:221` AuthRequest.purge_expired_auth_requests — `auth_request.delete(conn).await.ok();`"
+  },
+  "Writes inside loops in N place|src/db/models/cipher.rs:606": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/db/models/cipher.rs:606` Cipher.delete_all_by_organization — `cipher.delete(conn).await?;`"
+  },
+  "Writes inside loops in N place|src/db/models/cipher.rs:613": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/db/models/cipher.rs:613` Cipher.delete_all_by_user — `cipher.delete(conn).await?;`"
+  },
+  "Writes inside loops in N place|src/db/models/cipher.rs:635": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/db/models/cipher.rs:635` Cipher.purge_trash — `cipher.delete(conn).await.ok();`"
+  },
+  "Writes inside loops in N place|src/db/models/emergency_access.rs:248": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/db/models/emergency_access.rs:248` EmergencyAccess.delete_all_by_user — `ea.delete(conn).await?;`"
+  },
+  "Writes inside loops in N place|src/db/models/emergency_access.rs:258": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/db/models/emergency_access.rs:258` EmergencyAccess.delete_all_by_grantee_email — `ea.delete(conn).await?;`"
+  },
+  "Writes inside loops in N place|src/db/models/send.rs:294": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/db/models/send.rs:294` Send.purge — `send.delete(conn).await.ok();`"
+  },
+  "Writes inside loops in N place|src/db/models/send.rs:311": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/db/models/send.rs:311` Send.delete_all_by_user — `send.delete(conn).await?;`"
+  },
+  "Writes inside loops in N place|src/db/models/two_factor_duo_context.rs:73": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/db/models/two_factor_duo_context.rs:73` TwoFactorDuoContext.purge_expired_duo_contexts — `context.delete(conn).await.ok();`"
+  }
+ }
+}
