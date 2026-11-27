@@ -84,7 +84,7 @@
  },
  "appwrite/appwrite": {
   "status": "ok",
-  "seconds": 448.2,
+  "seconds": 311.9,
   "commit": "26642a47",
   "kind": "web app",
   "deployment": "deployed server",
