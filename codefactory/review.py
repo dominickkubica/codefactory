@@ -35,7 +35,7 @@ SEV = ["Critical", "High", "Medium", "Low"]
 POINTS = {"Critical": 30, "High": 10, "Medium": 3, "Low": 1}
 CAPS = {"Medium": 24, "Low": 6}  # many small issues shouldn't outweigh one serious one
 TS_EXT = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts")
-OTHER_CODE = {
+OTHER_CODE = {  # display names; any other extension the general analyzer reads goes by its grammar's name
     ".swift": "Swift",
     ".kt": "Kotlin",
     ".java": "Java",
@@ -50,8 +50,6 @@ OTHER_CODE = {
     ".php": "PHP",
     ".scala": "Scala",
     ".dart": "Dart",
-    ".sql": "SQL",
-    ".tf": "Terraform",
     ".sh": "shell",
 }
 
@@ -1525,10 +1523,19 @@ class Review:
     def limits(self) -> list[str]:
         analyzed = Counter(Path(f["id"]).suffix for f in self.g["files"])
         seen = {f["id"] for f in self.g["files"]}
-        other = Counter()
-        for rel in walk(self.root, suffixes=tuple(OTHER_CODE)):
-            if rel not in seen:
-                other[OTHER_CODE[Path(rel).suffix]] += 1
+        from .analyzers.generic import LANGS, available
+
+        # only what an analyzer would have read: its extensions, outside the ignored and hidden folders it prunes
+        # (not .github/ scripts or SQL files, which none of them reads)
+        code = {ext: OTHER_CODE.get(ext, lang) for ext, lang in LANGS.items()}
+        other, python = Counter(), 0
+        for rel in walk(self.root, suffixes=(".py", *code), skip=set(load_config(self.root).ignore), hidden=False):
+            if rel in seen or any(p.endswith(".egg-info") for p in rel.split("/")[:-1]):
+                continue
+            if rel.endswith(".py"):
+                python += 1
+            elif Path(rel).suffix in code:
+                other[code[Path(rel).suffix]] += 1
         out = [
             f"Analyzed {len(self.g['files'])} files ({', '.join(f'{n} {ext}' for ext, n in analyzed.most_common(6))}) "
             "statically: call graph, imports, structure and text patterns. Nothing was executed."
@@ -1542,9 +1549,9 @@ class Review:
                 + ", ".join(f"{n}: {why.get(k, k)}" for k, n in kinds.most_common())
                 + ")."
             )
+        if python:
+            out.append(f"Not analyzed (this Python can't parse them): {_n(python, 'Python file')}.")
         if other:
-            from .analyzers.generic import available
-
             why = (
                 "generated, too large or not parseable"
                 if available()

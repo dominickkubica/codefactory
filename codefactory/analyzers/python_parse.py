@@ -463,14 +463,19 @@ def _local_imports(fn) -> list:
     return out
 
 
-def parse_module(path: str, rel: str) -> dict | None:
-    """The per-file step: everything python.py needs from one file, or None if it isn't valid Python."""
+def parse_module(path: str, rel: str) -> dict:
+    """The per-file step: everything python.py needs from one file, or {"error": why, "fallback": …} if this Python
+    can't parse it (python.py reports those instead of dropping them quietly)."""
     try:
         # (utf-8-sig: a byte-order mark, which Windows editors write, is a syntax error to ast.parse on a str)
         text = Path(path).read_text(encoding="utf-8-sig", errors="replace")
         tree = ast.parse(text, filename=rel)
-    except (SyntaxError, ValueError, OSError, RecursionError):
-        return None  # not valid for this Python: skip rather than fail the whole map
+    except SyntaxError as e:
+        return {"error": f"line {e.lineno}: {e.msg}", "fallback": _fallback(path, rel)}
+    except OSError as e:
+        return {"error": f"can't be read ({e.strerror or type(e).__name__})", "fallback": None}
+    except (ValueError, RecursionError) as e:  # (null bytes on older Pythons; nesting too deep for the parser)
+        return {"error": type(e).__name__, "fallback": None}
     imports = []  # ["import", name, asname, at_load] / ["from", module, level, name, asname, at_load]
     for node, at_load in _imports(tree):
         if isinstance(node, ast.Import):
@@ -545,3 +550,23 @@ def parse_module(path: str, rel: str) -> dict | None:
             | {s for n in ast.walk(tree) if isinstance(n, ast.Call) and (s := by_name(n))}
         ),
     }
+
+
+def _fallback(path: str, rel: str) -> dict | None:
+    """Syntax newer than the running Python (PEP 695's `def f[T]()` on 3.11): tree-sitter's grammar parses it without
+    errors, so its functions come from the general analyzer rather than vanishing. A real syntax error parses with
+    errors there too: None."""
+    try:
+        from tree_sitter_language_pack import get_parser
+
+        from .treewalk import MAX_BYTES, walk
+
+        source = Path(path).read_bytes()
+        parser = get_parser("python")
+        if len(source) > MAX_BYTES or parser.parse(source).root_node.has_error:
+            return None
+        data = walk(source, parser, rel)
+    except Exception:  # no language pack, a grammar that can't load: reported as not analyzed
+        return None
+    data["lang"] = "python"
+    return data

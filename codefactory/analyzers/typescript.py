@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -192,8 +193,15 @@ def _run_helper(root: Path, ignore: list[str]) -> dict:
         why = "ran out of memory" if "heap out of memory" in proc.stderr else "failed"
         if os.environ.get("CODEFACTORY_DEBUG"):
             print(proc.stderr.strip()[-2000:], file=sys.stderr)
-        raise TypeScriptUnavailable(f"The TypeScript analyzer {why} on this project (Node.js heap {heap} MB).")
-    return json.loads(proc.stdout)
+        # (the error's own line, so a failure says what failed: the last that names one, else the last line)
+        lines = [x.strip() for x in proc.stderr.splitlines() if x.strip()]
+        last = next((x for x in reversed(lines) if re.match(r"\w*Error\b", x)), lines[-1] if lines else "")
+        detail = f": {last[:200].rstrip('.')}" if why == "failed" and last else ""
+        raise TypeScriptUnavailable(f"The TypeScript analyzer {why} on this project (Node.js heap {heap} MB){detail}.")
+    try:
+        return json.loads(proc.stdout)
+    except ValueError:  # cut short or mixed with other output: the general analyzer instead, not a traceback
+        raise TypeScriptUnavailable("The TypeScript analyzer's output wasn't readable (not JSON).") from None
 
 
 def heap_mb() -> int:

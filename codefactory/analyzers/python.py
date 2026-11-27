@@ -256,7 +256,12 @@ def analyze_python(root: Path, ignore: list[str], cache: bool = True) -> Graph:
     g = Graph(root=str(root), language="python")
     paths = [p.relative_to(root) for p in iter_files(root, ignore)]
     parsed = parallel.run(root, "python", [(rel.as_posix(), (str(root / rel), rel.as_posix())) for rel in paths], parse_module,
-                          tool="python-ir-6", cache=cache)  # fmt: skip
+                          tool="python-ir-7", cache=cache)  # fmt: skip
+    failed: dict[str, dict] = {}  # files this Python couldn't parse: reported, and analyzed by tree-sitter when it can
+    for rel in paths:
+        data = parsed.get(rel.as_posix())
+        if data is None or "error" in data:
+            failed[rel.as_posix()] = parsed.pop(rel.as_posix(), None) or {"error": "can't be read", "fallback": None}
     modules: dict[str, _Module] = {}
     packages = frozenset(rel.parent.as_posix() for rel in paths if rel.name == "__init__.py")
     names = {rel: module_name(rel, packages) for rel in paths}
@@ -312,4 +317,38 @@ def analyze_python(root: Path, ignore: list[str], cache: bool = True) -> Graph:
     g.edges += [Edge(s, d, "call", c) for (s, d), c in calls.items()]
     g.edges += [Edge(s, d, "ref", c) for (s, d), c in refs.items() if (s, d) not in calls]
     g.edges += [Edge(s, d, "import", 1) for (s, d) in imports]
+    if failed:
+        _not_parsed(g, failed)
     return g
+
+
+def _not_parsed(g: Graph, failed: dict[str, dict]) -> None:
+    """Says which files this Python couldn't parse. Those tree-sitter reads cleanly (newer syntax) join the graph,
+    matched by name: their functions aren't reported unused, and the names they use count as references."""
+    import sys
+
+    from .generic import link
+
+    version = f"Python {sys.version_info[0]}.{sys.version_info[1]}"
+    newer = {rel: d["fallback"] for rel, d in failed.items() if d.get("fallback")}
+    lost = sorted(set(failed) - set(newer))
+    if newer:
+        part = link(Graph(root=g.root, language="python"), newer)
+        named: dict[str, list[str]] = {}
+        for f in g.functions:
+            if f.kind != "module":
+                named.setdefault(f.name, []).append(f.id)
+        for f in part.functions:
+            f.dynamic = True
+        for rel, d in newer.items():
+            for src, owner in [(f"{rel}::<module>", d["top"]), *((f["id"], f) for f in d["functions"])]:
+                used = {c[0] for c in owner["calls"]} | set(owner["refs"])
+                part.edges += [Edge(src, named[n][0], "ref", 1) for n in sorted(used) if len(named.get(n, ())) == 1]
+        g.merge(part)
+        print(f"codefactory: {len(newer)} Python files use syntax newer than {version} ({', '.join(sorted(newer)[:3])}"
+              f"{' …' if len(newer) > 3 else ''}): analyzed by tree-sitter instead, matching calls by name.",
+              file=sys.stderr)  # fmt: skip
+    if lost:
+        shown = "; ".join(f"{rel} {failed[rel]['error']}" for rel in lost[:3]) + (" …" if len(lost) > 3 else "")
+        print(f"codefactory: {len(lost)} Python files aren't analyzed: {version} can't parse them ({shown}).",
+              file=sys.stderr)

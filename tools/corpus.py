@@ -6,7 +6,8 @@
 `tools/corpus/repos.txt` lists the repositories (owner/repo, one per line, `#` comments). Each run clones into
 ~/.cache/codefactory-corpus (or CODEFACTORY_CORPUS), runs `codefactory export --json` with a time limit in a separate
 process, and records the outcome in `tools/corpus/results.json`: the commit, seconds, the profile, findings by
-severity, and the Critical and High titles. `tools/corpus/triage.json` holds what a person decided about each one:
+severity, the Critical and High titles, and the run's `codefactory:` notes (a fallback, files left out: otherwise
+unseen). `tools/corpus/triage.json` holds what a person decided about each one:
 `clean` (every Critical and High finding checked and real, or none), `fixed` (false positives found and fixed, with
 a regression test), or `open` (something still to fix, with a note). A repository is accounted for once it ran
 without a crash or timeout and has a triage status.
@@ -104,7 +105,18 @@ def analyze(repo: str) -> dict:
         "deployment": profile.get("deployment", ""),
         "counts": counts,
         "serious": [f"{f['severity']}: {f['title']}" for f in data["findings"] if f["severity"] in ("Critical", "High")],
+        **({"notes": found} if (found := notes(done.stderr)) else {}),  # (only when there are some, as older entries)
     }
+
+
+def notes(stderr: str) -> list[str]:
+    """The run's own notes on stderr (a fallback analyzer, files not analyzed), each once and short."""
+    out: list[str] = []
+    for line in (stderr or "").splitlines():
+        line = line.strip()[:240]
+        if line.startswith("codefactory:") and line not in out:
+            out.append(line)
+    return out[:8]
 
 
 def run(args) -> int:

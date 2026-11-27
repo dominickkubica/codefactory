@@ -123,6 +123,92 @@ class KaizenBugsTest(unittest.TestCase):
             (root / "secret").chmod(0o755)
             (root / ".github" / "workflows").chmod(0o755)
 
+    def test_a_python_file_with_a_syntax_error_is_reported_not_dropped_quietly(self):
+        # it vanished from the map with no note anywhere: not on stderr, not in the review's limits
+        from codefactory.review import Review
+
+        root = repo({"a.py": "def f():\n    return 1\n", "c.py": "def broken(:\n    pass\n"})
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            g = build(root, cache=False)
+        self.assertEqual([f.id for f in g.files], ["a.py"])
+        self.assertIn("1 Python files aren't analyzed", err.getvalue())
+        self.assertIn("c.py line 1", err.getvalue())
+        limits = Review(g.to_dict(), root).limits()
+        self.assertIn("Not analyzed (this Python can't parse them): 1 Python file.", limits)
+
+    @unittest.skipUnless(available(), "needs the language pack (tree-sitter)")
+    def test_python_newer_than_the_running_one_is_analyzed_by_tree_sitter(self):
+        # `except A, B:` is 3.14 (PEP 758), as `def f[T]()` is 3.12: on an older Python the file's functions vanished
+        newer = "def used():\n    try:\n        return helper()\n    except ValueError, TypeError:\n        return 0\n"
+        try:
+            compile(newer, "b.py", "exec")
+            self.skipTest("this Python parses it")
+        except SyntaxError:
+            pass
+        root = repo({"a.py": "from b import used\n\ndef main():\n    return used()\n\n\ndef only_b_calls():\n"
+                             "    return 1\n",
+                     "b.py": newer + "\n\ndef helper():\n    return only_b_calls()\n"})  # fmt: skip
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            g = build(root, cache=False)
+        ids = {f.id for f in g.functions}
+        self.assertTrue({"b.py::used", "b.py::helper", "a.py::main"} <= ids, ids)
+        self.assertIn("syntax newer than Python", err.getvalue())
+        self.assertNotIn("aren't analyzed", err.getvalue())
+        unused = {f.target for f in g.flags if f.kind == "unused"}
+        self.assertFalse({"b.py::used", "a.py::only_b_calls"} & unused, unused)  # name-matched both ways
+
+    def test_review_limits_count_only_files_an_analyzer_would_have_read(self):
+        # .github/ scripts, SQL and folders the config ignores were all listed as "Not analyzed"
+        root = repo({"app.py": "def f():\n    return 1\n", ".github/scripts/release.sh": "echo hi\n",
+                     "db/schema.sql": "CREATE TABLE t (id int);\n", "build/gen.go": "package gen\n",
+                     "factory.toml": 'ignore = ["third"]\n', "third/x.rb": "def x; end\n"})  # fmt: skip
+        from codefactory.review import Review
+
+        with contextlib.redirect_stderr(io.StringIO()):
+            g = build(root, cache=False)
+        limits = Review(g.to_dict(), root).limits()
+        self.assertFalse([x for x in limits if x.startswith("Not analyzed")], limits)
+
+    @unittest.skipUnless(available(), "needs the language pack (tree-sitter)")
+    def test_a_file_the_general_analyzer_skips_is_noted(self):
+        # over 1 MB (or binary): left out with nothing on stderr
+        root = repo({"main.go": "package main\nfunc main() {}\n",
+                     "big.go": "package main\n" + "// padding\n" * 100_000 + "func big() {}\n"})  # fmt: skip
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            g = analyze_generic(root, [], cache=False)
+        self.assertEqual([f.id for f in g.files], ["main.go"])
+        self.assertIn("1 files aren't analyzed: over 1 MB, binary or not parseable (big.go)", err.getvalue())
+
+    def test_a_typescript_helper_failure_says_what_failed(self):
+        # "failed" alone, and output that wasn't JSON was a traceback rather than the fallback
+        from codefactory.analyzers import typescript
+
+        crash = subprocess.CompletedProcess([], 1, "", "/x/ts_helper.js:9\nTypeError: ts.foo is not a function\n"
+                                                       "    at Object.<anonymous> (/x/ts_helper.js:9:4)\n")  # fmt: skip
+        cut = subprocess.CompletedProcess([], 0, '{"files": [', "")
+        said_crash = "failed on this project (Node.js heap 4096 MB): TypeError: ts.foo is not a function."
+        for proc, said in [(crash, said_crash), (cut, "wasn't readable (not JSON)")]:
+            with mock.patch.object(typescript.shutil, "which", return_value="node"), \
+                    mock.patch.object(typescript, "find_typescript", return_value="ts"), \
+                    mock.patch.object(typescript, "heap_mb", return_value=4096), \
+                    mock.patch.object(typescript.subprocess, "run", return_value=proc), \
+                    self.assertRaises(typescript.TypeScriptUnavailable) as e:  # fmt: skip
+                typescript._run_helper(Path(tempfile.mkdtemp()), [])
+            self.assertIn(said, str(e.exception))
+
+    def test_corpus_results_keep_the_runs_notes(self):
+        # a run that fell back to the general analyzer, or left files out, looked like any other in results.json
+        from tools.corpus import notes
+
+        stderr = ("codefactory: The TypeScript analyzer ran out of memory. Using the general analyzer instead.\n"
+                  "Traceback noise\ncodefactory: 2 Python files aren't analyzed: x\n"
+                  "codefactory: 2 Python files aren't analyzed: x\n")  # fmt: skip
+        self.assertEqual(len(notes(stderr)), 2)
+        self.assertEqual(notes(""), [])
+
 
 if __name__ == "__main__":
     unittest.main()
