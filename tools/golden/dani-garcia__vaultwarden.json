@@ -500,12 +500,6 @@
    "tier": "hints",
    "location": "`src/static/scripts/datatables.js:2479` el.innerHTML = data;  (no endpoint reaches it) *(script)*"
   },
-  "Tokens or passwords in unencrypted storage|src/static/scripts/admin_settings.js:181": {
-   "check": "Tokens or passwords in unencrypted storage",
-   "severity": "Medium",
-   "tier": "findings",
-   "location": "`src/static/scripts/admin_settings.js:181` localStorage.setItem(\"admin_token_warning_closed\", d.getTime()); *(script)*"
-  },
   "Unused code (N function)|src/error.rs:218": {
    "check": "Unused code (N function)",
    "severity": "Low",

@@ -116,12 +116,6 @@
    "tier": "hints",
    "location": "`frontend/src/utils/buttons.ts:71` el.innerHTML = el?.dataset?.icon || \"\";  (no endpoint reaches it)"
   },
-  "Tokens or passwords in unencrypted storage|frontend/src/utils/auth.ts:124": {
-   "check": "Tokens or passwords in unencrypted storage",
-   "severity": "Medium",
-   "tier": "findings",
-   "location": "`frontend/src/utils/auth.ts:124` localStorage.setItem(\"jwt\", \"\");"
-  },
   "Tokens or passwords in unencrypted storage|frontend/src/utils/auth.ts:15": {
    "check": "Tokens or passwords in unencrypted storage",
    "severity": "Medium",

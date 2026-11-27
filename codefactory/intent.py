@@ -59,10 +59,21 @@ def expected_failure(lines: list[str], i: int) -> str | None:
         return "fallback"  # load().catch(() => null).then((data) => …): the next step handles the null
     if re.search(rf"\.catch\(\s*(?:\(\s*\w*\s*\)|\w+)\s*=>\s*{VALUE}\s*\)", line):
         start = i - 1
-        while start > 0 and not re.search(r"[;{}]\s*$", lines[start - 1]) and i - start < 8:
-            start -= 1
+        while (
+            start > 0
+            and i - start < 40
+            and (
+                _unclosed(lines[start:i])
+                or re.match(r"\s*\??\.", lines[start])  # (a chained call's next step: `.update({…})` under `= await x`)
+                or not re.search(r"[;{}]\s*$", lines[start - 1])
+                and i - start < 8
+            )
+        ):
+            start -= 1  # (back to where the statement opens: a call over many lines, `prisma.job.update({ … })`)
         stmt = " ".join(lines[start:i])
-        if re.search(r"(?<![=!<>])=(?![=>])|\breturn\b|\?\?|\|\||&&|\(\s*await\b|,\s*await\b", stmt):
+        head = re.split(r"=>|\bfunction\b", stmt, maxsplit=1)[0]  # (an assignment inside a callback isn't the result's)
+        empty = re.search(r"\.catch\(\s*(?:\(\s*\w*\s*\)|\w+)\s*=>\s*\{\s*\}\s*\)", line)  # `() => {}`: a body, not a value
+        if not empty and re.search(r"(?<![=!<>])=(?![=>])|\breturn\b|\?\?|\|\||&&|\(\s*await\b|,\s*await\b", head):
             return "fallback"  # the null, false or [] is the answer the code then checks
     body = []
     for back in range(i - 2, max(-1, i - 20), -1):
@@ -86,6 +97,12 @@ def expected_failure(lines: list[str], i: int) -> str | None:
             return None
         body.insert(0, ln)
     return None
+
+
+def _unclosed(lines: list[str]) -> bool:
+    """These lines close more brackets than they open: the statement started further up."""
+    text = re.sub(r"""(["'`])(?:(?!\1)[^\\]|\\.)*\1""", "", "\n".join(lines))
+    return text.count(")") + text.count("}") + text.count("]") > text.count("(") + text.count("{") + text.count("[")
 
 
 def _handled_later(lines: list[str], i: int, name: str, span: int = 40) -> bool:
@@ -127,6 +144,15 @@ def _query_prefetch(lines: list[str], i: int) -> str | None:
     return "query cache"
 
 
+# a catch of one named exception type (Java, Kotlin, C#, PHP, Swift), not a catch-all base class
+SPECIFIC_CATCH = re.compile(
+    r"catch\s*\(\s*(?:final\s+)?\\?(?:[\w]+[.\\])*"
+    # (not InterruptedException: swallowing it loses the thread's interrupt, a known bug)
+    r"(?!(?:Exception|Throwable|Error|RuntimeException|SystemException|InterruptedException)\b)"
+    r"[A-Z]\w*(?:Exception|Error)\b(?:\s+\$?\w+)?\s*\)"
+)
+
+
 def swallow_intent(line: str, above: str) -> str | None:
     """Why an empty catch on this line is deliberate, or None if it isn't shown to be."""
     if TRAILING_COMMENT.search(line.split("catch", 1)[-1] if "catch" in line else line) or re.match(r"\s*(?://|#)\s*\S", above):
@@ -135,6 +161,8 @@ def swallow_intent(line: str, above: str) -> str | None:
         return "explained"
     if CLEANUP.search(line):
         return "cleanup"
+    if SPECIFIC_CATCH.search(line):
+        return "one expected exception"  # catch (GatewayException) { }: named, like Python's `except KeyError: pass`
     if re.match(r"\s*void\s+\S.*\.catch\(", line):  # `void p.catch(…)`: fired off and deliberately not awaited
         return "fire and forget"
     if FALLBACK.search(line):
@@ -149,6 +177,9 @@ NUMERIC = re.compile(
     r"[\w.]+\s*[-+*/%]\s*\d+|\d+\s*[-+*/%]\s*[\w.]+|[\w.]+\.length|[\w.]+\.size)$"
 )
 CONST_NAME = re.compile(r"\b[A-Z][A-Z0-9_]{2,}\b")
+# a list or tuple written out of strings and numbers: `['main', 'master']`, `("a", "b")`
+_ITEM = r"""(?:'[^'\\]*'|"[^"\\]*"|-?\d+(?:\.\d+)?)"""
+LITERAL_LIST = re.compile(rf"\s*[\[(]\s*{_ITEM}(?:\s*,\s*{_ITEM})*\s*,?\s*[\])]\s*")
 
 
 def _root(expr: str) -> str:
@@ -223,6 +254,24 @@ def fixed_functions(lines: list[str]) -> set[str]:
     return out
 
 
+LITERAL_VALUE = re.compile(r"""\s*(?:[rbuf]?'[^'{]*'|[rbuf]?"[^"{]*"|`[^`$]*`|-?\d[\d_.]*|True|False|true|false)\s*;?\s*""")
+
+
+def _fixed_constants(lines: list[str]) -> set[str]:
+    """UPPER_CASE names this file sets only to literals, or imports and never sets. Not one set from anything else:
+    `PRODUCTION_REF = process.env.PRODUCTION_REF || "origin/master"` is whatever the environment says."""
+    text = "\n".join(lines)
+    out = set()
+    for name in set(re.findall(r"\b([A-Z][A-Z0-9_]{2,})\b", text)):
+        sets = re.findall(rf"^\s*(?:export\s+)?(?:const\s+|let\s+|var\s+)?{name}\s*(?::[^=\n]+)?=(?!=)\s*(.+)$", text, re.M)
+        if sets:
+            if all(LITERAL_VALUE.fullmatch(v) for v in sets):
+                out.add(name)
+        elif re.search(rf"^\s*(?:from\s+\S+\s+import\b.*\b{name}\b|import\s*\{{[^}}]*\b{name}\b)", text, re.M):
+            out.add(name)  # imported, never set here: the other module's constant (`from etl.paths import SNAPSHOTS_DIR`)
+    return out
+
+
 def safe_names(lines: list[str], i: int, span: int = 60) -> set[str]:
     """Names that, in the lines leading up to line i, only hold values from a fixed list or that were checked
     against one: `for (const t of Object.keys(TABLES))`, `const cols = keys.filter((c) => allowed.has(c))`,
@@ -231,6 +280,7 @@ def safe_names(lines: list[str], i: int, span: int = 60) -> set[str]:
     window = lines[max(0, i - span) : i]
     fixed = _fixed_cached(lines)
     safe |= fixed  # `${parseLocaltime(type)}`: a helper that only returns fixed text
+    safe |= _fixed_constants(lines)  # `SNAPSHOTS_DIR`: a constant set to a literal here, or imported and left alone
     for _ in range(2):  # a second pass picks up names derived from names the first pass found
         for ln in window:
             for m in re.finditer(r"(?:\.has|\.includes|\bin)\s*\(\s*([A-Za-z_$][\w$]*)\s*\)", ln):
@@ -240,7 +290,7 @@ def safe_names(lines: list[str], i: int, span: int = 60) -> set[str]:
                 safe.add(a.group(1))  # const cols = xs.filter((c) => allowed.has(c))
             for m in re.finditer(r"for\s*\(\s*(?:const|let|var)\s+(\w+)\s+of\s+(.+?)\)\s*\{?\s*$|for\s+(\w+)\s+in\s+(.+):", ln):
                 name, src = (m.group(1), m.group(2)) if m.group(1) else (m.group(3), m.group(4))
-                if CONST_NAME.search(src) or _root(src.replace("Object.keys(", "")) in safe:
+                if CONST_NAME.search(src) or _root(src.replace("Object.keys(", "")) in safe or LITERAL_LIST.fullmatch(src):
                     safe.add(name)
             # checked to be a number first: is_numeric($amount), ctype_digit, Number.isInteger, isinstance(x, int)
             for m in re.finditer(r"(?:is_numeric|is_int|ctype_digit|Number\.isInteger|Number\.isFinite)\(\s*\$?(\w+)|"

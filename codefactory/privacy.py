@@ -151,12 +151,16 @@ def personal_data(root: Path, files: list[str], out: dict[str, Check]) -> None:
 
 
 def _personal(word: re.Match, args: str, mobile: bool, line: str = "") -> bool:
-    """Whether a personal-data word names a person's data here: not a repository's `FullName()`, a server's own listen
-    `ip_address`, or a device ID outside a phone app (syncthing's device IDs are key fingerprints)."""
+    """Whether a personal-data word names a person's data here: not a repository's `FullName()` (or a gem version's,
+    a script's), a server's own listen `ip_address`, or a device ID outside a phone app (syncthing's device IDs are key
+    fingerprints)."""
     w = word.group(0).lower().replace("_", "")
     before = args[: word.start()]
     if w == "fullname" and re.search(
-        r"(?:repo|repository|project|org|organization|team|package|pkg|group|app|module)\w*\.\s*$", before, re.I
+        r"(?:repo|repository|project|org|organization|team|package|pkg|group|app|module|version|gem|script|spec|class|"
+        r"job|task|plugin|image|file|node|service|branch|tag|model|dataset|workflow|template)\w*\.\s*$",
+        before,
+        re.I,
     ):
         return False
     if w == "ipaddress" and re.search(r"listen|bind|server|local|host", line or args, re.I):

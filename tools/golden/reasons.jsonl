@@ -1,0 +1,2 @@
+{"repo": "filebrowser/filebrowser", "key": "Tokens or passwords in unencrypted storage|frontend/src/utils/auth.ts:124", "why": "round 8: setItem with an empty value or a timestamp stores no secret (both labeled wrong in the corpus)", "date": "2026-11-27"}
+{"repo": "dani-garcia/vaultwarden", "key": "Tokens or passwords in unencrypted storage|src/static/scripts/admin_settings.js:181", "why": "round 8: setItem with an empty value or a timestamp stores no secret (both labeled wrong in the corpus)", "date": "2026-11-27"}
