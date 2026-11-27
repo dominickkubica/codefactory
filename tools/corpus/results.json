@@ -59,18 +59,17 @@
  },
  "CTFd/CTFd": {
   "status": "ok",
-  "seconds": 86.3,
+  "seconds": 108.5,
   "commit": "2a917e9",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "High": 2,
+   "High": 1,
    "Medium": 10,
    "Low": 4
   },
   "serious": [
-   "High: Signing key written in the code",
-   "High: Request data reaches dangerous calls (4 proven flows)"
+   "High: Signing key written in the code"
   ]
  },
  "Dimillian/IceCubesApp": {
@@ -467,7 +466,7 @@
  },
  "django/django": {
   "status": "ok",
-  "seconds": 208.8,
+  "seconds": 101.1,
   "commit": "f0e7bd9",
   "kind": "library",
   "deployment": "user's machine",
@@ -659,18 +658,17 @@
  },
  "getredash/redash": {
   "status": "ok",
-  "seconds": 28.4,
+  "seconds": 75.2,
   "commit": "f561a53",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "High": 2,
+   "High": 1,
    "Medium": 9,
    "Low": 5
   },
   "serious": [
-   "High: Import loops (3)",
-   "High: Request data reaches dangerous calls (7 proven flows)"
+   "High: Import loops (3)"
   ]
  },
  "getsentry/sentry-python": {
@@ -1180,7 +1178,7 @@
  },
  "mealie-recipes/mealie": {
   "status": "ok",
-  "seconds": 26.7,
+  "seconds": 74.2,
   "commit": "feb3323",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1190,7 +1188,7 @@
    "Low": 3
   },
   "serious": [
-   "High: Request data reaches dangerous calls (7 proven flows)"
+   "High: Request data reaches dangerous calls (2 proven flows)"
   ],
   "notes": [
    "codefactory: 10 Python files use syntax newer than Python 3.13 (mealie/alembic/versions/2026-09-24-13.16.56_27621d27c7e1_add_structured_recipe_times.py, mealie/core/security/providers/ldap_provider.py, mealie/pkgs/safehttp/fetch.py \u2026): anal"
@@ -1291,7 +1289,7 @@
  },
  "netbox-community/netbox": {
   "status": "ok",
-  "seconds": 55.5,
+  "seconds": 96.2,
   "commit": "04bdbf4",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -1301,7 +1299,7 @@
    "Low": 5
   },
   "serious": [
-   "High: Request data reaches dangerous calls (6 proven flows)"
+   "High: Request data reaches dangerous calls (1 proven flows)"
   ]
  },
  "openstatusHQ/openstatus": {
@@ -1434,7 +1432,7 @@
  },
  "pretix/pretix": {
   "status": "ok",
-  "seconds": 188.3,
+  "seconds": 133.7,
   "commit": "d2ddd4a",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1446,7 +1444,7 @@
   },
   "serious": [
    "Critical: Credentials committed in source",
-   "Critical: Request data reaches dangerous calls (27 proven flows)",
+   "Critical: Request data reaches dangerous calls (6 proven flows)",
    "High: JWT checks turned off",
    "High: Personal data written to logs",
    "High: SQL assembled from strings",
@@ -1557,7 +1555,7 @@
  },
  "scrapy/scrapy": {
   "status": "ok",
-  "seconds": 16.3,
+  "seconds": 42.3,
   "commit": "3574baf",
   "kind": "library",
   "deployment": "user's machine",
@@ -1881,7 +1879,7 @@
  },
  "wagtail/wagtail": {
   "status": "ok",
-  "seconds": 62.9,
+  "seconds": 97.7,
   "commit": "da32ecb",
   "kind": "web app",
   "deployment": "network server",
