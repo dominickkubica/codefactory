@@ -33,7 +33,12 @@ lets triage at 1,000 repositories be a sample instead of a full read.
      (`Promise.allSettled`); SQL whose interpolated value is a literal at every caller (needs call-site data);
      findings whose "reached from" chain runs through wrong name-matched calls (`/healthz` → TypeORM DDL: not enough
      labeled signal yet to change reachability); gitea `UpdateRepositoryNames` writes lost to the `sync.Once` fix.
-   - Next: round 5 held out once this batch is pushed.
+   - Done: round 5 held out **71%** (68 of 96); round 6 grew the corpus to 126 repositories.
+   - Now: data-flow guards (0 of 34 right on real apps: safe-URL validators, path containment, fixed hosts, signed
+     tokens, bound parameters); speed (n8n ~10 min: the TypeScript analyzer falls back and the runner analyzes
+     twice). Then round 7 held out, including the new repositories.
+   - Open: mocks set in vitest/jest setup files; `const s = vi.spyOn(…)` then `s.mockX`; Ruby `.select { }` blocks
+     read as queries; PHP `use` loops (no load-time edge); "reached from" chains through wrong name-matched calls.
 
 ## Next
 
