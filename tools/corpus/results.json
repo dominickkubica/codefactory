@@ -84,20 +84,19 @@
  },
  "appwrite/appwrite": {
   "status": "ok",
-  "seconds": 248.7,
+  "seconds": 343.4,
   "commit": "26642a47",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "High": 4,
+   "High": 3,
    "Medium": 9,
    "Low": 7
   },
   "serious": [
    "High: Environment files committed",
    "High: 107 errors silently swallowed",
-   "High: Endpoints that change data without an auth check (20)",
-   "High: Import loops (12)"
+   "High: Import loops (8)"
   ]
  },
  "caddyserver/caddy": {
@@ -427,13 +426,13 @@
  },
  "jellyfin/jellyfin": {
   "status": "ok",
-  "seconds": 43.4,
+  "seconds": 41.7,
   "commit": "57d9700",
   "kind": "web service",
   "deployment": "network server",
   "counts": {
    "Critical": 1,
-   "Medium": 4,
+   "Medium": 3,
    "Low": 3
   },
   "serious": [
@@ -466,7 +465,7 @@
  },
  "laravel/framework": {
   "status": "ok",
-  "seconds": 41.9,
+  "seconds": 44.6,
   "commit": "321caf7",
   "kind": "library",
   "deployment": "user's machine",
@@ -477,7 +476,7 @@
   },
   "serious": [
    "High: Dynamic code execution (eval / exec / pickle / unsafe YAML)",
-   "High: Import loops (15)"
+   "High: Import loops (17)"
   ]
  },
  "laravel/laravel": {
@@ -539,19 +538,18 @@
  },
  "mastodon/mastodon": {
   "status": "ok",
-  "seconds": 57.6,
+  "seconds": 58.0,
   "commit": "db13cc1",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "High": 3,
+   "High": 2,
    "Medium": 6,
    "Low": 6
   },
   "serious": [
    "High: Session cookies without Secure / HttpOnly",
-   "High: Endpoints that change data without an auth check (9)",
-   "High: Import loops (15)"
+   "High: Import loops (14)"
   ]
  },
  "maybe-finance/maybe": {

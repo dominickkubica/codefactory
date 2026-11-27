@@ -251,12 +251,20 @@ def _resolve_import(source: str, idx: dict[str, list[str]], lang: str, go_mods: 
         return _go_package(source, idx, go_mods)
     s = re.sub(r"\.(?:h|hpp|hh|rb|php|lua|dart|go|rs|java|kt|swift|cs|ex|js|ts)$", "", source.strip())
     parts = [p for p in re.split(r"[./\\:]+", s) if p and p not in ("crate", "self", "super", "~", "@", "..")]
+    if lang == "ruby" and len(parts) == 1 and not source.startswith("."):
+        # `require "prometheus_exporter"`: a gem, or a file on the load path (lib/), not any file of that name
+        return [f for f in idx.get(parts[0], []) if f.startswith("lib/") or "/lib/" in f][:1]
+    loose = lang in ("c", "cpp")  # an include names a header among the search paths: a few candidates are normal
     # the path as written, then without its last part: `import a.b.fn` (Kotlin, Java static) names something inside a.b
     for named in (parts, parts[:-1]):
         for i in range(len(named)):
             key = "/".join(named[i:])
-            if lang != "go" and key in idx and len(idx[key]) <= 3:
-                return idx[key]
+            # (`Utopia\DNS\Validator\DNS` isn't every file called DNS: a qualified name needs its folder too)
+            last = len(named) > 1 and i == len(named) - 1 and not loose
+            if lang != "go" and not last and key in idx:
+                if len(idx[key]) == 1 or (loose and len(idx[key]) <= 3):
+                    return idx[key]
+                break  # several files end the same way: don't guess which one
             if key + "/" in idx:  # a package (Go, Java): the folder stands for its files; link to one of them
                 files = [f for f in idx[key + "/"] if not _is_test(f)]
                 if not files:

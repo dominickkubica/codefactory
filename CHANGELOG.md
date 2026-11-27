@@ -47,7 +47,8 @@ changes that removed wrong findings without losing a right one: about 90 wrong l
 
 - **Hints**: writes, file operations and array searches inside loops, database ports in compose files and plain-HTTP
   URLs are listed under Hints, not counted as findings or in the grade: they depend on what the code doesn't show,
-  and were right 12–50% of the time on real code.
+  and were right 12–50% of the time on real code. Endpoints without an auth check and Swift `try!`/`as!` joined
+  them after round 3 (0 of 7 and 0 of 4 right held out).
 - TLS: name-to-constant tables, comparisons, a cipher listing, an `if` on the option, servers that check client
   certificates themselves. Credentials: OAuth client IDs, environment-variable names, keys a comment calls safe to
   embed or shared for examples, AAAA-padded example keys. Endpoints: Pundit, Devise sign-in, routers in Rust test
@@ -56,7 +57,9 @@ changes that removed wrong findings without losing a right one: about 90 wrong l
   only name a rate-limit bucket or cache entry. Swift casts guarded by `is`. `fetch` that isn't a request; a global
   axios timeout. `sync.Once.Do`, exception factories and builders aren't I/O. Build outputs and vendored libraries
   don't take part in copied logic; per-folder variants and constructors aren't copies. Imported names and property
-  reads are uses. C# loops bounded by project references.
+  reads are uses. C# loops bounded by project references. Import loops: a C# `using` names a namespace, not a file;
+  a qualified PHP name needs its folder to match, and an ambiguous ending matches nothing; a bare Ruby `require` is
+  a gem unless `lib/` has it; TypeScript `export type` is erased (11 wrong loops gone in 4 repositories, none lost).
 
 ### Corpus round 5
 

@@ -383,13 +383,24 @@ class StructureTest(unittest.TestCase):
         msg = next(f.message for f in build(root, cache=False).flags if f.kind == "cycle")
         self.assertIn("a.py → b.py → a.py", msg)
 
+    def test_names_that_are_not_files_make_no_import_loop(self):
+        root = repo({  # C# `using` names a namespace; PHP needs the folder; a bare Ruby require is a gem
+            "Svc/A.cs": "using Svc.Model;\nnamespace Svc { class A { } }\n",
+            "Svc/Model.cs": "using Svc;\nnamespace Svc.Model { class Model { } }\n",
+            "src/Net/DNS.php": "<?php\nuse Other\\Checks\\DNS;\nclass DNS {}\n",
+            "lib/Validator/DNS.php": "<?php\nuse App\\Net\\DNS;\nclass DNS {}\n",
+            "config/prometheus_exporter.rb": "require 'prometheus_exporter'\n",
+            "app/prometheus_exporter.rb": "require_relative '../config/prometheus_exporter'\n",
+        })  # fmt: skip
+        self.assertFalse([f for f in build(root, cache=False).flags if f.kind == "cycle"])
+
 
 class EndpointTest(unittest.TestCase):
-    def open_writes(self, files):
+    def open_writes(self, files):  # (a hint now, not a finding: still computed the same way)
         root = repo(files)
         r = Review(build(root, cache=False).to_dict(), root)
         r.run()
-        return next((f for f in r.findings if f.title.startswith("Endpoints that change data")), None)
+        return next((f for f in r.findings + r.hints if f.title.startswith("Endpoints that change data")), None)
 
     def test_inline_app_middleware_that_checks_the_session(self):
         app = ("const express = require('express');\nconst fs = require('fs');\nconst app = express();\n"

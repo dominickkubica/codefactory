@@ -150,6 +150,8 @@ def _has_body(node) -> bool:
 def _import_sources(node) -> list[str]:
     """What an import names: every quoted path (Go's grouped imports, C includes), else the dotted path."""
     text = node.text.decode("utf-8", "replace")
+    if re.match(r"\s*(?:import|export)\s+type\b|\s*using\s+(?:static\s+)?[\w.]+\s*;", text):
+        return []  # erased at compile time (TypeScript), or a namespace, not a file (C#'s `using`)
     quoted = re.findall(r"""["'<]([^"'<>\n]+)["'>]""", text)
     if quoted:
         return quoted
