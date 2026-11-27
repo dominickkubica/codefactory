@@ -475,6 +475,21 @@ def _fixed_code(line: str, text: str) -> bool:
                 and not re.search(r"typ\s*=\s*['\"]unsafe['\"]", text))  # fmt: skip
 
 
+def _template_lines(lines: list[str]) -> set[int]:
+    """Lines inside a JavaScript template literal (between backticks spanning lines), roughly: quotes and comments
+    aside, an odd count of unescaped backticks so far."""
+    inside, out = False, set()
+    for n, ln in enumerate(lines, 1):
+        if inside:
+            out.add(n)
+        stripped = re.sub(r"""\\.|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'""", "", ln) if not inside else ln
+        if not inside and stripped.lstrip().startswith("//"):
+            continue
+        if (stripped.count("`") - stripped.count("\\`")) % 2:
+            inside = not inside
+    return out
+
+
 STORIES = re.compile(r"\.stories\.(?:[cm]?[jt]sx?|mdx|svelte|vue)$")
 
 
@@ -735,6 +750,7 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
             for k, v in PATTERNS.items()
             if (not test or k == "secret") and (k not in LANG_ONLY or fid.endswith(LANG_ONLY[k])) and ANY[k].search(text)
         }
+        templated: set[int] | None = None
         sql_here = not test and SQL_HINT.search(text) is not None
         in_migration = MIGRATION_DIR.search(fid) is not None  # names, by design
         hosts_here = not test and "://" in text
@@ -869,7 +885,10 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
             if boundary_here and re.search(r"ErrorBoundary|componentDidCatch|getDerivedStateFromError", line):
                 out["error_boundary"].hits.append(Evidence(fid, i, _excerpt(line)))
             if state_here and re.match(r"^(?:export\s+)?let\s+\w+", line) and hit("module_state", i):
-                out["module_state"].hits.append(Evidence(fid, i, _excerpt(line)))
+                if templated is None:
+                    templated = _template_lines(lines)
+                if i not in templated:  # (not page script inside a template literal: a VS Code webview's HTML)
+                    out["module_state"].hits.append(Evidence(fid, i, _excerpt(line)))
         if (
             not test
             and fid.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"))  # the web's fetch; elsewhere it's any name

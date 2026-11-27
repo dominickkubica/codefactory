@@ -34,6 +34,14 @@ class Round5Test(unittest.TestCase):
         self.assertEqual(hits(found, "secret"), ["config.ts"])
         self.assertEqual([(e.file, e.line) for e in found["sql_built"].hits], [("ClickHouse.php", 4)])
 
+    def test_page_script_inside_a_template_literal_is_not_module_state(self):
+        html = "const html = `\n<script>\nlet selectedEntity = null;\nlet b = 1;\nlet c = 2;\n</script>`;\n"
+        found = self.scan({  # owid: a VS Code webview's HTML in extension.ts
+            "extension.ts": html,
+            "store.ts": "let a = 1;\nlet b = 2;\nlet c = 3;\n",
+        })  # fmt: skip
+        self.assertEqual(sorted(set(hits(found, "module_state"))), ["store.ts"])
+
     def test_base_images_and_entrypoints_that_drop_root(self):
         root = repo({
             "Dockerfile.base": "FROM node:22 AS deps\nRUN npm ci\n",
