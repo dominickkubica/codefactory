@@ -159,14 +159,14 @@
  },
  "NodeBB/NodeBB": {
   "status": "ok",
-  "seconds": 52.5,
+  "seconds": 37.9,
   "commit": "200ee8f",
   "kind": "web service",
   "deployment": "deployed server",
   "counts": {
    "High": 1,
    "Medium": 10,
-   "Low": 5
+   "Low": 4
   },
   "serious": [
    "High: TLS certificate checks turned off"
@@ -174,7 +174,7 @@
  },
  "OWASP/NodeGoat": {
   "status": "ok",
-  "seconds": 7.8,
+  "seconds": 5.5,
   "commit": "c5cb68a",
   "kind": "web service",
   "deployment": "deployed server",
@@ -354,7 +354,7 @@
  },
  "calcom/cal.com": {
   "status": "ok",
-  "seconds": 73.8,
+  "seconds": 86.2,
   "commit": "ae027bb",
   "kind": "web app",
   "deployment": "deployed server",
@@ -897,7 +897,7 @@
  },
  "juice-shop/juice-shop": {
   "status": "ok",
-  "seconds": 34.3,
+  "seconds": 24.8,
   "commit": "c9f9922",
   "kind": "web app",
   "deployment": "deployed server",
@@ -905,7 +905,7 @@
    "Critical": 4,
    "High": 3,
    "Medium": 9,
-   "Low": 6
+   "Low": 5
   },
   "serious": [
    "Critical: Credentials committed in source",
@@ -1303,19 +1303,19 @@
  },
  "openstatusHQ/openstatus": {
   "status": "ok",
-  "seconds": 106.0,
+  "seconds": 74.0,
   "commit": "a08fb42",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "High": 4,
    "Medium": 8,
-   "Low": 7
+   "Low": 6
   },
   "serious": [
    "High: Personal data written to logs",
    "High: Request data reaches dangerous calls (2 proven flows)",
-   "High: 28 errors silently swallowed",
+   "High: 27 errors silently swallowed",
    "High: Import loops (5)"
   ]
  },
@@ -1728,7 +1728,7 @@
  },
  "teableio/teable": {
   "status": "ok",
-  "seconds": 288.5,
+  "seconds": 258.6,
   "commit": "1997791",
   "kind": "web app",
   "deployment": "LAN server",
@@ -1736,7 +1736,7 @@
    "Critical": 1,
    "High": 6,
    "Medium": 7,
-   "Low": 7
+   "Low": 6
   },
   "serious": [
    "Critical: Request data reaches dangerous calls (2 proven flows)",
@@ -1858,9 +1858,20 @@
   ]
  },
  "vuejs/core": {
-  "status": "crash",
-  "seconds": 99.8,
-  "error": ""
+  "status": "ok",
+  "seconds": 2.8,
+  "commit": "d690dee",
+  "kind": "web front-end",
+  "deployment": "browser",
+  "counts": {
+   "High": 2,
+   "Medium": 5,
+   "Low": 3
+  },
+  "serious": [
+   "High: Dynamic code execution (eval / exec / pickle / unsafe YAML)",
+   "High: Import loops (6)"
+  ]
  },
  "wagtail/wagtail": {
   "status": "ok",
