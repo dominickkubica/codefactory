@@ -25,7 +25,7 @@
  },
  "LoopKit/Loop": {
   "status": "ok",
-  "seconds": 4.0,
+  "seconds": 13.7,
   "commit": "813f07c",
   "kind": "mobile app",
   "deployment": "local-first",
@@ -40,7 +40,7 @@
  },
  "actualbudget/actual": {
   "status": "ok",
-  "seconds": 98.8,
+  "seconds": 79.8,
   "commit": "cf95cfe",
   "kind": "web app",
   "deployment": "deployed server",
@@ -229,13 +229,13 @@
  },
  "excalidraw/excalidraw": {
   "status": "ok",
-  "seconds": 67.8,
+  "seconds": 63.8,
   "commit": "dabd83c",
   "kind": "web front-end",
   "deployment": "browser",
   "counts": {
    "High": 1,
-   "Medium": 10,
+   "Medium": 9,
    "Low": 4
   },
   "serious": [
@@ -370,7 +370,7 @@
  },
  "hoppscotch/hoppscotch": {
   "status": "ok",
-  "seconds": 25.5,
+  "seconds": 51.5,
   "commit": "6177eae",
   "kind": "web app",
   "deployment": "deployed server",
@@ -495,25 +495,25 @@
  },
  "localsend/localsend": {
   "status": "ok",
-  "seconds": 12.7,
+  "seconds": 25.2,
   "commit": "44f48f1",
   "kind": "mobile app",
   "deployment": "client app",
   "counts": {
    "Medium": 6,
-   "Low": 6
+   "Low": 5
   },
   "serious": []
  },
  "louislam/uptime-kuma": {
   "status": "ok",
-  "seconds": 38.5,
+  "seconds": 36.0,
   "commit": "df494b4",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "High": 4,
-   "Medium": 10,
+   "Medium": 9,
    "Low": 7
   },
   "serious": [
@@ -811,7 +811,7 @@
  },
  "shadcn-ui/taxonomy": {
   "status": "ok",
-  "seconds": 5.5,
+  "seconds": 9.0,
   "commit": "298a885",
   "kind": "web app",
   "deployment": "network server",
@@ -950,18 +950,17 @@
  },
  "tldraw/tldraw": {
   "status": "ok",
-  "seconds": 55.0,
+  "seconds": 95.1,
   "commit": "94466fd",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "High": 3,
-   "Medium": 10,
+   "High": 2,
+   "Medium": 11,
    "Low": 9
   },
   "serious": [
    "High: Request data reaches dangerous calls (1 proven flows)",
-   "High: 11 errors silently swallowed",
    "High: Import loops (9)"
   ]
  },
@@ -979,7 +978,7 @@
  },
  "traefik/traefik": {
   "status": "ok",
-  "seconds": 17.0,
+  "seconds": 44.8,
   "commit": "8fcaa7c",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -1050,7 +1049,7 @@
  },
  "withastro/astro": {
   "status": "ok",
-  "seconds": 29.7,
+  "seconds": 67.7,
   "commit": "3e3e70f",
   "kind": "web front-end",
   "deployment": "browser",
@@ -1060,7 +1059,7 @@
    "Low": 6
   },
   "serious": [
-   "High: 39 errors silently swallowed",
+   "High: 38 errors silently swallowed",
    "High: Import loops (8)"
   ]
  }

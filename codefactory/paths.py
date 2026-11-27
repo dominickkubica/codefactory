@@ -227,7 +227,7 @@ DEV_DIRS = re.compile(
     re.I,
 )
 DEV_NAME = re.compile(r"(?:^|[._-])(?:dev|devel|development|local|test|tests|testing|ci|e2e|playwright|cypress|override|"
-                      r"example|sample|demo|debug|docs|bench|benchmark)(?:[._-]|$)", re.I)  # fmt: skip
+                      r"example|sample|demo|debug|docs|bench|benchmark|buildx?|builder)(?:[._-]|$)", re.I)  # fmt: skip
 
 
 def is_dev_setup(path: str) -> bool:

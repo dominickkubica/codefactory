@@ -21,7 +21,8 @@ SAFE_FORCE = re.compile(
     r"rootViewController|viewControllers|dequeueReusable|instantiate(?:ViewController|InitialViewController|"
     r"\(withOwner)|\.nib\(|UINib|storyboard|segue\.destination|Bundle\.main|infoDictionary|"
     r"(?:UIApplication|NSApplication)\.shared\.delegate|NSRegularExpression\(pattern:\s*\"|"
-    r"URL\(string:\s*\"|call\.arguments|layerClass|\.layer\s+as!|NSKeyedUnarchiver\.unarchivedObject\(ofClass"
+    r"URL\(string:\s*\"|call\.arguments|layerClass|\.layer\s+as!|NSKeyedUnarchiver\.unarchivedObject\(ofClass|"
+    r"forInfoDictionaryKey|url\(for:\s*\.\w+Directory|createDirectory\(at:|inputItems\s+as!"
 )
 STORED_CLOSURE = re.compile(
     r"\.sink\s*\{|\.sink\s*\(|\.subscribe\s*\{|addObserver\(forName:[^)]*\)\s*\{|scheduledTimer\([^)]*repeats:\s*true[^)]*\)\s*\{|"
@@ -69,7 +70,9 @@ def scan(root: Path, files: list[str]) -> dict[str, Check]:
             continue
         code = [re.sub(r"//.*$", "", ln) for ln in lines]
         for i, ln in enumerate(code):
-            if FORCE.search(ln) and not SAFE_FORCE.search(ln):
+            cast = re.search(r"as!\s*\[?(\w+)", ln)
+            checked = cast and any(re.search(rf"\bis\s+{cast.group(1)}\b", x) for x in code[max(0, i - 3) : i])
+            if FORCE.search(ln) and not SAFE_FORCE.search(ln) and not checked:  # (`if x is T { … x as! T }`)
                 out["swift_force"].hits.append(Evidence(fid, i + 1, lines[i].strip()[:140]))
             if STORED_CLOSURE.search(ln) and not WEAK.search(ln):
                 first, last = _block(code, i)

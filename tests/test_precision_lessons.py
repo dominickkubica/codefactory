@@ -240,6 +240,31 @@ class PlatformTest(unittest.TestCase):
         self.assertEqual(hits(apple_scan(root, ["App/AppDelegate.swift", "LoopTests/Mock.swift"]), "swift_force"),
                          [("App/AppDelegate.swift", 4)])  # fmt: skip
 
+    def test_more_casts_that_cant_fail(self):
+        root = repo({"App/Bg.swift": "if task is BGAppRefreshTask {\n  handle(task: task as! BGAppRefreshTask)\n}\n"
+                                     "let v = object(forInfoDictionaryKey: \"CFBundleShortVersionString\") as! String\n"
+                                     "let n = payload[\"n\"] as! Int\n"})  # fmt: skip
+        self.assertEqual(hits(apple_scan(root, ["App/Bg.swift"]), "swift_force"), [("App/Bg.swift", 5)])
+
+    def test_fetch_that_isnt_a_request_and_a_global_axios_timeout(self):
+        root = repo({
+            "src/hooks.ts": "async function fetch() {\n  return send('status');\n}\n",
+            "src/assets.ts": "export async function f(url: string) {\n  const dataUrl = url;\n  const res = await fetch(dataUrl);\n}\n",
+            "server/server.ts": "import axios from 'axios';\naxios.defaults.timeout = 300_000;\n",
+            "server/discord.ts": "import axios from 'axios';\nawait axios.post(url, payload);\n",
+            "src/api.ts": "export const get = () => fetch('/api/x');\n",
+        })  # fmt: skip
+        files = ["src/hooks.ts", "src/assets.ts", "server/server.ts", "server/discord.ts", "src/api.ts"]
+        self.assertEqual([e.file for e in scan_sources(root, files)["fetch_no_timeout"].hits], ["src/api.ts"])
+
+    def test_images_that_test_or_build(self):
+        root = repo({
+            "packages/http/Dockerfile.fpm": "FROM php:8.5-fpm-alpine AS final\nCOPY tests/ /app/tests/\nCOPY phpunit.xml /app/\n",
+            "webui/buildx.Dockerfile": "FROM node:26-alpine\nRUN yarn build\n",
+            "server/Dockerfile": "FROM node:22-alpine\nCMD [\"node\", \"x.js\"]\n",
+        })  # fmt: skip
+        self.assertEqual([e.file for e in scan_config(root)["docker_root"].hits], ["server/Dockerfile"])
+
     def test_personal_data_words_that_arent(self):
         root = repo({
             "services/doctor.go": 'logger.Warn("Regenerated hooks for %s", repo.FullName())\n',

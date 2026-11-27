@@ -116,7 +116,8 @@ def dockerfiles(root: Path, files: list[Path], out: dict[str, Check]) -> None:
             continue
         users = [u.group(1) for u in USER.finditer(text)]
         final = text[froms[-1].start() :].split("\n", 1)[0]  # the whole line: `FROM node:22 AS dev`
-        dev = is_dev_setup(rel) or re.search(r"\bAS\s+(?:dev|develop\w*|test\w*|ci)\s*$", final, re.I)  # (a final
+        tests_image = re.search(r"^\s*COPY\s+[^\n]*\b(?:tests?|phpunit[\w.]*|pytest[\w.]*|jest\.config\w*)\b", text, re.M | re.I)
+        dev = is_dev_setup(rel) or tests_image or re.search(r"\bAS\s+(?:dev|develop\w*|test\w*|ci)\s*$", final, re.I)  # (a final
         # stage named `build` still ships: cal.com's API image)
         nonroot = re.search(r"nonroot|distroless|chainguard|rootless|unprivileged", final, re.I)
         if (not users or users[-1] in ("root", "0", "0:0")) and not dev and not nonroot:

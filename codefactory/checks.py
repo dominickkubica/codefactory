@@ -626,7 +626,21 @@ def scan_sources(root: Path, files: list[str]) -> dict[str, Check]:
             out[key].hits += [Evidence(fid, line, text) for line, text in got["hits"]]
             for k, v in got["data"].items():
                 out[key].data.setdefault(k, v)  # hosts: the first file that uses each
+    if any("axios" in e.text for e in out["fetch_no_timeout"].hits) and _axios_default_timeout(root, files):
+        # set once for the whole app (`axios.defaults.timeout = 300_000` in the server's constructor)
+        out["fetch_no_timeout"].hits = [e for e in out["fetch_no_timeout"].hits if "axios" not in e.text]
     return out
+
+
+def _axios_default_timeout(root: Path, files: list[str]) -> bool:
+    for fid in files:
+        if fid.endswith((".ts", ".js", ".mjs", ".cjs", ".tsx")):
+            try:
+                if "defaults.timeout" in (root / fid).read_text(encoding="utf-8", errors="replace"):
+                    return True
+            except OSError:
+                continue
+    return False
 
 
 def _scan_one(root: str, fid: str) -> dict:
@@ -803,8 +817,15 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
             and re.search(r"(?<![\w.])fetch\s*\(", text)
             and not re.search(r"\bsignal\b|AbortSignal\.timeout|timeout", text)
         ):
-            ln = next(i for i, text in enumerate(lines, 1) if re.search(r"(?<![\w.])fetch\s*\(", text))
-            out["fetch_no_timeout"].hits.append(Evidence(fid, ln, _excerpt(lines[ln - 1])))
+            # the first real call: not a comment, a function or method of that name, a data: or extension URL, or a
+            # file bundled with the code (`fetch(new URL("./font.ttf", import.meta.url))`)
+            ln = next((i for i, text in enumerate(lines, 1) if re.search(r"(?<![\w.])fetch\s*\(", text)
+                       and not COMMENT_LINE.match(text) and not re.search(
+                           r"function\s+fetch\b|\bfetch\s*\([^)]*:\s*[\w<>\[\]]+[^)]*\)\s*[:{;]|import\.meta\.url|"
+                           r"data:|dataUrl|chrome-extension://|moz-extension://|blob:", " ".join(lines[i - 1 : i + 1]))),
+                      None)  # fmt: skip
+            if ln:
+                out["fetch_no_timeout"].hits.append(Evidence(fid, ln, _excerpt(lines[ln - 1])))
         if (
             not test
             and fid.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"))
