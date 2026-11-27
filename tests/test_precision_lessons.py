@@ -390,8 +390,14 @@ class EndpointTest(unittest.TestCase):
         })  # fmt: skip
         g = build(root, cache=False).to_dict()
         found = {(e.method, e.path, e.auth) for e in surface(root, g, View(g)).entries if e.framework == "Utopia"}
-        self.assertEqual(found, {("GET", "/v1/ping", ""), ("POST", "/v1/databases/:id/documents", "scope documents.write"),
-                                 ("PATCH", "/v1/project/policies/:id", "scope policies.write")})
+        self.assertEqual(
+            found,
+            {
+                ("GET", "/v1/ping", ""),
+                ("POST", "/v1/databases/:id/documents", "scope documents.write"),
+                ("PATCH", "/v1/project/policies/:id", "scope policies.write"),
+            },
+        )
 
     def entries(self, files):
         from codefactory.brief import View
@@ -430,8 +436,14 @@ class EndpointTest(unittest.TestCase):
         text = (root / files[1]).read_text()
         self.assertTrue(rails.guard(text)[0])
         self.assertTrue(SIGN_IN.search("sessions#create Auth::SessionsController.create"))
-        self.assertFalse(self.entries({"config/routes/admin.rb": "namespace :admin do\n  delete '/ignored_server_checks/:key'\nend\n"}))
-        root = repo({"src/lib.rs": "pub fn real() {}\n\n#[cfg(test)]\nmod tests {\n    fn app() { Router::new().route(\"/\", post(h)); }\n}\n"})
+        self.assertFalse(
+            self.entries({"config/routes/admin.rb": "namespace :admin do\n  delete '/ignored_server_checks/:key'\nend\n"})
+        )
+        root = repo(
+            {
+                "src/lib.rs": 'pub fn real() {}\n\n#[cfg(test)]\nmod tests {\n    fn app() { Router::new().route("/", post(h)); }\n}\n'
+            }
+        )
         r = Review(build(root, cache=False).to_dict(), root)
         self.assertTrue(r._comment_line("src/lib.rs", 5))
         self.assertFalse(r._comment_line("src/lib.rs", 1))

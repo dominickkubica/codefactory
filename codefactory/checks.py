@@ -487,7 +487,9 @@ def _safe_html(lines: list[str], i: int) -> bool:
         re.fullmatch(r"[A-Za-z_$][\w$]*", whole) and whole in safe_names(lines, i, span=400)
     ):
         return True  # only fixed values: `window.status = '${pageStatus}'` (one of four literals), a constant SVG sprite
-    if re.search(r"dangerouslySetInnerHTML=\{\{\s*$", line) and re.match(r"\s*__html\s*:\s*`", lines[i] if i < len(lines) else ""):
+    if re.search(r"dangerouslySetInnerHTML=\{\{\s*$", line) and re.match(
+        r"\s*__html\s*:\s*`", lines[i] if i < len(lines) else ""
+    ):
         literal = "\n".join(lines[i : i + 60]).split("`", 2)
         if len(literal) > 2 and "${" not in literal[1]:
             return True  # a fixed script in a template literal over several lines
@@ -797,7 +799,9 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                     if concat:  # "… id = " + id: risky unless every value joined in is a number
                         segment = body.split(";")[0]
                         joined = re.findall(r"(?:^|\+)\s*([A-Za-z_$][\w$.]*(?:\(\))?)\s*(?=\+|\)|,|$)", segment)
-                        only_text = not re.search(r"(?:^|\+)\s*[A-Za-z_$(]", re.sub(r"\"(?:[^\"\\]|\\.)*\"|'(?:[^'\\]|\\.)*'", "''", segment))
+                        only_text = not re.search(
+                            r"(?:^|\+)\s*[A-Za-z_$(]", re.sub(r"\"(?:[^\"\\]|\\.)*\"|'(?:[^'\\]|\\.)*'", "''", segment)
+                        )
                         concat = not only_text and (not joined or any(not interp_safe(n, safe) for n in joined))  # (text
                         # joined to text, a statement split over lines, has nothing in it to inject)
                     if risky or sprintf or concat or m.group(1).endswith("%") or ".format" in m.group(1):
