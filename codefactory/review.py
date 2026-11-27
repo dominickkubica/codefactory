@@ -204,7 +204,9 @@ class Review:
             fn = self.v.fn.get(e.fn)
             if fn and (fn["name"] in named or self._route_name(fn) in named):
                 out.add(e.fn)
-        called = set(re.findall(r"\.(\w+)\s*\(", blob))
+        # `.name(`, and PHP's `$transport->write(` / `Client::create(` (appwrite: TlsTransport.write, run by a test
+        # through a data provider)
+        called = set(re.findall(r"(?:\.|->|::)(\w+)\s*\(", blob))
         # a method a test calls by name, in any language: through a mixin, a base class or `self.session.delete()`, the
         # call graph can't tell which class's method runs, and "no test reaches it" was wrong for most of these
         out |= {fid for fid, f in self.v.fn.items() if f["kind"] == "method" and f["name"] in called
