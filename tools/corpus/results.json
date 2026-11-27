@@ -47,7 +47,7 @@
  },
  "BurntSushi/ripgrep": {
   "status": "ok",
-  "seconds": 13.9,
+  "seconds": 8.3,
   "commit": "3e85c6c",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -241,7 +241,7 @@
  },
  "actualbudget/actual": {
   "status": "ok",
-  "seconds": 61.8,
+  "seconds": 61.7,
   "commit": "cf95cfe",
   "kind": "web app",
   "deployment": "deployed server",
@@ -269,7 +269,7 @@
  },
  "apache/superset": {
   "status": "ok",
-  "seconds": 157.6,
+  "seconds": 161.3,
   "commit": "3758941",
   "kind": "web app",
   "deployment": "deployed server",
@@ -285,7 +285,7 @@
  },
  "appwrite/appwrite": {
   "status": "ok",
-  "seconds": 290.0,
+  "seconds": 313.3,
   "commit": "26642a47",
   "kind": "web app",
   "deployment": "deployed server",
@@ -354,7 +354,7 @@
  },
  "calcom/cal.com": {
   "status": "ok",
-  "seconds": 80.8,
+  "seconds": 85.3,
   "commit": "ae027bb",
   "kind": "web app",
   "deployment": "deployed server",
@@ -465,7 +465,7 @@
  },
  "django/django": {
   "status": "ok",
-  "seconds": 54.1,
+  "seconds": 52.5,
   "commit": "f0e7bd9",
   "kind": "library",
   "deployment": "user's machine",
@@ -599,7 +599,7 @@
  },
  "fastapi/full-stack-fastapi-template": {
   "status": "ok",
-  "seconds": 12.6,
+  "seconds": 7.2,
   "commit": "f8c6c14",
   "kind": "web app",
   "deployment": "deployed server",
@@ -607,7 +607,10 @@
    "Medium": 3,
    "Low": 3
   },
-  "serious": []
+  "serious": [],
+  "notes": [
+   "codefactory: 1 Python files use syntax newer than Python 3.13 (backend/app/api/deps.py): analyzed by tree-sitter instead, matching calls by name."
+  ]
  },
  "filebrowser/filebrowser": {
   "status": "ok",
@@ -725,7 +728,7 @@
  },
  "gotify/server": {
   "status": "ok",
-  "seconds": 18.7,
+  "seconds": 7.2,
   "commit": "912af9f",
   "kind": "web app",
   "deployment": "deployed server",
@@ -775,14 +778,14 @@
  },
  "hoppscotch/hoppscotch": {
   "status": "ok",
-  "seconds": 101.4,
+  "seconds": 38.7,
   "commit": "6177eae",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "High": 1,
    "Medium": 9,
-   "Low": 6
+   "Low": 5
   },
   "serious": [
    "High: Import loops (12)"
@@ -834,7 +837,7 @@
  },
  "immich-app/immich": {
   "status": "ok",
-  "seconds": 43.3,
+  "seconds": 47.9,
   "commit": "a51a438",
   "kind": "mobile app",
   "deployment": "client app",
@@ -1048,7 +1051,7 @@
  },
  "localsend/localsend": {
   "status": "ok",
-  "seconds": 30.0,
+  "seconds": 9.3,
   "commit": "44f48f1",
   "kind": "mobile app",
   "deployment": "client app",
@@ -1146,7 +1149,7 @@
  },
  "mastodon/mastodon": {
   "status": "ok",
-  "seconds": 50.7,
+  "seconds": 50.5,
   "commit": "db13cc1",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1192,7 +1195,7 @@
  },
  "meilisearch/meilisearch": {
   "status": "ok",
-  "seconds": 44.6,
+  "seconds": 20.8,
   "commit": "9fb6a90",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -1219,14 +1222,14 @@
  },
  "monicahq/monica": {
   "status": "ok",
-  "seconds": 192.1,
+  "seconds": 66.5,
   "commit": "7317719",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "High": 1,
    "Medium": 3,
-   "Low": 5
+   "Low": 3
   },
   "serious": [
    "High: Import loops (4)"
@@ -1318,7 +1321,7 @@
  },
  "outline/outline": {
   "status": "ok",
-  "seconds": 70.2,
+  "seconds": 83.3,
   "commit": "13c6c77",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1334,7 +1337,7 @@
  },
  "owid/etl": {
   "status": "ok",
-  "seconds": 59.2,
+  "seconds": 78.2,
   "commit": "9a2e7d68",
   "kind": "data pipeline",
   "deployment": "user's machine",
@@ -1534,7 +1537,7 @@
  },
  "saleor/saleor": {
   "status": "ok",
-  "seconds": 56.3,
+  "seconds": 59.5,
   "commit": "e1ccf4d",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1747,7 +1750,7 @@
  },
  "tldraw/tldraw": {
   "status": "ok",
-  "seconds": 74.3,
+  "seconds": 93.4,
   "commit": "94466fd",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1762,7 +1765,7 @@
  },
  "tokio-rs/axum": {
   "status": "ok",
-  "seconds": 16.0,
+  "seconds": 5.5,
   "commit": "8d8944e",
   "kind": "library",
   "deployment": "user's machine",
@@ -1786,7 +1789,7 @@
  },
  "trpc/trpc": {
   "status": "ok",
-  "seconds": 36.2,
+  "seconds": 34.9,
   "commit": "8138cd5",
   "kind": "web front-end",
   "deployment": "browser",
@@ -1872,7 +1875,7 @@
  },
  "wagtail/wagtail": {
   "status": "ok",
-  "seconds": 31.7,
+  "seconds": 38.6,
   "commit": "da32ecb",
   "kind": "web app",
   "deployment": "network server",
@@ -1887,7 +1890,7 @@
  },
  "withastro/astro": {
   "status": "ok",
-  "seconds": 28.6,
+  "seconds": 34.8,
   "commit": "3e3e70f",
   "kind": "web front-end",
   "deployment": "browser",
