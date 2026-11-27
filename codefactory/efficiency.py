@@ -103,6 +103,10 @@ WRITE_CALL = re.compile(r"(^|\.)(?:insert\w*|update\w*|upsert\w*|save\w*|delete\
                         r"set\w*|write\w*|append\w*|add\w*|commit|persist|flush|exec(?:ute)?\w*|send\w*|post\w*|"
                         r"patch\w*|store\w*|push\w*|incr\w*|decr\w*|expire|publish|enqueue|Exec\w*|Update\w*|"
                         r"Save\w*|Delete\w*|Insert\w*|Create\w*|Set\w*|Put\w*|Add\w*|run(?:Async|Sync)?|transact\w*)\b")
+WRITE_NAME = re.compile(
+    r"(?:^|[._])(?:insert|update|upsert|save|delete|destroy|remove|create|persist|commit|mark|restore|write|store|put|Insert|Update|Upsert|Save|Delete|Destroy|Remove|Create|Persist|Commit|Mark|Restore|Write|Store|Put)"
+    r"|(?<=[a-z])(?:Insert|Update|Upsert|Save|Delete|Destroy|Remove|Create|Persist|Commit|Mark|Restore|Write|Store|Put)"
+)
 WRITE_SQL = re.compile(r"INSERT|UPDATE|DELETE|REPLACE|UPSERT|commit|save|put|set|write|create|add|remove|delete", re.I)
 READ_NAME = re.compile(r"^_?(read|get|load|fetch|list|find|count|select|query|lookup|latest|recent|stored)", re.I)
 
@@ -113,6 +117,8 @@ def kind_through(sink: str, path: list[str]) -> str:
     kind = kind_of(sink)
     if kind == "write" and not WRITE_SQL.search(sink) and any(READ_NAME.match(n) for n in path):
         return "read"
+    if kind == "other" and any(WRITE_NAME.search(n) for n in path):
+        return "write"  # cipher.delete(), MarkAsMerged(), UpdatePortVisibility(): the functions on the way say so
     return kind
 
 
