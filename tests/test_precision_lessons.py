@@ -334,6 +334,27 @@ class EndpointTest(unittest.TestCase):
         })  # fmt: skip
         self.assertEqual(found, {("NestJS", "POST", "/open/x", True), ("NestJS", "POST", "/open/signup", False)})
 
+    def test_pundit_devise_sign_in_and_rust_test_routers(self):
+        from codefactory.review import SIGN_IN
+        from codefactory.security import _RailsControllers
+
+        root = repo({
+            "app/controllers/admin/base_controller.rb": "module Admin\n  class BaseController < ApplicationController\n"
+                                                        "    after_action :verify_authorized\n  end\nend\n",
+            "app/controllers/admin/checks_controller.rb": "module Admin\n  class ChecksController < BaseController\n"
+                                                          "    def destroy\n      authorize check, :restore?\n    end\n  end\nend\n",
+        })  # fmt: skip
+        files = ["app/controllers/admin/base_controller.rb", "app/controllers/admin/checks_controller.rb"]
+        rails = _RailsControllers(root, files, {})
+        text = (root / files[1]).read_text()
+        self.assertTrue(rails.guard(text)[0])
+        self.assertTrue(SIGN_IN.search("sessions#create Auth::SessionsController.create"))
+        self.assertFalse(self.entries({"config/routes/admin.rb": "namespace :admin do\n  delete '/ignored_server_checks/:key'\nend\n"}))
+        root = repo({"src/lib.rs": "pub fn real() {}\n\n#[cfg(test)]\nmod tests {\n    fn app() { Router::new().route(\"/\", post(h)); }\n}\n"})
+        r = Review(build(root, cache=False).to_dict(), root)
+        self.assertTrue(r._comment_line("src/lib.rs", 5))
+        self.assertFalse(r._comment_line("src/lib.rs", 1))
+
     def test_next_middleware_and_its_matcher(self):
         found = self.entries({
             "middleware.ts": "export async function middleware(req) { const t = await getToken({ req }); }\n"

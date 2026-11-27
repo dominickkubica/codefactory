@@ -75,7 +75,8 @@ def _ev(items, n: int = 6) -> tuple[list[str], int]:
 
 # endpoints that have to work without being signed in: signing in, signing up, resetting a password, confirming an email
 SIGN_IN = re.compile(r"log_?in|log_?out|sign_?in|sign_?up|signup|regist(?:er|ration)|password|reset|forgot|confirm|"
-                     r"(?<![a-z])setup(?![a-z])|health|webhook|"  # first-run setup; a webhook checks its own signature
+                     r"(?<![a-z])setup(?![a-z])|health|webhook|\bsessions?#(?:create|new)|"  # first-run setup; a webhook
+                     # checks its own signature; Devise's sign-in
                      r"verify|webauthn|totp|two_?factor|2fa|oauth|callback|magic_?link|unsubscribe|check_token|login_link",
                      re.I)  # fmt: skip
 CLIENT_APPS = {"React", "React Native", "Expo", "Vue", "Svelte"}  # a UI process serves one user
@@ -486,7 +487,11 @@ class Review:
             text = (self.root / file).read_text(encoding="utf-8", errors="replace").splitlines()
         except OSError:
             return False
-        return 0 < line <= len(text) and re.match(r"\s*(?://|#|\*|/\*)", text[line - 1]) is not None
+        if not 0 < line <= len(text):
+            return False
+        if file.endswith(".rs") and any(re.match(r"\s*#\[cfg\(test\)\]", ln) for ln in text[: line - 1]):
+            return True  # inside a `#[cfg(test)]` module: a test's router, compiled only for tests
+        return re.match(r"\s*(?://|#|\*|/\*)", text[line - 1]) is not None
 
     def endpoints(self) -> None:
         entries = self.surface.entries

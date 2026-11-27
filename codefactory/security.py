@@ -188,6 +188,8 @@ class _RailsControllers:
         own = next((a for a in RAILS_AUTH.findall(text) if _auth(a)), "")
         if own:
             return own
+        if re.search(r"after_action\s+:verify_authorized\b|^\s*authorize\s+[@\w:]", text, re.M):
+            return "Pundit authorize"  # every action must call `authorize`, or Pundit raises (Mastodon's admin)
         for line in re.findall(r"^\s*include\s+([^\n]+)", text, re.M):
             for name in re.findall(r"[\w:]+", line):
                 if name.split("::")[-1] in self.concerns:
@@ -579,7 +581,9 @@ def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
                     if handler or module:
                         entries.append(Entry((handler or module)["id"], verb, m.group(2), "Go", file, i, auth))
         elif file.endswith(".rb"):
-            for m in SINATRA.finditer(text):
+            # (not Rails' routing files: `delete '/x'` there routes to a controller action, read from the controller)
+            sinatra = [] if re.search(r"(?:^|/)config/routes(?:\.rb$|/)", file) else SINATRA.finditer(text)
+            for m in sinatra:
                 if module:
                     line = text[: m.start()].count("\n") + 1
                     entries.append(Entry(module["id"], m.group(1).upper(), m.group(2), "Sinatra", file, line))
