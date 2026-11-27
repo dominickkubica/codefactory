@@ -1108,7 +1108,12 @@ def _ordered(labels: set) -> list:
 def summarize(fn: _Function) -> Summary:
     s = Summary()
     hits, returns = fn.run(set(range(len(fn.u.params))))
-    for label, kind, line, text, via, file in hits:
+    # one flow per sink line, the shortest path to it: a longer route to the same sink adds nothing, and keeping
+    # every route let recursive summaries grow without end (vue/core: past 12 GB)
+    best: dict[tuple, tuple] = {}
+    for label, kind, line, text, via, file in sorted(hits, key=lambda h: (len(h[4]), h[4], repr(h[0]))):
+        best.setdefault((label, kind, line, file), (label, kind, line, text, via, file))
+    for label, kind, line, text, via, file in best.values():
         if label[0] == "param":
             s.sinks.setdefault(label[1], []).append((kind, line, text, via, file))
         else:
