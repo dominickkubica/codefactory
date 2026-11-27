@@ -501,7 +501,7 @@
  },
  "dotnet/eShop": {
   "status": "ok",
-  "seconds": 6.9,
+  "seconds": 3.9,
   "commit": "3c6e531",
   "kind": "web service",
   "deployment": "network server",
@@ -837,7 +837,7 @@
  },
  "immich-app/immich": {
   "status": "ok",
-  "seconds": 56.0,
+  "seconds": 28.6,
   "commit": "a51a438",
   "kind": "mobile app",
   "deployment": "client app",
@@ -847,8 +847,8 @@
    "Low": 6
   },
   "serious": [
-   "High: App allows unencrypted HTTP",
    "High: Required-reason API without a privacy manifest",
+   "High: App allows unencrypted HTTP",
    "High: Import loops (5)",
    "High: Raw HTML injected into pages"
   ]
