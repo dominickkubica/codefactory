@@ -71,7 +71,9 @@ def expected_failure(lines: list[str], i: int) -> str | None:
         ):
             start -= 1  # (back to where the statement opens: a call over many lines, `prisma.job.update({ … })`)
         stmt = " ".join(lines[start:i])
-        if re.search(r"(?<![=!<>])=(?![=>])|\breturn\b|\?\?|\|\||&&|\(\s*await\b|,\s*await\b", stmt):
+        head = re.split(r"=>|\bfunction\b", stmt, maxsplit=1)[0]  # (an assignment inside a callback isn't the result's)
+        empty = re.search(r"\.catch\(\s*(?:\(\s*\w*\s*\)|\w+)\s*=>\s*\{\s*\}\s*\)", line)  # `() => {}`: a body, not a value
+        if not empty and re.search(r"(?<![=!<>])=(?![=>])|\breturn\b|\?\?|\|\||&&|\(\s*await\b|,\s*await\b", head):
             return "fallback"  # the null, false or [] is the answer the code then checks
     body = []
     for back in range(i - 2, max(-1, i - 20), -1):
@@ -252,6 +254,24 @@ def fixed_functions(lines: list[str]) -> set[str]:
     return out
 
 
+LITERAL_VALUE = re.compile(r"""\s*(?:[rbuf]?'[^'{]*'|[rbuf]?"[^"{]*"|`[^`$]*`|-?\d[\d_.]*|True|False|true|false)\s*;?\s*""")
+
+
+def _fixed_constants(lines: list[str]) -> set[str]:
+    """UPPER_CASE names this file sets only to literals, or imports and never sets. Not one set from anything else:
+    `PRODUCTION_REF = process.env.PRODUCTION_REF || "origin/master"` is whatever the environment says."""
+    text = "\n".join(lines)
+    out = set()
+    for name in set(re.findall(r"\b([A-Z][A-Z0-9_]{2,})\b", text)):
+        sets = re.findall(rf"^\s*(?:export\s+)?(?:const\s+|let\s+|var\s+)?{name}\s*(?::[^=\n]+)?=(?!=)\s*(.+)$", text, re.M)
+        if sets:
+            if all(LITERAL_VALUE.fullmatch(v) for v in sets):
+                out.add(name)
+        elif re.search(rf"^\s*(?:from\s+\S+\s+import\b.*\b{name}\b|import\s*\{{[^}}]*\b{name}\b)", text, re.M):
+            out.add(name)  # imported, never set here: the other module's constant (`from etl.paths import SNAPSHOTS_DIR`)
+    return out
+
+
 def safe_names(lines: list[str], i: int, span: int = 60) -> set[str]:
     """Names that, in the lines leading up to line i, only hold values from a fixed list or that were checked
     against one: `for (const t of Object.keys(TABLES))`, `const cols = keys.filter((c) => allowed.has(c))`,
@@ -260,6 +280,7 @@ def safe_names(lines: list[str], i: int, span: int = 60) -> set[str]:
     window = lines[max(0, i - span) : i]
     fixed = _fixed_cached(lines)
     safe |= fixed  # `${parseLocaltime(type)}`: a helper that only returns fixed text
+    safe |= _fixed_constants(lines)  # `SNAPSHOTS_DIR`: a constant set to a literal here, or imported and left alone
     for _ in range(2):  # a second pass picks up names derived from names the first pass found
         for ln in window:
             for m in re.finditer(r"(?:\.has|\.includes|\bin)\s*\(\s*([A-Za-z_$][\w$]*)\s*\)", ln):
@@ -331,8 +352,7 @@ ESCAPED = re.compile(
 
 def interp_safe(expr: str, safe: set[str]) -> bool:
     e = expr.strip()
-    # (a constant by naming convention, SNAPSHOTS_DIR: the program's own setting, not a visitor's value)
-    return bool(NUMERIC.match(e)) or _root(e) in safe or bool(ESCAPED.search(e)) or CONST_NAME.fullmatch(e) is not None
+    return bool(NUMERIC.match(e)) or _root(e) in safe or bool(ESCAPED.search(e))
 
 
 # ---- CI ------------------------------------------------------------------------------------------------------------

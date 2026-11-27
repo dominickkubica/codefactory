@@ -249,7 +249,10 @@ def _few_written_out(lines: list[str], at: int, name: str, span: int = 40) -> bo
         body, between = text[: i + 1], "\n".join(lines[n + 1 : at])
         grown = re.search(rf"\b{re.escape(name)}\s*(?:\.(?:append|push|extend|add|insert|unshift|concat)\b|\+=|\[)", between)
         empty = re.fullmatch(r"[\[(]\s*[\])]", body) is not None  # (`typed: list = []`, filled by the lines after)
-        return depth == 0 and items <= 4 and not empty and not grown and not re.search(r"\bfor\b|\.\.\.|\*\w", body)
+        computed = re.search(r"[\w\])]\s*\(", body[1:])  # (`(db.session.query(…).all())`: one value, worked out)
+        tuple_ = body.startswith("[") or items >= 2  # (a parenthesis around one value isn't a tuple)
+        return (depth == 0 and items <= 4 and tuple_ and not empty and not grown and not computed
+                and not re.search(r"\bfor\b|\.\.\.|\*\w", body))  # fmt: skip
     return False
 
 

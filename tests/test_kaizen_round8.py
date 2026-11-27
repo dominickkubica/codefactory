@@ -117,6 +117,25 @@ class Round8Test(unittest.TestCase):
         )
         self.assertEqual(at(found, "secret"), [("prod.py", 1)])
 
+    # caught by the corpus gate: each of these was a right finding the first version of a rule above dropped
+
+    def test_a_constant_set_from_the_environment_is_not_fixed(self):
+        found = self.scan({"cov.js": 'const { execSync } = require("child_process");\n'
+                                     'const PRODUCTION_REF = process.env.PRODUCTION_REF || "origin/master";\n'
+                                     'const PATH_ = "src/p.json";\nexecSync(`git show ${PRODUCTION_REF}:x`);\n'
+                                     "execSync(`git show main:${PATH_}`);\n"})  # fmt: skip
+        self.assertEqual(at(found, "shell"), [("cov.js", 4)])
+
+    def test_an_empty_catch_ending_a_chain_is_still_swallowed(self):
+        chain = ["  Register.init = function () {", "    import('zxcvbn').then((module) => {",
+                 "      zxcvbn = module.default || module;", "    }).catch(() => {});"]  # fmt: skip
+        self.assertIsNone(expected_failure(chain, 4))  # (the assignment is the callback's, and `{}` is a body)
+
+    def test_a_query_in_parentheses_is_not_a_written_out_list(self):
+        lines = ["charts = (", "    db.session.query(Slice)", "    .filter(Slice.id.in_(ids))", "    .all()", ")",
+                 "for chart in charts:"]  # fmt: skip
+        self.assertFalse(_few_written_out(lines, 5, "charts"))
+
 
 if __name__ == "__main__":
     unittest.main()
