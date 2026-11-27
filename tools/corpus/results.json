@@ -159,23 +159,22 @@
  },
  "NodeBB/NodeBB": {
   "status": "ok",
-  "seconds": 67.2,
+  "seconds": 52.5,
   "commit": "200ee8f",
   "kind": "web service",
   "deployment": "deployed server",
   "counts": {
-   "High": 2,
+   "High": 1,
    "Medium": 10,
    "Low": 5
   },
   "serious": [
-   "High: TLS certificate checks turned off",
-   "High: Request data reaches dangerous calls (4 proven flows)"
+   "High: TLS certificate checks turned off"
   ]
  },
  "OWASP/NodeGoat": {
   "status": "ok",
-  "seconds": 8.0,
+  "seconds": 7.8,
   "commit": "c5cb68a",
   "kind": "web service",
   "deployment": "deployed server",
@@ -355,22 +354,22 @@
  },
  "calcom/cal.com": {
   "status": "ok",
-  "seconds": 310.7,
+  "seconds": 106.8,
   "commit": "ae027bb",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "Critical": 1,
-   "High": 5,
+   "Critical": 2,
+   "High": 4,
    "Medium": 13,
    "Low": 7
   },
   "serious": [
    "Critical: Credentials in configuration files",
+   "Critical: Request data reaches dangerous calls (9 proven flows)",
    "High: TLS certificate checks turned off",
    "High: Import loops (7)",
    "High: Personal data written to logs",
-   "High: Request data reaches dangerous calls (7 proven flows)",
    "High: 10 errors silently swallowed"
   ]
  },
@@ -636,13 +635,13 @@
  },
  "getmaxun/maxun": {
   "status": "ok",
-  "seconds": 20.5,
+  "seconds": 29.2,
   "commit": "0c55597",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "Critical": 1,
-   "High": 6,
+   "High": 5,
    "Medium": 7,
    "Low": 6
   },
@@ -650,7 +649,6 @@
    "Critical: Dynamic code execution (eval / exec / pickle / unsafe YAML)",
    "High: No continuous integration",
    "High: No lockfile",
-   "High: Request data reaches dangerous calls (1 proven flows)",
    "High: TLS certificate checks turned off",
    "High: 47 errors silently swallowed",
    "High: Import loops (2)"
@@ -896,7 +894,7 @@
  },
  "juice-shop/juice-shop": {
   "status": "ok",
-  "seconds": 40.8,
+  "seconds": 34.3,
   "commit": "c9f9922",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1002,21 +1000,20 @@
  },
  "linkwarden/linkwarden": {
   "status": "ok",
-  "seconds": 22.6,
+  "seconds": 24.5,
   "commit": "24adcc1",
   "kind": "mobile app",
   "deployment": "local-first",
   "counts": {
-   "High": 5,
+   "High": 4,
    "Medium": 5,
    "Low": 4
   },
   "serious": [
    "High: Personal data written to logs",
    "High: iOS permission used without its usage description",
-   "High: Request data reaches dangerous calls (3 proven flows)",
    "High: 18 errors silently swallowed",
-   "High: Important code no test reaches (70 functions)"
+   "High: Important code no test reaches (92 functions)"
   ]
  },
  "lldap/lldap": {
@@ -1099,20 +1096,19 @@
  },
  "lukevella/rallly": {
   "status": "ok",
-  "seconds": 44.8,
+  "seconds": 45.3,
   "commit": "7b7138d",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "Critical": 1,
-   "High": 4,
+   "High": 3,
    "Medium": 5,
    "Low": 5
   },
   "serious": [
    "Critical: Credentials in configuration files",
    "High: Personal data sent to analytics or crash reporting",
-   "High: Request data reaches dangerous calls (2 proven flows)",
    "High: Import loops (1)",
    "High: 13 errors silently swallowed"
   ]
@@ -1304,7 +1300,7 @@
  },
  "openstatusHQ/openstatus": {
   "status": "ok",
-  "seconds": 112.3,
+  "seconds": 106.0,
   "commit": "a08fb42",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1315,7 +1311,7 @@
   },
   "serious": [
    "High: Personal data written to logs",
-   "High: Request data reaches dangerous calls (1 proven flows)",
+   "High: Request data reaches dangerous calls (2 proven flows)",
    "High: 28 errors silently swallowed",
    "High: Import loops (5)"
   ]
@@ -1377,17 +1373,16 @@
  },
  "parse-community/parse-server": {
   "status": "ok",
-  "seconds": 45.4,
+  "seconds": 34.9,
   "commit": "c18980c",
   "kind": "web service",
   "deployment": "deployed server",
   "counts": {
-   "High": 2,
+   "High": 1,
    "Medium": 5,
    "Low": 4
   },
   "serious": [
-   "High: Request data reaches dangerous calls (2 proven flows)",
    "High: Import loops (2)"
   ]
  },
@@ -1506,19 +1501,18 @@
  },
  "requarks/wiki": {
   "status": "ok",
-  "seconds": 58.8,
+  "seconds": 48.9,
   "commit": "ef6e6d5",
   "kind": "web app",
   "deployment": "LAN server",
   "counts": {
    "Critical": 1,
-   "High": 3,
+   "High": 2,
    "Medium": 7,
    "Low": 5
   },
   "serious": [
    "Critical: Credentials in configuration files",
-   "High: Request data reaches dangerous calls (2 proven flows)",
    "High: TLS certificate checks turned off",
    "High: No automated tests"
   ]
@@ -1731,7 +1725,7 @@
  },
  "teableio/teable": {
   "status": "ok",
-  "seconds": 662.5,
+  "seconds": 288.5,
   "commit": "1997791",
   "kind": "web app",
   "deployment": "LAN server",
@@ -1742,7 +1736,7 @@
    "Low": 7
   },
   "serious": [
-   "Critical: Request data reaches dangerous calls (13 proven flows)",
+   "Critical: Request data reaches dangerous calls (2 proven flows)",
    "High: Any website may call this API (CORS *)",
    "High: JWT checks turned off",
    "High: Personal data sent to analytics or crash reporting",
