@@ -241,7 +241,7 @@
  },
  "actualbudget/actual": {
   "status": "ok",
-  "seconds": 69.9,
+  "seconds": 61.9,
   "commit": "cf95cfe",
   "kind": "web app",
   "deployment": "deployed server",
@@ -269,7 +269,7 @@
  },
  "apache/superset": {
   "status": "ok",
-  "seconds": 171.4,
+  "seconds": 169.5,
   "commit": "3758941",
   "kind": "web app",
   "deployment": "deployed server",
@@ -285,7 +285,7 @@
  },
  "appwrite/appwrite": {
   "status": "ok",
-  "seconds": 305.0,
+  "seconds": 282.2,
   "commit": "26642a47",
   "kind": "web app",
   "deployment": "deployed server",
@@ -354,7 +354,7 @@
  },
  "calcom/cal.com": {
   "status": "ok",
-  "seconds": 95.6,
+  "seconds": 83.6,
   "commit": "ae027bb",
   "kind": "web app",
   "deployment": "deployed server",
@@ -449,7 +449,7 @@
  },
  "directus/directus": {
   "status": "ok",
-  "seconds": 61.5,
+  "seconds": 66.2,
   "commit": "4856582",
   "kind": "web app",
   "deployment": "deployed server",
@@ -465,7 +465,7 @@
  },
  "django/django": {
   "status": "ok",
-  "seconds": 62.0,
+  "seconds": 54.1,
   "commit": "f0e7bd9",
   "kind": "library",
   "deployment": "user's machine",
@@ -697,7 +697,7 @@
  },
  "go-gitea/gitea": {
   "status": "ok",
-  "seconds": 51.7,
+  "seconds": 50.0,
   "commit": "14d2bdc",
   "kind": "web app",
   "deployment": "deployed server",
@@ -973,7 +973,7 @@
  },
  "laravel/framework": {
   "status": "ok",
-  "seconds": 46.3,
+  "seconds": 39.2,
   "commit": "321caf7",
   "kind": "library",
   "deployment": "user's machine",
@@ -1079,7 +1079,7 @@
  },
  "louislam/uptime-kuma": {
   "status": "ok",
-  "seconds": 15.1,
+  "seconds": 13.6,
   "commit": "df494b4",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1146,7 +1146,7 @@
  },
  "mastodon/mastodon": {
   "status": "ok",
-  "seconds": 46.3,
+  "seconds": 52.1,
   "commit": "db13cc1",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1318,7 +1318,7 @@
  },
  "outline/outline": {
   "status": "ok",
-  "seconds": 68.4,
+  "seconds": 62.7,
   "commit": "13c6c77",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1415,7 +1415,7 @@
  },
  "pocketbase/pocketbase": {
   "status": "ok",
-  "seconds": 17.4,
+  "seconds": 17.5,
   "commit": "7f2773e",
   "kind": "web service",
   "deployment": "network server",
@@ -1650,7 +1650,7 @@
  },
  "square/okhttp": {
   "status": "ok",
-  "seconds": 13.1,
+  "seconds": 14.2,
   "commit": "223a0cc",
   "kind": "library",
   "deployment": "user's machine",
