@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from fnmatch import fnmatch
 from pathlib import Path
 
-from . import hotspots, rerank
+from . import hotspots, rerank, tiers
 from .apple import scan as apple_scan
 from .audit import current_secrets
 from .audit import scan as audit_scan
@@ -1220,6 +1220,9 @@ class Review:
         # listed as hints, not counted as findings (docs/ACCURACY.md)
         self.hints = [f for f in self.findings if HINT.match(f.title)]
         self.findings = [f for f in self.findings if not HINT.match(f.title)]
+        # and within a check, the locations it gets right less often (codefactory/tiers.py)
+        self.findings, lower = tiers.split(self.findings)
+        self.hints += lower
 
     def _test_files(self) -> int:
         on_disk = sum(1 for f in getattr(self, "sources", []) if is_test(f))
