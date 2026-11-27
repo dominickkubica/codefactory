@@ -29,10 +29,17 @@ def iter_files(root: Path, ignore: list[str]) -> list[Path]:
     return sorted(out)
 
 
-def module_name(rel: Path) -> str:
+def module_name(rel: Path, packages: frozenset[str] = frozenset()) -> str:
     parts = list(rel.with_suffix("").parts)
     if parts and parts[0] == "src" and len(parts) > 1:
         parts = parts[1:]
+    elif len(parts) > 2 and parts[0] not in packages:
+        # `lib/streamlit/util.py` is `streamlit.util`: a package's name starts at the top of its `__init__.py` chain
+        top = len(parts) - 1
+        while top > 0 and "/".join(parts[:top]) in packages:
+            top -= 1
+        if top < len(parts) - 1:  # (the file sits in a package)
+            parts = parts[top:]
     if parts[-1] == "__init__":
         parts = parts[:-1]
     return ".".join(parts)
@@ -58,7 +65,7 @@ def _resolve_relative(mod: _Module, level: int, target: str | None) -> str:
     return ".".join([*base, target] if target else base)
 
 
-def _scoped(mod: _Module, imports: list, known: set[str]) -> _Module:
+def _scoped(mod: _Module, imports: list, known: dict[str, str]) -> _Module:
     """The module as one function sees it: its own imports on top of the module's."""
     if not imports:
         return mod
@@ -68,24 +75,25 @@ def _scoped(mod: _Module, imports: list, known: set[str]) -> _Module:
     return view
 
 
-def _collect(mod: _Module, known: set[str]) -> None:
+def _collect(mod: _Module, known: dict[str, str]) -> None:
     _apply_imports(mod, mod.data["imports"], known)
 
 
-def _apply_imports(mod: _Module, imports: list, known: set[str]) -> None:
+def _apply_imports(mod: _Module, imports: list, known: dict[str, str]) -> None:
     for imp in imports:
         if imp[0] == "import":
             _, name, asname, at_load = imp
+            written, name = name, known.get(name, name)  # (`lib.streamlit.util`, the long name of `streamlit.util`)
             if asname:
                 mod.aliases[asname] = name
             else:
-                mod.aliases[name.split(".")[0]] = name.split(".")[0]
-                mod.aliases[name] = name
+                mod.aliases[written.split(".")[0]] = written.split(".")[0]
+                mod.aliases[written] = name
             if at_load:
                 mod.load_imports.add(name)
         else:
             _, module, level, name, asname, at_load = imp
-            src = _resolve_relative(mod, level, module) if level else (module or "")
+            src = _resolve_relative(mod, level, module) if level else known.get(module or "", module or "")
             local = asname or name
             full = f"{src}.{name}" if src else name
             if full in known:
@@ -169,7 +177,7 @@ class _Resolver:
         if dotted:  # package.module.func
             modname, _, sym = dotted.rpartition(".")
             if modname.split(".")[0] in mod.aliases:
-                return self.in_module(modname, sym)
+                return self.in_module(mod.aliases.get(modname, modname), sym)
         return None
 
     def expr(self, mod: _Module, e: list | None, cls: str | None) -> str | None:
@@ -229,14 +237,21 @@ def analyze_python(root: Path, ignore: list[str], cache: bool = True) -> Graph:
     parsed = parallel.run(root, "python", [(rel.as_posix(), (str(root / rel), rel.as_posix())) for rel in paths], parse_module,
                           tool="python-ir-6", cache=cache)  # fmt: skip
     modules: dict[str, _Module] = {}
+    packages = frozenset(rel.parent.as_posix() for rel in paths if rel.name == "__init__.py")
+    names = {rel: module_name(rel, packages) for rel in paths}
+    taken = Counter(names.values()) + Counter(module_name(rel) for rel in paths)
     for rel in paths:
         data = parsed.get(rel.as_posix())
         if data is None:
             continue
-        m = _Module(rel.as_posix(), module_name(rel), data, rel.name == "__init__.py")
+        name = names[rel]
+        if taken[name] > 1 and name != module_name(rel):
+            name = module_name(rel)  # two folders hold a package of that name: keep the full path, never merge them
+        m = _Module(rel.as_posix(), name, data, rel.name == "__init__.py")
         modules[m.name] = m
         g.files.append(File(id=m.rel, module=m.name, loc=data["loc"]))
-    known = set(modules)
+    known = {name: name for name in modules} | {module_name(Path(m.rel)): name for name, m in modules.items()
+                                                  if module_name(Path(m.rel)) not in modules}  # fmt: skip
     for m in modules.values():
         _collect(m, known)
     defs = {name: _functions(m) for name, m in modules.items()}

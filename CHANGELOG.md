@@ -60,6 +60,8 @@ changes that removed wrong findings without losing a right one: about 90 wrong l
   reads are uses. C# loops bounded by project references. Import loops: a C# `using` names a namespace, not a file;
   a qualified PHP name needs its folder to match, and an ambiguous ending matches nothing; a bare Ruby `require` is
   a gem unless `lib/` has it; TypeScript `export type` is erased (11 wrong loops gone in 4 repositories, none lost).
+- Python packages under a source folder (`lib/streamlit/…`) are named from the top of their `__init__.py` chain, so
+  `from streamlit.util import f` reaches them (the long form still does too); streamlit's unused code went 234 → 18.
 
 ### Corpus round 5
 

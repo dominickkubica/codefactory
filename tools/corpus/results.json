@@ -133,7 +133,7 @@
  },
  "celery/celery": {
   "status": "ok",
-  "seconds": 8.6,
+  "seconds": 29.7,
   "commit": "14115f0",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -278,7 +278,7 @@
  },
  "getsentry/sentry-python": {
   "status": "ok",
-  "seconds": 9.2,
+  "seconds": 26.9,
   "commit": "566beb0",
   "kind": "library",
   "deployment": "user's machine",
@@ -344,7 +344,7 @@
  },
  "healthchecks/healthchecks": {
   "status": "ok",
-  "seconds": 7.6,
+  "seconds": 25.4,
   "commit": "c1039ad",
   "kind": "web app",
   "deployment": "deployed server",
@@ -578,7 +578,7 @@
  },
  "mitmproxy/mitmproxy": {
   "status": "ok",
-  "seconds": 32.1,
+  "seconds": 56.8,
   "commit": "0466185",
   "kind": "web app",
   "deployment": "deployed server",
@@ -661,7 +661,7 @@
  },
  "owid/etl": {
   "status": "ok",
-  "seconds": 67.3,
+  "seconds": 90.0,
   "commit": "9a2e7d68",
   "kind": "data pipeline",
   "deployment": "user's machine",
@@ -775,7 +775,7 @@
  },
  "saleor/saleor": {
   "status": "ok",
-  "seconds": 45.9,
+  "seconds": 72.9,
   "commit": "e1ccf4d",
   "kind": "web app",
   "deployment": "deployed server",
@@ -898,7 +898,7 @@
  },
  "streamlit/streamlit": {
   "status": "ok",
-  "seconds": 56.3,
+  "seconds": 79.8,
   "commit": "1819c56",
   "kind": "web app",
   "deployment": "LAN server",
@@ -909,7 +909,7 @@
   },
   "serious": [
    "High: Shell commands built at runtime",
-   "High: Import loops (1)"
+   "High: Import loops (2)"
   ]
  },
  "sveltejs/svelte": {
@@ -1030,13 +1030,13 @@
  },
  "wagtail/wagtail": {
   "status": "ok",
-  "seconds": 39.4,
+  "seconds": 64.1,
   "commit": "da32ecb",
   "kind": "web app",
   "deployment": "network server",
   "counts": {
    "High": 1,
-   "Medium": 6,
+   "Medium": 5,
    "Low": 4
   },
   "serious": [

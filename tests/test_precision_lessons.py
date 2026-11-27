@@ -383,6 +383,20 @@ class StructureTest(unittest.TestCase):
         msg = next(f.message for f in build(root, cache=False).flags if f.kind == "cycle")
         self.assertIn("a.py → b.py → a.py", msg)
 
+    def test_a_package_under_a_source_folder_is_named_from_its_top(self):
+        root = repo({  # streamlit: lib/streamlit/… is imported as streamlit.…, and the long form still works
+            "lib/pkg/__init__.py": "", "lib/pkg/elements/__init__.py": "",
+            "lib/pkg/util.py": "def clean_text(t):\n    return t.strip()\n\n\ndef other(t):\n    return t\n",
+            "lib/pkg/elements/text.py": "from pkg.util import clean_text\n\n\ndef show(x):\n    return clean_text(x)\n",
+            "tests/test_x.py": "import lib.pkg.util\nfrom pkg.elements.text import show\n\n\ndef test_a():\n"
+                               "    show(1)\n    lib.pkg.util.other(2)\n",
+            "a/lib/x/__init__.py": "", "a/lib/x/m.py": "def f():\n    pass\n",  # two packages called x: not merged
+            "b/lib/x/__init__.py": "", "b/lib/x/m.py": "def f():\n    pass\n",
+        })  # fmt: skip
+        g = build(root, cache=False)
+        self.assertFalse([f.target for f in g.flags if f.kind == "unused" and f.target.startswith("lib/")])
+        self.assertEqual(len({f.module for f in g.files if f.id.endswith("x/m.py")}), 2)
+
     def test_names_that_are_not_files_make_no_import_loop(self):
         root = repo({  # C# `using` names a namespace; PHP needs the folder; a bare Ruby require is a gem
             "Svc/A.cs": "using Svc.Model;\nnamespace Svc { class A { } }\n",
