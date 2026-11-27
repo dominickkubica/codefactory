@@ -1,7 +1,7 @@
 {
  "Alamofire/Alamofire": {
   "status": "ok",
-  "seconds": 9.8,
+  "seconds": 25.4,
   "commit": "dea4bab",
   "kind": "library",
   "deployment": "user's machine",
@@ -13,26 +13,26 @@
  },
  "BurntSushi/ripgrep": {
   "status": "ok",
-  "seconds": 3.8,
+  "seconds": 10.7,
   "commit": "3e85c6c",
   "kind": "command-line tool",
   "deployment": "user's machine",
   "counts": {
    "Medium": 2,
-   "Low": 4
+   "Low": 3
   },
   "serious": []
  },
  "LoopKit/Loop": {
   "status": "ok",
-  "seconds": 4.9,
+  "seconds": 10.6,
   "commit": "813f07c",
   "kind": "mobile app",
   "deployment": "local-first",
   "counts": {
    "High": 1,
    "Medium": 4,
-   "Low": 4
+   "Low": 3
   },
   "serious": [
    "High: Required-reason API without a privacy manifest"
@@ -40,7 +40,7 @@
  },
  "actualbudget/actual": {
   "status": "ok",
-  "seconds": 101.8,
+  "seconds": 28.5,
   "commit": "cf95cfe",
   "kind": "web app",
   "deployment": "deployed server",
@@ -56,7 +56,7 @@
  },
  "android/nowinandroid": {
   "status": "ok",
-  "seconds": 6.0,
+  "seconds": 11.6,
   "commit": "2982e63",
   "kind": "mobile app",
   "deployment": "local-first",
@@ -68,14 +68,14 @@
  },
  "apache/superset": {
   "status": "ok",
-  "seconds": 134.1,
+  "seconds": 296.7,
   "commit": "3758941",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "High": 2,
    "Medium": 8,
-   "Low": 5
+   "Low": 6
   },
   "serious": [
    "High: Session cookies without Secure / HttpOnly",
@@ -84,7 +84,7 @@
  },
  "appwrite/appwrite": {
   "status": "ok",
-  "seconds": 339.2,
+  "seconds": 317.4,
   "commit": "26642a47",
   "kind": "web app",
   "deployment": "deployed server",
@@ -101,7 +101,7 @@
  },
  "caddyserver/caddy": {
   "status": "ok",
-  "seconds": 11.0,
+  "seconds": 21.5,
   "commit": "679806f",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -113,7 +113,7 @@
  },
  "calcom/cal.com": {
   "status": "ok",
-  "seconds": 113.5,
+  "seconds": 30.3,
   "commit": "ae027bb",
   "kind": "web app",
   "deployment": "deployed server",
@@ -133,7 +133,7 @@
  },
  "celery/celery": {
   "status": "ok",
-  "seconds": 29.7,
+  "seconds": 20.0,
   "commit": "14115f0",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -148,7 +148,7 @@
  },
  "cli/cli": {
   "status": "ok",
-  "seconds": 20.9,
+  "seconds": 46.3,
   "commit": "aec3808",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -160,7 +160,7 @@
  },
  "dani-garcia/vaultwarden": {
   "status": "ok",
-  "seconds": 10.5,
+  "seconds": 29.1,
   "commit": "dbd7829",
   "kind": "web app",
   "deployment": "deployed server",
@@ -172,7 +172,7 @@
  },
  "directus/directus": {
   "status": "ok",
-  "seconds": 96.7,
+  "seconds": 14.8,
   "commit": "4856582",
   "kind": "web app",
   "deployment": "deployed server",
@@ -188,7 +188,7 @@
  },
  "django/django": {
   "status": "ok",
-  "seconds": 38.2,
+  "seconds": 83.9,
   "commit": "f0e7bd9",
   "kind": "library",
   "deployment": "user's machine",
@@ -204,7 +204,7 @@
  },
  "dotnet/eShop": {
   "status": "ok",
-  "seconds": 7.5,
+  "seconds": 16.4,
   "commit": "3c6e531",
   "kind": "web service",
   "deployment": "network server",
@@ -216,7 +216,7 @@
  },
  "encode/httpx": {
   "status": "ok",
-  "seconds": 1.9,
+  "seconds": 3.7,
   "commit": "e347fb5",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -227,7 +227,7 @@
  },
  "excalidraw/excalidraw": {
   "status": "ok",
-  "seconds": 34.3,
+  "seconds": 87.5,
   "commit": "dabd83c",
   "kind": "web front-end",
   "deployment": "browser",
@@ -242,7 +242,7 @@
  },
  "expressjs/express": {
   "status": "ok",
-  "seconds": 5.7,
+  "seconds": 9.3,
   "commit": "43fca52",
   "kind": "library",
   "deployment": "user's machine",
@@ -254,7 +254,7 @@
  },
  "fastapi/fastapi": {
   "status": "ok",
-  "seconds": 19.2,
+  "seconds": 41.8,
   "commit": "05e6df7",
   "kind": "library",
   "deployment": "user's machine",
@@ -266,19 +266,19 @@
  },
  "fastapi/full-stack-fastapi-template": {
   "status": "ok",
-  "seconds": 0.8,
+  "seconds": 8.8,
   "commit": "f8c6c14",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "Medium": 3,
-   "Low": 4
+   "Low": 3
   },
   "serious": []
  },
  "getsentry/sentry-python": {
   "status": "ok",
-  "seconds": 26.9,
+  "seconds": 21.6,
   "commit": "566beb0",
   "kind": "library",
   "deployment": "user's machine",
@@ -293,7 +293,7 @@
  },
  "gin-gonic/gin": {
   "status": "ok",
-  "seconds": 1.5,
+  "seconds": 4.3,
   "commit": "0f09c3a",
   "kind": "library",
   "deployment": "user's machine",
@@ -304,7 +304,7 @@
  },
  "go-gitea/gitea": {
   "status": "ok",
-  "seconds": 74.4,
+  "seconds": 152.0,
   "commit": "14d2bdc",
   "kind": "web app",
   "deployment": "deployed server",
@@ -320,7 +320,7 @@
  },
  "gohugoio/hugo": {
   "status": "ok",
-  "seconds": 22.7,
+  "seconds": 47.6,
   "commit": "b3d0a6d",
   "kind": "web service",
   "deployment": "deployed server",
@@ -332,7 +332,7 @@
  },
  "gotify/server": {
   "status": "ok",
-  "seconds": 5.6,
+  "seconds": 9.6,
   "commit": "912af9f",
   "kind": "web app",
   "deployment": "deployed server",
@@ -344,7 +344,7 @@
  },
  "healthchecks/healthchecks": {
   "status": "ok",
-  "seconds": 25.4,
+  "seconds": 15.5,
   "commit": "c1039ad",
   "kind": "web app",
   "deployment": "deployed server",
@@ -356,18 +356,18 @@
  },
  "heartcombo/devise": {
   "status": "ok",
-  "seconds": 1.2,
+  "seconds": 3.1,
   "commit": "05811fb",
   "kind": "library",
   "deployment": "user's machine",
   "counts": {
-   "Low": 2
+   "Low": 3
   },
   "serious": []
  },
  "hoppscotch/hoppscotch": {
   "status": "ok",
-  "seconds": 28.9,
+  "seconds": 55.2,
   "commit": "6177eae",
   "kind": "web app",
   "deployment": "deployed server",
@@ -382,7 +382,7 @@
  },
  "httpie/cli": {
   "status": "ok",
-  "seconds": 1.6,
+  "seconds": 4.1,
   "commit": "5b604c3",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -397,7 +397,7 @@
  },
  "immich-app/immich": {
   "status": "ok",
-  "seconds": 82.8,
+  "seconds": 18.9,
   "commit": "a51a438",
   "kind": "mobile app",
   "deployment": "client app",
@@ -414,19 +414,19 @@
  },
  "jekyll/jekyll": {
   "status": "ok",
-  "seconds": 3.2,
+  "seconds": 7.2,
   "commit": "97c3bdc",
   "kind": "command-line tool",
   "deployment": "user's machine",
   "counts": {
    "Medium": 4,
-   "Low": 4
+   "Low": 5
   },
   "serious": []
  },
  "jellyfin/jellyfin": {
   "status": "ok",
-  "seconds": 41.7,
+  "seconds": 65.3,
   "commit": "57d9700",
   "kind": "web service",
   "deployment": "network server",
@@ -441,7 +441,7 @@
  },
  "junegunn/fzf": {
   "status": "ok",
-  "seconds": 3.8,
+  "seconds": 9.0,
   "commit": "ed173e7",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -453,7 +453,7 @@
  },
  "karpathy/nanoGPT": {
   "status": "ok",
-  "seconds": 0.4,
+  "seconds": 1.1,
   "commit": "3adf61e",
   "kind": "data pipeline",
   "deployment": "user's machine",
@@ -465,7 +465,7 @@
  },
  "laravel/framework": {
   "status": "ok",
-  "seconds": 44.6,
+  "seconds": 73.7,
   "commit": "321caf7",
   "kind": "library",
   "deployment": "user's machine",
@@ -481,7 +481,7 @@
  },
  "laravel/laravel": {
   "status": "ok",
-  "seconds": 1.5,
+  "seconds": 3.7,
   "commit": "f32d701",
   "kind": "web app",
   "deployment": "network server",
@@ -492,7 +492,7 @@
  },
  "localsend/localsend": {
   "status": "ok",
-  "seconds": 9.3,
+  "seconds": 24.2,
   "commit": "44f48f1",
   "kind": "mobile app",
   "deployment": "client app",
@@ -504,25 +504,24 @@
  },
  "louislam/uptime-kuma": {
   "status": "ok",
-  "seconds": 11.1,
+  "seconds": 30.5,
   "commit": "df494b4",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "High": 4,
+   "High": 3,
    "Medium": 9,
    "Low": 5
   },
   "serious": [
    "High: Broken encryption mode or cipher (ECB, DES, RC4)",
-   "High: Endpoints that change data without an auth check (1)",
    "High: TLS certificate checks turned off",
    "High: Import loops (3)"
   ]
  },
  "marktext/marktext": {
   "status": "ok",
-  "seconds": 27.2,
+  "seconds": 79.8,
   "commit": "95a14e5",
   "kind": "desktop app",
   "deployment": "user's machine",
@@ -538,7 +537,7 @@
  },
  "mastodon/mastodon": {
   "status": "ok",
-  "seconds": 58.0,
+  "seconds": 99.3,
   "commit": "db13cc1",
   "kind": "web app",
   "deployment": "deployed server",
@@ -554,7 +553,7 @@
  },
  "maybe-finance/maybe": {
   "status": "ok",
-  "seconds": 11.5,
+  "seconds": 26.5,
   "commit": "77b5469",
   "kind": "web app",
   "deployment": "deployed server",
@@ -566,7 +565,7 @@
  },
  "meilisearch/meilisearch": {
   "status": "ok",
-  "seconds": 19.7,
+  "seconds": 49.0,
   "commit": "9fb6a90",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -578,7 +577,7 @@
  },
  "mitmproxy/mitmproxy": {
   "status": "ok",
-  "seconds": 56.8,
+  "seconds": 62.8,
   "commit": "0466185",
   "kind": "web app",
   "deployment": "deployed server",
@@ -593,7 +592,7 @@
  },
  "monicahq/monica": {
   "status": "ok",
-  "seconds": 72.2,
+  "seconds": 182.3,
   "commit": "7317719",
   "kind": "web app",
   "deployment": "deployed server",
@@ -608,13 +607,13 @@
  },
  "n8n-io/n8n": {
   "status": "ok",
-  "seconds": 769.8,
+  "seconds": 597.2,
   "commit": "dcded939",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "Critical": 3,
-   "High": 7,
+   "High": 6,
    "Medium": 11,
    "Low": 6
   },
@@ -624,16 +623,15 @@
    "Critical: Shell commands built at runtime",
    "High: Request data reaches dangerous calls (1 proven flows)",
    "High: TLS certificate checks turned off",
-   "High: Endpoints that change data without an auth check (11)",
    "High: Personal data written to logs",
    "High: 226 errors silently swallowed",
-   "High: Import loops (33)",
+   "High: Import loops (10)",
    "High: SQL assembled from strings"
   ]
  },
  "nestjs/nest": {
   "status": "ok",
-  "seconds": 66.1,
+  "seconds": 14.2,
   "commit": "a4c2a51",
   "kind": "library",
   "deployment": "user's machine",
@@ -645,7 +643,7 @@
  },
  "outline/outline": {
   "status": "ok",
-  "seconds": 59.2,
+  "seconds": 14.6,
   "commit": "13c6c77",
   "kind": "web app",
   "deployment": "deployed server",
@@ -661,7 +659,7 @@
  },
  "owid/etl": {
   "status": "ok",
-  "seconds": 90.0,
+  "seconds": 158.3,
   "commit": "9a2e7d68",
   "kind": "data pipeline",
   "deployment": "user's machine",
@@ -673,7 +671,7 @@
  },
  "pallets/flask": {
   "status": "ok",
-  "seconds": 1.7,
+  "seconds": 4.2,
   "commit": "49943b5",
   "kind": "library",
   "deployment": "user's machine",
@@ -685,7 +683,7 @@
  },
  "phoenixframework/phoenix": {
   "status": "ok",
-  "seconds": 3.0,
+  "seconds": 20.0,
   "commit": "e0ae76e",
   "kind": "web app",
   "deployment": "deployed server",
@@ -697,14 +695,14 @@
  },
  "plausible/analytics": {
   "status": "ok",
-  "seconds": 24.5,
+  "seconds": 58.0,
   "commit": "06efc5e",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "High": 1,
    "Medium": 7,
-   "Low": 5
+   "Low": 4
   },
   "serious": [
    "High: Import loops (6)"
@@ -712,7 +710,7 @@
  },
  "pocketbase/pocketbase": {
   "status": "ok",
-  "seconds": 13.2,
+  "seconds": 36.3,
   "commit": "7f2773e",
   "kind": "web service",
   "deployment": "network server",
@@ -724,7 +722,7 @@
  },
  "prometheus/prometheus": {
   "status": "ok",
-  "seconds": 40.7,
+  "seconds": 94.8,
   "commit": "1e794b8",
   "kind": "web service",
   "deployment": "deployed server",
@@ -739,7 +737,7 @@
  },
  "psf/requests": {
   "status": "ok",
-  "seconds": 1.9,
+  "seconds": 3.4,
   "commit": "3c7baaa",
   "kind": "library",
   "deployment": "user's machine",
@@ -751,19 +749,19 @@
  },
  "pydantic/pydantic": {
   "status": "ok",
-  "seconds": 16.4,
+  "seconds": 42.8,
   "commit": "6449f80",
   "kind": "library",
   "deployment": "user's machine",
   "counts": {
    "Medium": 5,
-   "Low": 3
+   "Low": 5
   },
   "serious": []
  },
  "python-poetry/poetry": {
   "status": "ok",
-  "seconds": 4.6,
+  "seconds": 9.0,
   "commit": "3cc663a",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -775,7 +773,7 @@
  },
  "saleor/saleor": {
   "status": "ok",
-  "seconds": 72.9,
+  "seconds": 93.5,
   "commit": "e1ccf4d",
   "kind": "web app",
   "deployment": "deployed server",
@@ -790,7 +788,7 @@
  },
  "scrapy/scrapy": {
   "status": "ok",
-  "seconds": 7.0,
+  "seconds": 14.1,
   "commit": "3574baf",
   "kind": "library",
   "deployment": "user's machine",
@@ -807,7 +805,7 @@
  },
  "shadcn-ui/taxonomy": {
   "status": "ok",
-  "seconds": 3.6,
+  "seconds": 8.5,
   "commit": "298a885",
   "kind": "web app",
   "deployment": "network server",
@@ -823,7 +821,7 @@
  },
  "shadcn-ui/ui": {
   "status": "ok",
-  "seconds": 13.8,
+  "seconds": 140.9,
   "commit": "0e5b2e6",
   "kind": "web app",
   "deployment": "network server",
@@ -835,7 +833,7 @@
  },
  "sharkdp/bat": {
   "status": "ok",
-  "seconds": 10.6,
+  "seconds": 21.6,
   "commit": "d32a94d",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -847,7 +845,7 @@
  },
  "spf13/cobra": {
   "status": "ok",
-  "seconds": 2.8,
+  "seconds": 6.5,
   "commit": "adbc881",
   "kind": "library",
   "deployment": "user's machine",
@@ -858,7 +856,7 @@
  },
  "spring-projects/spring-petclinic": {
   "status": "ok",
-  "seconds": 1.3,
+  "seconds": 2.4,
   "commit": "3aae6cc",
   "kind": "web app",
   "deployment": "deployed server",
@@ -873,7 +871,7 @@
  },
  "square/okhttp": {
   "status": "ok",
-  "seconds": 9.0,
+  "seconds": 29.0,
   "commit": "223a0cc",
   "kind": "library",
   "deployment": "user's machine",
@@ -885,7 +883,7 @@
  },
  "square/retrofit": {
   "status": "ok",
-  "seconds": 10.8,
+  "seconds": 30.0,
   "commit": "54c2047",
   "kind": "library",
   "deployment": "user's machine",
@@ -897,7 +895,7 @@
  },
  "streamlit/streamlit": {
   "status": "ok",
-  "seconds": 79.8,
+  "seconds": 113.7,
   "commit": "1819c56",
   "kind": "web app",
   "deployment": "LAN server",
@@ -913,7 +911,7 @@
  },
  "sveltejs/svelte": {
   "status": "ok",
-  "seconds": 62.5,
+  "seconds": 10.8,
   "commit": "35753ba",
   "kind": "web front-end",
   "deployment": "browser",
@@ -928,7 +926,7 @@
  },
  "syncthing/syncthing": {
   "status": "ok",
-  "seconds": 15.3,
+  "seconds": 32.4,
   "commit": "1107b3c",
   "kind": "web service",
   "deployment": "deployed server",
@@ -945,7 +943,7 @@
  },
  "tldraw/tldraw": {
   "status": "ok",
-  "seconds": 119.8,
+  "seconds": 21.8,
   "commit": "94466fd",
   "kind": "web app",
   "deployment": "deployed server",
@@ -961,7 +959,7 @@
  },
  "tokio-rs/axum": {
   "status": "ok",
-  "seconds": 5.0,
+  "seconds": 10.7,
   "commit": "8d8944e",
   "kind": "library",
   "deployment": "user's machine",
@@ -973,7 +971,7 @@
  },
  "traefik/traefik": {
   "status": "ok",
-  "seconds": 20.9,
+  "seconds": 44.7,
   "commit": "8fcaa7c",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -985,7 +983,7 @@
  },
  "trpc/trpc": {
   "status": "ok",
-  "seconds": 28.9,
+  "seconds": 47.1,
   "commit": "8138cd5",
   "kind": "web front-end",
   "deployment": "browser",
@@ -997,7 +995,7 @@
  },
  "vitejs/vite": {
   "status": "ok",
-  "seconds": 18.0,
+  "seconds": 36.5,
   "commit": "adc761d",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -1013,7 +1011,7 @@
  },
  "vuejs/core": {
   "status": "ok",
-  "seconds": 47.1,
+  "seconds": 97.4,
   "commit": "d690dee",
   "kind": "web front-end",
   "deployment": "browser",
@@ -1029,7 +1027,7 @@
  },
  "wagtail/wagtail": {
   "status": "ok",
-  "seconds": 64.1,
+  "seconds": 77.8,
   "commit": "da32ecb",
   "kind": "web app",
   "deployment": "network server",
@@ -1044,7 +1042,7 @@
  },
  "withastro/astro": {
   "status": "ok",
-  "seconds": 73.9,
+  "seconds": 14.6,
   "commit": "3e3e70f",
   "kind": "web front-end",
   "deployment": "browser",
