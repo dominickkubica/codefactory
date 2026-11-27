@@ -112,6 +112,12 @@ NOT_IO_METHOD = re.compile(
     r"Context|Name|ID|Id|Key|Type|Copy|Reset|Wait|Done|Err|Cancel|Release|release|dispose|Dispose|toString|equals|"
     r"hashCode|getClass|log\w*|Log\w*|debug|info|warn|error)$"
 )
+# receivers whose methods share I/O names but aren't I/O: Go's sync.Once (`once.Do(f)`), an exception's factory
+# (`Error::query(…)`), Symfony's Finder, a statement or query *builder*, a getter for the engine (`db.GetEngine()`)
+NOT_IO_RECEIVER = re.compile(
+    r"(?:^|[.:>])\w*[oO]nce\s*\.\s*Do$|(?:^|[^\w$])(?:\w*Error|\w*Exception|Finder|Statement|\w*Builder)\s*::\s*\w+$|"
+    r"(?:\.|->)GetEngine$|(?:\.|->)getEngine$"
+)
 ORM_NAME = re.compile(r"(?:^|[.:>])(?:where|save!?|create!?|update!?|destroy|insert|select|delete!?)$")
 ORM_LANGS = (".rb", ".php")
 # a receiver declared as a repository, DAO, entity manager or database context: `owners.save(o)` where
@@ -430,6 +436,7 @@ def link(g: Graph, parsed: dict[str, dict], associations: re.Pattern | None = No
                     not cands
                     and not route
                     and not NOT_IO_METHOD.search(callee)
+                    and not NOT_IO_RECEIVER.search(callee)
                     and (
                         IO_RECEIVER.search(callee)
                         or HTTP_PACKAGE.search(callee)

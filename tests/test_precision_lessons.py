@@ -292,6 +292,19 @@ class StructureTest(unittest.TestCase):
         self.assertTrue(deliberate_copies(["gui/vendor/daterangepicker/a.js", "gui/vendor/daterangepicker/b.js"]))
         self.assertFalse(deliberate_copies(["crates/dump/src/reader/v2/mod.rs", "crates/dump/src/reader/v3/mod.rs"]))
 
+    @unittest.skipUnless(available(), "needs the language pack")
+    def test_calls_that_share_io_names_but_arent_io(self):
+        root = repo({
+            "svc/conv.go": "package svc\n\nimport \"sync\"\n\nvar once sync.Once\n\nfunc Convert(c string) string {\n"
+                           "\tonce.Do(setup)\n\treturn c\n}\n\nfunc All(cs []string) {\n\tfor _, c := range cs {\n"
+                           "\t\tConvert(c)\n\t}\n}\n\nfunc setup() {}\n",
+            "app/Schema.php": "<?php\nclass Schema {\n  public static function build($cs) {\n    foreach ($cs as $c) {\n"
+                              "      self::fail($c);\n    }\n  }\n  public static function fail($c) {\n"
+                              "    throw Error::query($c);\n  }\n}\n",
+        })  # fmt: skip
+        flagged = [f for f in build(root, cache=False).flags if f.kind == "io_in_loop"]
+        self.assertFalse(flagged, [f.message for f in flagged])
+
     def test_unused_code_named_where_calls_cant_be_followed(self):
         root = repo({
             "src/list.ts": "export {};\nfunction getWarehouses() { return 1; }\nconst p = { searchListMethod: 'getWarehouses' };\n",

@@ -306,7 +306,7 @@
  },
  "go-gitea/gitea": {
   "status": "ok",
-  "seconds": 84.2,
+  "seconds": 61.2,
   "commit": "14d2bdc",
   "kind": "web app",
   "deployment": "deployed server",
@@ -597,7 +597,7 @@
  },
  "monicahq/monica": {
   "status": "ok",
-  "seconds": 96.6,
+  "seconds": 57.5,
   "commit": "7317719",
   "kind": "web app",
   "deployment": "deployed server",
