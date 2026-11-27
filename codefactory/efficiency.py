@@ -99,10 +99,12 @@ def kind_of(sink: str) -> str:
     return "write" if WRITE_SQL.search(sink) or WRITE_CALL.search(sink) else "other"
 
 
-WRITE_CALL = re.compile(r"(^|\.)(?:insert\w*|update\w*|upsert\w*|save\w*|delete\w*|destroy|remove\w*|create\w*|put\w*|"
-                        r"set\w*|write\w*|append\w*|add\w*|commit|persist|flush|exec(?:ute)?\w*|send\w*|post\w*|"
-                        r"patch\w*|store\w*|push\w*|incr\w*|decr\w*|expire|publish|enqueue|Exec\w*|Update\w*|"
-                        r"Save\w*|Delete\w*|Insert\w*|Create\w*|Set\w*|Put\w*|Add\w*|run(?:Async|Sync)?|transact\w*)\b")
+WRITE_CALL = re.compile(
+    r"(^|\.)(?:insert\w*|update\w*|upsert\w*|save\w*|delete\w*|destroy|remove\w*|create\w*|put\w*|"
+    r"set\w*|write\w*|append\w*|add\w*|commit|persist|flush|exec(?:ute)?\w*|send\w*|post\w*|"
+    r"patch\w*|store\w*|push\w*|incr\w*|decr\w*|expire|publish|enqueue|Exec\w*|Update\w*|"
+    r"Save\w*|Delete\w*|Insert\w*|Create\w*|Set\w*|Put\w*|Add\w*|run(?:Async|Sync)?|transact\w*)\b"
+)
 WRITE_NAME = re.compile(
     r"(?:^|[._])(?:insert|update|upsert|save|delete|destroy|remove|create|persist|commit|mark|restore|write|store|put|Insert|Update|Upsert|Save|Delete|Destroy|Remove|Create|Persist|Commit|Mark|Restore|Write|Store|Put)"
     r"|(?<=[a-z])(?:Insert|Update|Upsert|Save|Delete|Destroy|Remove|Create|Persist|Commit|Mark|Restore|Write|Store|Put)"

@@ -181,6 +181,7 @@ class Review:
         # call graph can't tell which class's method runs, and "no test reaches it" was wrong for most of these
         out |= {fid for fid, f in self.v.fn.items() if f["kind"] == "method" and f["name"] in called
                 and not is_test(f["file"])}  # fmt: skip
+
         # a test named for the file (ValueListItemPositionControllerTest.php, accounts_spec.rb, test_crud.py): request
         # specs and feature tests reach controllers through the router, which the call graph can't follow
         def stem(path: str, test: bool) -> str:
