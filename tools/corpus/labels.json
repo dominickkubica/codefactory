@@ -3533,8 +3533,8 @@
   "check": "App allows unencrypted HTTP",
   "severity": "Medium",
   "location": "`src/ClientApp/Platforms/Android/AndroidManifest.xml:3` usesCleartextTraffic=\"true — `<application android:allowBackup=\"true\" android:supportsRtl=\"true\" android:usesCleartextTraffic=\"true\" android:networkSecurityConfig=\"@xml/network_security_c…`",
-  "label": "true",
-  "why": "Cleartext traffic / NSAllowsArbitraryLoads enabled in the app's platform manifest that is built and run."
+  "label": "false",
+  "why": "Relabeled for consistency with round 2 (HybridApp, same config): network_security_config.xml permits cleartext only to 10.0.2.2, the emulator's host loopback, and overrides usesCleartextTraffic."
  },
  "dotnet/eShop|App allows unencrypted HTTP|src/ClientApp/Platforms/MacCatalyst/Info.plist:29": {
   "repo": "dotnet/eShop",

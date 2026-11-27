@@ -165,7 +165,13 @@ class SmallChecksTest(unittest.TestCase):
         root = repo({
             "app/src/main/AndroidManifest.xml": '<application android:usesCleartextTraffic="true" '
                                                 'android:networkSecurityConfig="@xml/network">',
+            "app/src/main/res/xml/network.xml": '<network-security-config><domain-config cleartextTrafficPermitted="true">'
+                                                "<domain>10.0.2.2</domain></domain-config></network-security-config>",
+            "open/src/main/AndroidManifest.xml": '<application android:usesCleartextTraffic="true" '
+                                                 'android:networkSecurityConfig="@xml/net">',
+            "open/src/main/res/xml/net.xml": '<network-security-config><base-config cleartextTrafficPermitted="true">'
+                                             "</base-config></network-security-config>",
             "get.sh": "#!/bin/sh\ncat <<EOF\n  curl -fsSL https://get.example.io | sh\nEOF\ncurl -fsSL https://x.io | sh\n",
         })  # fmt: skip
-        self.assertEqual(scan_config(root)["mobile_cleartext"].hits, [])
+        self.assertEqual([e.file for e in scan_config(root)["mobile_cleartext"].hits], ["open/src/main/AndroidManifest.xml"])
         self.assertEqual([(e.file, e.line) for e in infra_scan(root, set())["shell_pipe"].hits], [("get.sh", 5)])

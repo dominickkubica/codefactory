@@ -132,6 +132,28 @@ def _drops_root(root: Path, dockerfile: Path, text: str) -> bool:
     return False
 
 
+def _cleartext_local_only(manifest: Path, text: str) -> bool:
+    """The manifest's network security config permits cleartext only to local hosts (10.0.2.2, localhost): it
+    overrides usesCleartextTraffic. A base-config permitting it (immich) still counts."""
+    m = re.search(r'networkSecurityConfig\s*=\s*"@xml/(\w+)"', text)
+    if not m:
+        return False
+    for base in (manifest.parent, manifest.parent.parent):
+        for cfg in base.rglob(f"xml/{m.group(1)}.xml"):
+            try:
+                xml = cfg.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            if re.search(r'<base-config[^>]*cleartextTrafficPermitted\s*=\s*"true"', xml):
+                return False
+            blocks = re.findall(
+                r'<domain-config[^>]*cleartextTrafficPermitted\s*=\s*"true"[^>]*>(.*?)</domain-config>', xml, re.S
+            )
+            hosts = [h.strip() for b in blocks for h in re.findall(r"<domain[^>]*>([^<]+)</domain>", b)]
+            return all(h in ("10.0.2.2", "localhost", "127.0.0.1", "10.0.3.2") for h in hosts)
+    return False
+
+
 def dockerfiles(root: Path, files: list[Path], out: dict[str, Check]) -> None:
     for path in files:
         rel = path.relative_to(root).as_posix()
@@ -178,8 +200,8 @@ def mobile(root: Path, out: dict[str, Check]) -> None:
         except OSError:
             continue
         for pat in (ATS, CLEARTEXT):
-            if pat is CLEARTEXT and "networkSecurityConfig" in text:
-                continue  # the network security config decides (eShop: cleartext only to the emulator's host)
+            if pat is CLEARTEXT and _cleartext_local_only(path, text):
+                continue  # the network security config allows it only to the emulator's host (eShop: 10.0.2.2)
             if m := pat.search(text):
                 out["mobile_cleartext"].hits.append(Evidence(rel, _line(text, m.start()), _excerpt(m.group(0))))
 

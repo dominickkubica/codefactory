@@ -342,13 +342,13 @@
  },
  "caddyserver/caddy": {
   "status": "ok",
-  "seconds": 22.6,
+  "seconds": 12.2,
   "commit": "679806f",
   "kind": "command-line tool",
   "deployment": "user's machine",
   "counts": {
    "Medium": 1,
-   "Low": 4
+   "Low": 3
   },
   "serious": []
  },
@@ -465,7 +465,7 @@
  },
  "django/django": {
   "status": "ok",
-  "seconds": 52.5,
+  "seconds": 54.1,
   "commit": "f0e7bd9",
   "kind": "library",
   "deployment": "user's machine",
@@ -501,7 +501,7 @@
  },
  "dotnet/eShop": {
   "status": "ok",
-  "seconds": 18.0,
+  "seconds": 6.9,
   "commit": "3c6e531",
   "kind": "web service",
   "deployment": "network server",
@@ -700,7 +700,7 @@
  },
  "go-gitea/gitea": {
   "status": "ok",
-  "seconds": 46.0,
+  "seconds": 43.3,
   "commit": "14d2bdc",
   "kind": "web app",
   "deployment": "deployed server",
@@ -716,7 +716,7 @@
  },
  "gohugoio/hugo": {
   "status": "ok",
-  "seconds": 25.4,
+  "seconds": 20.1,
   "commit": "b3d0a6d",
   "kind": "web service",
   "deployment": "deployed server",
@@ -837,7 +837,7 @@
  },
  "immich-app/immich": {
   "status": "ok",
-  "seconds": 47.9,
+  "seconds": 56.0,
   "commit": "a51a438",
   "kind": "mobile app",
   "deployment": "client app",
@@ -847,15 +847,15 @@
    "Low": 6
   },
   "serious": [
-   "High: Required-reason API without a privacy manifest",
    "High: App allows unencrypted HTTP",
+   "High: Required-reason API without a privacy manifest",
    "High: Import loops (5)",
    "High: Raw HTML injected into pages"
   ]
  },
  "jekyll/jekyll": {
   "status": "ok",
-  "seconds": 4.2,
+  "seconds": 3.6,
   "commit": "97c3bdc",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -1149,17 +1149,16 @@
  },
  "mastodon/mastodon": {
   "status": "ok",
-  "seconds": 50.5,
+  "seconds": 52.7,
   "commit": "db13cc1",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "High": 2,
+   "High": 1,
    "Medium": 6,
    "Low": 5
   },
   "serious": [
-   "High: Session cookies without Secure / HttpOnly",
    "High: Import loops (14)"
   ]
  },
@@ -1653,12 +1652,12 @@
  },
  "square/okhttp": {
   "status": "ok",
-  "seconds": 14.2,
+  "seconds": 14.8,
   "commit": "223a0cc",
   "kind": "library",
   "deployment": "user's machine",
   "counts": {
-   "Medium": 4,
+   "Medium": 3,
    "Low": 4
   },
   "serious": []
@@ -1711,7 +1710,7 @@
  },
  "syncthing/syncthing": {
   "status": "ok",
-  "seconds": 17.6,
+  "seconds": 18.0,
   "commit": "1107b3c",
   "kind": "web service",
   "deployment": "deployed server",
