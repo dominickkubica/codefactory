@@ -1066,7 +1066,8 @@ def scan_repo(root: Path) -> dict:
         for c in [*CI_FILES, *declared]:
             p = level / c
             if p.is_dir():
-                info["ci"] += [_rel(real, f) for f in sorted(p.iterdir()) if f.is_file() and not f.name.startswith(".")]
+                listed = p.iterdir() if os.access(p, os.R_OK | os.X_OK) else ()  # (unreadable: skipped, as walks do)
+                info["ci"] += [_rel(real, f) for f in sorted(listed) if f.is_file() and not f.name.startswith(".")]
             elif p.is_file():
                 info["ci"].append(_rel(real, p))
         if info["ci"]:

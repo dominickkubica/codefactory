@@ -435,7 +435,7 @@ def taint_flags(g: Graph, root: Path) -> list[Flag]:
     lines_of: dict[str, list[str]] = {}
     for file in {f.file for f in fns}:
         try:
-            lines_of[file] = (root / file).read_text(encoding="utf-8", errors="replace").splitlines()
+            lines_of[file] = (root / file).read_text(encoding="utf-8-sig", errors="replace").splitlines()
         except OSError:
             lines_of[file] = []
     text_of = {f.id: "\n".join(lines_of[f.file][max(0, f.line - 4) : f.end]) for f in fns}  # (with decorators)

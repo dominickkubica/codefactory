@@ -255,7 +255,12 @@ def cmd_sql(a) -> int:
     graph = load_graph(Path(a.path), a.lang, not a.no_cache)
     if not Path(a.output).resolve().parent.exists():
         raise SystemExit(f"codefactory: can't save {a.output}: its folder doesn't exist")
-    to_sqlite(graph, a.output).close()
+    import sqlite3
+
+    try:
+        to_sqlite(graph, a.output).close()
+    except (OSError, sqlite3.Error) as e:  # a read-only folder, a file in use: say so like the other writers
+        raise SystemExit(f"codefactory: can't save {a.output}: {getattr(e, 'strerror', None) or e}") from None
     print(f"Wrote {a.output}: tables files, functions, edges, flags; views function_stats, file_deps")
     return 0
 

@@ -299,9 +299,34 @@ def analyze_generic(root: Path, ignore: list[str], include_js: bool = False, cac
             file=sys.stderr,
         )
         return g
+    # load each grammar here, once, before the workers: a grammar that can't load (offline on first use, a failed
+    # download) would otherwise drop every file of that language one by one, quietly, and cache them as unparseable
+    missing = _unloadable({lang for _, lang in found})
+    if missing:
+        lost = [rel for rel, lang in found if lang in missing]
+        print(f"codefactory: {len(lost)} files in {', '.join(sorted(missing))} aren't analyzed: the tree-sitter "
+              f"grammar couldn't be loaded ({next(iter(missing.values()))}). Grammars download on first use, so "
+              "run once online.", file=sys.stderr)  # fmt: skip
+        from . import INCOMPLETE
+
+        INCOMPLETE.extend(sorted(missing))  # not cached: the next run tries again
+        found = [(rel, lang) for rel, lang in found if lang not in missing]
     items = [(rel, (str(root / rel), rel, lang)) for rel, lang in found]
     parsed = parallel.run(root, "generic", items, parse_file, tool="treewalk-5", cache=cache)
     return link(g, parsed, rails_associations(root, [rel for rel, _ in found if rel.endswith(".rb")]))
+
+
+def _unloadable(langs: set[str]) -> dict[str, str]:
+    """Languages whose grammar can't be loaded -> why (and the rest download now, not in several workers at once)."""
+    from tree_sitter_language_pack import get_parser
+
+    out = {}
+    for lang in sorted(langs):
+        try:
+            _PARSERS[lang] = _PARSERS.get(lang) or get_parser(lang)
+        except Exception as e:  # DownloadError, LanguageNotFoundError, a broken cache…
+            out[lang] = f"{type(e).__name__}: {str(e)[:120]}"
+    return out
 
 
 def rails_associations(root: Path, files: list[str]) -> re.Pattern | None:

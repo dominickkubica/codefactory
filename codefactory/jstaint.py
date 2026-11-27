@@ -1014,16 +1014,28 @@ def js_taint_flags(g: Graph, root: Path) -> list[Flag]:
     wanted = sorted(set(wanted) | {d for f in wanted for d in deps.get(f, ()) if d in with_sink})
     units: list[Unit] = []
     trees: dict[str, tuple] = {}
+    unloadable: dict[str, str] = {}
     for f in wanted:
+        lang = EXT_LANG[Path(f).suffix]
         try:
-            tree = get_parser(EXT_LANG[Path(f).suffix]).parse(texts[f])
-        except Exception:  # a grammar that can't load: leave the file out
+            tree = get_parser(lang).parse(texts[f])
+        except Exception as e:  # a grammar that can't load (offline on first use): leave the file out, and say so
+            unloadable.setdefault(lang, f"{type(e).__name__}: {str(e)[:120]}")
             continue
         trees[f] = (tree, _imports(tree, texts[f]))
         base = len(units)
         for u in units_of(f, tree, texts[f]):
             u.parent = base + u.parent if u.parent >= 0 else -1
             units.append(u)
+    if unloadable:
+        import sys
+
+        from .analyzers import INCOMPLETE
+
+        why = next(iter(unloadable.values()))
+        print(f"codefactory: request-data flows in {', '.join(sorted(unloadable))} files weren't traced: the "
+              f"tree-sitter grammar couldn't be loaded ({why}).", file=sys.stderr)  # fmt: skip
+        INCOMPLETE.extend(sorted(unloadable))  # not cached: the next run tries again
     if not units:
         return []
     # map units to graph functions (for where the finding points), and calls to units by name: same file first

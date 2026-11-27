@@ -17,6 +17,7 @@ API and a command-line tool. Detection can be wrong, so `[profile]` in factory.t
 from __future__ import annotations
 
 import json
+import os
 import re
 import tomllib
 from dataclasses import dataclass, field
@@ -222,9 +223,11 @@ def _manifests(root: Path) -> dict:
     out: dict = {"deps": {}, "npm_bin": [], "py_scripts": [], "go_main": [], "rust_bin": False, "flutter": False,
                  "pkg_main": [], "py_lib": False, "files": set(), "lib": [], "cli": [], "android": [],
                  "swift_lib": False, "published_lib": []}  # fmt: skip
+    # (a folder this user can't read is left out, as the analyzers' walks leave it: stat inside it raises)
     top = [p for p in sorted(root.iterdir()) if p.is_dir() and p.name not in SKIP_DIRS and not p.name.startswith(".")
-           and not EXAMPLE_DIR.search(p.name + "/")]  # fmt: skip
-    nested = [c for d in top if d.name in WORKSPACES for c in sorted(d.iterdir()) if c.is_dir() and c.name not in SKIP_DIRS]
+           and not EXAMPLE_DIR.search(p.name + "/") and os.access(p, os.R_OK | os.X_OK)]  # fmt: skip
+    nested = [c for d in top if d.name in WORKSPACES for c in sorted(d.iterdir())
+              if c.is_dir() and c.name not in SKIP_DIRS and os.access(c, os.R_OK | os.X_OK)]  # fmt: skip
     for d in [root, *top, *nested[:60]]:
         rel = "" if d == root else d.relative_to(root).as_posix() + "/"
         pkg = d / "package.json"

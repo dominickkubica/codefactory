@@ -136,7 +136,8 @@ def _located(root: Path, evidence: str, cache: dict) -> str:
     tag = " *(test)*" if is_test(file) else " *(script)*" if is_script(file) else ""
     from .checks import redact
 
-    src = redact(cache[file][line - 1].strip()) if 0 < line <= len(cache[file]) else ""
+    # (cut before redacting: a minified file's one 2 MB line took a third of a second per finding on it)
+    src = redact(cache[file][line - 1].strip()[:400]) if 0 < line <= len(cache[file]) else ""
     if not src or src[:40] in evidence:
         return evidence + tag  # (the evidence already shows the line)
     src = src if len(src) <= 160 else src[:157] + "…"

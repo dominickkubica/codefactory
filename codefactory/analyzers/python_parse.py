@@ -466,7 +466,8 @@ def _local_imports(fn) -> list:
 def parse_module(path: str, rel: str) -> dict | None:
     """The per-file step: everything python.py needs from one file, or None if it isn't valid Python."""
     try:
-        text = Path(path).read_text(encoding="utf-8", errors="replace")
+        # (utf-8-sig: a byte-order mark, which Windows editors write, is a syntax error to ast.parse on a str)
+        text = Path(path).read_text(encoding="utf-8-sig", errors="replace")
         tree = ast.parse(text, filename=rel)
     except (SyntaxError, ValueError, OSError, RecursionError):
         return None  # not valid for this Python: skip rather than fail the whole map

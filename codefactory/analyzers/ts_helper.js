@@ -27,7 +27,9 @@ const skipped = (f) => {
 
 const pkgFiles = []; // codefactory: ignore module_state — the same one run
 function walkDir(dir, out) {
-  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+  let entries;
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return out; } // unreadable: skipped
+  for (const e of entries) {
     if (e.isDirectory()) { if (!ignore.has(e.name)) walkDir(path.join(dir, e.name), out); }
     else if (EXT.test(e.name)) out.push(path.join(dir, e.name));
     else if (e.name === "package.json") pkgFiles.push(path.join(dir, e.name));

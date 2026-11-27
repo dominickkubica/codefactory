@@ -176,13 +176,16 @@ def _run_helper(root: Path, ignore: list[str]) -> dict:
     ts_path = find_typescript(root, node)
     helper = pkg_files(__package__) / "ts_helper.js"
     heap = heap_mb()
-    proc = subprocess.run(
-        [node, f"--max-old-space-size={heap}", str(helper), str(root), ts_path, json.dumps(ignore)],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        timeout=1800,
-    )
+    try:
+        proc = subprocess.run(
+            [node, f"--max-old-space-size={heap}", str(helper), str(root), ts_path, json.dumps(ignore)],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=1800,
+        )
+    except subprocess.TimeoutExpired:  # like running out of memory: go on with the general analyzer, don't stop
+        raise TypeScriptUnavailable("The TypeScript analyzer timed out on this project (30 minutes).") from None
     if proc.returncode != 0:
         # the type checker holds the whole project at once: on a huge monorepo (n8n) it can run out of memory, and a
         # review should go on with the general analyzer rather than stop
