@@ -148,6 +148,12 @@ Besides everything in [What it flags](#what-it-flags), the review checks:
 | Testing | no tests at all; which important code (code doing I/O, or called from many files) no test reaches, from the call graph |
 | Delivery | CI present, what it runs, whether it runs on pushes; lockfile; dependencies on `*` / `latest` / git; unpinned Python requirements; runtime version pinned; README with run instructions |
 
+**Hints.** Some checks can only guess at something the code doesn't show: whether a loop's list grows (writes,
+file operations and array searches inside loops), whether a docker-compose file deploys or just starts a developer's
+database, whether anyone requests a plain-HTTP URL. Measured on 76 public repositories they were right less than half
+the time ([docs/ACCURACY.md](ACCURACY.md)), so they're listed under **Hints** at the end of the findings and in the
+export's `hints`: not counted as findings, not in the grade, worth a glance.
+
 **`--for-ai`** appends an evidence pack: instructions for an AI reviewer, and the code of the riskiest functions
 (those that delete databases or files, swallow errors, branch a lot, do I/O, and that no test reaches). An AI confirms
 or rejects each finding from its cited lines and judges the risky code, reading a few thousand tokens instead of the

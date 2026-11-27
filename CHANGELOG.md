@@ -39,6 +39,25 @@ honest figure for code codefactory hasn't been tuned on, and the target for the 
   frozen dated copies, build outputs and small edited copies aren't "copied logic"; TypeScript imports used only as
   types and Java imports only for a Javadoc link aren't dependencies; an import loop shows a real chain of imports.
 
+### Kaizen: small fixes, each checked where it matters
+
+After the held-out sample, one false-positive pattern at a time, each with a regression test and checked by
+re-analyzing only the repositories it touches (`python tools/precision.py check owner/repo,…`), keeping only the
+changes that removed wrong findings without losing a right one: about 90 wrong locations gone, none lost.
+
+- **Hints**: writes, file operations and array searches inside loops, database ports in compose files and plain-HTTP
+  URLs are listed under Hints, not counted as findings or in the grade: they depend on what the code doesn't show,
+  and were right 12–50% of the time on real code.
+- TLS: name-to-constant tables, comparisons, a cipher listing, an `if` on the option, servers that check client
+  certificates themselves. Credentials: OAuth client IDs, environment-variable names, keys a comment calls safe to
+  embed or shared for examples, AAAA-padded example keys. Endpoints: Pundit, Devise sign-in, routers in Rust test
+  modules, Rails routing files, Utopia scope lists. SQL: Go and Java blocks aren't interpolation, text joined to text,
+  `is_numeric`, the call's own text must be SQL. Shell and HTML from fixed strings and escaping helpers. Hashes that
+  only name a rate-limit bucket or cache entry. Swift casts guarded by `is`. `fetch` that isn't a request; a global
+  axios timeout. `sync.Once.Do`, exception factories and builders aren't I/O. Build outputs and vendored libraries
+  don't take part in copied logic; per-folder variants and constructors aren't copies. Imported names and property
+  reads are uses. C# loops bounded by project references.
+
 ### Corpus round 5
 
 Checked against 76 public repositories (`docs/CORPUS.md`, `tools/corpus.py`): every one analyzed without a crash or a
