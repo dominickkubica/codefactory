@@ -127,7 +127,7 @@ def sample(args) -> int:
     labels, now = load(), reported()
     by_check: dict[str, list[str]] = defaultdict(list)
     for k, hit in now.items():
-        if hit["repo"] not in VULNERABLE_BY_DESIGN:
+        if hit["repo"] not in VULNERABLE_BY_DESIGN and (not args.checks or hit["check"].startswith(tuple(args.checks.split("|")))):
             by_check[hit["check"]].append(k)
     added = 0
     for check, keys in sorted(by_check.items()):
@@ -364,6 +364,7 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--per-check", type=int, default=25)
     s.add_argument("--per-repo", type=int, default=3)
     s.add_argument("--round", type=int, default=1, help="1: the sample fixes were made against; 2+: held out, labeled after")
+    s.add_argument("--checks", default=None, help="only checks starting with these (separated by |)")
     b = sub.add_parser("batch")
     b.add_argument("out")
     b.add_argument("--checks", default=None, help="check names separated by |")
