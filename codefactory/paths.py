@@ -313,6 +313,11 @@ def deliberate_copies(files: list[str]) -> bool:
     build outputs, vendored code, or examples and starter templates that each stand alone."""
     if all(BUILD_OUTPUT.search(f) or is_vendored(f) or is_sample_code(f) for f in files):
         return True
+    # a component registry's per-style copies (shadcn's `registry/bases/{radix,aria,base}/ui/chart.tsx`): each is
+    # handed to users to copy on its own
+    reg = [re.search(r"(?:^|/)registry/(?:[\w-]+/)?([\w-]+)/(.+)$", f) for f in files]
+    if all(reg) and len({m.group(1) for m in reg}) == len(files):
+        return True
     names = {f.rsplit("/", 1)[-1] for f in files}
     if names == {"build.rs"}:
         return True  # Cargo build scripts: one per crate, each the same few lines of scaffold

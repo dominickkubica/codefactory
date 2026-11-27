@@ -478,6 +478,21 @@ def _fixed_code(line: str, text: str) -> bool:
                 and not re.search(r"typ\s*=\s*['\"]unsafe['\"]", text))  # fmt: skip
 
 
+def _set_once(text: str, line: str) -> bool:
+    """A module `let` that is set at most once after its declaration: a lazy singleton (`client ??= create()`,
+    `if (!client) client = create()`) or a value read but never reassigned. Shared state only matters when it
+    changes; one that is set once and then only read behaves like a constant."""
+    m = re.match(r"^(?:export\s+)?let\s+(\w+)", line)
+    if not m:
+        return False
+    name = re.escape(m.group(1))
+    writes = re.findall(rf"(?<![\w$.]){name}\s*(?:\?\?=|\|\|=|&&=|\+\+|--|[-+*/]?=(?!=))", text)
+    if len(writes) <= 1:  # (the declaration itself, if it has `= value`, counts as one)
+        return True
+    lazy = re.findall(rf"(?<![\w$.]){name}\s*\?\?=|if\s*\(\s*!\s*{name}\s*\)\s*\{{?\s*{name}\s*=", text)
+    return len(writes) <= 2 and bool(lazy)
+
+
 def _template_lines(lines: list[str]) -> set[int]:
     """Lines inside a multi-line template literal that opens at the end of a line or straight into markup
     (`` const html = ` `` / `` `<!DOCTYPE html> ``) and runs to the next backtick. Narrow on purpose: counting
@@ -896,7 +911,7 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
             if state_here and re.match(r"^(?:export\s+)?let\s+\w+", line) and hit("module_state", i):
                 if templated is None:
                     templated = _template_lines(lines)
-                if i not in templated:  # (not page script inside a template literal: a VS Code webview's HTML)
+                if i not in templated and not _set_once(text, line):  # (not page script in a template literal)
                     out["module_state"].hits.append(Evidence(fid, i, _excerpt(line)))
         if (
             not test

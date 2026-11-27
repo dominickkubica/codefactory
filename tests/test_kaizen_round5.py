@@ -40,7 +40,7 @@ class Round5Test(unittest.TestCase):
         html = "const html = `\n<script>\nlet selectedEntity = null;\nlet b = 1;\nlet c = 2;\n</script>`;\n"
         found = self.scan({  # owid: a VS Code webview's HTML in extension.ts
             "extension.ts": html,
-            "store.ts": "let a = 1;\nlet b = 2;\nlet c = 3;\n",
+            "store.ts": "let a = 1;\nlet b = 2;\nlet c = 3;\nexport function f() {\n  a++; a = 0;\n  b++; b = 0;\n  c++; c = 0;\n}\n",
         })  # fmt: skip
         self.assertEqual(sorted(set(hits(found, "module_state"))), ["store.ts"])
 
@@ -175,3 +175,19 @@ class SmallChecksTest(unittest.TestCase):
         })  # fmt: skip
         self.assertEqual([e.file for e in scan_config(root)["mobile_cleartext"].hits], ["open/src/main/AndroidManifest.xml"])
         self.assertEqual([(e.file, e.line) for e in infra_scan(root, set())["shell_pipe"].hits], [("get.sh", 5)])
+
+
+class StateAndRegistryTest(unittest.TestCase):
+    def test_set_once_module_state_and_registry_copies(self):
+        from codefactory.paths import deliberate_copies
+
+        lazy = "let client = null;\nexport function get() {\n  if (!client) client = make();\n  return client;\n}\n"
+        memo = "let extras;\nexport const load = () => (extras ??= fetchExtras());\n"
+        never = "let meta;\nexport const read = () => meta;\n"
+        counter = "let n = 0;\nexport const inc = () => { n++; };\nexport const reset = () => { n = 0; };\n"
+        files = {"a.ts": lazy + memo + never, "b.ts": counter + "let m = 0;\nexport const f = () => { m++; m = 2; };\n"
+                 "let k = 0;\nexport const g = () => { k++; k = 1; };\n"}  # fmt: skip
+        found = scan_sources(repo(files), list(files))
+        self.assertEqual(sorted({e.file for e in found["module_state"].hits}), ["b.ts"])
+        self.assertTrue(deliberate_copies(["v4/registry/bases/aria/ui/chart.tsx", "v4/registry/bases/radix/ui/chart.tsx"]))
+        self.assertFalse(deliberate_copies(["src/a/chart.tsx", "src/b/chart.tsx"]))
