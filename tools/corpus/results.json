@@ -56,13 +56,13 @@
  },
  "android/nowinandroid": {
   "status": "ok",
-  "seconds": 4.6,
+  "seconds": 6.0,
   "commit": "2982e63",
   "kind": "mobile app",
   "deployment": "local-first",
   "counts": {
    "Medium": 1,
-   "Low": 5
+   "Low": 4
   },
   "serious": []
  },
@@ -858,23 +858,22 @@
  },
  "spring-projects/spring-petclinic": {
   "status": "ok",
-  "seconds": 0.9,
+  "seconds": 1.3,
   "commit": "3aae6cc",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "High": 2,
+   "High": 1,
    "Medium": 1,
    "Low": 1
   },
   "serious": [
-   "High: Endpoints that change data without an auth check (3)",
    "High: Kubernetes Secrets committed with their values"
   ]
  },
  "square/okhttp": {
   "status": "ok",
-  "seconds": 8.7,
+  "seconds": 9.0,
   "commit": "223a0cc",
   "kind": "library",
   "deployment": "user's machine",
@@ -886,13 +885,13 @@
  },
  "square/retrofit": {
   "status": "ok",
-  "seconds": 13.7,
+  "seconds": 10.8,
   "commit": "54c2047",
   "kind": "library",
   "deployment": "user's machine",
   "counts": {
    "Medium": 4,
-   "Low": 3
+   "Low": 2
   },
   "serious": []
  },

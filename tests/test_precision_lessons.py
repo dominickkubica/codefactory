@@ -397,6 +397,14 @@ class StructureTest(unittest.TestCase):
         self.assertFalse([f.target for f in g.flags if f.kind == "unused" and f.target.startswith("lib/")])
         self.assertEqual(len({f.module for f in g.files if f.id.endswith("x/m.py")}), 2)
 
+    def test_compose_previews_are_run_by_the_ide(self):
+        root = repo({"ui/Card.kt": (
+            "package ui\n\n@Composable\nfun Card() {\n    Text(\"x\")\n}\n\n@Preview\n@Composable\nprivate fun CardPreview() {\n"
+            "    Card()\n}\n\n@DevicePreviews\n@Composable\nprivate fun CardDevices() {\n    Card()\n}\n\n"
+            "@Composable\nprivate fun Orphan() {\n    Text(\"y\")\n}\n")})  # fmt: skip
+        unused = [f.target for f in build(root, cache=False).flags if f.kind == "unused"]
+        self.assertEqual(unused, ["ui/Card.kt::Orphan"])
+
     def test_names_that_are_not_files_make_no_import_loop(self):
         root = repo({  # C# `using` names a namespace; PHP needs the folder; a bare Ruby require is a gem
             "Svc/A.cs": "using Svc.Model;\nnamespace Svc { class A { } }\n",

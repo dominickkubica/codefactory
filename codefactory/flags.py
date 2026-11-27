@@ -113,8 +113,8 @@ def _mentioned(g: Graph) -> set[str]:
 
 
 def _rust_attributed(g: Graph, fn, cache: dict) -> bool:
-    """A Rust function with an attribute above it (#[test], #[tokio::test], #[bench], #[wasm_bindgen], #[no_mangle]):
-    a harness or the other side of a binding calls it."""
+    """A Rust function with an attribute above it (#[test], #[tokio::test], #[bench], #[wasm_bindgen], #[no_mangle]),
+    or a Kotlin / Java one a tool runs (@Preview, @Test): a harness or the other side of a binding calls it."""
     from pathlib import Path
 
     if fn.file not in cache:
@@ -123,8 +123,18 @@ def _rust_attributed(g: Graph, fn, cache: dict) -> bool:
         except OSError:
             cache[fn.file] = []
     lines = cache[fn.file]
-    above = [ln.strip() for ln in lines[max(0, fn.line - 4) : fn.line - 1]]
-    return any(ln.startswith("#[") for ln in above)
+    if fn.file.endswith(".rs"):
+        return any(ln.strip().startswith("#[") for ln in lines[max(0, fn.line - 4) : fn.line - 1])
+    head = []  # Kotlin / Java: the annotations from just above the definition down to its `fun` line
+    for ln in lines[max(0, fn.line - 4) : fn.line + 4]:
+        head.append(ln.strip())
+        if re.search(rf"\b{re.escape(fn.name)}\s*\(", ln):
+            break
+    return any(TOOLING_ANNOTATION.match(ln) for ln in head)
+
+
+# Annotations whose function a tool runs: Compose previews (also multi-previews like @DevicePreviews) and tests.
+TOOLING_ANNOTATION = re.compile(r"@(?:\w*Previews?|Test|ParameterizedTest|RepeatedTest|TestFactory|Benchmark)\b")
 
 
 def _is_entry(fn) -> bool:
@@ -158,7 +168,7 @@ def dead_code(g: Graph) -> list[Flag]:
         if fn.id not in used and not fn.dynamic and fn.kind != "method":
             if mentioned is None:
                 mentioned = _mentioned(g)
-            if fn.name in mentioned or (fn.file.endswith(".rs") and _rust_attributed(g, fn, lines)):
+            if fn.name in mentioned or (fn.file.endswith((".rs", ".kt", ".java")) and _rust_attributed(g, fn, lines)):
                 continue
         if fn.id in used:
             if fn.id not in used_by_code and not is_test(fn.file):
