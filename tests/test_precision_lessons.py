@@ -128,6 +128,11 @@ class PatternTest(unittest.TestCase):
             "a.js": "if (notification.unsafeTls) {\n  config.httpsAgent = new https.Agent({\n    rejectUnauthorized: false,\n  });\n}\n",
             "b.ts": "const t = {\n  tls: env.SMTP_SECURE\n    ? undefined\n    : {\n        rejectUnauthorized: false,\n      },\n};\n",
             "c.py": "MAP = {\n    'CERT_NONE': CERT_NONE,\n}\nW_SSL_CERT_NONE = \"\"\"Setting ssl_cert_reqs=CERT_NONE\"\"\"\n",
+            "redis.py": "CERTS = {\n    'none': CERT_NONE,\n}\ndef f(r):\n    if r == CERT_NONE:\n        warn()\n",
+            "httpie.py": "def ciphers(cls):\n    return [c for c in cls._create_ssl_context(verify=False).get_ciphers()]\n",
+            "quest.ts": "function tls(skipVerification: boolean) {\n  if (skipVerification) return { rejectUnauthorized: false };\n}\n",
+            "server.ts": "createServer({\n  requestCert: true,\n  rejectUnauthorized: false,\n}, h);\n",
+            "relay.go": "var c = &tls.Config{\n\tClientAuth: tls.RequestClientCert,\n\tInsecureSkipVerify: true,\n}\n",
             "bad.go": "var t = &tls.Config{InsecureSkipVerify: true}\n",
         })  # fmt: skip
         self.assertEqual([f for f, _ in hits(found, "tls_off")], ["bad.go"])

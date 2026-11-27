@@ -277,7 +277,12 @@ TLS_SETTING = re.compile(
 )
 # the same TLS config checks the certificate its own way (pinned roots, expected names, a callback): Go has to skip its
 # hostname check to do that (traefik's Consul Connect)
-OWN_VERIFY = re.compile(r"\b(?:RootCAs|VerifyPeerCertificate|VerifyConnection|PeerCertSANs|checkServerIdentity)\b")
+# (or it's a server asking for the client's certificate and checking it itself: `ClientAuth: tls.RequestClientCert`,
+# Node's `requestCert` with `socket.authorized` checked per request; skipping verification there is how that's done)
+OWN_VERIFY = re.compile(
+    r"\b(?:RootCAs|VerifyPeerCertificate|VerifyConnection|PeerCertSANs|checkServerIdentity|ClientAuth|requestCert)\b|"
+    r"\.authorized\b"
+)
 
 
 def _under_tls_setting(lines: list[str], i: int) -> bool:
@@ -652,7 +657,11 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                     if key == "jwt_unverified" and _token_question(lines, i, text):
                         continue  # `is_saleor_token`: a yes/no peek at who issued it, in a file that verifies tokens
                     if key == "tls_off" and (line.lstrip().startswith(("import ", "from "))
-                                             or re.match(r"""\s*['"](\w+)['"]\s*:\s*(?:\w+\.)?\1\s*,?\s*$""", line)
+                                             or re.match(r"""\s*['"]\w+['"]\s*:\s*(?:\w+\.)?CERT_NONE\b""", line)
+                                             or re.search(r"(?:==|!=|\bis\s+(?:not\s+)?)\s*(?:\w+\.)?CERT_NONE\b", line)
+                                             or re.search(r"\.get_ciphers\(\)", line)
+                                             or re.match(r"\s*if\s*\(?\s*!?\w*(?:verify|skip|insecure|unsafe|unauthori[sz]ed|"
+                                                         r"allow\w*cert)\w*\s*\)?\s*(?:\)|:|\{|return\b)", line, re.I)
                                              or re.match(r"""\s*[A-Z_][A-Z0-9_]*\s*=\s*[rbuf]?['"]""", line)):  # fmt: skip
                         continue  # importing the constant, a name-to-constant table, a warning message's text
                     if key == "tls_off" and (
