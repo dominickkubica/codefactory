@@ -81,3 +81,55 @@ laravel/laravel
 jellyfin/jellyfin
 phoenixframework/phoenix
 appwrite/appwrite
+
+# round 6: chosen for kinds and frameworks the corpus lacks (JS/TS backends first)
+juice-shop/juice-shop # Express + Angular, deliberately vulnerable (data-flow ground truth)
+OWASP/NodeGoat # Express + MongoDB, deliberately vulnerable
+NodeBB/NodeBB # Express forum
+requarks/wiki # Wiki.js: Express + GraphQL + Knex
+parse-community/parse-server # Express API server
+Unleash/unleash # Express + Knex, TypeScript
+Infisical/Infisical # Fastify backend, TypeScript
+cnpm/cnpmcore # Egg/Koa, TypeScript
+umami-software/umami # Next.js API routes + Prisma
+linkwarden/linkwarden # Next.js API routes, server-side fetch
+dubinc/dub # Next.js API routes, redirects
+documenso/documenso # Remix/React Router + tRPC
+lukevella/rallly # Next.js + tRPC
+logto-io/logto # Koa, TypeScript (auth server)
+openstatusHQ/openstatus # Hono + Next.js
+huggingface/chat-ui # SvelteKit
+kentcdodds/kentcdodds.com # Remix
+getmaxun/maxun # Express + Playwright
+teableio/teable # NestJS + Next.js
+paperless-ngx/paperless-ngx # Django
+netbox-community/netbox # Django
+mealie-recipes/mealie # FastAPI
+CTFd/CTFd # Flask
+getredash/redash # Flask
+pretix/pretix # Django
+usememos/memos # Go web service
+filebrowser/filebrowser # Go web service
+umputun/remark42 # Go web service
+navidrome/navidrome # Go web service
+lldap/lldap # Rust (actix-web)
+LemmyNet/lemmy # Rust (actix-web + Diesel)
+BookStackApp/BookStack # PHP Laravel
+firefly-iii/firefly-iii # PHP Laravel
+kimai/kimai # PHP Symfony
+shlinkio/shlink # PHP Mezzio, redirects
+lobsters/lobsters # Ruby on Rails
+huginn/huginn # Ruby on Rails
+rubygems/rubygems.org # Ruby on Rails
+WebGoat/WebGoat # Java Spring Boot, deliberately vulnerable
+halo-dev/halo # Java Spring WebFlux
+macrozheng/mall # Java Spring Boot + MyBatis
+bitwarden/server # C# ASP.NET Core
+Kareadita/Kavita # C# ASP.NET Core + Angular
+Dimillian/IceCubesApp # Swift/SwiftUI iOS app
+Automattic/pocket-casts-android # Kotlin Android app
+bluesky-social/social-app # React Native/Expo app
+jesseduffield/lazygit # Go CLI/TUI
+eza-community/eza # Rust CLI
+colinhacks/zod # TypeScript library
+Textualize/rich # Python library
