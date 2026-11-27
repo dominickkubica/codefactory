@@ -113,10 +113,13 @@ def _id(f) -> str:
 LOC = re.compile(r"`([^`\s]+):(\d+)`")
 
 
-def _covers(task: dict, evidence: list[str]) -> bool:
+def _cited(evidence: list[str]) -> set[tuple[str, str]]:
+    return {(m.group(1), m.group(2)) for e in evidence for m in LOC.finditer(e)}
+
+
+def _covers(task: dict, cited: set[tuple[str, str]]) -> bool:
     """A task belongs to a finding only where they point at the same code (the plan's long-function tasks start at
-    60 lines, the finding at 80: those under 80 aren't this finding's)."""
-    cited = {(m.group(1), m.group(2)) for e in evidence for m in LOC.finditer(e)}
+    60 lines, the finding at 80: those under 80 aren't this finding's). `cited`: the finding's (file, line)s."""
     return not cited or any((w["file"], str(w["line"])) in cited for w in task.get("where", []))
 
 
@@ -167,10 +170,11 @@ def build(r, graph: dict, root: Path) -> dict:
     findings, filed, code = [], set(), {}
     order = sorted(r.findings, key=lambda f: (SEVERITIES.index(f.severity), "SML".find(f.effort or "M"), f.title))
     for f in order:
+        cited = _cited(f.evidence)  # (once per finding, not once per task)
         mine = [
             t
             for t in tasks
-            if (rx := _finding_of(t)) and re.search(rx, f.title) and t["id"] not in filed and _covers(t, f.evidence)
+            if (rx := _finding_of(t)) and re.search(rx, f.title) and t["id"] not in filed and _covers(t, cited)
         ]
         filed |= {t["id"] for t in mine}
         findings.append({
@@ -258,10 +262,15 @@ def _task_md(t: dict) -> str:
     return f"- `{t['task']}` {t['title']}: {where}"
 
 
-def export(graph: dict, root: Path, as_json: bool = False, online: bool = False) -> str:
+def audit(graph: dict, root: Path, online: bool = False):
+    """The audit document, and the review it came from (its profile, for a caller that wants both from one run)."""
     from .review import Review
 
     r = Review(graph, root, online, full=True)
     r.run()
-    doc = build(r, graph, root)
+    return build(r, graph, root), r
+
+
+def export(graph: dict, root: Path, as_json: bool = False, online: bool = False) -> str:
+    doc, _ = audit(graph, root, online)
     return json.dumps(doc, indent=1) + "\n" if as_json else markdown(doc)

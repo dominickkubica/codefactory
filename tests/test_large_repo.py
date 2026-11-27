@@ -237,6 +237,18 @@ class LargeRepoLessonsTest(unittest.TestCase):
         ):
             typescript._run_helper(Path("."), [])
         self.assertGreaterEqual(typescript.heap_mb(), 4096)
+        # remembered: the same files fall back at once next time (n8n spent 5 minutes reaching the limit on every run),
+        # and changed files try again
+        saved = repo({}) / "typescript.json"
+        with (
+            mock.patch.object(typescript.shutil, "which", return_value="node"),
+            mock.patch.object(typescript, "find_typescript", return_value="ts"),
+            mock.patch.object(typescript.subprocess, "run", return_value=oom) as run,
+        ):
+            for sources in ("abc", "abc", "def"):
+                with self.assertRaisesRegex(typescript.TypeScriptUnavailable, "ran out of memory"):
+                    typescript._run_helper(Path("."), [], saved, sources)
+        self.assertEqual(run.call_count, 2)
 
     def test_corpus_round_5_profiles(self):  # ripgrep, bat, axum, laravel/framework, devise, okhttp, traefik
         def kind(files: dict[str, str]) -> str:

@@ -68,6 +68,30 @@ BRANCH = re.compile(
     r"^(?:if|elif|else_if|elsif|unless|for|foreach|while|until|do|loop|case|when|catch|rescue|except|guard|match_arm|"
     r"switch_case|switch_section|conditional|ternary)(?:_\w+)?$"
 )
+
+
+class _Answers(dict):
+    def __init__(self, test):
+        super().__init__()
+        self.test = test
+
+    def __missing__(self, t: str) -> bool:
+        self[t] = found = bool(self.test(t))
+        return found
+
+
+class _NodeTypes:
+    """A pattern over node types, its answers kept: a file has millions of nodes, a grammar a few hundred types.
+    `.match(t)` / `.search(t)` answer True or False (a dictionary lookup after the first time)."""
+
+    def __init__(self, pattern: re.Pattern):
+        self.match = _Answers(pattern.match).__getitem__
+        self.search = _Answers(pattern.search).__getitem__
+
+
+FUNC, NOT_FUNC, CLASS, CALL, LOOP, NOT_LOOP, IMPORT, CLOSURE, IDENT, STRINGY, NUMBER, COMMENT, BRANCH = map(
+    _NodeTypes, (FUNC, NOT_FUNC, CLASS, CALL, LOOP, NOT_LOOP, IMPORT, CLOSURE, IDENT, STRINGY, NUMBER, COMMENT, BRANCH)
+)
 MAX_BYTES = 1_000_000  # bigger files are generated or data
 MAX_DEPTH = 400  # pathological nesting (generated code) is cut, not followed
 

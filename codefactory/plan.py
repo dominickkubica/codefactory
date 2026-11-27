@@ -44,6 +44,9 @@ class Planner:
         self.changes = changes or {}  # file -> commits in the last 12 months (hotspots.py)
         self.layer_rank = {name: i for i, name in enumerate(g["layers"])}  # right = more depended upon
         self.idx = {id(f): i for i, f in enumerate(g["flags"])}
+        self._test_files = sorted({f["file"] for f in g["functions"] if is_test(f["file"])})
+        self._test_bit = {f: 1 << i for i, f in enumerate(self._test_files)}
+        self._reach_of: dict[str, int] = {}
         from .owners import load as load_owners
 
         self.owners = load_owners(Path(g["root"])) if g.get("root") and Path(g["root"]).is_dir() else None
@@ -59,13 +62,64 @@ class Planner:
         return sorted({self.v.where(e["src"]) for e in self.v.callers[fid]})
 
     def tests_for(self, ids: list[str]) -> list[str]:
-        dep = self.v.dependents(ids) | set(ids)
-        files = {self.v.fn[d]["file"] for d in dep if d in self.v.fn}
+        """The test files among the functions that reach these (and the files importing theirs)."""
+        files: set[str] = set()
         for i in ids:
+            mask = self._reach(i)
+            while mask:
+                low = mask & -mask
+                files.add(self._test_files[low.bit_length() - 1])
+                mask ^= low
             fn = self.v.fn.get(i)
             if fn:
-                files |= self.v.importers.get(fn["file"], set())
-        return sorted(f for f in files if is_test(f))[:12]
+                files |= {f for f in self.v.importers.get(fn["file"], set()) if is_test(f)}
+        return sorted(files)[:12]
+
+    def _reach(self, start: str) -> int:
+        """The test files (bits of _test_files) of a function and of everything that calls or refers to it, directly or
+        through others: kept per strongly connected group of callers (Tarjan's), so the many tasks of a big codebase
+        don't each walk its whole call graph again."""
+        done, v = self._reach_of, self.v
+        if start in done:
+            return done[start]
+
+        def preds(x: str) -> list[str]:
+            return [e["src"] for e in v.callers.get(x, ())] + [e["src"] for e in v.refs_in.get(x, ())]
+
+        def own(x: str) -> int:
+            fn = v.fn.get(x)
+            return self._test_bit.get(fn["file"], 0) if fn else 0
+
+        index, low, acc, stack, on = {start: 0}, {start: 0}, {start: own(start)}, [start], {start}
+        work = [(start, iter(preds(start)))]
+        while work:
+            node, it = work[-1]
+            for nxt in it:
+                if nxt in done:
+                    acc[node] |= done[nxt]
+                elif nxt not in index:
+                    index[nxt] = low[nxt] = len(index)
+                    acc[nxt] = own(nxt)
+                    stack.append(nxt)
+                    on.add(nxt)
+                    work.append((nxt, iter(preds(nxt))))
+                    break
+                elif nxt in on:
+                    low[node] = min(low[node], index[nxt])
+            else:
+                work.pop()
+                if low[node] == index[node]:  # the root of a group: everything in it reaches the same tests
+                    while True:
+                        member = stack.pop()
+                        on.discard(member)
+                        done[member] = acc[node]
+                        if member == node:
+                            break
+                if work:
+                    parent = work[-1][0]
+                    low[parent] = min(low[parent], low[node])
+                    acc[parent] |= acc[node]
+        return done[start]
 
     def weight(self, files: list[str]) -> float:
         """Tests and one-off scripts matter less than the product's code."""

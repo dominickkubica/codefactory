@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 import subprocess
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, deque
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from fnmatch import fnmatch
@@ -190,6 +190,31 @@ def _unskipped(text: str) -> str:
     return "".join(out) + text[pos:] if out else text
 
 
+class _QuotedTexts:
+    """Whether test code quotes a route's URL (`"/users/42?x=1"` for `/users/{id}`). The match runs from one quote to
+    the very next (nothing between may be a quote), so the URL's text must lie in one quoted stretch: each distinct
+    stretch is checked once, only those holding the URL's literal parts, instead of the whole test code per route."""
+
+    PARAM = re.compile(r"\{[^}]*\}|<[^>]*>|:\w+|\*\w*")
+
+    def __init__(self, blob: str):
+        self.blob = blob
+        self.texts = list(dict.fromkeys(re.split(r"[\"'`]", blob)[1:-1]))
+
+    def has_url(self, path: str) -> bool:
+        params = [bool(self.PARAM.fullmatch(p)) for p in path.split("/")]
+        parts = [r"[^/\"'`?]+" if param else re.escape(p) for p, param in zip(path.split("/"), params, strict=True)]
+        url = re.compile(r"[\"'`][^\"'`\s]*" + "/".join(parts) + r"/?(?:\?[^\"'`]*)?[\"'`]")
+        if re.search(r"[\"'`]", path):
+            return bool(url.search(self.blob))
+        literal = [p for p, param in zip(path.split("/"), params, strict=True) if not param]
+        if any(p not in self.blob for p in literal):
+            return False
+        key = max(literal, key=len, default="") or ("/" if "/" in path else "")
+        # joined with no separator: the empty text between two stretches can't match a URL (it needs a character)
+        return bool(url.search("".join(f'"{t}"' for t in self.texts if key in t)))
+
+
 class Review:
     def __init__(self, g: dict, root: Path, online: bool = False, full: bool = False):
         self.full = full  # every location of every finding (the audit export), not the first few (the report)
@@ -263,12 +288,15 @@ class Review:
         if not blob:
             return {}
         out = set()
+        quoted = _QuotedTexts(blob)
+        found: dict[str, bool] = {}
         for e in self.surface.entries:
             path = e.path.rstrip("/")
             if len(path) < 2:
                 continue  # "/": every URL ends somewhere
-            parts = [r"[^/\"'`?]+" if re.fullmatch(r"\{[^}]*\}|<[^>]*>|:\w+|\*\w*", p) else re.escape(p) for p in path.split("/")]
-            if re.search(r"[\"'`][^\"'`\s]*" + "/".join(parts) + r"/?(?:\?[^\"'`]*)?[\"'`]", blob):
+            if path not in found:
+                found[path] = quoted.has_url(path)
+            if found[path]:
                 out.add(e.fn)
         # a route a test reaches by its name: Django's reverse("api:create_locale"), Flask's url_for("create_locale")
         named = set(re.findall(r"""\b(?:reverse|url_for|reverse_lazy)\(\s*["'](?:[\w-]+:)*([\w-]+)["']""", blob))
@@ -604,9 +632,9 @@ class Review:
             if self._comment_line(entry.file, entry.line):
                 continue  # a route in a doc comment (a rustdoc or JSDoc example)
             seen_routes.add(key)
-            seen, q = {entry.fn}, [entry.fn]
+            seen, q = {entry.fn}, deque([entry.fn])
             while q:
-                cur = q.pop(0)
+                cur = q.popleft()
                 if cur in self.writers:
                     found.append((entry, cur))
                     break

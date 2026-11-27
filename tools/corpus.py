@@ -29,6 +29,17 @@ ROOT = Path(__file__).resolve().parent.parent
 HERE = ROOT / "tools" / "corpus"
 CACHE = Path(os.environ.get("CODEFACTORY_CORPUS", Path.home() / ".cache" / "codefactory-corpus"))
 LIMIT = 900  # seconds per repository
+# `codefactory export PATH --json -o OUT`, also writing what `codefactory profile PATH --json` prints
+EXPORT = """
+import json, sys
+from pathlib import Path
+from codefactory.cli import load_graph
+from codefactory.export import audit
+path, out, prof = map(Path, sys.argv[1:4])
+doc, review = audit(load_graph(path), path.resolve())
+out.write_text(json.dumps(doc, indent=1) + "\\n", encoding="utf-8")
+prof.write_text(json.dumps(review.profile.to_dict(), indent=1), encoding="utf-8")
+"""
 
 
 def repos() -> list[str]:
@@ -71,10 +82,13 @@ def analyze(repo: str) -> dict:
         return {"status": "clone failed", "error": str(e)[-300:]}
     out = CACHE / "exports" / f"{repo.replace('/', '__')}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
+    prof = out.with_suffix(".profile.json")
+    prof.unlink(missing_ok=True)
     env = {**os.environ, "PYTHONPATH": str(ROOT)}
-    try:
+    try:  # the export and its structured profile from one analysis (a second `codefactory profile` re-analyzed
+        # whenever the result couldn't be cached, as when the TypeScript analyzer falls back: n8n, twice)
         done = subprocess.run(
-            [sys.executable, "-m", "codefactory", "export", str(path), "--json", "-o", str(out)],
+            [sys.executable, "-c", EXPORT, str(path), str(out), str(prof)],
             capture_output=True,
             text=True,
             timeout=LIMIT,
@@ -86,13 +100,9 @@ def analyze(repo: str) -> dict:
     if done.returncode != 0 or not out.exists():
         return {"status": "crash", "seconds": seconds, "error": (done.stderr or done.stdout)[-600:]}
     data = json.loads(out.read_text(encoding="utf-8"))
-    try:  # the structured profile (the export carries its one-line summary); the analysis is cached by now
-        prof = subprocess.run(
-            [sys.executable, "-m", "codefactory", "profile", str(path), "--json"],
-            capture_output=True, text=True, timeout=LIMIT, env=env,
-        )  # fmt: skip
-        profile = json.loads(prof.stdout) if prof.returncode == 0 else {}
-    except (subprocess.TimeoutExpired, ValueError):
+    try:
+        profile = json.loads(prof.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
         profile = {}
     counts: dict[str, int] = {}
     for f in data["findings"]:

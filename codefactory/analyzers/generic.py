@@ -11,6 +11,7 @@ Grammars download on first use per language and are cached (tree-sitter-language
 
 from __future__ import annotations
 
+import functools
 import os
 import re
 import sys
@@ -348,6 +349,12 @@ def rails_associations(root: Path, files: list[str]) -> re.Pattern | None:
     return re.compile(rf"(?:^|[^\w.])[a-z_]\w*\.(?:{alt})\.(?:count|where|find_by\w*|find|pluck|sum|exists\?|first|last)$")
 
 
+@functools.cache
+def _qualname(fid: str) -> str:
+    """A function id's qualified name without an overload's line (asked for the same candidates again and again)."""
+    return re.sub(r"@\d+$", "", fid.split("::", 1)[-1])
+
+
 def _typed(callee: str, src: str, types: dict[str, str], cands: list[str]) -> str | None:
     """`repo.find` with `repo: Repo` declared → Repo.find; `self.find` / `this.find` → a method of the caller's class.
     Only when exactly one candidate fits."""
@@ -364,7 +371,7 @@ def _typed(callee: str, src: str, types: dict[str, str], cands: list[str]) -> st
     if not want:
         return None
     # (overloads carry their line in the id: `Validate.isTrue@312`; several overloads fitting is still ambiguous)
-    qual = [re.sub(r"@\d+$", "", c.split("::", 1)[-1]) for c in cands]
+    qual = [_qualname(c) for c in cands]
     fits = [c for c, q in zip(cands, qual, strict=True) if q == want or q.endswith("." + want)]
     return fits[0] if len(fits) == 1 else None
 
@@ -379,9 +386,16 @@ def link(g: Graph, parsed: dict[str, dict], associations: re.Pattern | None = No
     file_of: dict[str, str] = {}
     kind_of: dict[str, str] = {}
     imported: dict[str, set[str]] = {}
+    resolved: dict[tuple[str, str], list[str]] = {}  # (import, language) -> files: the same import recurs in many files
+
+    def files_of(src: str, lang: str) -> list[str]:
+        if (src, lang) not in resolved:
+            resolved[(src, lang)] = _resolve_import(src, idx, lang, go_mods)
+        return resolved[(src, lang)]
+
     for rel, d in sorted(parsed.items()):
         g.files.append(File(id=rel, module=rel.rsplit(".", 1)[0].replace("/", "."), loc=d["loc"]))
-        imported[rel] = {dst for src in d["imports"] for dst in _resolve_import(src, idx, d["lang"], go_mods) if dst != rel}
+        imported[rel] = {dst for src in d["imports"] for dst in files_of(src, d["lang"]) if dst != rel}
         g.edges += [Edge(rel, dst, "import") for dst in sorted(imported[rel])]
         top = Function(id=f"{rel}::<module>", file=rel, name="<module>", qualname="<module>", line=1, end=1, loc=0, kind="module")
         g.functions.append(top)

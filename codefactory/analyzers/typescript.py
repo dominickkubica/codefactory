@@ -141,7 +141,7 @@ def analyze_typescript(root: Path, ignore: list[str], cache: bool = True) -> Gra
         return g
     from .parallel import _tool_hash
 
-    stamp = f"{stamp}|{_tool_hash()}"
+    sources, stamp = stamp, f"{stamp}|{_tool_hash()}"
     from ..paths import cache_dir
 
     folder = cache_dir(root) if cache and not stamp.startswith("racy") else None  # racy: nothing to reuse or keep
@@ -155,7 +155,7 @@ def analyze_typescript(root: Path, ignore: list[str], cache: bool = True) -> Gra
         except (OSError, ValueError, KeyError):
             data = None
     if data is None:
-        data = _run_helper(root, ignore)
+        data = _run_helper(root, ignore, saved if cache else None, sources)
         if cache:
             try:
                 saved.parent.mkdir(exist_ok=True)
@@ -169,14 +169,27 @@ def analyze_typescript(root: Path, ignore: list[str], cache: bool = True) -> Gra
     return g
 
 
-def _run_helper(root: Path, ignore: list[str]) -> dict:
-    """Runs ts_helper.js in Node over the whole project (the type checker needs all of it at once)."""
+def _run_helper(root: Path, ignore: list[str], saved: Path | None = None, sources: str = "") -> dict:
+    """Runs ts_helper.js in Node over the whole project (the type checker needs all of it at once). `saved`: where a
+    run out of memory is remembered, so the same files, helper and compiler with no bigger heap fall back at once
+    (n8n spent 5 minutes of every run reaching the heap limit)."""
     node = shutil.which("node")
     if not node:
         raise TypeScriptUnavailable("TypeScript files found, but Node.js isn't installed (https://nodejs.org).")
     ts_path = find_typescript(root, node)
     helper = pkg_files(__package__) / "ts_helper.js"
     heap = heap_mb()
+    memo = ""
+    if saved is not None and sources:
+        helper_hash = hashlib.sha1(Path(str(helper)).read_bytes()).hexdigest()
+        memo = f"{sources}|{ts_path}|{helper_hash}"
+        try:
+            oom = json.loads(saved.read_text(encoding="utf-8")).get("oom") or {}
+        except (OSError, ValueError, AttributeError):
+            oom = {}
+        if oom.get("key") == memo and heap <= oom.get("heap", 0):
+            raise TypeScriptUnavailable(f"The TypeScript analyzer ran out of memory on this project (Node.js heap "
+                                        f"{oom['heap']} MB) on the last run, with these same files.")  # fmt: skip
     try:
         proc = subprocess.run(
             [node, f"--max-old-space-size={heap}", str(helper), str(root), ts_path, json.dumps(ignore)],
@@ -193,6 +206,12 @@ def _run_helper(root: Path, ignore: list[str]) -> dict:
         why = "ran out of memory" if "heap out of memory" in proc.stderr else "failed"
         if os.environ.get("CODEFACTORY_DEBUG"):
             print(proc.stderr.strip()[-2000:], file=sys.stderr)
+        if memo and why == "ran out of memory":
+            try:
+                saved.parent.mkdir(exist_ok=True)
+                saved.write_text(json.dumps({"oom": {"key": memo, "heap": heap}}), encoding="utf-8")
+            except OSError:
+                pass
         # (the error's own line, so a failure says what failed: the last that names one, else the last line)
         lines = [x.strip() for x in proc.stderr.splitlines() if x.strip()]
         last = next((x for x in reversed(lines) if re.match(r"\w*Error\b", x)), lines[-1] if lines else "")
