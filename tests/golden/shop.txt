@@ -24,8 +24,8 @@ edge import shop/api/routes.py -> shop/db/store.py
 edge import shop/core/pricing.py -> shop/core/tax.py
 edge import shop/core/tax.py -> shop/core/pricing.py
 edge ref shop/db/store.py::save_order -> shop/db/store.py::Store.add
-flag high cycle shop/core/pricing.py:0 Import loop of 2 files: pricing.py → tax.py
-flag high cycle shop/core/tax.py:0 Import loop of 2 files: pricing.py → tax.py
+flag high cycle shop/core/pricing.py:0 Import loop: pricing.py → tax.py → pricing.py
+flag high cycle shop/core/tax.py:0 Import loop: pricing.py → tax.py → pricing.py
 flag info io_in_loop shop/api/reports.py::import_lines:11 import_lines calls save_line() inside a loop (line 11), and that reaches conn.execute("INSERT …"): one write per item. Fine for a few inside one transaction; for many, batch them (one multi-row INSERT/UPDATE) and make sure they share a transaction.
 flag info unused shop/db/store.py::Store.unused_method:8 Store.unused_method has no callers found (it may be called through an instance or a framework)
 flag warn duplicate shop/core/pricing.py::apply_coupon:25 Same code as discount (shop/core/pricing.py)

@@ -83,11 +83,13 @@ class LanguageAwareChecksTest(unittest.TestCase):
             "build.go": "package b\n\nfunc check() bool { return eval(x, tags) }\n",
             "run.py": "result = eval(user_input)\n",
             "tls_test.go": "var key = `-----BEGIN EC PRIVATE KEY-----\nabc\n-----END EC PRIVATE KEY-----`\n",
-            "api_test.py": 'TOKEN = "' + "ghp_" + "a" * 36 + '"\n',
+            "api_test.py": 'TOKEN = "' + "ghp_" + "ADodOJhzzRL5q2IlhAVE05vSWgcaift4t10D" + '"\n',
         })  # fmt: skip
         s = scan_sources(root, ["build.go", "run.py", "tls_test.go", "api_test.py"])
         self.assertEqual([e.file for e in s["eval"].hits], ["run.py"])
         self.assertEqual([e.file for e in s["secret"].hits], ["api_test.py"])  # a real token format, even in a test
+        (root / "api_test.py").write_text('TOKEN = "' + "ghp_" + "a" * 36 + '"\n', encoding="utf-8")  # a stand-in
+        self.assertFalse(scan_sources(root, ["api_test.py"])["secret"].hits)
 
 
 class DashboardTest(unittest.TestCase):

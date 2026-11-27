@@ -104,6 +104,14 @@ IO_NAME = re.compile(
 )
 # ORM verbs (Active Record, Eloquent): in Ruby and PHP `x.save` / `->update()` is a database call; in Rust, Go, Java,
 # Kotlin or C# `map.insert(k, v)`, `set.update()` or `list.select()` is a collection
+# methods any value has, on a receiver whose name sounds like I/O (`conn.Close()`, `client.String()`, `tx.Lock()`): not
+# a query or a request each time a loop calls them
+NOT_IO_METHOD = re.compile(
+    r"(?:\.|->|::)(?:close|Close|shutdown|Shutdown|String|Error|Lock|Unlock|RLock|RUnlock|Len|len|clone|Clone|push|"
+    r"append|add|keys|values|items|map|filter|iter|is_\w+|Is\w+|has_\w+|Has\w+|set_?\w*[Tt]imeout|Set\w*Deadline|"
+    r"Context|Name|ID|Id|Key|Type|Copy|Reset|Wait|Done|Err|Cancel|Release|release|dispose|Dispose|toString|equals|"
+    r"hashCode|getClass|log\w*|Log\w*|debug|info|warn|error)$"
+)
 ORM_NAME = re.compile(r"(?:^|[.:>])(?:where|save!?|create!?|update!?|destroy|insert|select|delete!?)$")
 ORM_LANGS = (".rb", ".php")
 # a receiver declared as a repository, DAO, entity manager or database context: `owners.save(o)` where
@@ -380,11 +388,16 @@ def link(g: Graph, parsed: dict[str, dict], associations: re.Pattern | None = No
                 return same[0], cands
             if bare and not same:  # f(x) with no receiver: a plain function, unless only methods have that name
                 cands = [c for c in cands if kind_of[c] != "method"] or cands
+            # the only definition anywhere, for a method called on a value of unknown type, only when the name is
+            # distinctive: `n.Int64()`, `scope.preload()` are the standard library's or a framework's far more often
+            # than the one project function that happens to share the name
+            receiver_call = bool(re.search(r"\.|->|::", callee)) and not re.match(r"(?:self|this|@)\b", callee)
+            only = cands if len(cands) == 1 and (not receiver_call or len(name) >= 8) else []
             for pick in (
                 same,
                 [c for c in cands if file_of[c].rsplit("/", 1)[0] == here and "/" in file_of[c]] if here else [],
                 [c for c in cands if file_of[c] in imported[rel]],
-                cands if len(cands) == 1 else [],
+                only,
             ):
                 if len(pick) == 1:
                     return pick[0], cands
@@ -416,6 +429,7 @@ def link(g: Graph, parsed: dict[str, dict], associations: re.Pattern | None = No
                 if (
                     not cands
                     and not route
+                    and not NOT_IO_METHOD.search(callee)
                     and (
                         IO_RECEIVER.search(callee)
                         or HTTP_PACKAGE.search(callee)

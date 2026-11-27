@@ -44,6 +44,10 @@ def build(root: Path, languages: list[str] | None = None, cache: bool = True) ->
         from .taint import taint_flags
 
         g.flags += taint_flags(g, root)
+    if any(f.id.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts")) for f in g.files):
+        from .jstaint import js_taint_flags
+
+        g.flags += js_taint_flags(g, root)
     if cfg.rules:
         from .rules import custom_flags
 

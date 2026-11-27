@@ -25,6 +25,51 @@ FALLBACK = re.compile(
 TRAILING_COMMENT = re.compile(r"(?:\)|\}|;|\bpass)\s*(?://|#)\s*\S")
 
 
+# calls whose one expected failure is the reason for the catch: JSON that may not be JSON, a pointer capture on an
+# inactive pointer, a path that may not exist, a custom element already defined (re-run, hot reload)
+EXPECTED_THROW = re.compile(
+    r"JSON\.parse|(?:set|release)PointerCapture|realpath|customElements\.define|decodeURIComponent|new URL\(|"
+    r"\bimport\(|require\(|\bstat(?:Sync)?\(|\baccess(?:Sync)?\(|\blstat|inspect\.signature|\.resolve\(|"
+    r"\bint\(|\bfloat\(|json\.loads|\.decode\(|urlparse|resolve_?url|\bresolve\("
+)
+VALUE = r"(?:null|undefined|\[\]|\{\}|false|0|''|\"\"|None)"
+
+
+def expected_failure(lines: list[str], i: int) -> str | None:
+    """Why the empty catch on line i is deliberate, from the lines around it: the try only imports an optional
+    dependency or makes a call whose one expected failure is handled by doing nothing; or the catch turns the failure
+    into a value (`.catch(() => null)`) the statement goes on to use."""
+    line = lines[i - 1]
+    if re.search(rf"\.catch\(\s*(?:\(\s*\w*\s*\)|\w+)\s*=>\s*{VALUE}\s*\)", line):
+        start = i - 1
+        while start > 0 and not re.search(r"[;{}]\s*$", lines[start - 1]) and i - start < 8:
+            start -= 1
+        stmt = " ".join(lines[start:i])
+        if re.search(r"(?<![=!<>])=(?![=>])|\breturn\b|\?\?|\|\||&&|\(\s*await\b|,\s*await\b", stmt):
+            return "fallback"  # the null, false or [] is the answer the code then checks
+    body = []
+    for back in range(i - 2, max(-1, i - 9), -1):
+        ln = lines[back]
+        if re.match(r"\s*(?:try\s*:|try\s*\{|\}\s*try\s*\{)\s*$", ln) or re.search(r"\btry\s*\{", ln):
+            text = "\n".join(body)
+            if body and all(re.match(r"\s*(?:import |from \S+ import )", b) or not b.strip() for b in body):
+                return "optional import"
+            # (not `return JSON.parse(x)` in an empty catch: the caller gets nothing and isn't told why; nor a bare
+            # `except:`, which also swallows Ctrl-C)
+            bare = re.match(r"\s*except\s*:", line)
+            if (
+                text
+                and EXPECTED_THROW.search(text)
+                and len([b for b in body if b.strip()]) <= 3
+                and not bare
+                and not re.search(r"\breturn\b", text)
+            ):
+                return "expected failure"
+            return None
+        body.insert(0, ln)
+    return None
+
+
 def swallow_intent(line: str, above: str) -> str | None:
     """Why an empty catch on this line is deliberate, or None if it isn't shown to be."""
     if TRAILING_COMMENT.search(line.split("catch", 1)[-1] if "catch" in line else line) or re.match(r"\s*(?://|#)\s*\S", above):
@@ -72,6 +117,9 @@ def safe_names(lines: list[str], i: int, span: int = 25) -> set[str]:
                 name, src = (m.group(1), m.group(2)) if m.group(1) else (m.group(3), m.group(4))
                 if CONST_NAME.search(src) or _root(src.replace("Object.keys(", "")) in safe:
                     safe.add(name)
+            # typed as one of a few strings: `key: "name" | "email"` (TypeScript)
+            for m in re.finditer(r"""\b(\w+)\??\s*:\s*(?:['"][^'"]*['"]\s*\|\s*)+['"][^'"]*['"]""", ln):
+                safe.add(m.group(1))
             # typed as a number: `int id`, `for (Integer id : ids)`, `id: Int`, Go's `id int`
             for m in re.finditer(
                 r"\b(?:int|long|short|Integer|Long|Short|int32|int64|uint\w*)\s+(\w+)\b|(\w+)\s*:\s*(?:Int|Long|Short|int|number)\b|"
@@ -96,9 +144,19 @@ def safe_names(lines: list[str], i: int, span: int = 25) -> set[str]:
     return safe
 
 
+# a value made safe for SQL text on the way in: identifier quoting and escaping, generated placeholders, a query
+# builder's own SQL (its values are bound), or a choice between two constants
+ESCAPED = re.compile(
+    r"^(?:\$?this->)?(?:[\w$>-]+(?:->|\.))*(?:quote\w*|escape\w*|_?quote_name|wrap\w*|placeholders?|bindings?|"
+    r"sqlstring\.escape\w*|identifier|ident)\s*\(|(?:\.|->)(?:getQuery|getSql|toSQL|toSql|sql)\(\s*\)$|"
+    r"^[\w$.]*(?:escaped|quoted|Quoted|Escaped|safe|Safe|sanitized)\w*$|"
+    r"""^[^?]+\?\s*(?:'[^']*'|"[^"]*"|`[^`$]*`)\s*:\s*(?:'[^']*'|"[^"]*"|`[^`$]*`)$""",
+)
+
+
 def interp_safe(expr: str, safe: set[str]) -> bool:
     e = expr.strip()
-    return bool(NUMERIC.match(e)) or _root(e) in safe
+    return bool(NUMERIC.match(e)) or _root(e) in safe or bool(ESCAPED.search(e))
 
 
 # ---- CI ------------------------------------------------------------------------------------------------------------

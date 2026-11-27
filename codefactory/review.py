@@ -23,7 +23,7 @@ from .checks import CI_NAMES, scan_repo, scan_sources, source_files, test_reach
 from .config import load_config
 from .coverage import measured
 from .infra import scan as infra_scan
-from .paths import is_doc_sample, is_example_code, is_script, is_test, walk
+from .paths import deliberate_copies, is_doc_sample, is_example_code, is_script, is_test, walk
 from .plan import make_plan
 from .privacy import scan as privacy_scan
 from .profile import detect as detect_profile
@@ -75,6 +75,7 @@ def _ev(items, n: int = 6) -> tuple[list[str], int]:
 
 # endpoints that have to work without being signed in: signing in, signing up, resetting a password, confirming an email
 SIGN_IN = re.compile(r"log_?in|log_?out|sign_?in|sign_?up|signup|regist(?:er|ration)|password|reset|forgot|confirm|"
+                     r"(?<![a-z])setup(?![a-z])|health|webhook|"  # first-run setup; a webhook checks its own signature
                      r"verify|webauthn|totp|two_?factor|2fa|oauth|callback|magic_?link|unsubscribe|check_token|login_link",
                      re.I)  # fmt: skip
 CLIENT_APPS = {"React", "React Native", "Expo", "Vue", "Svelte"}  # a UI process serves one user
@@ -176,9 +177,12 @@ class Review:
             if re.search(r"[\"'`][^\"'`\s]*" + "/".join(parts) + r"/?(?:\?[^\"'`]*)?[\"'`]", blob):
                 out.add(e.fn)
         called = set(re.findall(r"\.(\w+)\s*\(", blob))
-        precise = (".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts")  # (their calls are resolved)
+        # a method a test calls by name, in any language: through a mixin, a base class or `self.session.delete()`, the
+        # call graph can't tell which class's method runs, and "no test reaches it" was wrong for most of these
         out |= {fid for fid, f in self.v.fn.items() if f["kind"] == "method" and f["name"] in called
-                and not f["file"].endswith(precise) and not is_test(f["file"])}  # fmt: skip
+                and not is_test(f["file"])}  # fmt: skip
+        # migrations: a test run builds its database by applying them (pytest-django, Rails, Laravel)
+        out |= {fid for fid, f in self.v.fn.items() if re.search(r"(?:^|/)(?:migrations|db/migrate)/", f["file"])}
         return out
 
     def n(self, shown: int) -> int:
@@ -202,7 +206,7 @@ class Review:
         return (
             f"`{fn['file']}:{flag.get('line') or fn['line']}` {fn['qualname'] if fn['kind'] != 'module' else ''}".rstrip()
             if fn
-            else f"`{flag['target']}`"
+            else f"`{flag['target']}" + (f":{flag['line']}`" if flag.get("line") else "`")
         )
 
     # ---- findings ----------------------------------------------------------------------------------------------
@@ -310,7 +314,8 @@ class Review:
         self.dependencies()
 
     def flows(self) -> None:
-        """Proven data flows (Python): a request value traced, variable by variable, into a dangerous call."""
+        """Proven data flows (Python, JavaScript, TypeScript): a request value traced, variable by variable, into a
+        dangerous call."""
         flows = self.by_kind["taint"]
         if not flows:
             return
@@ -323,8 +328,8 @@ class Review:
             "Traced through the code, not guessed from a pattern: whoever sends the request controls what reaches the "
             "call (injection into SQL or a shell, code execution, files outside the intended folder, requests to internal "
             "hosts, redirects to any site).",
-            "Convert or validate the value where it enters (int(), an allow-list), or use the safe form of the call: bound "
-            "SQL parameters, a command as an argument list without a shell, a fixed base URL or folder.",
+            "Convert or validate the value where it enters (int(), Number(), an allow-list), or use the safe form of the "
+            "call: bound SQL parameters, a command as an argument list without a shell, a fixed base URL or folder.",
             _effort(len(flows), len({self._file(f) for f in flows})),
             max(0, len(flows) - self.n(8)),
         )
@@ -446,6 +451,10 @@ class Review:
             key = (entry.method, entry.path, entry.fn)
             if key in seen_routes or is_example_code(entry.file) or is_test(entry.file):
                 continue  # (an example server's routes show how to use the project; they aren't its own)
+            if entry.method in ("GET", "HEAD", "OPTIONS"):
+                continue  # a read: what it writes on the way (a cache, a lock, a derived file) isn't the caller's change
+            if self._comment_line(entry.file, entry.line):
+                continue  # a route in a doc comment (a rustdoc or JSDoc example)
             seen_routes.add(key)
             seen, q = {entry.fn}, [entry.fn]
             while q:
@@ -458,6 +467,13 @@ class Review:
                         seen.add(nxt)
                         q.append(nxt)
         return found
+
+    def _comment_line(self, file: str, line: int) -> bool:
+        try:
+            text = (self.root / file).read_text(encoding="utf-8", errors="replace").splitlines()
+        except OSError:
+            return False
+        return 0 < line <= len(text) and re.match(r"\s*(?://|#|\*|/\*)", text[line - 1]) is not None
 
     def endpoints(self) -> None:
         entries = self.surface.entries
@@ -638,6 +654,7 @@ class Review:
 
     def architecture(self) -> None:
         cycles = {frozenset([f["target"], *f.get("related", [])]) for f in self.by_kind["cycle"]}
+        chain = {frozenset([f["target"], *f.get("related", [])]): f.get("detail", "") for f in self.by_kind["cycle"]}
         if cycles:
             biggest = max(len(c) for c in cycles)
             load_order = any(f["severity"] == "high" for f in self.by_kind["cycle"])  # modules that run on import
@@ -645,7 +662,11 @@ class Review:
                 f"{'Import' if load_order else 'Dependency'} loops ({len(cycles)})",
                 ("High" if biggest >= 3 else "Medium") if load_order else ("Medium" if biggest >= 3 else "Low"),
                 "Architecture",
-                [" → ".join(sorted(c)) for c in list(cycles)[: self.n(4)]],
+                [
+                    (chain[c] or " → ".join(sorted(c)))
+                    + (f" ({len(c)} files in the loop)" if len(c) > chain[c].count(" → ") else "")
+                    for c in sorted(cycles, key=lambda c: (-len(c), sorted(c)))[: self.n(4)]
+                ],
                 "Files in a loop load in a fragile order and can't be understood, tested or moved alone."
                 if load_order
                 else "Classes in a loop work at runtime, but can't be understood, tested, reused or moved apart.",
@@ -727,7 +748,9 @@ class Review:
                 "M",
                 max(0, len(long) - self.n(6)),
             )
-        unused = [f for f in self.by_kind["unused"] if not is_test(self._file(f))]
+        # functions nothing calls; a method with no callers found is only a hint (an override, an interface's method,
+        # a trait impl, a framework hook are called through the base type), never reported as dead
+        unused = [f for f in self.by_kind["unused"] if f["severity"] != "info" and not is_test(self._file(f))]
         if unused:
             self.add(
                 f"Unused code ({_n(len(unused), 'function')})",
@@ -1289,7 +1312,14 @@ class Review:
             return False
         if all(is_doc_sample(w["file"]) for w in task["where"]):
             return False  # samples and tutorials repeat their setup on purpose: each stands alone
+        if deliberate_copies([w["file"] for w in task["where"]]):
+            return False  # frozen versions, build outputs, vendored code, standalone examples
         m = re.search(r"(\d+)% similar", task["title"])
+        lines = re.search(r"~(\d+) lines", task["title"])
+        # a near copy of a few lines is boilerplate more often than logic (a DI constructor, a one-line action):
+        # measured on 76 repositories, small identical copies were real and small edited ones weren't
+        if m and lines and int(lines.group(1)) < 12:
+            return False
         return not m or int(m.group(1)) >= 85
 
     def _di_provider(self, f: dict) -> bool:

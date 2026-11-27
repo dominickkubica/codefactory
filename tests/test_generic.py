@@ -127,18 +127,18 @@ class RealCodeRulesTest(unittest.TestCase):
     def test_java_overloads_are_not_copies_and_class_loops_are_warn(self):
         body = "{ if (a == null) return -1; for (int i = 0; i < a.length; i++) { if (a[i] == v) return i; } return -1; }"
         _, flags = self.build({
-            "p/ArrayUtils.java": "package p;\nimport p.Other;\npublic class ArrayUtils {\n"
+            "p/ArrayUtils.java": "package p;\nimport p.Other;\npublic class ArrayUtils {\n  private Other other;\n"
                                  + "".join(f"  public static int indexOf({t}[] a, {t} v) {body}\n" for t in ("int", "long", "short"))
                                  + "}\n",
-            "p/Other.java": "package p;\nimport p.ArrayUtils;\npublic class Other { public int x() { return 1; } }\n",
+            "p/Other.java": "package p;\nimport p.ArrayUtils;\npublic class Other { ArrayUtils u; public int x() { return 1; } }\n",
         })  # fmt: skip
         self.assertFalse({k for k in flags if k[0] in ("duplicate", "similar")})
         self.assertIn(("cycle", "p/ArrayUtils.java"), flags)
 
     def test_class_loop_severity(self):
         g, _ = self.build({
-            "p/A.java": "package p;\nimport p.B;\npublic class A { public int a() { return 1; } }\n",
-            "p/B.java": "package p;\nimport p.A;\npublic class B { public int b() { return 2; } }\n",
+            "p/A.java": "package p;\nimport p.B;\npublic class A { B b; public int a() { return 1; } }\n",
+            "p/B.java": "package p;\nimport p.A;\npublic class B { A a; public int b() { return 2; } }\n",
         })  # fmt: skip
         self.assertEqual({f.severity for f in g.flags if f.kind == "cycle"}, {"warn"})
 

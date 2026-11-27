@@ -18,8 +18,8 @@ import json
 import re
 from pathlib import Path
 
-from .checks import SRC_EXT, Check, Evidence
-from .paths import is_test, walk
+from .checks import SRC_EXT, Check, Evidence, _docstring_lines
+from .paths import is_script, is_test, walk
 
 PERSONAL = re.compile(
     r"\b(?:e_?mail|email_?address|phone(?:_?number)?|mobile_?number|ssn|social_?security|date_?of_?birth|dob|birth_?(?:date|day)|"
@@ -131,15 +131,37 @@ def personal_data(root: Path, files: list[str], out: dict[str, Check]) -> None:
             continue
         if not PERSONAL.search(text) or not ANY_SINK.search(text):
             continue
+        prose = _docstring_lines(text) if fid.endswith(".py") else set()  # a docstring's example isn't the code
+        # a CLI or seed script printing to the terminal of whoever runs it: the operator sees their own input
+        terminal = is_script(fid) or re.search(r"(?:^|/)(?:cli|commands?|seeds?|seeders?|console)(?:/|$)", fid)
+        mobile = fid.endswith((".swift", ".m", ".mm", ".kt", ".dart")) or "/android/" in fid or "/ios/" in fid
         for i, line in enumerate(text.splitlines(), 1):
-            if len(line) > 1000 or line.lstrip().startswith(("#", "//", "*")) or not ANY_SINK.search(line):
+            if len(line) > 1000 or line.lstrip().startswith(("#", "//", "*")) or not ANY_SINK.search(line) or i in prose:
                 continue
             for key, pat in (("privacy_analytics", ANALYTICS), ("privacy_log", LOG), ("privacy_storage", STORE)):
                 m = pat.search(line)
-                if m and (word := PERSONAL.search(_argument_text(line, m))):
+                args = _argument_text(line, m) if m else ""
+                word = m and next((w for w in PERSONAL.finditer(args) if _personal(w, args, mobile, line)), None)
+                if key == "privacy_log" and word and terminal and re.match(r"console\.|print|puts|IO\.puts|echo", m.group(0)):
+                    break
+                if m and word:
                     out[key].hits.append(Evidence(fid, i, line.strip()[:140]))
                     out[key].data[f"{fid}:{i}"] = word.group(0)
                     break
+
+
+def _personal(word: re.Match, args: str, mobile: bool, line: str = "") -> bool:
+    """Whether a personal-data word names a person's data here: not a repository's `FullName()`, a server's own listen
+    `ip_address`, or a device ID outside a phone app (syncthing's device IDs are key fingerprints)."""
+    w = word.group(0).lower().replace("_", "")
+    before = args[: word.start()]
+    if w == "fullname" and re.search(
+        r"(?:repo|repository|project|org|organization|team|package|pkg|group|app|module)\w*\.\s*$", before, re.I
+    ):
+        return False
+    if w == "ipaddress" and re.search(r"listen|bind|server|local|host", line or args, re.I):
+        return False
+    return not (w in ("deviceid", "androidid", "imei", "idfa", "gaid", "advertisingid") and not mobile)
 
 
 def _declared_keys(root: Path) -> tuple[set[str], set[str], bool]:

@@ -183,6 +183,7 @@ holdout/py/views.py | ~privacy_log | emailing {count} users
 holdout/js/api.js | cors_any | origin: "*"
 holdout/js/api.js | plain_http | internal-metrics.corp.net
 holdout/js/api.js | sql_built | WHERE id = " + req.params.id
+holdout/js/api.js | taint | WHERE id = " + req.params.id
 holdout/js/api.js | ~sql_built | WHERE id = $1", [req.params.id]
 holdout/js/api.js | insecure_cookie | secure: false
 holdout/js/api.js | shell | exec("tar -xf " + file)
@@ -280,3 +281,27 @@ go/server.go | ~weak_random | rand.Intn(100)
 go/server.go | shell | exec.Command("sh", "-c", cmd)
 go/server.go | ~shell | "make build"
 go/server.go | go_server_timeout | http.ListenAndServe(":8080", h)
+# held-out JavaScript data flow (Fastify, Koa), written and labeled before the analysis first ran on it
+holdout/js/flows.js | shell | execSync("wc -l reports/" + name)
+holdout/js/flows.js | taint | execSync("wc -l reports/" + name)
+holdout/js/flows.js | ~shell | tail -n ${lines} app.log
+holdout/js/flows.js | ~taint | tail -n ${lines} app.log
+holdout/js/flows.js | taint | fs.createReadStream(file)
+holdout/js/flows.js | ~taint | path.join("/srv/avatars", id)
+holdout/js/flows.js | taint | axios.get(url)
+holdout/js/flows.js | fetch_no_timeout | axios.get(url)
+holdout/js/flows.js | ~taint | hooks.partner-service.com
+holdout/js/flows.js | fetch_no_timeout | hooks.partner-service.com
+holdout/js/flows.js | ~taint | ORDER BY ${order}
+holdout/js/flows.js | ~sql_built | ORDER BY ${order}
+holdout/js/flows.js | taint | LIKE '%" + term
+holdout/js/flows.js | sql_built | LIKE '%" + term
+holdout/js/flows.js | taint | ctx.redirect(ctx.query.to)
+holdout/js/flows.js | ~taint | /dashboard?tab=
+holdout/js/flows.js | shell | ./report.sh ${kind}
+holdout/js/flows.js | taint | ./report.sh ${kind}
+holdout/js/flows.js | eval | eval(request.body.expr)
+holdout/js/flows.js | taint | eval(request.body.expr)
+holdout/js/flows.js | taint | <p>Hello ${request.query.name}</p>
+holdout/js/flows.js | ~taint | spawn("convert"
+holdout/js/flows.js | ~shell | spawn("convert"

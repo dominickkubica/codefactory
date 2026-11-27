@@ -169,7 +169,19 @@ class _RailsControllers:
             text = "\n".join(_read(root, cache, file))
             m = RAILS_CLASS.search(text)
             if m and "/concerns/" not in file:
-                self.own[m.group(1).split("::")[-1]] = (self._own(text), m.group(2).split("::")[-1])
+                full, parent = self._names(text, m)
+                self.own[full] = (self._own(text), parent)
+                self.own.setdefault(full.split("::")[-1], (self._own(text), parent))  # by short name, first one wins
+
+    @staticmethod
+    def _names(text: str, m: re.Match) -> tuple[str, str]:
+        """("Settings::AliasesController", "Settings::BaseController") for `module Settings; class AliasesController <
+        BaseController`: many apps have a BaseController per namespace, each with its own before_action."""
+        space = re.findall(r"^\s*module\s+([\w:]+)", text[: m.start()], re.M)
+        prefix = "::".join(space)
+        full = f"{prefix}::{m.group(1)}" if prefix and "::" not in m.group(1) else m.group(1)
+        parent = m.group(2)
+        return full, (f"{prefix}::{parent}" if prefix and "::" not in parent else parent)
 
     def _own(self, text: str) -> str:
         """The controller's own auth before_action, or one an included concern adds (`include Authentication`)."""
@@ -188,12 +200,18 @@ class _RailsControllers:
         own = self._own(text)
         if own or not m:
             return own, ""
-        parent, seen = m.group(2).split("::")[-1], set()
-        while parent in self.own and parent not in seen:
+        parent, seen = self._names(text, m)[1], set()
+        while parent not in seen:
             seen.add(parent)
-            guard, grand = self.own[parent]
+            # the namespaced parent first (Settings::BaseController), then outer namespaces, then the short name
+            parts = parent.split("::")
+            found = next((self.own["::".join(parts[i:-1] + parts[-1:])] for i in range(len(parts))
+                          if "::".join(parts[i:-1] + parts[-1:]) in self.own), None)  # fmt: skip
+            if found is None:
+                break
+            guard, grand = found
             if guard:
-                return guard, f"from {parent}"
+                return guard, f"from {parent.split('::')[-1]}"
             parent = grand
         return "", ""
 
@@ -229,6 +247,8 @@ def _php_entries(file: str, lines: list[str], text: str, module, fns: list[dict]
             depth += ln.count("{") - ln.count("}")
             while auth_until and depth <= auth_until[-1]:
                 auth_until.pop()
+    if module and re.search(r"\b(?:Http|App)::(?:get|post|put|patch|delete)\(|->setHttpPath\(", text):
+        out += _utopia_entries(file, lines, text, module, fns)
     for f in fns:  # Symfony: #[Route('/x', methods: ['POST'])] on a controller method
         if f["kind"] == "module":
             continue
@@ -238,6 +258,92 @@ def _php_entries(file: str, lines: list[str], text: str, module, fns: list[dict]
             verb = ",".join(re.findall(r"\w+", m.group(2) or "")).upper() or "ANY"
             auth = re.search(r"#\[IsGranted|denyAccessUnlessGranted|#\[Security", head + "\n".join(lines[f["line"] : f["end"]]))
             out.append(Entry(f["id"], verb, m.group(1), "Symfony", file, f["line"], auth.group(0) if auth else ""))
+    return out
+
+
+def _next_middleware(root: Path, file: str, path: str, cache: dict) -> str:
+    """Auth a Next.js `middleware.ts` applies to this route: the middleware (next to `app/` or `pages/`, at the root
+    or in `src/`) checks a session or token, and its `matcher`, if it has one, covers the path."""
+    base = re.split(r"(?:^|/)(?:app|pages)/", file, maxsplit=1)[0]
+    for rel in (f"{base}/middleware.ts" if base else "middleware.ts", f"{base}/middleware.js" if base else "middleware.js",
+                f"{base}/src/middleware.ts" if base else "src/middleware.ts"):  # fmt: skip
+        rel = rel.lstrip("/")
+        text = "\n".join(_read(root, cache, rel))
+        if not text or not (a := _auth(text)):
+            continue
+        matcher = re.search(r"matcher\s*:\s*(\[[^\]]*\]|['\"][^'\"]*['\"])", text)
+        if matcher:
+            pats = re.findall(r"['\"]([^'\"]+)['\"]", matcher.group(1))
+            covered = any(path.startswith(p.split("/:")[0].split("(")[0].rstrip("*").rstrip("/") or "/")
+                          or ("(?!" in p and not any(x in path for x in re.findall(r"\(\?!([^)]*)\)", p)[0].split("|")))
+                          for p in pats)  # fmt: skip
+            if not covered:
+                continue
+        return f"middleware.ts ({a.group(0)})"
+    return ""
+
+
+NEST_GLOBAL_GUARD = re.compile(r"useGlobalGuards\(|provide:\s*APP_GUARD")
+NEST_ROUTE = re.compile(r"@(Get|Post|Put|Patch|Delete|All)\(\s*(?:['\"`]([^'\"`]*)['\"`])?")
+NEST_PUBLIC = re.compile(r"@(?:Public|SkipAuth|AllowAnonymous|IsPublic|NoAuth|Unauthenticated|PublicRoute)\b")
+
+
+def _nest_entries(file: str, lines: list[str], text: str, fns: list[dict], global_guard: str) -> list[Entry]:
+    """NestJS controllers: `@Controller('users')` on the class, `@Post(':id')` on a method. Auth: `@UseGuards(…)` with
+    an auth guard on the method or its class, or a global guard unless the method is marked public."""
+    out = []
+    classes = [(m.start(), m.group(1) or "") for m in re.finditer(r"@Controller\(\s*(?:['\"`]([^'\"`]*)['\"`])?", text)]
+    for f in fns:
+        if f["kind"] == "module":
+            continue
+        # the analyzer may start a method at its first decorator or at its name: take what's above the name
+        block = lines[max(0, f["line"] - 8) : f["line"] + 4]
+        own = re.compile(rf"^\s*(?:async\s+)?{re.escape(f['name'])}\s*[(<]")
+        name_at = next((k for k, ln in enumerate(block) if own.search(ln)), None)
+        head = "\n".join(block[:name_at] if name_at is not None else lines[max(0, f["line"] - 8) : f["line"]])
+        decorators = head.split(";")[-1].split("}")[-1]  # only this method's own decorators, not the previous method's
+        m = NEST_ROUTE.search(decorators)
+        if not m:
+            continue
+        at = sum(len(x) + 1 for x in lines[: f["line"] - 1])
+        start, prefix = max(((s, p) for s, p in classes if s < at), default=(0, ""))
+        path = "/" + "/".join(x.strip("/") for x in (prefix, m.group(2) or "") if x.strip("/"))
+        class_head = text[start : text.find("class", start) + 5] if start else ""
+        guard = next((g for g in re.findall(r"@UseGuards\(([^)]*)\)", decorators + class_head) if _auth(g)), "")
+        if not guard:  # a project's own auth decorator: @Authenticated({ permission }), @Auth(), @Roles('admin')
+            guard = next((d for d in re.findall(r"@(\w+)\(", decorators + class_head)
+                          if d not in ("Controller", "Get", "Post", "Put", "Patch", "Delete", "All", "UseGuards")
+                          and (_auth(d) or re.match(r"Roles?$|Permissions?$|Scopes?$|RequirePermission", d))), "")  # fmt: skip
+        auth = (f"@UseGuards({guard})" if guard else
+                f"global guard ({global_guard})" if global_guard and not NEST_PUBLIC.search(decorators) else "")  # fmt: skip
+        out.append(Entry(f["id"], m.group(1).upper().replace("ALL", "ANY"), path, "NestJS", file, f["line"], auth))
+    return out
+
+
+UTOPIA_ROUTE = re.compile(r"^[ \t]*(?:Http|App)::(get|post|put|patch|delete)\(\s*['\"]([^'\"]+)['\"]", re.M)
+UTOPIA_ACTION = re.compile(
+    r"->setHttpMethod\(\s*(?:Action|self|static)::HTTP_REQUEST_METHOD_(\w+)\s*\)\s*->setHttpPath\(\s*['\"]([^'\"]+)['\"]"
+)
+
+
+def _utopia_entries(file: str, lines: list[str], text: str, module, fns: list[dict]) -> list[Entry]:
+    """Utopia PHP (Appwrite): `Http::post('/v1/x')->label('scope', 'documents.write')…` and Action classes with
+    `->setHttpMethod(…)->setHttpPath('/v1/x')`. A `scope` label other than `public` is checked by the framework's init
+    hooks against the caller's session or key: that's the auth."""
+    out = []
+
+    def entry(m: re.Match, verb: str, path: str) -> None:
+        line = text.count("\n", 0, m.start()) + 1
+        chain = text[m.end() : m.end() + 1500].split(";", 1)[0]  # the rest of this route's builder chain
+        scope = re.search(r"->label\(\s*['\"]scope['\"]\s*,\s*['\"]([^'\"]+)['\"]", chain)
+        auth = f"scope {scope.group(1)}" if scope and scope.group(1) != "public" else ""
+        target = next((f for f in fns if f["kind"] != "module" and f["line"] <= line <= f["end"]), module)
+        out.append(Entry(target["id"], verb.upper(), path, "Utopia", file, line, auth))
+
+    for m in UTOPIA_ROUTE.finditer(text):
+        entry(m, m.group(1), m.group(2))
+    for m in UTOPIA_ACTION.finditer(text):
+        entry(m, m.group(1), m.group(2))
     return out
 
 
@@ -337,6 +443,11 @@ def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
         if fn["kind"] == "method":
             by_class.setdefault(fn["qualname"].split(".")[0], []).append(fn)
     rails = _RailsControllers(root, [f for f in by_file if f.endswith("_controller.rb") or "controllers/concerns/" in f], cache)
+    # NestJS: a guard registered for the whole app (useGlobalGuards, an APP_GUARD provider) covers every route that
+    # doesn't opt out with a @Public()-style decorator
+    ts_files = [f for f in by_file if f.endswith((".ts", ".mts")) and not is_test(f)]
+    nest_global = next((m.group(0) for f in ts_files for m in [NEST_GLOBAL_GUARD.search("\n".join(_read(root, cache, f)))]
+                        if m and _auth("\n".join(_read(root, cache, f))[m.start() : m.start() + 300])), "")  # fmt: skip
     aliases = {}  # FastAPI: CurrentUser = Annotated[User, Depends(get_current_user)]
     for file in by_file:
         if file.endswith(".py"):
@@ -396,6 +507,12 @@ def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
                                          auth.group(0).strip() if auth else ""))  # fmt: skip
         elif file.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")):
             app_auth = next((m.group(1) for m in JS_APP_AUTH.finditer(text) if _auth(m.group(1))), "")
+            if not app_auth:  # app.use((req, res, next) => { … return validateSessionMiddleware(req, res, next) })
+                for m in re.finditer(r"\b\w+\.use\(\s*(?:async\s*)?(?:\([^)]*\)|\w+)\s*=>\s*\{|\b\w+\.use\(\s*function\b", text):
+                    body = text[m.end() : m.end() + 1500]
+                    if (a := _auth(body)) and re.search(r"\bnext\s*\(|return\s+\w+\(\s*req", body):
+                        app_auth = f"inline middleware: {a.group(0)}"
+                        break
             for i, ln in enumerate(lines, 1):
                 m = JS_ROUTE.search(ln)
                 if not m or m.group(1) in ("axios", "http", "fetch", "client", "api", "request", "supertest", "agent"):
@@ -409,6 +526,8 @@ def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
                 target = handler or module
                 if target:
                     entries.append(Entry(target["id"], m.group(2).upper(), m.group(3), "Express-style", file, i, auth))
+            if "@Controller(" in text:
+                entries += _nest_entries(file, lines, text, fns, nest_global)
             api_route = re.search(r"(?:^|/)pages/api/", file) or re.search(r"(?:^|/)app/.*route\.[jt]sx?$", file)
             if api_route:
                 for f in fns:
@@ -423,8 +542,10 @@ def find_entries(root: Path, g: dict, v: View) -> list[Entry]:
                         re.I,
                     )
                     path = "/" + re.sub(r"^.*?(?:pages/api|app)/|/?route\.[jt]sx?$|\.[jt]sx?$", "", file)
+                    path = "/api" + path if "pages/api/" in file else path
                     method = f["name"] if NEXT_METHOD.match(f["name"]) else "ANY"
-                    entries.append(Entry(f["id"], method, path, "Next.js", file, f["line"], auth.group(0) if auth else ""))
+                    found = auth.group(0) if auth else _next_middleware(root, file, path, cache)
+                    entries.append(Entry(f["id"], method, path, "Next.js", file, f["line"], found))
         elif file.endswith((".java", ".kt")):
             for f in fns:
                 if f["kind"] == "module":

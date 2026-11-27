@@ -20,8 +20,8 @@ import os
 import re
 from pathlib import Path
 
-from .checks import I18N, PATTERNS, PLACEHOLDER, VENDOR_SECRETS, Check, Evidence
-from .paths import is_test, links_outside
+from .checks import I18N, PATTERNS, PLACEHOLDER, VENDOR_SECRETS, Check, Evidence, internet_http, looks_random
+from .paths import is_dev_setup, is_doc_sample, is_test, links_outside
 from .suppress import MARK
 
 SKIP = {"node_modules", ".git", ".codefactory", ".venv", "venv", "dist", "build", "vendor", "Pods", ".expo", "coverage",
@@ -131,8 +131,13 @@ def _secrets(rel: str, lines: list[str], out: dict, unquoted: bool = True) -> No
             # a plain password in a CI workflow configures that run's throwaway services (a test database, MinIO): a
             # vendor key there is as leaked as anywhere
             ci = not vendor and rel.startswith(".github/workflows/")
+            if ci:
+                continue  # measured on 76 repositories: every one was a throwaway password for a CI service container
+            value = re.split(r"[:=]", body, maxsplit=1)[-1]
+            if generic and not vendor and (is_dev_setup(rel) or not looks_random(value)):
+                continue  # a demo or development default (`secret_key: 1111…`, `password: changeme`), not a working key
             label = f"{body.split('=')[0].split(':')[0].strip()[:60]} = ********"
-            _hit(out, "ci_test_secret" if ci else "config_secret", rel, lines, i, label)
+            _hit(out, "config_secret", rel, lines, i, label)
 
 
 def shell(rel: str, lines: list[str], out: dict, makefile: bool = False) -> None:
@@ -150,13 +155,38 @@ def shell(rel: str, lines: list[str], out: dict, makefile: bool = False) -> None
             _hit(out, "shell_pipe", rel, lines, i)
         m = RM_VAR.search(code)
         name = m and (m.group(1) or m.group(2) or m.group(3))
-        if m and not guarded and not re.search(rf"\$\{{{name}:[?]", code):
+        # set to a value in this file (`BUILDDIR = _build`, `BUILDDIR ?= _build`, `assetsDir=./static`): never empty
+        defined = name and re.search(
+            rf"^\s*(?:export\s+|readonly\s+|local\s+)?{re.escape(name)}\s*(?:\?|:|\+)?=\s*[\"']?[^\s\"'$]", text, re.M
+        )
+        if m and not guarded and not defined and not re.search(rf"\$\{{{name}:[?]", code):
             _hit(out, "shell_rm_var", rel, lines, i)
-        if SHELL_EVAL.search(code):
+        if SHELL_EVAL.search(code) and not re.search(r"eval\s+[\"']?\$\w+=|printf\s+%q", code):  # `eval "$name=$v"`: an
+            # indirect assignment; a value quoted with printf %q: neither runs what's in the variable
             _hit(out, "shell_eval", rel, lines, i)
 
 
+INFRA_IMAGE = re.compile(
+    r"^\s*image:\s*[\"']?(?:[\w.-]+/)*(?:postgres|postgis|mysql|mariadb|redis|valkey|mongo|memcached|rabbitmq|minio|clickhouse|"
+    r"elasticsearch|opensearch|mssql|azure-sql-edge|oracle|gvenzl|cassandra|kafka|zookeeper|mailhog|mailpit|localstack|"
+    r"keycloak|nginx|traefik|caddy|jaeger|prometheus|grafana|adminer|pgadmin|selenium|chrome|browserless|rustfs|azurite|"
+    r"dynamodb|neo4j|nats|etcd|consul|vault|smtp|maildev|greenmail|qdrant|meilisearch|typesense)\b",
+    re.I,
+)
+
+
+def _runs_product(lines: list[str]) -> bool:
+    """A compose file that runs the application itself (a `build:`, or an image that isn't a database or other
+    infrastructure), not only the services a developer's local copy or a test suite needs."""
+    images = [ln for ln in lines if re.match(r"\s*image:\s*\S", ln)]
+    return any(re.match(r"\s*build:", ln) for ln in lines) or any(not INFRA_IMAGE.match(ln) for ln in images)
+
+
 def compose(rel: str, lines: list[str], out: dict) -> None:
+    if is_dev_setup(rel) or not _runs_product(lines):
+        # a development, test or benchmark setup, or one that only starts a developer's databases: measured on 76
+        # repositories, none of its published ports or passwords was a deployment's
+        return
     in_ports = False
     for i, ln in enumerate(lines, 1):
         s = ln.strip()
@@ -178,7 +208,7 @@ def compose(rel: str, lines: list[str], out: dict) -> None:
         m = ENV_SECRET.match(ln)
         if m:
             value = m.group(2).strip().strip("'\"")
-            if (len(value) >= 6 and not m.group(1).upper().endswith("_FILE") and not value.startswith("/")
+            if (looks_random(value) and not m.group(1).upper().endswith("_FILE") and not value.startswith("/")
                     and not re.search(PLACEHOLDER + r"|^\$|changethis|^secret$|^password$", value, re.I)):  # fmt: skip
                 _hit(out, "compose_secret", rel, lines, i, f"{m.group(1)}: {'*' * 8}")
 
@@ -188,7 +218,10 @@ def kubernetes(rel: str, lines: list[str], out: dict) -> None:
     starts = [0] + [m.end() for m in re.finditer(r"^---[ \t]*\n", text, re.M)]
     for begin, end in zip(starts, [*starts[1:], len(text)], strict=True):  # each YAML document
         doc = text[begin:end]
-        if re.search(r"^kind:\s*Secret\s*$", doc, re.M) and re.search(r"^(?:data|stringData):\s*\n\s+\w+:\s*\S", doc, re.M):
+        values = re.findall(r"^\s+[\w.-]+:\s*(\S.*)$", doc.split("data:", 1)[-1], re.M) if "data:" in doc else []
+        templated = values and all("{{" in v or "${" in v for v in values)  # a Helm or Kustomize template, filled at install
+        if (re.search(r"^kind:\s*Secret\s*$", doc, re.M) and re.search(r"^(?:data|stringData):\s*\n\s+\w+:\s*\S", doc, re.M)
+                and not templated and not is_dev_setup(rel) and "/templates/" not in f"/{rel}"):  # fmt: skip
             name = re.search(r"^\s+name:\s*(\S+)", doc, re.M)  # point at the Secret's name: that's what to look up
             at = begin + (name.start(1) if name else doc.find("kind:"))
             label = f"Secret {name.group(1)}" if name else "a Secret"
@@ -212,8 +245,10 @@ def html(rel: str, lines: list[str], out: dict) -> None:
 
 
 def config_http(rel: str, lines: list[str], out: dict) -> None:
+    if is_dev_setup(rel) or is_doc_sample(rel):
+        return  # a docs site's data (links to articles), a benchmark's nginx: nothing a deployment requests
     for i, ln in enumerate(lines, 1):
-        if re.match(r"\s*(?:#|//|;)", ln):
+        if re.match(r"\s*(?:#|//|;)", ln) or not internet_http(" " + ln):
             continue
         if HTTP_URL.search(ln) and re.search(r"url|uri|endpoint|host|server|registry|repo|source|amends|import|"
                                              r"package|mirror|proxy|base|api|href", ln, re.I):  # fmt: skip

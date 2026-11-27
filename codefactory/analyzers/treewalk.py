@@ -216,6 +216,19 @@ def declared_types(text: str) -> dict[str, str]:
     return {name: next(iter(types)) for name, types in seen.items() if len(types) == 1}
 
 
+def _used_imports(imports: list[str], text: str) -> list[str]:
+    """Java and Kotlin imports whose class the code uses: one imported only for a Javadoc/KDoc `{@link}` (retrofit's
+    Converter and its annotations) doesn't make the files depend on each other."""
+    code = re.sub(r"/\*.*?\*/|//[^\n]*", " ", text, flags=re.S)
+    code = re.sub(r"^\s*(?:import|package)\s+[^\n]*", " ", code, flags=re.M)
+    out = []
+    for src in imports:
+        name = src.rsplit(".", 1)[-1].split(" as ")[-1].strip()
+        if not name or name == "*" or not name[:1].isupper() or re.search(rf"\b{re.escape(name)}\b", code):
+            out.append(src)
+    return out
+
+
 def walk(source: bytes, parser, rel: str) -> dict:
     """Functions (with calls, loops and structure tokens), imports and the file's top-level calls."""
     tree = parser.parse(source)
@@ -308,7 +321,10 @@ def walk(source: bytes, parser, rel: str) -> dict:
         for c in reversed(node.children):
             stack.append((c, fn, classes, in_loop, depth + 1))
     out["top"]["refs"] = sorted(out["top"]["refs"])
-    out["types"] = declared_types(source.decode("utf-8", "replace"))
+    text = source.decode("utf-8", "replace")
+    out["types"] = declared_types(text)
+    if rel.endswith((".java", ".kt", ".kts")) and out["imports"]:
+        out["imports"] = _used_imports(out["imports"], text)
     for rec in out["functions"]:
         rec["refs"] = sorted(rec["refs"])
         toks = rec.pop("tokens")

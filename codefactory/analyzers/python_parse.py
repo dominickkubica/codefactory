@@ -25,6 +25,9 @@ IO_MODULES = {
     "requests", "httpx", "urllib", "aiohttp", "subprocess", "socket", "boto3", "redis", "shutil", "smtplib", "ftplib",
     "sqlite3", "psycopg", "psycopg2", "pymongo", "asyncpg",
 }  # fmt: skip
+CONTAINER = {"append", "extend", "insert", "pop", "clear", "sort", "reverse", "index", "count", "keys", "values", "items",
+             "add", "discard", "setdefault", "popleft", "appendleft"}  # fmt: skip
+FRAME = re.compile(r"^(?:df|tb|t|table|frame|data|dataframe|tables)$|(?:^|_)(?:df|tb|frame|dataframe)s?(?:_|$)", re.I)
 FILE_METHODS = {"read_text", "write_text", "read_bytes", "write_bytes", "urlopen", "iterdir", "glob", "rglob"}
 COMPREHENSIONS = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
 SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
@@ -97,11 +100,16 @@ def io_call(func: ast.AST, call: ast.Call | None = None) -> str | None:
     last = func.attr if isinstance(func, ast.Attribute) else func.id if isinstance(func, ast.Name) else ""
     head = full.split(".")[0]
     sink = None
+    receiver = full.rsplit(".", 1)[0] if "." in full else ""
     if isinstance(func, ast.Name) and last in ("open", "urlopen"):
         sink = last
-    elif head in IO_MODULES or ".objects." in f".{full}." or full in ("time.sleep", "asyncio.sleep"):
-        sink = full
-    elif isinstance(func, ast.Attribute) and (last in DB_METHODS or last in FILE_METHODS):
+    elif (head in IO_MODULES and last not in CONTAINER) or ".objects." in f".{full}." or full in ("time.sleep", "asyncio.sleep"):
+        sink = full  # (not `requests.append(r)`: a list someone named requests)
+    elif (
+        isinstance(func, ast.Attribute)
+        and (last in DB_METHODS or last in FILE_METHODS)
+        and not (last == "query" and FRAME.search(receiver.rsplit(".", 1)[-1]))  # pandas' df.query("x > 1")
+    ):
         sink = full or last
     first = call.args[0] if call is not None and call.args else None
     if isinstance(first, ast.JoinedStr) and first.values and isinstance(first.values[0], ast.Constant):

@@ -38,7 +38,33 @@ NETWORK = {"get", "post", "put", "delete", "patch", "request", "urlopen", "head"
 NETWORK_MODULES = {"requests", "httpx", "urllib", "aiohttp", "client", "http", "http_session", "http_client"}
 REDIRECT = {"redirect", "RedirectResponse", "HttpResponseRedirect"}
 TEMPLATE = {"render_template_string", "Markup", "mark_safe", "Template"}
-DB_RESULTS = {"fetchone", "fetchall", "fetchmany", "first", "one", "one_or_none", "scalar", "scalars", "all", "get_or_404"}
+DB_RESULTS = {
+    "fetchone",
+    "fetchall",
+    "fetchmany",
+    "first",
+    "one",
+    "one_or_none",
+    "scalar",
+    "scalars",
+    "all",
+    "get_or_404",
+    "save",
+    "create",
+    "get_or_create",
+    "update_or_create",
+    "get_object",
+    "get_object_or_404",
+    "refresh_from_db",
+}
+# a record looked up (find_object(queryset, request), load_share(id)), or a value a checker hands back
+# (build_safe_abspath(base, path) returns None for traversal): not the request's text
+LOOKUP = re.compile(
+    r"^(?:find|lookup|load|retrieve|fetch_one|get_\w+_(?:by|for|from))_?|saniti[sz]|_safe_|^safe_|valid(?:ate|ated)"
+)
+# SQLAlchemy Core and ORM statements: built from columns and bound values, never from text
+STATEMENT = {"insert", "update", "delete", "select", "values", "where", "filter", "filter_by", "order_by", "returning",
+             "on_conflict_do_update", "on_conflict_do_nothing", "join", "group_by", "limit", "offset", "having"}  # fmt: skip
 # A request parameter declared with one of these types is converted and validated before the handler runs (FastAPI,
 # Django path converters): it can't carry attacker text.
 SAFE_TYPES = {"int", "float", "bool", "UUID", "date", "datetime", "time", "Decimal", "conint", "confloat", "PositiveInt",
@@ -93,6 +119,9 @@ def _sink(call: ast.Call) -> tuple[str, list[ast.AST]] | None:
     root = _root(f) if isinstance(f, ast.Attribute) else ""
     args = list(call.args)
     if name in SQL and isinstance(f, ast.Attribute) and args:
+        first = args[0]
+        if isinstance(first, ast.Call) and _name(first.func) in STATEMENT:
+            return None  # connection.execute(table.insert().values(user_id=…)): bound values
         return "sql", args[:1]
     if name in SHELL and root == "os" and args:
         return "shell", args[:1]
@@ -121,7 +150,16 @@ def _sink(call: ast.Call) -> tuple[str, list[ast.AST]] | None:
 
 
 VALIDATOR = re.compile(r"allow|safe|valid|whitelist|allowlist|trusted|permitted|has_allowed_host", re.I)
-LOCAL_URL = {"reverse", "reverse_lazy", "url_for", "resolve_url", "url_path_for"}
+LOCAL_URL = {
+    "reverse",
+    "reverse_lazy",
+    "url_for",
+    "resolve_url",
+    "url_path_for",
+    "get_absolute_url",
+    "get_object_detail_url",
+    "get_admin_url",
+}
 
 
 def _guards(func) -> dict[int, set[str]]:
@@ -177,17 +215,37 @@ def _replaced_unless_valid(func) -> dict[str, int]:
     return out
 
 
+def _keeps_url(value: ast.AST, name: str) -> bool:
+    """`url = add_preserved_filters({...}, url)`: a helper handed the URL back adds a query string to it."""
+    return (isinstance(value, ast.Call) and re.search(r"url|filter|query|param|qs", _name(value.func), re.I) is not None
+            and any(isinstance(a, ast.Name) and a.id == name for a in value.args))  # fmt: skip
+
+
 def _local_url(expr: ast.AST, body: list) -> bool:
     """The expression is a path this app builds: reverse()/url_for(), "/x" (not "//x"), or a name only ever assigned
     one of those (later `url += "?…"` keeps the prefix)."""
 
-    def local(e) -> bool:
+    def local(e, depth: int = 0) -> bool:
         if isinstance(e, ast.Call) and _name(e.func) in LOCAL_URL:
+            return True
+        if isinstance(e, ast.Attribute) and e.attr in ("path", "path_info") and _root(e) == "request":
+            return True  # this request's own path: the redirect stays on the site
+        if isinstance(e, ast.Call) and _name(e.func) == "get_full_path":
             return True
         if isinstance(e, ast.Constant) and isinstance(e.value, str):
             return e.value.startswith("/") and not e.value.startswith("//")
         if isinstance(e, ast.JoinedStr) and e.values and isinstance(e.values[0], ast.Constant):
             return local(e.values[0])
+        if isinstance(e, ast.JoinedStr) and e.values and isinstance(e.values[0], ast.FormattedValue) and depth < 3:
+            return local(e.values[0].value, depth + 1)  # f"{url}?{query}" with url = reverse(...)
+        if isinstance(e, ast.Name) and depth < 3:
+            values = [n.value for n in body if isinstance(n, ast.Assign)
+                      and any(isinstance(t, ast.Name) and t.id == e.id for t in n.targets)]  # fmt: skip
+            return (
+                bool(values)
+                and all(local(v, depth + 1) or _keeps_url(v, e.id) for v in values)
+                and any(local(v, depth + 1) for v in values)
+            )
         if isinstance(e, ast.BinOp) and isinstance(e.op, ast.Add):
             return local(e.left)
         return False
@@ -221,8 +279,8 @@ class _Function:
             return {("source", src)}
         if isinstance(expr, ast.Call):
             name = _name(expr.func)
-            if name in SANITIZERS or name in SQL or name in DB_RESULTS:
-                return set()  # converted, or read back from a database (second-order injection is out of scope)
+            if name in SANITIZERS or name in SQL or name in DB_RESULTS or LOOKUP.search(name) or name in LOCAL_URL:
+                return set()  # converted, checked, or read back from a database (second-order injection is out of scope)
             out = set()
             summary = self.callees.get(name)
             parts = list(expr.args) + [k.value for k in expr.keywords]

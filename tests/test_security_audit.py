@@ -155,12 +155,12 @@ class SecretsTest(unittest.TestCase):
     def test_reported_secrets_are_cut_to_four_characters(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
-            aws = "AKIA" + "ABCDEFGHIJKLMNOP"  # built here so the file itself holds no key-shaped string
+            aws = "AKIA" + "Q7XKM2PZ9WRT4HVN"  # built here so the file itself holds no key-shaped string
             (root / "config.py").write_text(f'STRIPE_KEY = "{KEY}"\nAWS = "{aws}"\n', encoding="utf-8")
             checks = scan_sources(root, source_files(root, build(root, cache=False).to_dict()))
             texts = [e.text for e in checks["secret"].hits]
             self.assertEqual(len(texts), 2)
-            self.assertFalse(any("4eC39Hq" in t or "ABCDEFGHIJ" in t for t in texts), texts)
+            self.assertFalse(any("4eC39Hq" in t or "Q7XKM2PZ9W" in t for t in texts), texts)
             sarif = Path(d) / "out.sarif"
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                 main(["sarif", d, "-o", str(sarif)])

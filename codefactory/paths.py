@@ -81,6 +81,13 @@ def is_example_code(path: str) -> bool:
     return bool(EXAMPLE_CODE.search("/".join(parts)))
 
 
+def is_sample_code(path: str) -> bool:
+    """Example, sample, demo and starter-template code (`examples/`, `samples/guide/`, `template-vanilla-ts/`,
+    `project_template/`), but not a web app's `templates/` folder, whose files are the app's own pages."""
+    parts = [p for p in path.replace("\\", "/").split("/")[:-1] if p.lower() not in ("templates", "template")]
+    return is_example_code("/".join([*parts, "x"]))
+
+
 def is_doc_sample(path: str) -> bool:
     return bool(DOC_SAMPLE.search(path.replace("\\", "/")))
 
@@ -92,6 +99,7 @@ def is_test(path: str) -> bool:
     name = parts[-1]
     return (
         any(p in TEST_DIRS or TEST_TOKEN.search(p) for p in parts[:-1])
+        or (len(parts) > 1 and parts[0] in ("integration", "integration_tests"))  # nest's integration/, at the top only
         or TEST_TOKEN.search(name.rsplit(".", 1)[0]) is not None
         or name.startswith("test_")
         or name.endswith("_test.py")
@@ -206,3 +214,44 @@ def write_file(path, text: str) -> None:
     flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0)  # (and no link swapped in meanwhile)
     with os.fdopen(os.open(path, flags, 0o644), "w", encoding="utf-8") as f:
         f.write(text)
+
+
+# Development and test infrastructure: dev containers, sandboxes, test harnesses, benchmark and release-check setups,
+# and files named for development (docker-compose.dev.yml, Dockerfile.playwright, compose.override.yml). What runs
+# there isn't what ships, so container and compose findings about it aren't findings about the product.
+DEV_DIRS = re.compile(
+    r"(?:^|/)(?:\.devcontainer|\.codesandbox|\.gitpod|\.oss-scanner|devcontainer|playwright|cypress|e2e|benchmarks?|bench|"
+    r"perf|load-?tests?|releasing|docs?|examples?|samples?|demos?|playgrounds?|sandbox|fixtures|integration|dev|"
+    r"development|local|testing|tests?)/",
+    re.I,
+)
+DEV_NAME = re.compile(r"(?:^|[._-])(?:dev|devel|development|local|test|tests|testing|ci|e2e|playwright|cypress|override|"
+                      r"example|sample|demo|debug|docs|bench|benchmark)(?:[._-]|$)", re.I)  # fmt: skip
+
+
+def is_dev_setup(path: str) -> bool:
+    """A Dockerfile or compose file for developing, testing or demonstrating, not for running the product."""
+    path = path.replace("\\", "/")
+    name = path.rsplit("/", 1)[-1]
+    return (
+        bool(
+            DEV_DIRS.search(path)
+            or DEV_NAME.search(name.lower().replace("dockerfile", "").replace("docker-compose", "").replace("compose", ""))
+        )
+        or is_test(path)
+        or is_example_code(path)
+    )
+
+
+VERSION_PART = re.compile(r"(?<![^/_-])(?:\d{4}-\d{2}-\d{2}|\d{8})(?![^/_.-])")  # dated: frozen on purpose
+BUILD_OUTPUT = re.compile(r"(?:^|/)(?:priv/static|dist|build|out|public/build|static/dist)/|\.(?:min|bundle)\.[cm]?js$", re.I)
+
+
+def deliberate_copies(files: list[str]) -> bool:
+    """Copies made on purpose: one file per dated version (a data pipeline's frozen steps, `2024-12-06/x.py` and
+    `2026-05-22/x.py`; `reader/v2` and `reader/v3` sharing code is still worth merging),
+    build outputs, vendored code, or examples and starter templates that each stand alone."""
+    if all(BUILD_OUTPUT.search(f) or is_vendored(f) or is_sample_code(f) for f in files):
+        return True
+    dirs = {VERSION_PART.sub("V", f.rsplit("/", 1)[0]) for f in files}
+    return len(dirs) == 1 and len({f.rsplit("/", 1)[0] for f in files}) == len(files) and "V" in next(iter(dirs))

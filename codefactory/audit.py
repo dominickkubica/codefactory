@@ -13,7 +13,7 @@ import subprocess
 from pathlib import Path
 
 from .checks import ANY, PATTERNS, PLACEHOLDER, VENDOR_SECRETS, Check, Evidence, redact
-from .paths import drop_ignored, is_test, links_outside, walk
+from .paths import drop_ignored, is_dev_setup, is_test, links_outside, walk
 from .suppress import MARK
 
 # GitHub Actions
@@ -115,7 +115,11 @@ def dockerfiles(root: Path, files: list[Path], out: dict[str, Check]) -> None:
         if not froms:
             continue
         users = [u.group(1) for u in USER.finditer(text)]
-        if not users or users[-1] in ("root", "0", "0:0"):
+        final = text[froms[-1].start() :].split("\n", 1)[0]  # the whole line: `FROM node:22 AS dev`
+        dev = is_dev_setup(rel) or re.search(r"\bAS\s+(?:dev|develop\w*|test\w*|ci)\s*$", final, re.I)  # (a final
+        # stage named `build` still ships: cal.com's API image)
+        nonroot = re.search(r"nonroot|distroless|chainguard|rootless|unprivileged", final, re.I)
+        if (not users or users[-1] in ("root", "0", "0:0")) and not dev and not nonroot:
             out["docker_root"].hits.append(Evidence(rel, _line(text, froms[-1].start()), f"no USER after {froms[-1].group(1)}"))
         for m in froms:
             image = m.group(1)

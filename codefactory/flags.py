@@ -63,10 +63,67 @@ FRAMEWORK_METHODS = {
 }
 
 
+# Functions a runner calls by name from outside the code: migrations (Alembic, Django), CLI and job entry points,
+# serverless handlers, a Yeoman generator's run loop.
+ENTRY_NAMES = {"main", "run", "upgrade", "downgrade", "handler", "lambda_handler", "create_app", "app", "setup",
+               "teardown", "writing", "prompting", "initializing", "configuring", "install", "end", "default"}  # fmt: skip
+# Template and component files the analyzers don't parse: a name used there is used (`:placeholder="draftComposed"`,
+# a helper imported by a .vue file)
+VIEW_FILES = (".vue", ".svelte", ".astro", ".html", ".htm", ".erb", ".haml", ".slim", ".blade.php", ".twig", ".hbs",
+              ".njk", ".jinja", ".jinja2", ".j2", ".liquid", ".ejs", ".pug", ".mdx", ".xml", ".yml", ".yaml")  # fmt: skip
+QUOTED_NAME = re.compile(r"""['"`]([A-Za-z_$][\w$]{2,})['"`]""")
+WORD = re.compile(r"[A-Za-z_$][\w$]{2,}")
+
+
+def _mentioned(g: Graph) -> set[str]:
+    """Names used where calls can't be followed: quoted in source (a method looked up by its name, a route handler
+    named in config) or written in a template or component file."""
+    import os
+    from pathlib import Path
+
+    root = Path(g.root)
+    out: set[str] = set()
+    for f in g.files:
+        try:
+            out.update(QUOTED_NAME.findall((root / f.id).read_text(encoding="utf-8", errors="replace")))
+        except OSError:
+            continue
+    skip = {".git", "node_modules", "vendor", "dist", "build", ".venv", "venv", "__pycache__", "target", ".next"}
+    seen = 0
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in skip and not d.startswith(".")]
+        for name in filenames:
+            if name.endswith(VIEW_FILES) and not name.startswith("codefactory") and seen < 20_000:
+                seen += 1
+                try:
+                    if os.path.getsize(os.path.join(dirpath, name)) < 2_000_000:
+                        with open(os.path.join(dirpath, name), encoding="utf-8", errors="replace") as fh:
+                            out.update(WORD.findall(fh.read()))
+                except OSError:
+                    continue
+    return out
+
+
+def _rust_attributed(g: Graph, fn, cache: dict) -> bool:
+    """A Rust function with an attribute above it (#[test], #[tokio::test], #[bench], #[wasm_bindgen], #[no_mangle]):
+    a harness or the other side of a binding calls it."""
+    from pathlib import Path
+
+    if fn.file not in cache:
+        try:
+            cache[fn.file] = (Path(g.root) / fn.file).read_text(encoding="utf-8", errors="replace").splitlines()
+        except OSError:
+            cache[fn.file] = []
+    lines = cache[fn.file]
+    above = [ln.strip() for ln in lines[max(0, fn.line - 4) : fn.line - 1]]
+    return any(ln.startswith("#[") for ln in above)
+
+
 def _is_entry(fn) -> bool:
     n = fn.name
     return (
         fn.kind == "module"
+        or (fn.kind == "function" and n in ENTRY_NAMES)
         or fn.exported
         or fn.decorated
         or n.startswith("__")
@@ -84,17 +141,25 @@ def dead_code(g: Graph) -> list[Flag]:
     used_by_code = {e.dst for e in g.edges if e.kind in ("call", "ref") and not is_test(file_of.get(e.src, ""))}
     imported = {e.dst for e in g.edges if e.kind == "import"}
     out = []
+    mentioned: set[str] | None = None
+    lines: dict = {}
     for fn in g.functions:
         # A file nothing imports is loaded by a framework, a runner or a user: its exports are entry points.
         if _is_entry(fn) or (fn.public and fn.file not in imported):
             continue
+        if fn.id not in used and not fn.dynamic and fn.kind != "method":
+            if mentioned is None:
+                mentioned = _mentioned(g)
+            if fn.name in mentioned or (fn.file.endswith(".rs") and _rust_attributed(g, fn, lines)):
+                continue
         if fn.id in used:
             if fn.id not in used_by_code and not is_test(fn.file):
                 out.append(Flag("test_only", "info", fn.id, f"{fn.qualname} is only called from tests"))
             continue
         if fn.dynamic:  # its name is used where the analyzer can't tell which definition runs: maybe this one
             continue
-        if fn.kind == "method":  # often called through an instance or a framework: only a hint
+        private = re.match(r"_[a-z]", fn.name) is not None  # `_helper`: no one outside the class is meant to call it
+        if fn.kind == "method" and not private:  # often called through an instance or a framework: only a hint
             out.append(
                 Flag(
                     "unused",
@@ -191,7 +256,9 @@ def import_cycles(g: Graph) -> list[Flag]:
             visit(v)
     out = []
     for comp in comps:
-        loop = " → ".join(c.split("/")[-1] for c in comp)
+        path = _shortest_loop(comp, adj)  # a real chain of imports, not the group's members in name order
+        loop = " → ".join(c.split("/")[-1] for c in path)
+        more = f" ({len(comp)} files in the loop)" if len(comp) > len(path) - 1 else ""
         # Python and JavaScript run a module's code as it's imported, so a loop can break loading: high. Classes in
         # Java, Kotlin, C#, Swift… load lazily, so a loop works at runtime and is a design smell (they can't be
         # understood, tested or reused apart): warn.
@@ -202,8 +269,31 @@ def import_cycles(g: Graph) -> list[Flag]:
         entry = any(c.rsplit("/", 1)[-1] in ENTRY_FILES for c in comp)
         sev, what = ("warn", "Dependency loop") if lazy else ("warn", "Import loop") if entry else ("high", "Import loop")
         for f in comp:
-            out.append(Flag("cycle", sev, f, f"{what} of {len(comp)} files: {loop}", [c for c in comp if c != f]))
+            out.append(Flag("cycle", sev, f, f"{what}: {loop}{more}", [c for c in comp if c != f],
+                            detail=" → ".join(path)))  # fmt: skip
     return out
+
+
+def _shortest_loop(comp: list[str], adj: dict) -> list[str]:
+    """The shortest import chain from the group's first file back to itself (breadth-first, inside the group)."""
+    inside, start = set(comp), comp[0]
+    prev: dict[str, str] = {}
+    frontier, seen = [start], {start}
+    while frontier:
+        nxt = []
+        for v in frontier:
+            for w in sorted(adj[v]):
+                if w == start:
+                    chain = [v]
+                    while chain[-1] != start:
+                        chain.append(prev[chain[-1]])
+                    return [*reversed(chain), start]
+                if w in inside and w not in seen:
+                    seen.add(w)
+                    prev[w] = v
+                    nxt.append(w)
+        frontier = nxt
+    return [*comp, comp[0]]
 
 
 LAZY_LOADING = (".java", ".kt", ".kts", ".scala", ".sc", ".groovy", ".cs", ".swift", ".dart", ".fs", ".m", ".mm")

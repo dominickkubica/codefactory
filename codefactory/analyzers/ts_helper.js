@@ -233,6 +233,26 @@ function loopState(n) {
   }
   return { loop, stmt, bounded: loop && bounded };
 }
+// The array searched is fresh on each round: declared inside the loop (this page of results, this item's own list)
+// or the loop's own variable. One pass over it per round is linear overall, not O(n²). An UPPER_CASE name is a fixed
+// table.
+function freshEachRound(n, expr) {
+  let head = expr;
+  while (head && (ts.isPropertyAccessExpression(head) || ts.isCallExpression(head) || ts.isNonNullExpression(head) ||
+                  ts.isElementAccessExpression(head) || ts.isParenthesizedExpression(head))) head = head.expression;
+  if (!head || !ts.isIdentifier(head)) return false;
+  if (/^[A-Z][A-Z0-9_]{2,}$/.test(head.text)) return true;
+  const sym = checker.getSymbolAtLocation(head);
+  const decl = sym && sym.declarations && sym.declarations[0];
+  if (!decl) return false;
+  for (let c = n, p = n.parent; p; c = p, p = p.parent) {
+    if (fnByNode.has(p) || ts.isSourceFile(p)) return false;
+    const loopNode = ts.isForOfStatement(p) || ts.isForInStatement(p) || ts.isForStatement(p) || ts.isWhileStatement(p) ||
+      ts.isDoStatement(p) || (isFnLike(p) && p.parent && ts.isCallExpression(p.parent) && p.parent.arguments.includes(p));
+    if (loopNode) return decl.pos >= p.pos && decl.end <= p.end;
+  }
+  return false;
+}
 function lastName(expr) {
   while (expr && (ts.isPropertyAccessExpression(expr) || ts.isCallExpression(expr) || ts.isNonNullExpression(expr))) {
     if (ts.isPropertyAccessExpression(expr)) return expr.name.text;
@@ -421,9 +441,39 @@ function resolveModule(spec, sf) {
   const f = path.resolve(r.resolvedFileName);
   return all.has(f) ? rel(f) : null;
 }
-const typeOnly = (d) => d.importClause && (d.importClause.isTypeOnly ||
-  (!d.importClause.name && d.importClause.namedBindings && ts.isNamedImports(d.importClause.namedBindings) &&
-    d.importClause.namedBindings.elements.length > 0 && d.importClause.namedBindings.elements.every((e) => e.isTypeOnly)));
+// Names a file uses as values: everything but type annotations, interfaces, `implements` and the imports themselves.
+// An import whose names appear only in types is erased by the compiler, so it can't take part in a loading loop.
+const valueNamesCache = new Map();
+function valueNames(sf) {
+  let names = valueNamesCache.get(sf);
+  if (names) return names;
+  names = new Set();
+  const walk = (n, inType) => {
+    if (ts.isImportDeclaration(n)) return;
+    const typeHere = inType || ts.isTypeNode(n) || ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n) ||
+      (ts.isHeritageClause(n) && n.token === ts.SyntaxKind.ImplementsKeyword);
+    if (ts.isIdentifier(n) && !typeHere) {
+      const p = n.parent;
+      if (!(p && ts.isPropertyAccessExpression(p) && p.name === n)) names.add(n.text);
+    }
+    ts.forEachChild(n, (c) => walk(c, typeHere));
+  };
+  walk(sf, false);
+  valueNamesCache.set(sf, names);
+  return names;
+}
+const typeOnly = (d) => {
+  const c = d.importClause;
+  if (!c) return false;  // `import "./x"`: runs the module
+  if (c.isTypeOnly) return true;
+  const named = c.namedBindings && ts.isNamedImports(c.namedBindings) ? c.namedBindings.elements : [];
+  if (!c.name && named.length > 0 && named.every((e) => e.isTypeOnly)) return true;
+  const locals = [c.name, ...named.filter((e) => !e.isTypeOnly).map((e) => e.name),
+    c.namedBindings && ts.isNamespaceImport(c.namedBindings) ? c.namedBindings.name : null].filter(Boolean);
+  if (!locals.length || options.verbatimModuleSyntax || options.preserveValueImports) return false;
+  const used = valueNames(d.getSourceFile());
+  return locals.every((id) => !used.has(id.text));
+};
 
 for (const sf of sources) {
   const fileId = rel(sf.fileName);
@@ -455,7 +505,8 @@ for (const sf of sources) {
           (ioOf.get(src) || ioOf.set(src, new Set()).get(src)).add(io);
           if (where.loop) sites.push({ fn: src.id, kind: "loop_io", line, target: "", detail: io, bounded: where.bounded, tx: inTransaction(n) });
         } else if (src && where.loop && ts.isPropertyAccessExpression(n.expression) && SCAN.has(n.expression.name.text) &&
-                   arrayish(n.expression.expression) && !constIterable(n.expression.expression)) { // [a, b].includes(x) is O(1)
+                   arrayish(n.expression.expression) && !constIterable(n.expression.expression) && // [a, b].includes(x) is O(1)
+                   !freshEachRound(n, n.expression.expression)) {
           sites.push({ fn: src.id, kind: "loop_scan", line, target: "", detail: `${lastName(n.expression.expression) || "array"}.${n.expression.name.text}`, bounded: where.bounded });
         }
       }

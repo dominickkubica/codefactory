@@ -16,8 +16,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .brief import View
-from .intent import interp_safe, push_skip_explained, safe_names, swallow_intent
-from .paths import is_doc_sample, is_test, is_vendored, links_outside
+from .intent import expected_failure, interp_safe, push_skip_explained, safe_names, swallow_intent
+from .paths import is_doc_sample, is_sample_code, is_test, is_vendored, links_outside
 from .suppress import MARK
 from .suppress import _parse as parse_mark
 
@@ -272,7 +272,9 @@ NOSEC = re.compile(r"(?://|#)\s*(?:nosec\b|nolint:\s*[\w,]*\bgosec\b|NOSONAR\b|n
 NOSEC_KEYS = {"tls_off", "eval", "shell", "raw_html", "sql_built", "weak_hash", "weak_random"}
 
 
-TLS_SETTING = re.compile(r"\b(?:if|elif|else\s+if|unless|case|when)\b.*\b\w*(?:verify|insecure|ssl|tls|cert|skip)\w*\b", re.I)
+TLS_SETTING = re.compile(
+    r"\b(?:if|elif|else\s+if|unless|case|when)\b.*\b\w*(?:verify|insecure|ssl|tls|cert|skip|unsafe|unauthori[sz]ed)\w*\b", re.I
+)
 # the same TLS config checks the certificate its own way (pinned roots, expected names, a callback): Go has to skip its
 # hostname check to do that (traefik's Consul Connect)
 OWN_VERIFY = re.compile(r"\b(?:RootCAs|VerifyPeerCertificate|VerifyConnection|PeerCertSANs|checkServerIdentity)\b")
@@ -282,6 +284,7 @@ def _under_tls_setting(lines: list[str], i: int) -> bool:
     """The line sits in a branch of an `if` on a verification setting (`if verify is False:` / its `else:`), as
     requests and HTTP clients do for their `verify=` option: the user's choice, not an override."""
     indent = len(lines[i - 1]) - len(lines[i - 1].lstrip())
+    ternary = False
     for j in range(i - 2, max(-1, i - 40), -1):  # (an `else:` may be far from its `if`: requests' cert_verify)
         text = lines[j]
         if not text.strip():
@@ -292,6 +295,14 @@ def _under_tls_setting(lines: list[str], i: int) -> bool:
         head = text.strip()
         if head.startswith(("else", "} else")) and not TLS_SETTING.search(head):
             indent = level + 1  # the else of an `if` further up: look for that `if` at this level
+            continue
+        if head.startswith(("?", ":")):
+            ternary, indent = True, level  # `cond ? {…} : { rejectUnauthorized: false }` across lines
+            continue
+        if ternary and re.search(r"\w*(?:verify|secure|ssl|tls|cert|skip|unsafe|unauthori[sz]ed)\w*", head, re.I):
+            return True
+        if not re.match(r"(?:\}\s*)?(?:if|elif|else|unless|case|when|switch|match)\b", head):
+            indent = level  # inside an object or call being built (`agent = new https.Agent({`): keep climbing
             continue
         return bool(TLS_SETTING.search(head))
     return False
@@ -350,12 +361,142 @@ def _token_question(lines: list[str], i: int, text: str) -> bool:
     """An unverified decode inside an `is_…`/`has_…` function (a yes/no question about the token, such as who issued
     it), in a file that verifies tokens properly elsewhere. Returning the unverified claims is never this."""
     verified = re.search(r"jwt\.decode\((?:[^()]|\([^()]*\))*?\balgorithms\s*=", text)  # (`get_key()` inside the call)
-    if lines[i - 1].lstrip().startswith("return") or not verified:
+    if lines[i - 1].lstrip().startswith("return"):
         return False
-    for j in range(i - 2, max(-1, i - 15), -1):
+    above = "\n".join(lines[max(0, i - 8) : i])
+    if re.search(
+        r"#.*\b(?:unverified|authenticat\w+ (?:the|it|later|before)|verif\w+ (?:later|elsewhere|first|before))", above, re.I
+    ):
+        return True  # the comment says what the peek is for and where the real check happens
+    for j in range(i - 2, max(-1, i - 40), -1):
         if m := re.match(r"\s*(?:async\s+)?def\s+(\w+)", lines[j]):
-            return bool(re.match(r"(?:is|has)_", m.group(1)))
+            name = m.group(1)
+            # a yes/no question (is_saleor_token) or a read of the expiry or issuer, not authentication
+            return (
+                bool(re.match(r"(?:is|has)_", name) and verified)
+                or bool(re.search(r"expir|_exp\b|exp_|issuer|peek|unverified|header|kid\b|routing|owner", name, re.I))
+                or bool(re.match(r"(?:is|has)_\w*(?:token|jwt)", name))
+            )
     return False
+
+
+HTTP_HOST = re.compile(r"http://([^/\s\"'`:)?#]+)", re.I)
+NAMESPACE_HOSTS = re.compile(
+    r"(?:^|\.)(?:w3\.org|purl\.org|schema\.org|xmlns\.com|ns\.adobe\.com|docs\.oasis-open\.org|sitemaps\.org|"
+    r"json-schema\.org|openid\.net|xml\.org|apache\.org/xml|java\.sun\.com|maven\.apache\.org|ogp\.me|"
+    r"rdfs\.org|microformats\.org|opensearch\.org|webdav\.org|s3\.amazonaws\.com/doc|activitystreams|joinmastodon\.org/ns)$",
+    re.I,
+)
+LINK_CONTEXT = re.compile(
+    r"\bhref\s*[=:]|\bxmlns\b|targetNamespace|\bcredits?\b|@see\b|@link\b|\bid\s*[:=]\s*[\"']http|\bto\s*=\s*[\"']http|"
+    r"TermDefinition|\bnamespace\b|\bschemaLocation\b|\bhomepage\b|\blicen[cs]e\b|\bcitation\b|\bsource_?url\b.*#",
+    re.I,
+)
+
+
+def internet_http(line: str) -> bool:
+    """A plain `http://` address this line could request over the internet: not a local or single-label host (a
+    Docker service, `localhost`), a private network address, an example or test domain, an XML / JSON-LD namespace,
+    or a link meant for people (`href=`, credits, a license)."""
+    if LINK_CONTEXT.search(line):
+        return False
+    for m in HTTP_HOST.finditer(line):
+        host = m.group(1).lower().rstrip(".")
+        if "." not in host or host.endswith((".local", ".localhost", ".internal", ".svc", ".test", ".example", ".invalid",
+                                              ".lan", ".home", ".corp", ".docker")):  # fmt: skip
+            continue
+        if re.match(r"(?:10|127)\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|169\.254\.|0\.0\.0\.0", host):
+            continue
+        if re.match(r"(?:[\w-]+\.)*example\.(?:com|org|net)$|^(?:www\.)?example\b", host) or NAMESPACE_HOSTS.search(host):
+            continue
+        if re.search(r"/(?:ns|schemas?|xmlns|vocab|terms|rdf|dtd)\b", line[m.end() : m.end() + 40]):
+            continue  # http://host/ns/…, a vocabulary's identifier
+        return True
+    return False
+
+
+PUBLIC_KEY_NOTE = re.compile(
+    r"safe to (?:embed|commit|publish|share|include)|not (?:a |really )?secret|(?:is|are) public\b|public (?:client|by design)|"
+    r"intentionally (?:public|committed|embedded)|compromised|publicly (?:known|disclosed)|for (?:the )?examples?\b",
+    re.I,
+)
+
+
+def _not_a_working_key(lines: list[str], i: int) -> bool:
+    """A credential-shaped value that can't be one: a vendor format filled with a run or a sequence (a test's
+    `sk_live_AAAA…`, `ghp_ABCdef1234567890…`), or one the comment above calls public (the GitHub CLI's OAuth app
+    secret, a demo's shared key, a published compromised CA key)."""
+    line = lines[i - 1]
+    for p in VENDOR_PATTERNS[1:]:
+        m = p.search(line)
+        if m:
+            body = re.sub(r"^[A-Za-z]{2,8}[_-](?:live_|test_)?|^AKIA|^AIza|^xox[abpr]-", "", m.group(0))
+            if not looks_random(body[:40] if len(body) >= 12 else body + "x" * 12):
+                return True
+    above = "\n".join(lines[max(0, i - 6) : i])
+    return PUBLIC_KEY_NOTE.search(above) is not None
+
+
+def _fixed_code(line: str, text: str) -> bool:
+    """Code execution of nothing anyone supplies: `new Function` with only literal arguments, `exec` of a file the
+    repository ships by a literal name, or a YAML load in a file using ruamel.yaml (whose loader is safe by default)."""
+    if m := re.search(r"\bnew\s+Function\s*\((.*)\)", line):
+        args = re.sub(r"""(["'`])(?:(?!\1)[^\\$]|\\.)*\1""", "", m.group(1))
+        if not re.search(r"[A-Za-z_$]", args):
+            return True
+    if re.search(r"\bexec\s*\(\s*open\s*\(\s*['\"][^'\"]+['\"]\s*\)\.read\(\)", line):
+        return True
+    return bool(re.search(r"\byaml\.load\s*\(", line) and re.search(r"\bruamel\b", text)
+                and not re.search(r"typ\s*=\s*['\"]unsafe['\"]", text))  # fmt: skip
+
+
+SANITIZED = re.compile(r"saniti[sz]e|purify|DOMPurify|escape\w*\(|trusted_?html\(\s*['\"`]|&quot;|&lt;|xss\(|textContent", re.I)
+
+
+def _safe_html(lines: list[str], i: int) -> bool:
+    """HTML from nothing outside: a value sanitized on the way, calls of built-in functions with no data passed
+    (`patchTheme(nightfox())`), a numeric counter, or a constant `__html` on the next lines."""
+    line = lines[i - 1]
+    if re.search(r"""(["'`])[^"'`]*\bv-html\b[^"'`]*\1""", line) and not re.search(r"\bv-html\s*=", line):
+        return True  # the words "v-html" in a message
+    rhs = re.split(r"innerHTML\s*=|__html\s*:|mark_safe\(|\bv-html\s*=", line, maxsplit=1)[-1]
+    if SANITIZED.search(rhs):
+        return True
+    if not rhs.strip() or rhs.count("`") % 2 or rhs.count("(") > rhs.count(")") or rhs.rstrip().endswith(("(", "+", "`")):
+        return False  # the value goes on below (`mark_safe(` / a template literal over several lines): read, not judged
+    rest = re.sub(r"""(["'])(?:(?!\1)[^\\]|\\.)*\1""", "", rhs)
+    rest = re.sub(r"`[^`$]*`", "", rest)
+    rest = re.sub(r"[A-Za-z_$][\w$.]*\s*\(", "(", rest)  # function names: their arguments are what counts
+    names = set(re.findall(r"(?<![\w$.])[A-Za-z_$][\w$]*", rest)) - {"true", "false", "null", "undefined", "this"}
+    if not names and "${" not in rhs and "{" not in rest.replace("{{", ""):
+        return True
+    if re.search(r"__html\s*:", line) is None and re.search(r"dangerouslySetInnerHTML=\{\{\s*$", line):
+        nxt = " ".join(lines[i : i + 3])
+        return CONSTANT_HTML.search(nxt.split("}}")[0] + ",") is not None or bool(SANITIZED.search(nxt.split("}}")[0]))
+    return False
+
+
+def looks_random(value: str) -> bool:
+    """A value that could be a working secret: long enough, varied, not a run (AAAA…) or a sequence (123456, abcdef),
+    and not built from words (`magical_password`, `petclinic`, `testpass`). Placeholders and demo defaults fail."""
+    import math
+
+    v = value.strip().strip("'\"")
+    if len(v) < 12 or re.search(r"(.)\1{3,}", v):
+        return False
+    low = v.lower()
+    if any(s in low for s in ("0123", "1234", "2345", "3456", "4567", "5678", "6789", "abcd", "bcde", "cdef", "qwer", "asdf")):
+        return False
+    if re.search(r"[a-z]{5,}", low) and re.search(
+        r"pass|secret|test|demo|example|sample|change|admin|local|default|dev|user|word|token|magic|super|root|guest|dummy|"
+        r"fake|mock|placeholder|insecure|please|replace|your|mysql|postgres|redis|mongo|minio|click|house|rust|clinic|"
+        r"forge|polar|key",
+        low,
+    ):
+        return False
+    counts = {c: v.count(c) for c in set(v)}
+    entropy = -sum(n / len(v) * math.log2(n / len(v)) for n in counts.values())
+    return entropy >= 3.0
 
 
 def _docstring_lines(text: str) -> set[int]:
@@ -464,7 +605,8 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
             continue
         lines = text.splitlines()
         # generated code, and examples and docs samples, are checked like a test: only for vendor credentials
-        test = is_test(fid) or is_doc_sample(fid) or GENERATED.search("\n".join(lines[:12])) is not None
+        test = (is_test(fid) or is_doc_sample(fid) or is_sample_code(fid)
+                or GENERATED.search("\n".join(lines[:12])) is not None)  # fmt: skip
         marks = [parse_mark(m.group(2))[0] for ln in lines if (m := MARK.search(ln)) and m.group(1)]
         file_kinds = set().union(*marks) if marks and all(marks) else (set() if marks else None)
 
@@ -491,12 +633,16 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                     continue  # prose about a pattern ("mark_safe() it at the end") isn't the code; a key is leaked anywhere
                 if any(p.search(line) and (p not in ONLY_IN or fid.endswith(ONLY_IN[p])) for p in pats) and hit(key, i):
                     if key == "eval" and (
-                        re.search(r"\bfunction\s+eval\s*\(|['\"][^'\"]*\beval\(\)[^'\"]*['\"]", line)
+                        re.search(r"\bfunction\s+eval\s*\(|\bdef\s+eval\s*\(|['\"][^'\"]*\beval\(\)[^'\"]*['\"]", line)
                         or re.match(
-                            r"\s*(?:(?:public|private|protected|static|async)\s+)*eval\s*\([^)]*\)\s*:\s*[\w<>\[\]| .]+[{;]", line
+                            r"\s*(?:(?:public|private|protected|static|async|override)\s+)*eval\s*\([^)]*\)\s*"
+                            r"(?::\s*[\w<>\[\]| .]+[{;]|\{)",
+                            line,
                         )
                     ):
-                        continue  # a method named eval (a Redis client's), or the words "eval()'d code" in a string
+                        continue  # a method named eval (a parser node's, a Redis client's), or "eval()'d code" in a string
+                    if key == "eval" and _fixed_code(line, text):
+                        continue  # new Function("return import(x)"), exec(open("config.py").read()), ruamel's safe load
                     if key == "insecure_cookie" and re.search(r"\?\s*[\w.]+\s*:\s*false\b", line):
                         continue  # copying another cookie's own flag (an HTTP client's cookie jar), not setting one
                     if key == "secret_key_literal" and re.match(r"\s*(\w+)\s*=\s*['\"]\1['\"]", line):
@@ -505,8 +651,10 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                         continue  # a project template's placeholder (`SECRET_KEY = "{{ secret_key }}"`), filled in later
                     if key == "jwt_unverified" and _token_question(lines, i, text):
                         continue  # `is_saleor_token`: a yes/no peek at who issued it, in a file that verifies tokens
-                    if key == "tls_off" and line.lstrip().startswith(("import ", "from ")):
-                        continue  # importing the constant isn't using it
+                    if key == "tls_off" and (line.lstrip().startswith(("import ", "from "))
+                                             or re.match(r"""\s*['"](\w+)['"]\s*:\s*(?:\w+\.)?\1\s*,?\s*$""", line)
+                                             or re.match(r"""\s*[A-Z_][A-Z0-9_]*\s*=\s*[rbuf]?['"]""", line)):  # fmt: skip
+                        continue  # importing the constant, a name-to-constant table, a warning message's text
                     if key == "tls_off" and (
                         re.search(r"\bif\s+\w[\w.]*\s+else\b|\?\s*\w+\s*:", line)
                         or re.search(
@@ -517,23 +665,31 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                         or OWN_VERIFY.search("\n".join(lines[max(0, i - 7) : i + 6]))
                     ):
                         continue  # chosen by a setting (`CERT_REQUIRED if verify else CERT_NONE`): the user's option
-                    if key == "raw_html" and CONSTANT_HTML.search(line):
-                        continue  # a fixed string: no one's data can get into it
+                    if key == "shell" and (subs := re.findall(r"\$\{([^}]+)\}", line)) and "`" in line:
+                        safe = safe_names(lines, i)
+                        if all(interp_safe(s, safe) for s in subs):
+                            continue  # every value in the command is a number or from a fixed list (parseInt, …)
+                    if key == "raw_html" and (CONSTANT_HTML.search(line) or _safe_html(lines, i)):
+                        continue  # a fixed string, built-in theme CSS, or sanitized first: no one's data can get into it
                     if key == "raw_html" and re.search(r"mark_safe\(.*\bsettings\.[A-Z_]+", line):
                         continue  # the site's own configuration, not user data
-                    if key == "plain_http" and re.match(r"\s*(?:\*|//|#|/\*)", line):  # an example in a doc comment
-                        continue
+                    if key == "plain_http" and (re.match(r"\s*(?:\*|//|#|/\*)", line) or not internet_http(line)):
+                        continue  # an example in a doc comment, a Docker service, a namespace, a link for people
                     if key in CONTEXT and not CONTEXT[key].search(line):
                         header = next((h for h in reversed(lines[max(0, i - 7) : i - 1]) if FUNC_HEADER.match(h)), "")
                         if key not in WEAK_CONTEXT_FROM_FUNCTION or not CONTEXT[key].search(header):
                             continue
                     if key == "secret" and re.search(PLACEHOLDER, line):
                         continue
+                    if key == "secret" and _not_a_working_key(lines, i):
+                        continue  # sk_live_AAAA…, ghp_ABCdef1234…: a test's stand-in; or a key its comment says is public
                     if key == "secret" and COMMENT_LINE.match(line) and "PRIVATE KEY-----" in line:
                         continue  # a key block shown in a doc comment (okhttp's KDoc): an example of the format
                     if key == "secret" and not any(p.search(line) for p in VENDOR_PATTERNS) and _named_not_secret(fid, lines, i):
                         continue  # the generic `token = "…"` rule only: a vendor key or a key block is leaked anywhere
-                    if key == "swallowed" and (why := swallow_intent(line, lines[i - 2] if i > 1 else "")):
+                    if key == "swallowed" and (
+                        why := swallow_intent(line, lines[i - 2] if i > 1 else "") or expected_failure(lines, i)
+                    ):
                         out["swallowed_ok"].hits.append(Evidence(fid, i, why))  # deliberate: counted, not reported
                         continue
                     out[key].hits.append(Evidence(fid, i, redact(_excerpt(line)) if key == "secret" else _excerpt(line)))
@@ -545,6 +701,8 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                     body = stmt[start : start + 600]
                     if not py_format:  # just this template literal, not the code after it
                         body = re.split(r"(?<!\\)`", body, maxsplit=1)[0]
+                    elif not fid.endswith(".py"):  # a statement ends at `;`: the next lines are other code
+                        body = body.split(";", 1)[0]
                     names = [a or (b if py_format else "") for a, b in INTERP.findall(body)]
                     names = [n for n in names if n]
                     if m.group(1).endswith("#{"):  # Ruby: #{params[:email]} (a colon is fine inside)
@@ -580,6 +738,16 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
         ):
             ln = next(i for i, text in enumerate(lines, 1) if re.search(r"(?<![\w.])fetch\s*\(", text))
             out["fetch_no_timeout"].hits.append(Evidence(fid, ln, _excerpt(lines[ln - 1])))
+        if (
+            not test
+            and fid.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"))
+            and re.search(r"\baxios\b", text)
+            and not re.search(r"\btimeout\b|\bsignal\b", text)  # (axios.create({ timeout }), defaults.timeout, a signal)
+        ):  # axios waits forever by default, like fetch
+            for i, line in enumerate(lines, 1):
+                call = re.search(r"\baxios(?:\.(?:get|post|put|patch|delete|head|request))?\s*\(", line)
+                if call and hit("fetch_no_timeout", i):
+                    out["fetch_no_timeout"].hits.append(Evidence(fid, i, _excerpt(line)))
         if not test and fid.endswith(".go"):  # the default client never times out
             server = next(
                 (m for m in re.finditer(r"\bhttp\.ListenAndServe(?:TLS)?\(|&?http\.Server\{", text)
@@ -601,6 +769,7 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                     and re.match(r"\s*except\s*(?:\(?\s*(?:Exception|BaseException)\b[^:#]*)?:\s*$", line)  # broad only
                     and lines[i].strip() == "pass"
                     and not swallow_intent(line + " " + lines[i], lines[i - 2] if i > 1 else "")
+                    and not expected_failure(lines, i)
                     and hit("swallowed", i)
                 ):
                     out["swallowed"].hits.append(Evidence(fid, i, _excerpt(line + " " + lines[i].strip())))
@@ -697,8 +866,10 @@ def _holds_secret(env: Path) -> bool:
             continue  # bundled into the client by design (VITE_, NEXT_PUBLIC_…), or a public key
         value = m.group(2).strip().strip("'\"")
         dev_value = r"|^disabled$|for[-_ ]local|local[-_ ]dev|[-_]development$"  # appwrite's local defaults
-        if len(value) >= 6 and not re.search(PLACEHOLDER + r"|^\$\{?\w+|changethis|secret$|password$" + dev_value, value, re.I):
-            return True
+        template = r"your|example|change|placeholder|dummy|secret[-_]?key|replace|insecure"
+        if (len(value) >= 6 and not re.search(PLACEHOLDER + r"|^\$\{?\w+|changethis|secret$|password$" + dev_value, value, re.I)
+                and not re.search(template, value, re.I)):  # fmt: skip
+            return True  # (`your-secret-key`, `insecure-…` are a template's defaults; `hunter2hunter2` is someone's)
     return False
 
 
@@ -812,7 +983,7 @@ def scan_repo(root: Path) -> dict:
         for p in root.glob(".env*")
         if p.is_file()
         and not p.name.endswith((".example", ".sample", ".template", ".dist"))
-        and not re.match(r"\.env\.(?:test|testing|ci)\b", p.name)  # the test suite's settings (outline's .env.test)
+        and not re.match(r"\.env\.(?:test|testing|ci|development|dev)\b", p.name)  # test and development settings
         and not links_outside(root, p.name)
         and _holds_secret(p)
     ]
