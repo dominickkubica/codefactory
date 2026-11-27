@@ -220,3 +220,15 @@ class ShellNoiseTest(unittest.TestCase):
         }  # fmt: skip
         found = scan_sources(repo(files), list(files))
         self.assertEqual([e.file for e in found["shell"].hits], ["run.rb"])
+
+
+class SetOnceTest(unittest.TestCase):
+    def test_reset_on_failure_and_counters_are_state(self):
+        from codefactory.checks import _set_once
+
+        lazy_reset = (
+            "let s;\nfunction g() {\n  if (!s) {\n    s = load();\n    s.catch(() => {\n      s = undefined;\n    });\n  }\n}\n"
+        )
+        self.assertFalse(_set_once(lazy_reset, "let s;"))
+        self.assertFalse(_set_once("let n = 0;\nexport function inc() { n++; }\n", "let n = 0;"))
+        self.assertTrue(_set_once("let c = null;\nexport const get = () => (c ??= make());\n", "let c = null;"))

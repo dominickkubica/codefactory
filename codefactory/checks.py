@@ -484,18 +484,18 @@ def _fixed_code(line: str, text: str) -> bool:
 
 
 def _set_once(text: str, line: str) -> bool:
-    """A module `let` that is set at most once after its declaration: a lazy singleton (`client ??= create()`,
-    `if (!client) client = create()`) or a value read but never reassigned. Shared state only matters when it
-    changes; one that is set once and then only read behaves like a constant."""
+    """A module `let` written at most once after its declaration: a lazy singleton (`client ??= create()`,
+    `if (!client) client = create()`) or a value never reassigned. Shared state only matters when it changes; set
+    once and then only read, it behaves like a constant. (Reset on failure, `cache = undefined`, it's state.)"""
     m = re.match(r"^(?:export\s+)?let\s+(\w+)", line)
     if not m:
         return False
     name = re.escape(m.group(1))
-    writes = re.findall(rf"(?<![\w$.]){name}\s*(?:\?\?=|\|\|=|&&=|\+\+|--|[-+*/]?=(?!=))", text)
-    if len(writes) <= 1:  # (the declaration itself, if it has `= value`, counts as one)
-        return True
-    lazy = re.findall(rf"(?<![\w$.]){name}\s*\?\?=|if\s*\(\s*!\s*{name}\s*\)\s*\{{?\s*{name}\s*=", text)
-    return len(writes) <= 2 and bool(lazy)
+    after = text[text.find(line) + len(line) :] if line in text else text
+    if re.search(rf"(?<![\w$.]){name}\s*(?:\+\+|--|[-+*/%]=)|(?:\+\+|--){name}\b", after):
+        return False  # a counter or an accumulator: it changes every time
+    writes = re.findall(rf"(?<![\w$.]){name}\s*(?:\?\?=|\|\|=|&&=|=(?!=))", after)
+    return len(writes) <= 1
 
 
 def _template_lines(lines: list[str]) -> set[int]:
