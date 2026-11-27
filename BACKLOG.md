@@ -20,11 +20,13 @@ lets triage at 1,000 repositories be a sample instead of a full read.
      test (`tests/test_precision_lessons.py`).
    - Done: re-scored on a fresh corpus run (tuned sample 43% → 68%) and labeled a held-out sample of 190 locations
      nobody tuned against: **46%**. Published in docs/ACCURACY.md.
-   - Next (round 2): the held-out misses don't repeat round 1's patterns, so the fixes generalized less than the
-     tuned number says. Decide per check: under 50% held out → a hint (listed, not counted as a finding) unless a
-     generic fix exists; known generic gaps: Appwrite's scope labels before the path, Pundit `authorize`, routes in
-     `#[cfg(test)]` modules, TLS options named in the surrounding function. Then a round-3 held-out sample, labeled
-     after, to measure the result honestly.
+   - Done (round 2 → 3): checks under 50% held out became hints (writes, file operations and array searches in loops,
+     compose database ports, plain-HTTP URLs); the generic gaps were fixed. Round 3 held out: **58%** (77 of 132,
+     95% interval 50–66%), from 52%.
+   - Done (round 3 → 4): endpoints without an auth check (0 of 7) and Swift `try!`/`as!` (0 of 4) are hints. Kaizen:
+     import loops (C# namespaces, PHP short names, Ruby gems: 11 wrong gone), Python packages under `lib/`
+     (streamlit unused code 234 → 18), Compose previews, published packages' API. None right lost.
+   - Next: round-4 held-out sample on a fresh corpus run, labeled after, reported per severity.
 
 ## Next
 
