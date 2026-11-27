@@ -22,6 +22,7 @@ from .brief import View
 from .checks import CI_NAMES, scan_repo, scan_sources, source_files, test_reach
 from .config import load_config
 from .coverage import measured
+from .e2e import JS, pages_reached
 from .infra import scan as infra_scan
 from .paths import deliberate_copies, is_doc_sample, is_example_code, is_script, is_test, walk
 from .plan import make_plan
@@ -219,12 +220,18 @@ class Review:
         calls on a value whose type isn't known (an interface, what a helper returns). "No test reaches it" was wrong
         for both on real repositories."""
         files = [f["id"] for f in self.g["files"] if is_test(f["id"])]
-        texts = []
-        for rel in files[:2000]:
+        texts, js = [], []
+        for i, rel in enumerate(files):
+            if i >= 2000 and not rel.endswith(JS):
+                continue  # (browser tests are read past the cap: a few, and each opens many pages)
             try:
-                texts.append((self.root / rel).read_text(encoding="utf-8", errors="replace")[:2_000_000])
+                text = (self.root / rel).read_text(encoding="utf-8", errors="replace")[:2_000_000]
             except OSError:
                 continue
+            if i < 2000:
+                texts.append(text)
+            if rel.endswith(JS):
+                js.append(text)
         blob = "\n".join(texts)
         if not blob:
             return set()
@@ -273,6 +280,8 @@ class Review:
             and (f["name"] in plain or (f["name"] in called and len(f["name"]) >= 8))
             and not is_test(f["file"])
         }  # (`crud.create_item(…)`)
+        # a page a browser test opens by URL (Playwright, Puppeteer, Cypress): its code and what it renders run
+        out |= pages_reached(self.root, self.g, self.v.fn, js)
         # migrations: a test run builds its database by applying them (pytest-django, Rails, Laravel)
         out |= {fid for fid, f in self.v.fn.items() if re.search(r"(?:^|/)(?:migrations|db/migrate)/", f["file"])}
         return out
