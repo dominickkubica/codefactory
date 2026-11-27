@@ -243,7 +243,7 @@
  },
  "actualbudget/actual": {
   "status": "ok",
-  "seconds": 116.7,
+  "seconds": 271.0,
   "commit": "cf95cfe",
   "kind": "web app",
   "deployment": "deployed server",
@@ -287,7 +287,7 @@
  },
  "appwrite/appwrite": {
   "status": "ok",
-  "seconds": 670.8,
+  "seconds": 692.7,
   "commit": "26642a47",
   "kind": "web app",
   "deployment": "deployed server",
@@ -300,6 +300,9 @@
    "High: Environment files committed",
    "High: 62 errors silently swallowed",
    "High: Import loops (20)"
+  ],
+  "notes": [
+   "codefactory: 2 files aren't analyzed: over 1 MB, binary or not parseable (packages/domains/data/data.php, packages/emails/data/disposable-domains.php)."
   ]
  },
  "bitwarden/server": {
@@ -353,7 +356,7 @@
  },
  "calcom/cal.com": {
   "status": "ok",
-  "seconds": 168.8,
+  "seconds": 310.7,
   "commit": "ae027bb",
   "kind": "web app",
   "deployment": "deployed server",
@@ -448,7 +451,7 @@
  },
  "directus/directus": {
   "status": "ok",
-  "seconds": 113.5,
+  "seconds": 262.6,
   "commit": "4856582",
   "kind": "web app",
   "deployment": "deployed server",
@@ -464,7 +467,7 @@
  },
  "django/django": {
   "status": "ok",
-  "seconds": 79.9,
+  "seconds": 208.8,
   "commit": "f0e7bd9",
   "kind": "library",
   "deployment": "user's machine",
@@ -476,6 +479,9 @@
   "serious": [
    "High: Import loops (8)",
    "High: Raw HTML injected into pages"
+  ],
+  "notes": [
+   "codefactory: 1 Python files aren't analyzed: Python 3.13 can't parse them (tests/test_runner_apps/tagged/tests_syntax_error.py line 11: invalid decimal literal)."
   ]
  },
  "documenso/documenso": {
@@ -832,7 +838,7 @@
  },
  "immich-app/immich": {
   "status": "ok",
-  "seconds": 145.2,
+  "seconds": 212.6,
   "commit": "a51a438",
   "kind": "mobile app",
   "deployment": "client app",
@@ -1318,7 +1324,7 @@
  },
  "outline/outline": {
   "status": "ok",
-  "seconds": 111.0,
+  "seconds": 253.5,
   "commit": "13c6c77",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1342,7 +1348,10 @@
    "Medium": 11,
    "Low": 6
   },
-  "serious": []
+  "serious": [],
+  "notes": [
+   "codefactory: 2 Python files aren't analyzed: Python 3.13 can't parse them (apps/wizard/etl_steps/cookiecutter/meadow/{{cookiecutter.namespace}}/{{cookiecutter.version}}/{{cookiecutter.short_name}}.py line 9: invalid syntax; apps/wizard/etl_"
+  ]
  },
  "pallets/flask": {
   "status": "ok",
@@ -1533,7 +1542,7 @@
  },
  "saleor/saleor": {
   "status": "ok",
-  "seconds": 118.9,
+  "seconds": 222.9,
   "commit": "e1ccf4d",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1673,7 +1682,7 @@
  },
  "streamlit/streamlit": {
   "status": "ok",
-  "seconds": 129.5,
+  "seconds": 154.8,
   "commit": "1819c56",
   "kind": "web app",
   "deployment": "LAN server",
@@ -1684,7 +1693,10 @@
   },
   "serious": [
    "High: Shell commands built at runtime",
-   "High: Import loops (2)"
+   "High: Import loops (5)"
+  ],
+  "notes": [
+   "codefactory: 1 Python files aren't analyzed: Python 3.13 can't parse them (e2e_playwright/compilation_error_dialog.py line 20: invalid syntax)."
   ]
  },
  "sveltejs/svelte": {
