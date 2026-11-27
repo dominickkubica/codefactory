@@ -233,6 +233,18 @@ Checks whose claim is true by construction (a missing README, an unpinned versio
 | Credentials committed in source | 0% | 0%–66% | 2 |
 <!-- precision:end -->
 
+### Data flow on real apps: 0 of 34
+
+The data-flow check ("Request data reaches dangerous calls") found only 11 flows in the first 76 repositories, too
+few to measure. With 50 more repositories chosen for web backends it reports 98: it finds the textbook flaws in the
+deliberately vulnerable training apps (Juice Shop's SQL injection in login and search and its SSRF in the profile
+image upload; NodeGoat's `eval` of request fields, open redirect and SSRF), which are kept out of every precision
+sample. On real applications, a sample of 34 flows from 13 of them was **right 0 times**: every flow was guarded on
+the way. Redirects checked by a safe-URL validator (`url_has_allowed_host_and_scheme`, `is_safe_url`), paths kept
+inside a folder (`is_relative_to`, `isPathInside`), outbound URLs whose host is fixed and only the query comes from
+the request, values from a signed token, bound SQL parameters. Recognizing those guards is the next fix; until then
+read a data-flow finding as "look here", not as a found vulnerability.
+
 ### Round 5, by severity and check
 
 68 of 96 right (71%, 95% interval 61–79%). By severity: Critical 0 of 1, High 13 of 20 (65%), Medium 40 of 56

@@ -39,6 +39,17 @@ honest figure for code codefactory hasn't been tuned on, and the target for the 
   frozen dated copies, build outputs and small edited copies aren't "copied logic"; TypeScript imports used only as
   types and Java imports only for a Javadoc link aren't dependencies; an import loop shows a real chain of imports.
 
+### Round 6: 50 more repositories, and data flow measured on real apps
+
+126 repositories, all analyzed without a crash or timeout. Data flow now reports 98 flows on the new ones (11 on the
+first 76): every textbook flaw in Juice Shop and NodeGoat is found, but on real applications a sample of 34 was right
+0 times, all guarded (docs/ACCURACY.md). Also: a test that only mocks a function (`vi.fn`, `jest.mock`, `patch`) no
+longer counts as reaching it; skipped tests reach nothing; pages browser tests open (Playwright, Puppeteer, Cypress)
+count as tested; tsconfig `paths` aliases resolve per app (appwrite console: 3,804 → 22,276 import edges); a value
+fixed at every caller exempts SQL, HTML and shell findings; copies in frozen version folders, build scripts and
+route scaffolding aren't copied logic; and a bug sweep fixed a stall on minified files plus several places where a
+file or a whole analysis pass was dropped without a note.
+
 ### Round 5 held out: 71%
 
 Corpus run on the round-4 kaizen code (76 of 76), and a fifth held-out sample of 96 counted locations labeled after
