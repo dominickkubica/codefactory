@@ -1,31 +1,31 @@
 {
  "Alamofire/Alamofire": {
   "status": "ok",
-  "seconds": 14.2,
+  "seconds": 7.6,
   "commit": "dea4bab",
   "kind": "library",
   "deployment": "user's machine",
   "counts": {
    "Medium": 2,
-   "Low": 3
+   "Low": 1
   },
   "serious": []
  },
  "BurntSushi/ripgrep": {
   "status": "ok",
-  "seconds": 5.6,
+  "seconds": 5.2,
   "commit": "3e85c6c",
   "kind": "command-line tool",
   "deployment": "user's machine",
   "counts": {
-   "Medium": 3,
+   "Medium": 2,
    "Low": 5
   },
   "serious": []
  },
  "LoopKit/Loop": {
   "status": "ok",
-  "seconds": 7.8,
+  "seconds": 4.0,
   "commit": "813f07c",
   "kind": "mobile app",
   "deployment": "local-first",
@@ -40,115 +40,109 @@
  },
  "actualbudget/actual": {
   "status": "ok",
-  "seconds": 88.4,
+  "seconds": 61.3,
   "commit": "cf95cfe",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "High": 3,
-   "Medium": 10,
+   "High": 2,
+   "Medium": 9,
    "Low": 6
   },
   "serious": [
-   "High: Endpoints that change data without an auth check (9)",
-   "High: 21 errors silently swallowed",
+   "High: 18 errors silently swallowed",
    "High: Import loops (12)"
   ]
  },
  "android/nowinandroid": {
   "status": "ok",
-  "seconds": 8.6,
+  "seconds": 4.1,
   "commit": "2982e63",
   "kind": "mobile app",
   "deployment": "local-first",
-  "counts": {
-   "High": 1,
-   "Medium": 3,
-   "Low": 6
-  },
-  "serious": [
-   "High: Important code no test reaches (2 functions)"
-  ]
- },
- "apache/superset": {
-  "status": "ok",
-  "seconds": 195.9,
-  "commit": "3758941",
-  "kind": "web app",
-  "deployment": "deployed server",
-  "counts": {
-   "Critical": 1,
-   "High": 5,
-   "Medium": 12,
-   "Low": 8
-  },
-  "serious": [
-   "Critical: Request data reaches dangerous calls (1 proven flows)",
-   "High: Endpoints that change data without an auth check (1)",
-   "High: JWT checks turned off",
-   "High: Kubernetes Secrets committed with their values",
-   "High: Session cookies without Secure / HttpOnly",
-   "High: Import loops (27)"
-  ]
- },
- "appwrite/appwrite": {
-  "status": "ok",
-  "seconds": 222.3,
-  "commit": "26642a47",
-  "kind": "web front-end",
-  "deployment": "browser",
-  "counts": {
-   "High": 3,
-   "Medium": 11,
-   "Low": 12
-  },
-  "serious": [
-   "High: Environment files committed",
-   "High: 201 errors silently swallowed",
-   "High: Import loops (15)"
-  ]
- },
- "caddyserver/caddy": {
-  "status": "ok",
-  "seconds": 14.6,
-  "commit": "679806f",
-  "kind": "command-line tool",
-  "deployment": "user's machine",
   "counts": {
    "Medium": 1,
    "Low": 5
   },
   "serious": []
  },
+ "apache/superset": {
+  "status": "ok",
+  "seconds": 110.3,
+  "commit": "3758941",
+  "kind": "web app",
+  "deployment": "deployed server",
+  "counts": {
+   "High": 2,
+   "Medium": 8,
+   "Low": 8
+  },
+  "serious": [
+   "High: Session cookies without Secure / HttpOnly",
+   "High: Import loops (20)"
+  ]
+ },
+ "appwrite/appwrite": {
+  "status": "ok",
+  "seconds": 350.3,
+  "commit": "26642a47",
+  "kind": "web app",
+  "deployment": "deployed server",
+  "counts": {
+   "High": 5,
+   "Medium": 10,
+   "Low": 10
+  },
+  "serious": [
+   "High: Environment files committed",
+   "High: SQL assembled from strings",
+   "High: 115 errors silently swallowed",
+   "High: Endpoints that change data without an auth check (98)",
+   "High: Import loops (12)"
+  ]
+ },
+ "caddyserver/caddy": {
+  "status": "ok",
+  "seconds": 9.2,
+  "commit": "679806f",
+  "kind": "command-line tool",
+  "deployment": "user's machine",
+  "counts": {
+   "Medium": 1,
+   "Low": 4
+  },
+  "serious": []
+ },
  "calcom/cal.com": {
   "status": "ok",
-  "seconds": 55.3,
+  "seconds": 52.7,
   "commit": "ae027bb",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "Critical": 1,
-   "High": 3,
-   "Medium": 16,
+   "High": 4,
+   "Medium": 14,
    "Low": 10
   },
   "serious": [
    "Critical: Credentials in configuration files",
    "High: TLS certificate checks turned off",
-   "High: 12 errors silently swallowed",
-   "High: Personal data written to logs"
+   "High: Personal data written to logs",
+   "High: Request data reaches dangerous calls (6 proven flows)",
+   "High: 11 errors silently swallowed"
   ]
  },
  "celery/celery": {
   "status": "ok",
-  "seconds": 12.6,
+  "seconds": 8.3,
   "commit": "14115f0",
   "kind": "command-line tool",
   "deployment": "user's machine",
   "counts": {
    "High": 1,
-   "Medium": 7,
-   "Low": 7
+   "Medium": 4,
+   "Low": 6
   },
   "serious": [
    "High: TLS certificate checks turned off"
@@ -156,13 +150,13 @@
  },
  "cli/cli": {
   "status": "ok",
-  "seconds": 31.7,
+  "seconds": 18.5,
   "commit": "aec3808",
   "kind": "command-line tool",
   "deployment": "user's machine",
   "counts": {
    "Critical": 1,
-   "Medium": 3,
+   "Medium": 2,
    "Low": 7
   },
   "serious": [
@@ -171,7 +165,7 @@
  },
  "dani-garcia/vaultwarden": {
   "status": "ok",
-  "seconds": 22.3,
+  "seconds": 21.6,
   "commit": "dbd7829",
   "kind": "web app",
   "deployment": "deployed server",
@@ -183,71 +177,70 @@
  },
  "directus/directus": {
   "status": "ok",
-  "seconds": 67.0,
+  "seconds": 36.5,
   "commit": "4856582",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "High": 2,
-   "Medium": 9,
-   "Low": 9
+   "High": 3,
+   "Medium": 7,
+   "Low": 8
   },
   "serious": [
-   "High: Import loops (10)",
-   "High: SQL assembled from strings"
+   "High: Request data reaches dangerous calls (1 proven flows)",
+   "High: SQL assembled from strings",
+   "High: Import loops (10)"
   ]
  },
  "django/django": {
   "status": "ok",
-  "seconds": 57.9,
+  "seconds": 30.6,
   "commit": "f0e7bd9",
   "kind": "library",
   "deployment": "user's machine",
   "counts": {
-   "High": 3,
-   "Medium": 10,
-   "Low": 9
+   "High": 2,
+   "Medium": 9,
+   "Low": 8
   },
   "serious": [
-   "High: Request data reaches dangerous calls (3 proven flows)",
    "High: Import loops (8)",
    "High: Raw HTML injected into pages"
   ]
  },
  "dotnet/eShop": {
   "status": "ok",
-  "seconds": 12.6,
+  "seconds": 8.3,
   "commit": "3c6e531",
   "kind": "web service",
   "deployment": "network server",
   "counts": {
    "Medium": 3,
-   "Low": 7
+   "Low": 5
   },
   "serious": []
  },
  "encode/httpx": {
   "status": "ok",
-  "seconds": 2.7,
+  "seconds": 1.6,
   "commit": "e347fb5",
   "kind": "command-line tool",
   "deployment": "user's machine",
   "counts": {
-   "Medium": 1,
-   "Low": 2
+   "Low": 3
   },
   "serious": []
  },
  "excalidraw/excalidraw": {
   "status": "ok",
-  "seconds": 51.8,
+  "seconds": 31.9,
   "commit": "dabd83c",
   "kind": "web front-end",
   "deployment": "browser",
   "counts": {
    "High": 1,
    "Medium": 10,
-   "Low": 5
+   "Low": 4
   },
   "serious": [
    "High: Import loops (6)"
@@ -255,7 +248,7 @@
  },
  "expressjs/express": {
   "status": "ok",
-  "seconds": 8.4,
+  "seconds": 5.3,
   "commit": "43fca52",
   "kind": "library",
   "deployment": "user's machine",
@@ -267,31 +260,31 @@
  },
  "fastapi/fastapi": {
   "status": "ok",
-  "seconds": 24.0,
+  "seconds": 15.7,
   "commit": "05e6df7",
   "kind": "library",
   "deployment": "user's machine",
   "counts": {
-   "Medium": 3,
+   "Medium": 2,
    "Low": 3
   },
   "serious": []
  },
  "fastapi/full-stack-fastapi-template": {
   "status": "ok",
-  "seconds": 7.1,
+  "seconds": 3.8,
   "commit": "f8c6c14",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "Medium": 4,
+   "Medium": 3,
    "Low": 5
   },
   "serious": []
  },
  "getsentry/sentry-python": {
   "status": "ok",
-  "seconds": 16.2,
+  "seconds": 8.1,
   "commit": "566beb0",
   "kind": "library",
   "deployment": "user's machine",
@@ -301,12 +294,12 @@
    "Low": 3
   },
   "serious": [
-   "High: 44 errors silently swallowed"
+   "High: 37 errors silently swallowed"
   ]
  },
  "gin-gonic/gin": {
   "status": "ok",
-  "seconds": 2.5,
+  "seconds": 1.3,
   "commit": "0f09c3a",
   "kind": "library",
   "deployment": "user's machine",
@@ -317,13 +310,13 @@
  },
  "go-gitea/gitea": {
   "status": "ok",
-  "seconds": 123.9,
+  "seconds": 68.1,
   "commit": "14d2bdc",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "High": 2,
-   "Medium": 9,
+   "Medium": 8,
    "Low": 7
   },
   "serious": [
@@ -333,70 +326,70 @@
  },
  "gohugoio/hugo": {
   "status": "ok",
-  "seconds": 31.2,
+  "seconds": 16.7,
   "commit": "b3d0a6d",
   "kind": "web service",
   "deployment": "deployed server",
   "counts": {
    "Medium": 5,
-   "Low": 8
+   "Low": 7
   },
   "serious": []
  },
  "gotify/server": {
   "status": "ok",
-  "seconds": 6.9,
+  "seconds": 4.6,
   "commit": "912af9f",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "Medium": 3,
-   "Low": 8
+   "Medium": 4,
+   "Low": 7
   },
   "serious": []
  },
  "healthchecks/healthchecks": {
   "status": "ok",
-  "seconds": 11.3,
+  "seconds": 6.8,
   "commit": "c1039ad",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "Medium": 7,
-   "Low": 8
+   "Low": 7
   },
   "serious": []
  },
  "heartcombo/devise": {
   "status": "ok",
-  "seconds": 2.5,
+  "seconds": 2.0,
   "commit": "05811fb",
   "kind": "library",
   "deployment": "user's machine",
   "counts": {
-   "Medium": 2,
+   "Medium": 1,
    "Low": 3
   },
   "serious": []
  },
  "hoppscotch/hoppscotch": {
   "status": "ok",
-  "seconds": 32.0,
+  "seconds": 25.5,
   "commit": "6177eae",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "High": 1,
-   "Medium": 11,
-   "Low": 10
+   "Medium": 9,
+   "Low": 8
   },
   "serious": [
-   "High: Import loops (11)"
+   "High: Import loops (9)"
   ]
  },
  "httpie/cli": {
   "status": "ok",
-  "seconds": 2.6,
+  "seconds": 1.2,
   "commit": "5b604c3",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -411,14 +404,14 @@
  },
  "immich-app/immich": {
   "status": "ok",
-  "seconds": 36.3,
+  "seconds": 31.1,
   "commit": "a51a438",
   "kind": "mobile app",
   "deployment": "client app",
   "counts": {
    "High": 3,
-   "Medium": 12,
-   "Low": 11
+   "Medium": 10,
+   "Low": 10
   },
   "serious": [
    "High: Required-reason API without a privacy manifest",
@@ -428,26 +421,26 @@
  },
  "jekyll/jekyll": {
   "status": "ok",
-  "seconds": 5.9,
+  "seconds": 4.4,
   "commit": "97c3bdc",
   "kind": "command-line tool",
   "deployment": "user's machine",
   "counts": {
-   "Medium": 6,
+   "Medium": 5,
    "Low": 6
   },
   "serious": []
  },
  "jellyfin/jellyfin": {
   "status": "ok",
-  "seconds": 56.3,
+  "seconds": 43.1,
   "commit": "57d9700",
   "kind": "web service",
   "deployment": "network server",
   "counts": {
    "Critical": 1,
-   "Medium": 5,
-   "Low": 6
+   "Medium": 4,
+   "Low": 5
   },
   "serious": [
    "Critical: Credentials committed in source"
@@ -455,7 +448,7 @@
  },
  "junegunn/fzf": {
   "status": "ok",
-  "seconds": 6.7,
+  "seconds": 2.4,
   "commit": "ed173e7",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -467,7 +460,7 @@
  },
  "karpathy/nanoGPT": {
   "status": "ok",
-  "seconds": 0.5,
+  "seconds": 0.3,
   "commit": "3adf61e",
   "kind": "data pipeline",
   "deployment": "user's machine",
@@ -479,14 +472,14 @@
  },
  "laravel/framework": {
   "status": "ok",
-  "seconds": 59.4,
+  "seconds": 41.9,
   "commit": "321caf7",
   "kind": "library",
   "deployment": "user's machine",
   "counts": {
    "High": 2,
-   "Medium": 6,
-   "Low": 6
+   "Medium": 3,
+   "Low": 4
   },
   "serious": [
    "High: Dynamic code execution (eval / exec / pickle / unsafe YAML)",
@@ -495,55 +488,54 @@
  },
  "laravel/laravel": {
   "status": "ok",
-  "seconds": 3.3,
+  "seconds": 2.1,
   "commit": "f32d701",
   "kind": "web app",
   "deployment": "network server",
   "counts": {
-   "Low": 3
+   "Low": 2
   },
   "serious": []
  },
  "localsend/localsend": {
   "status": "ok",
-  "seconds": 15.3,
+  "seconds": 12.7,
   "commit": "44f48f1",
   "kind": "mobile app",
   "deployment": "client app",
   "counts": {
-   "Medium": 7,
+   "Medium": 6,
    "Low": 6
   },
   "serious": []
  },
  "louislam/uptime-kuma": {
   "status": "ok",
-  "seconds": 18.6,
+  "seconds": 10.9,
   "commit": "df494b4",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "High": 5,
+   "High": 4,
    "Medium": 10,
-   "Low": 8
+   "Low": 7
   },
   "serious": [
    "High: Broken encryption mode or cipher (ECB, DES, RC4)",
-   "High: SQL assembled from strings",
+   "High: Endpoints that change data without an auth check (1)",
    "High: TLS certificate checks turned off",
-   "High: Endpoints that change data without an auth check (6)",
    "High: Import loops (3)"
   ]
  },
  "marktext/marktext": {
   "status": "ok",
-  "seconds": 55.5,
+  "seconds": 22.9,
   "commit": "95a14e5",
   "kind": "desktop app",
   "deployment": "user's machine",
   "counts": {
    "High": 2,
-   "Medium": 7,
+   "Medium": 6,
    "Low": 6
   },
   "serious": [
@@ -553,37 +545,36 @@
  },
  "mastodon/mastodon": {
   "status": "ok",
-  "seconds": 78.6,
+  "seconds": 63.8,
   "commit": "db13cc1",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "High": 4,
-   "Medium": 9,
+   "High": 3,
+   "Medium": 8,
    "Low": 9
   },
   "serious": [
    "High: Session cookies without Secure / HttpOnly",
    "High: Import loops (15)",
-   "High: SQL assembled from strings",
-   "High: Endpoints that change data without an auth check (150)"
+   "High: Endpoints that change data without an auth check (12)"
   ]
  },
  "maybe-finance/maybe": {
   "status": "ok",
-  "seconds": 16.7,
+  "seconds": 9.6,
   "commit": "77b5469",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "Medium": 5,
+   "Medium": 4,
    "Low": 7
   },
   "serious": []
  },
  "meilisearch/meilisearch": {
   "status": "ok",
-  "seconds": 31.1,
+  "seconds": 15.4,
   "commit": "9fb6a90",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -595,32 +586,31 @@
  },
  "mitmproxy/mitmproxy": {
   "status": "ok",
-  "seconds": 57.9,
+  "seconds": 27.6,
   "commit": "0466185",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "Critical": 1,
-   "High": 2,
-   "Medium": 8,
-   "Low": 6
+   "High": 1,
+   "Medium": 7,
+   "Low": 4
   },
   "serious": [
    "Critical: Credentials committed in source",
-   "High: Endpoints that change data without an auth check (1)",
    "High: Import loops (5)"
   ]
  },
  "monicahq/monica": {
   "status": "ok",
-  "seconds": 122.1,
+  "seconds": 96.6,
   "commit": "7317719",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "High": 1,
-   "Medium": 4,
-   "Low": 7
+   "Medium": 3,
+   "Low": 6
   },
   "serious": [
    "High: Import loops (4)"
@@ -628,64 +618,60 @@
  },
  "n8n-io/n8n": {
   "status": "ok",
-  "seconds": 747.3,
+  "seconds": 719.3,
   "commit": "dcded939",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "Critical": 3,
-   "High": 6,
-   "Medium": 13,
-   "Low": 10
+   "High": 7,
+   "Medium": 12,
+   "Low": 9
   },
   "serious": [
    "Critical: Credentials committed in source",
    "Critical: Dynamic code execution (eval / exec / pickle / unsafe YAML)",
    "Critical: Shell commands built at runtime",
+   "High: Request data reaches dangerous calls (1 proven flows)",
+   "High: Endpoints that change data without an auth check (11)",
    "High: Personal data written to logs",
    "High: TLS certificate checks turned off",
-   "High: 300 errors silently swallowed",
-   "High: Endpoints that change data without an auth check (19)",
+   "High: 231 errors silently swallowed",
    "High: Import loops (33)",
    "High: SQL assembled from strings"
   ]
  },
  "nestjs/nest": {
   "status": "ok",
-  "seconds": 42.8,
+  "seconds": 24.7,
   "commit": "a4c2a51",
   "kind": "library",
   "deployment": "user's machine",
   "counts": {
-   "High": 1,
    "Medium": 7,
    "Low": 3
   },
-  "serious": [
-   "High: Import loops (13)"
-  ]
+  "serious": []
  },
  "outline/outline": {
   "status": "ok",
-  "seconds": 57.7,
+  "seconds": 38.8,
   "commit": "13c6c77",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "High": 4,
-   "Medium": 6,
-   "Low": 11
+   "High": 2,
+   "Medium": 7,
+   "Low": 9
   },
   "serious": [
-   "High: 10 errors silently swallowed",
-   "High: Endpoints that change data without an auth check (5)",
    "High: TLS certificate checks turned off",
    "High: Import loops (7)"
   ]
  },
  "owid/etl": {
   "status": "ok",
-  "seconds": 111.9,
+  "seconds": 97.7,
   "commit": "9a2e7d68",
   "kind": "data pipeline",
   "deployment": "user's machine",
@@ -697,46 +683,46 @@
  },
  "pallets/flask": {
   "status": "ok",
-  "seconds": 2.0,
+  "seconds": 1.3,
   "commit": "49943b5",
   "kind": "library",
   "deployment": "user's machine",
   "counts": {
-   "Medium": 3,
-   "Low": 2
+   "Medium": 2,
+   "Low": 3
   },
   "serious": []
  },
  "phoenixframework/phoenix": {
   "status": "ok",
-  "seconds": 16.6,
+  "seconds": 9.6,
   "commit": "e0ae76e",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "Medium": 3,
-   "Low": 5
+   "Medium": 2,
+   "Low": 4
   },
   "serious": []
  },
  "plausible/analytics": {
   "status": "ok",
-  "seconds": 42.8,
+  "seconds": 22.5,
   "commit": "06efc5e",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "High": 1,
    "Medium": 7,
-   "Low": 8
+   "Low": 7
   },
   "serious": [
-   "High: Import loops (2)"
+   "High: Import loops (6)"
   ]
  },
  "pocketbase/pocketbase": {
   "status": "ok",
-  "seconds": 27.4,
+  "seconds": 12.4,
   "commit": "7f2773e",
   "kind": "web service",
   "deployment": "network server",
@@ -748,74 +734,73 @@
  },
  "prometheus/prometheus": {
   "status": "ok",
-  "seconds": 58.6,
+  "seconds": 31.6,
   "commit": "1e794b8",
   "kind": "web service",
   "deployment": "deployed server",
   "counts": {
    "High": 1,
-   "Medium": 8,
-   "Low": 8
+   "Medium": 5,
+   "Low": 7
   },
   "serious": [
-   "High: Import loops (9)"
+   "High: Import loops (4)"
   ]
  },
  "psf/requests": {
   "status": "ok",
-  "seconds": 1.9,
+  "seconds": 1.5,
   "commit": "3c7baaa",
   "kind": "library",
   "deployment": "user's machine",
   "counts": {
-   "Medium": 4,
-   "Low": 3
+   "Medium": 2,
+   "Low": 2
   },
   "serious": []
  },
  "pydantic/pydantic": {
   "status": "ok",
-  "seconds": 25.5,
+  "seconds": 15.8,
   "commit": "6449f80",
   "kind": "library",
   "deployment": "user's machine",
   "counts": {
-   "Medium": 6,
-   "Low": 5
+   "Medium": 5,
+   "Low": 3
   },
   "serious": []
  },
  "python-poetry/poetry": {
   "status": "ok",
-  "seconds": 7.2,
+  "seconds": 3.6,
   "commit": "3cc663a",
   "kind": "command-line tool",
   "deployment": "user's machine",
   "counts": {
    "Medium": 1,
-   "Low": 6
+   "Low": 5
   },
   "serious": []
  },
  "saleor/saleor": {
   "status": "ok",
-  "seconds": 71.6,
+  "seconds": 39.7,
   "commit": "e1ccf4d",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "High": 2,
+   "High": 1,
    "Medium": 4,
    "Low": 5
   },
   "serious": [
-   "High: JWT checks turned off",
    "High: Import loops (6)"
   ]
  },
  "scrapy/scrapy": {
   "status": "ok",
-  "seconds": 9.5,
+  "seconds": 5.8,
   "commit": "3574baf",
   "kind": "library",
   "deployment": "user's machine",
@@ -823,7 +808,7 @@
    "Critical": 1,
    "High": 1,
    "Medium": 4,
-   "Low": 6
+   "Low": 5
   },
   "serious": [
    "Critical: Request data reaches dangerous calls (1 proven flows)",
@@ -832,7 +817,7 @@
  },
  "shadcn-ui/taxonomy": {
   "status": "ok",
-  "seconds": 5.1,
+  "seconds": 5.5,
   "commit": "298a885",
   "kind": "web app",
   "deployment": "network server",
@@ -848,34 +833,31 @@
  },
  "shadcn-ui/ui": {
   "status": "ok",
-  "seconds": 125.4,
+  "seconds": 51.3,
   "commit": "0e5b2e6",
   "kind": "web app",
   "deployment": "network server",
   "counts": {
-   "High": 1,
    "Medium": 6,
-   "Low": 9
+   "Low": 8
   },
-  "serious": [
-   "High: 10 errors silently swallowed"
-  ]
+  "serious": []
  },
  "sharkdp/bat": {
   "status": "ok",
-  "seconds": 16.3,
+  "seconds": 8.8,
   "commit": "d32a94d",
   "kind": "command-line tool",
   "deployment": "user's machine",
   "counts": {
-   "Medium": 3,
+   "Medium": 2,
    "Low": 5
   },
   "serious": []
  },
  "spf13/cobra": {
   "status": "ok",
-  "seconds": 4.6,
+  "seconds": 2.0,
   "commit": "adbc881",
   "kind": "library",
   "deployment": "user's machine",
@@ -886,14 +868,14 @@
  },
  "spring-projects/spring-petclinic": {
   "status": "ok",
-  "seconds": 1.6,
+  "seconds": 0.8,
   "commit": "3aae6cc",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "High": 2,
-   "Medium": 4,
-   "Low": 2
+   "Medium": 1,
+   "Low": 1
   },
   "serious": [
    "High: Endpoints that change data without an auth check (3)",
@@ -902,48 +884,47 @@
  },
  "square/okhttp": {
   "status": "ok",
-  "seconds": 13.0,
+  "seconds": 9.1,
   "commit": "223a0cc",
   "kind": "library",
   "deployment": "user's machine",
   "counts": {
    "Medium": 6,
-   "Low": 7
+   "Low": 6
   },
   "serious": []
  },
  "square/retrofit": {
   "status": "ok",
-  "seconds": 20.6,
+  "seconds": 9.4,
   "commit": "54c2047",
   "kind": "library",
   "deployment": "user's machine",
   "counts": {
-   "Medium": 5,
+   "Medium": 4,
    "Low": 3
   },
   "serious": []
  },
  "streamlit/streamlit": {
   "status": "ok",
-  "seconds": 84.7,
+  "seconds": 46.8,
   "commit": "1819c56",
   "kind": "web app",
   "deployment": "LAN server",
   "counts": {
-   "High": 3,
-   "Medium": 7,
+   "High": 2,
+   "Medium": 6,
    "Low": 5
   },
   "serious": [
-   "High: Request data reaches dangerous calls (1 proven flows)",
    "High: Shell commands built at runtime",
    "High: Import loops (1)"
   ]
  },
  "sveltejs/svelte": {
   "status": "ok",
-  "seconds": 41.0,
+  "seconds": 22.1,
   "commit": "35753ba",
   "kind": "web front-end",
   "deployment": "browser",
@@ -958,14 +939,14 @@
  },
  "syncthing/syncthing": {
   "status": "ok",
-  "seconds": 20.9,
+  "seconds": 14.9,
   "commit": "1107b3c",
   "kind": "web service",
   "deployment": "deployed server",
   "counts": {
    "Critical": 1,
    "High": 1,
-   "Medium": 7,
+   "Medium": 5,
    "Low": 8
   },
   "serious": [
@@ -975,35 +956,36 @@
  },
  "tldraw/tldraw": {
   "status": "ok",
-  "seconds": 104.0,
+  "seconds": 55.0,
   "commit": "94466fd",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "High": 2,
+   "High": 3,
    "Medium": 10,
-   "Low": 11
+   "Low": 9
   },
   "serious": [
-   "High: 31 errors silently swallowed",
-   "High: Import loops (28)"
+   "High: Request data reaches dangerous calls (1 proven flows)",
+   "High: 11 errors silently swallowed",
+   "High: Import loops (9)"
   ]
  },
  "tokio-rs/axum": {
   "status": "ok",
-  "seconds": 10.1,
+  "seconds": 6.0,
   "commit": "8d8944e",
   "kind": "library",
   "deployment": "user's machine",
   "counts": {
    "Medium": 4,
-   "Low": 7
+   "Low": 6
   },
   "serious": []
  },
  "traefik/traefik": {
   "status": "ok",
-  "seconds": 32.9,
+  "seconds": 17.0,
   "commit": "8fcaa7c",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -1015,7 +997,7 @@
  },
  "trpc/trpc": {
   "status": "ok",
-  "seconds": 36.0,
+  "seconds": 24.4,
   "commit": "8138cd5",
   "kind": "web front-end",
   "deployment": "browser",
@@ -1027,23 +1009,23 @@
  },
  "vitejs/vite": {
   "status": "ok",
-  "seconds": 25.8,
+  "seconds": 14.2,
   "commit": "adc761d",
   "kind": "command-line tool",
   "deployment": "user's machine",
   "counts": {
    "High": 2,
-   "Medium": 5,
+   "Medium": 4,
    "Low": 6
   },
   "serious": [
-   "High: 21 errors silently swallowed",
+   "High: 17 errors silently swallowed",
    "High: Import loops (2)"
   ]
  },
  "vuejs/core": {
   "status": "ok",
-  "seconds": 45.8,
+  "seconds": 39.5,
   "commit": "d690dee",
   "kind": "web front-end",
   "deployment": "browser",
@@ -1059,32 +1041,32 @@
  },
  "wagtail/wagtail": {
   "status": "ok",
-  "seconds": 61.4,
+  "seconds": 33.1,
   "commit": "da32ecb",
   "kind": "web app",
   "deployment": "network server",
   "counts": {
    "High": 1,
-   "Medium": 8,
+   "Medium": 6,
    "Low": 7
   },
   "serious": [
-   "High: Request data reaches dangerous calls (4 proven flows)"
+   "High: Request data reaches dangerous calls (1 proven flows)"
   ]
  },
  "withastro/astro": {
   "status": "ok",
-  "seconds": 47.6,
+  "seconds": 29.7,
   "commit": "3e3e70f",
   "kind": "web front-end",
   "deployment": "browser",
   "counts": {
    "High": 2,
-   "Medium": 6,
+   "Medium": 5,
    "Low": 6
   },
   "serious": [
-   "High: 50 errors silently swallowed",
+   "High: 39 errors silently swallowed",
    "High: Import loops (8)"
   ]
  }
