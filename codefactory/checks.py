@@ -459,6 +459,9 @@ def _not_a_working_key(lines: list[str], i: int) -> bool:
     if "PRIVATE KEY-----" in line and re.search(r"A{16,}", "".join(lines[i : i + 3])):
         return True  # a key block padded with AAAA…: a deliberately broken example key (mitmproxy's)
     above = "\n".join(lines[max(0, i - 6) : i])
+    near = "\n".join(lines[max(0, i - 6) : i + 6])
+    if re.search(r"(?i)docsearch|algolia", near) and re.search(r"\b(?:indexName|appId|index_name|app_id)\b", near):
+        return True  # Algolia DocSearch's search-only key: made to ship in the page
     return PUBLIC_KEY_NOTE.search(above) is not None
 
 
@@ -776,6 +779,12 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                         continue  # a method named eval (a parser node's, a Redis client's), or "eval()'d code" in a string
                     if key == "eval" and _fixed_code(line, text):
                         continue  # new Function("return import(x)"), exec(open("config.py").read()), ruamel's safe load
+                    if key == "insecure_cookie" and re.search(
+                        r"(?i)(?:csrf|xsrf)\w*[^\n]*http_?only|http_?only[^\n]*(?:csrf|xsrf)", line
+                    ):
+                        continue  # a CSRF cookie the page's script must read: HttpOnly would break it, by design
+                    if key == "insecure_cookie" and re.search(r"#[^\n]*force_ssl|//[^\n]*force_?ssl", line, re.I):
+                        continue  # (Rails) `secure: false, # … set by force_ssl`: the flag comes from force_ssl
                     if key == "insecure_cookie" and re.search(r"\?\s*[\w.]+\s*:\s*false\b", line):
                         continue  # copying another cookie's own flag (an HTTP client's cookie jar), not setting one
                     if key == "secret_key_literal" and re.match(r"\s*(\w+)\s*=\s*['\"]\1['\"]", line):
@@ -916,7 +925,7 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                     out["fetch_no_timeout"].hits.append(Evidence(fid, i, _excerpt(line)))
         if not test and fid.endswith(".go"):  # the default client never times out
             server = next(
-                (m for m in re.finditer(r"\bhttp\.ListenAndServe(?:TLS)?\(|&?http\.Server\{", text)
+                (m for m in re.finditer(r"(?<![\w.])http\.ListenAndServe(?:TLS)?\(|&?(?<![\w.])http\.Server\{", text)
                  if not COMMENT_LINE.match(lines[text.count("\n", 0, m.start())])),
                 None,
             )  # fmt: skip

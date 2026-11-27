@@ -178,6 +178,8 @@ def mobile(root: Path, out: dict[str, Check]) -> None:
         except OSError:
             continue
         for pat in (ATS, CLEARTEXT):
+            if pat is CLEARTEXT and "networkSecurityConfig" in text:
+                continue  # the network security config decides (eShop: cleartext only to the emulator's host)
             if m := pat.search(text):
                 out["mobile_cleartext"].hits.append(Evidence(rel, _line(text, m.start()), _excerpt(m.group(0))))
 

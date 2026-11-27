@@ -145,7 +145,14 @@ def shell(rel: str, lines: list[str], out: dict, makefile: bool = False) -> None
     text = "\n".join(lines)
     # `set -u` (or `#!/bin/sh -eu`): an unset variable stops the script before `rm -rf "$X/"` can run
     guarded = re.search(r"^\s*set\s+-[a-zA-Z]*u|set -o nounset|^#!\S+\s+-[a-zA-Z]*u", text, re.M)
+    heredoc: str | None = None  # (help text in `cat <<EOF … EOF`: `curl … | sh` there is advice, not a command)
     for i, ln in enumerate(lines, 1):
+        if heredoc is not None:
+            if ln.strip() == heredoc:
+                heredoc = None
+            continue
+        if not makefile and (h := re.search(r"<<-?\s*['\"]?(\w+)['\"]?", ln)):
+            heredoc = h.group(1)
         code = ln.split(" #", 1)[0] if not makefile else ln
         if makefile and not ln.startswith("\t"):
             continue

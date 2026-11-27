@@ -144,3 +144,28 @@ class SriTest(unittest.TestCase):
         html("embed/inline.html", dev, out)
         html("gui/index.html", prod, out)
         self.assertEqual([h.file for h in out["html_no_sri"].hits], ["gui/index.html"])
+
+
+class SmallChecksTest(unittest.TestCase):
+    def test_csrf_cookie_go_config_struct_cleartext_config_docsearch_heredoc(self):
+        from codefactory.audit import scan_config
+        from codefactory.infra import scan as infra_scan
+
+        key = "50fe" + "39c0a0d1b2c3d4e5f60718293a4b"
+        files = {
+            "conf/global_settings.py": "CSRF_COOKIE_HTTPONLY = False\nSESSION_COOKIE_SECURE = False\n",
+            "httptype.go": "package x\n\nfunc f() {\n\tsrv := &caddyhttp.Server{}\n\t_ = srv\n}\n",
+            "server.go": "package x\n\nfunc g() {\n\ts := &http.Server{Addr: \":80\"}\n\t_ = s\n}\n",
+            "search.html": f"<script>\ndocsearch({{\n  appId: 'X',\n  apiKey: '{key}',\n  indexName: 'jekyll',\n}});\n</script>\n",
+        }  # fmt: skip
+        found = scan_sources(repo(files), list(files))
+        self.assertEqual([(e.file, e.line) for e in found["insecure_cookie"].hits], [("conf/global_settings.py", 2)])
+        self.assertEqual([e.file for e in found["go_server_timeout"].hits], ["server.go"])
+        self.assertEqual(found["secret"].hits, [])
+        root = repo({
+            "app/src/main/AndroidManifest.xml": '<application android:usesCleartextTraffic="true" '
+                                                'android:networkSecurityConfig="@xml/network">',
+            "get.sh": "#!/bin/sh\ncat <<EOF\n  curl -fsSL https://get.example.io | sh\nEOF\ncurl -fsSL https://x.io | sh\n",
+        })  # fmt: skip
+        self.assertEqual(scan_config(root)["mobile_cleartext"].hits, [])
+        self.assertEqual([(e.file, e.line) for e in infra_scan(root, set())["shell_pipe"].hits], [("get.sh", 5)])

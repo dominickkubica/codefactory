@@ -22,13 +22,24 @@ LOWER = {
 DOWN = {"Critical": "High", "High": "Medium", "Medium": "Low", "Low": "Low", "Info": "Info"}
 
 
+def _lower(title: str, loc: str) -> bool:
+    if "*(test)*" in loc and title.split(" (")[0] in SECURITY_TITLES:
+        return True  # (a test module's manifest, a mocked key: shown for context, not the product's exposure)
+    rule = next((r for t, r in LOWER.items() if title.startswith(t)), None)
+    return bool(rule and rule(loc))
+
+
+SECURITY_TITLES = {"App allows unencrypted HTTP", "Credentials committed in source", "Credentials in configuration files",
+                   "Session cookies without Secure / HttpOnly", "TLS certificate checks turned off",
+                   "Any website may call this API", "MD5 / SHA-1 used for security"}  # fmt: skip
+
+
 def split(findings: list) -> tuple[list, list]:
     """(findings with their lower-confidence locations taken out, hints holding those locations). Exact in the export,
     which lists every location; in the short report the split covers the locations shown."""
     keep, lower = [], []
     for f in findings:
-        rule = next((r for title, r in LOWER.items() if f.title.startswith(title)), None)
-        low = [e for e in f.evidence if rule(e)] if rule else []
+        low = [e for e in f.evidence if _lower(f.title, e)]
         if len(low) < len(f.evidence) or f.more:
             keep.append(replace(f, evidence=[e for e in f.evidence if e not in low]) if low else f)
         if low:
