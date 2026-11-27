@@ -397,6 +397,19 @@ class StructureTest(unittest.TestCase):
         self.assertFalse([f.target for f in g.flags if f.kind == "unused" and f.target.startswith("lib/")])
         self.assertEqual(len({f.module for f in g.files if f.id.endswith("x/m.py")}), 2)
 
+    def test_a_published_packages_api_is_used_by_its_users(self):
+        root = repo({  # @immich/sdk, svelte/easing: exported from the entry, called only by the package's users
+            "packages/sdk/package.json": '{"name": "@x/sdk", "main": "./build/index.js"}',
+            "packages/sdk/src/index.ts": "export * from './client.js';\nexport { onlyThis } from './more';\n",
+            "packages/sdk/src/client.ts": "export function deletePeople() {\n  return 1;\n}\n",
+            "packages/sdk/src/more.ts": "export function onlyThis() {\n  return 1;\n}\nexport function notThis() {\n  return 2;\n}\n",
+            "packages/sdk/src/use.ts": "import './more';\nexport const z = 1;\n",
+            "apps/web/package.json": '{"name": "web", "private": true}',
+            "apps/web/src/index.ts": "export * from './lib';\n", "apps/web/src/lib.ts": "export function appOnly() {\n  return 1;\n}\n",
+        })  # fmt: skip
+        unused = sorted(f.target for f in build(root, cache=False).flags if f.kind == "unused")
+        self.assertEqual(unused, ["apps/web/src/lib.ts::appOnly", "packages/sdk/src/more.ts::notThis"])
+
     def test_compose_previews_are_run_by_the_ide(self):
         root = repo({"ui/Card.kt": (
             "package ui\n\n@Composable\nfun Card() {\n    Text(\"x\")\n}\n\n@Preview\n@Composable\nprivate fun CardPreview() {\n"

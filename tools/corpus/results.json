@@ -40,7 +40,7 @@
  },
  "actualbudget/actual": {
   "status": "ok",
-  "seconds": 51.6,
+  "seconds": 101.8,
   "commit": "cf95cfe",
   "kind": "web app",
   "deployment": "deployed server",
@@ -84,7 +84,7 @@
  },
  "appwrite/appwrite": {
   "status": "ok",
-  "seconds": 343.4,
+  "seconds": 339.2,
   "commit": "26642a47",
   "kind": "web app",
   "deployment": "deployed server",
@@ -113,7 +113,7 @@
  },
  "calcom/cal.com": {
   "status": "ok",
-  "seconds": 64.8,
+  "seconds": 113.5,
   "commit": "ae027bb",
   "kind": "web app",
   "deployment": "deployed server",
@@ -172,7 +172,7 @@
  },
  "directus/directus": {
   "status": "ok",
-  "seconds": 43.8,
+  "seconds": 96.7,
   "commit": "4856582",
   "kind": "web app",
   "deployment": "deployed server",
@@ -397,14 +397,14 @@
  },
  "immich-app/immich": {
   "status": "ok",
-  "seconds": 38.0,
+  "seconds": 82.8,
   "commit": "a51a438",
   "kind": "mobile app",
   "deployment": "client app",
   "counts": {
    "High": 3,
    "Medium": 9,
-   "Low": 8
+   "Low": 7
   },
   "serious": [
    "High: Required-reason API without a privacy manifest",
@@ -633,7 +633,7 @@
  },
  "nestjs/nest": {
   "status": "ok",
-  "seconds": 26.3,
+  "seconds": 66.1,
   "commit": "a4c2a51",
   "kind": "library",
   "deployment": "user's machine",
@@ -645,7 +645,7 @@
  },
  "outline/outline": {
   "status": "ok",
-  "seconds": 48.5,
+  "seconds": 59.2,
   "commit": "13c6c77",
   "kind": "web app",
   "deployment": "deployed server",
@@ -913,7 +913,7 @@
  },
  "sveltejs/svelte": {
   "status": "ok",
-  "seconds": 25.3,
+  "seconds": 62.5,
   "commit": "35753ba",
   "kind": "web front-end",
   "deployment": "browser",
@@ -945,7 +945,7 @@
  },
  "tldraw/tldraw": {
   "status": "ok",
-  "seconds": 64.1,
+  "seconds": 119.8,
   "commit": "94466fd",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1044,7 +1044,7 @@
  },
  "withastro/astro": {
   "status": "ok",
-  "seconds": 34.5,
+  "seconds": 73.9,
   "commit": "3e3e70f",
   "kind": "web front-end",
   "deployment": "browser",

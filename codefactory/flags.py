@@ -9,6 +9,7 @@ from .config import Config
 from .efficiency import efficiency_flags
 from .graph import Flag, Graph
 from .paths import is_doc_sample, is_test, platform_variants
+from .published import SOURCE_EXT, published_api
 from .similar import near_duplicates
 
 SEVERITY_ORDER = {"high": 0, "warn": 1, "info": 2}
@@ -160,11 +161,16 @@ def dead_code(g: Graph) -> list[Flag]:
     imported = {e.dst for e in g.edges if e.kind == "import"}
     out = []
     mentioned: set[str] | None = None
+    api: tuple | None = None
     lines: dict = {}
     for fn in g.functions:
         # A file nothing imports is loaded by a framework, a runner or a user: its exports are entry points.
         if _is_entry(fn) or (fn.public and fn.file not in imported):
             continue
+        if fn.public and fn.file.endswith(SOURCE_EXT):  # a published package's API: its callers are its users
+            api = api or published_api(g.root, {f.id for f in g.files})
+            if fn.file in api[0] or (fn.file, fn.name) in api[1]:
+                continue
         if fn.id not in used and not fn.dynamic and fn.kind != "method":
             if mentioned is None:
                 mentioned = _mentioned(g)

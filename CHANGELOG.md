@@ -64,6 +64,8 @@ changes that removed wrong findings without losing a right one: about 90 wrong l
   `from streamlit.util import f` reaches them (the long form still does too); streamlit's unused code went 234 → 18.
 - Kotlin and Java functions a tool runs (`@Preview` and multi-previews like `@DevicePreviews`, `@Test`) aren't unused
   code; nowinandroid's went 22 → 0.
+- A published package's API isn't unused code: what a non-private package.json's entry exports, followed through
+  `export * from` and `export { name } from` (`@immich/sdk`, `svelte/easing`). Internal exports are still reported.
 
 ### Corpus round 5
 
