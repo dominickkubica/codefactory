@@ -113,7 +113,10 @@ def _sample_severity(sev: str, hits) -> str:
 
 HINT = re.compile(
     r"Writes inside loops|File or program operations inside loops|Array searches inside loops|"
-    r"Databases published on every interface|Plain-HTTP URLs in"
+    r"Databases published on every interface|Plain-HTTP URLs in|"
+    # whether a route needs auth (a sign-in, an OTP or invite secret, a read) and whether a cast can fail are decided
+    # by code elsewhere: 0 of 15 and 0 of 9 right on held-out samples
+    r"Endpoints that change data without an auth check|`try!` / `as!` that crash"
 )
 
 
