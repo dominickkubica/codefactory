@@ -33,3 +33,13 @@ class UntestedTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class NamedTestsTest(unittest.TestCase):
+    def test_a_test_named_like_a_screen_tests_what_it_imports(self):
+        found = untested({  # gymlift: lib/__tests__/bodyweight.test.ts tests lib/bodyweight.ts, not app/bodyweight.tsx
+            "src/lib/bodyweight.ts": "export function trend(xs: number[]) {\n  return xs.length;\n}\n",
+            "src/lib/__tests__/bodyweight.test.ts": "import { trend } from '../bodyweight';\ntest('t', () => trend([1]));\n",
+            "src/app/bodyweight.tsx": "export async function save(db) {\n  await db.runAsync('INSERT INTO w VALUES (1)');\n}\n",
+        })  # fmt: skip
+        self.assertIn("src/app/bodyweight.tsx", found)

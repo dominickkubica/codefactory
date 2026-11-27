@@ -360,6 +360,10 @@ class Review:
                 return "/".join(kept) + "/index"
             return re.sub(r"_?controller$|_?handler$|_?view$|_?views$|_?service$", "", s.replace("-", "_"))
 
+        imports: dict[str, set[str]] = defaultdict(set)  # test file -> the files it imports
+        for e in self.g["edges"]:
+            if e["kind"] == "import" and is_test(e["src"]):
+                imports[e["src"]].add(e["dst"])
         tested_stems: dict[str, set[str]] = defaultdict(set)
         for f in files:
             if f not in dead:
@@ -375,7 +379,13 @@ class Review:
             if is_test(f["file"]):
                 continue
             if len(s := stem(f["file"], False)) > 3 and s in tested_stems:
-                by[fid] |= tested_stems[s]
+                # (not every file of that name: bodyweight.test.ts imports lib/bodyweight.ts, so it doesn't test the
+                # bodyweight screen, nor everything the screen renders)
+                # (and a test that imports project files says what it tests: programs.test.ts imports starterPlans, so
+                # it doesn't test the programs screen. The name only stands in where nothing is imported: a request
+                # spec reaching a controller through the router.)
+                by[fid] |= {t for t in tested_stems[s] if f["file"] in imports.get(t, ()) or not imports.get(t)}
+
             name = f["name"]  # a function by its name (`crud.create_item(…)`), unless the test calls a namesake
             if f["kind"] == "function" and (name in plain or (name in called and len(name) >= 8)):
                 tests = plain.get(name, set()) | (called.get(name, set()) if len(name) >= 8 else set())
