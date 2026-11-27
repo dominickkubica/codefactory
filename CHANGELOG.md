@@ -39,6 +39,20 @@ honest figure for code codefactory hasn't been tuned on, and the target for the 
   frozen dated copies, build outputs and small edited copies aren't "copied logic"; TypeScript imports used only as
   types and Java imports only for a Javadoc link aren't dependencies; an import loop shows a real chain of imports.
 
+### Data-flow guards, speed, determinism
+
+- Data flow recognizes guards that dominate the sink, in Python and JS/TS: safe-URL validators before a redirect
+  (`url_has_allowed_host_and_scheme`, `is_safe_url`, `validateUrlForSSRF…`), path containment (`is_relative_to`,
+  `isPathInside`, `startsWith` on a resolved path, `sendFile(x, {root})`), allow-lists, sanitizer reassignment,
+  fixed hosts, signed-token values, knex `.toQuery()`, SSRF-safe agents, typed UUID/Enum parameters. Of the 34
+  guarded flows labeled false, 34 of the 50 labeled Python and JS false flows across rounds are gone; every flow in
+  Juice Shop and NodeGoat is still found.
+- Speed with byte-identical results: n8n 677 s → 284 s, gitea 85 s → 47 s, mastodon 54 s → 37 s (route URLs matched
+  per quoted text, test reach computed once for the plan, imports resolved once; a TypeScript heap crash is
+  remembered); corpus runs analyze each repository once, one job per core.
+- Output no longer depends on Python's hash seed (copied-logic members were listed in set order).
+- Ruby: a block `select`/`find`/`count` with no arguments is Enumerable, not a query.
+
 ### Round 6: 50 more repositories, and data flow measured on real apps
 
 126 repositories, all analyzed without a crash or timeout. Data flow now reports 98 flows on the new ones (11 on the
