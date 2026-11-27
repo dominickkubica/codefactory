@@ -67,6 +67,11 @@ class Finding:
     data: dict = field(default_factory=dict)
 
 
+LOOP_HEAD = re.compile(r"^\s*(?:for|while)\b|\bfor\s*\(|\.(?:forEach|map|each)\b")
+RETRY_HEAD = re.compile(r"\brange\(\s*(?:\w*(?:retr|attempt|tries)\w*|MAX_\w+|\d)\s*\)|\b(?:attempt|retry|tries)\w*\s*<", re.I)
+SLEEP = re.compile(r"\b(?:time\.sleep|asyncio\.sleep|sleep|setTimeout|backoff|Thread\.sleep)\b")
+
+
 def _ev(items, n: int = 6) -> tuple[list[str], int]:
     shown = [f"`{e.at()}` {e.text}" if hasattr(e, "at") else e for e in items[:n]]
     return shown, max(0, len(items) - n)
@@ -654,6 +659,34 @@ class Review:
         m = re.findall(r"""\b(?:url_)?name\s*=\s*["']([\w-]+)["']""", above)
         return m[-1] if m else ""
 
+    def _bounded_loop(self, flag: dict) -> bool:
+        """A loop whose count isn't the data's: a retry or poll loop (`for attempt in range(retries)`, `while True:` with
+        a sleep), or one over a literal list of a few items (`for kind in ["pickup", "delivery"]`)."""
+        file, line = self._file(flag), flag.get("line") or 0
+        lines = self.__dict__.setdefault("_rs_lines", {}).get(file)
+        if lines is None:
+            try:
+                lines = (self.root / file).read_text(encoding="utf-8", errors="replace").splitlines()
+            except OSError:
+                lines = []
+            self._rs_lines[file] = lines
+        if not 0 < line <= len(lines):
+            return False
+        indent = len(lines[line - 1]) - len(lines[line - 1].lstrip())
+        for n in range(line - 1, max(-1, line - 25), -1):
+            ln = lines[n]
+            if not ln.strip() or len(ln) - len(ln.lstrip()) > indent and n != line - 1:
+                continue
+            if not LOOP_HEAD.search(ln):
+                continue
+            body = "\n".join(lines[n : n + 25])
+            if RETRY_HEAD.search(ln) or (re.search(r"while\s*\(?\s*(?:True|true|1)\b", ln) and SLEEP.search(body)):
+                return True
+            items = re.search(r"(?:\bin\s*|\bof\s*)([\[(][^\])]*[\])])\s*[:)]|^\s*(\[[^\]]*\])\.forEach\(", ln)
+            lit = items and (items.group(1) or items.group(2))
+            return bool(lit and lit.count(",") <= 3 and re.fullmatch(r"[\[(]\s*(?:[\w.'\"-]+\s*,?\s*)+[\])]", lit))
+        return False
+
     def _rust_test(self, file: str, line: int) -> bool:
         """A Rust test written next to the code: `#[test]` / `#[tokio::test]` above it, or inside a `#[cfg(test)]` module."""
         if not file.endswith(".rs") or line <= 0:
@@ -819,7 +852,8 @@ class Review:
                 _effort(len(ms), len({e.file for e in ms})),
                 more,
             )
-        reads = [f for f in self.by_kind["io_in_loop"] if f["severity"] == "warn" and not self._script(f)]
+        reads = [f for f in self.by_kind["io_in_loop"]
+                 if f["severity"] == "warn" and not self._script(f) and not self._bounded_loop(f)]  # fmt: skip
         if reads:
             self.add(
                 f"Queries or requests inside loops (N+1) in {_n(len(reads), 'place')}",

@@ -86,3 +86,31 @@ class Round5Test(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LoopsTest(unittest.TestCase):
+    def bounded(self, files, file, line):
+        from codefactory.review import Review
+
+        class Fake:
+            pass
+
+        o = Fake()
+        o.root = repo(files)
+        o._file = lambda flag: file
+        return Review._bounded_loop(o, {"target": "x", "line": line})
+
+    def test_retry_and_poll_loops_and_literal_lists_are_bounded(self):
+        retry = "max_retries = 5\nfor attempt in range(max_retries):\n    try:\n        r = requests.get(url)\n    except E:\n        pass\n"
+        poll = "while True:\n    urllib.request.urlopen(push_url)\n    time.sleep(60)\n"
+        pair = "for kind in ['pickup', 'delivery']:\n    fetch_stock(kind)\n"
+        data = "for row in rows:\n    requests.get(row.url)\n"
+        self.assertTrue(self.bounded({"a.py": retry}, "a.py", 4))
+        self.assertTrue(self.bounded({"b.py": poll}, "b.py", 2))
+        self.assertTrue(self.bounded({"c.py": pair}, "c.py", 2))
+        self.assertFalse(self.bounded({"d.py": data}, "d.py", 2))
+
+    def test_django_cached_lookups_are_not_queries(self):
+        root = repo({"app/q.py": "def f(items):\n    for i in items:\n        ContentType.objects.get_for_id(i.ct)\n\n\n"
+                                 "def g(ids):\n    for i in ids:\n        Item.objects.get(id=i)\n"})  # fmt: skip
+        self.assertEqual({s.detail for s in build(root, cache=False).sites if s.kind == "loop_io"}, {"Item.objects.get"})

@@ -39,6 +39,9 @@ LITERALS = (ast.List, ast.Tuple, ast.Set, ast.Dict)
 NONE: frozenset = frozenset()
 
 
+CACHED_LOOKUPS = {"get_for_id", "get_for_model", "get_for_models", "get_current", "clear_cache"}
+
+
 def _preorder(node):
     stack = [node]
     while stack:
@@ -105,6 +108,8 @@ def io_call(func: ast.AST, call: ast.Call | None = None) -> str | None:
     receiver = full.rsplit(".", 1)[0] if "." in full else ""
     if isinstance(func, ast.Name) and last in ("open", "urlopen"):
         sink = last
+    elif last in CACHED_LOOKUPS and ".objects." in f".{full}.":
+        sink = None  # Django caches these per process: ContentType.objects.get_for_id(pk), Site.objects.get_current()
     elif (head in IO_MODULES and last not in CONTAINER) or ".objects." in f".{full}." or full in ("time.sleep", "asyncio.sleep"):
         sink = full  # (not `requests.append(r)`: a list someone named requests)
     elif (
