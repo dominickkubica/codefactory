@@ -45,7 +45,7 @@
  },
  "BurntSushi/ripgrep": {
   "status": "ok",
-  "seconds": 8.0,
+  "seconds": 9.0,
   "commit": "3e85c6c",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -232,7 +232,7 @@
  },
  "actualbudget/actual": {
   "status": "ok",
-  "seconds": 63.0,
+  "seconds": 64.3,
   "commit": "cf95cfe",
   "kind": "web app",
   "deployment": "deployed server",
@@ -260,7 +260,7 @@
  },
  "apache/superset": {
   "status": "ok",
-  "seconds": 148.2,
+  "seconds": 163.0,
   "commit": "3758941",
   "kind": "web app",
   "deployment": "deployed server",
@@ -276,7 +276,7 @@
  },
  "appwrite/appwrite": {
   "status": "ok",
-  "seconds": 332.2,
+  "seconds": 342.4,
   "commit": "26642a47",
   "kind": "web app",
   "deployment": "deployed server",
@@ -342,7 +342,7 @@
  },
  "calcom/cal.com": {
   "status": "ok",
-  "seconds": 78.6,
+  "seconds": 83.7,
   "commit": "ae027bb",
   "kind": "web app",
   "deployment": "deployed server",
@@ -445,7 +445,7 @@
  },
  "django/django": {
   "status": "ok",
-  "seconds": 52.4,
+  "seconds": 43.6,
   "commit": "f0e7bd9",
   "kind": "library",
   "deployment": "user's machine",
@@ -463,7 +463,7 @@
  },
  "documenso/documenso": {
   "status": "ok",
-  "seconds": 54.6,
+  "seconds": 63.5,
   "commit": "3cfdf7f",
   "kind": "web app",
   "deployment": "deployed server",
@@ -492,14 +492,14 @@
  },
  "dubinc/dub": {
   "status": "ok",
-  "seconds": 48.1,
+  "seconds": 43.7,
   "commit": "6b463b4",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "High": 3,
    "Medium": 5,
-   "Low": 4
+   "Low": 5
   },
   "serious": [
    "High: Personal data written to logs",
@@ -574,7 +574,7 @@
  },
  "fastapi/full-stack-fastapi-template": {
   "status": "ok",
-  "seconds": 5.2,
+  "seconds": 3.8,
   "commit": "f8c6c14",
   "kind": "web app",
   "deployment": "deployed server",
@@ -601,7 +601,7 @@
  },
  "firefly-iii/firefly-iii": {
   "status": "ok",
-  "seconds": 29.8,
+  "seconds": 26.1,
   "commit": "498b66c",
   "kind": "web app",
   "deployment": "network server",
@@ -613,13 +613,13 @@
  },
  "getmaxun/maxun": {
   "status": "ok",
-  "seconds": 18.6,
+  "seconds": 20.4,
   "commit": "0c55597",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "Critical": 1,
-   "High": 5,
+   "High": 4,
    "Medium": 7,
    "Low": 5
   },
@@ -627,7 +627,6 @@
    "Critical: Dynamic code execution (eval / exec / pickle / unsafe YAML)",
    "High: No continuous integration",
    "High: No lockfile",
-   "High: TLS certificate checks turned off",
    "High: 47 errors silently swallowed",
    "High: Import loops (2)"
   ]
@@ -709,7 +708,7 @@
   "deployment": "deployed server",
   "counts": {
    "Medium": 4,
-   "Low": 6
+   "Low": 5
   },
   "serious": []
  },
@@ -753,7 +752,7 @@
  },
  "hoppscotch/hoppscotch": {
   "status": "ok",
-  "seconds": 40.7,
+  "seconds": 35.8,
   "commit": "6177eae",
   "kind": "web app",
   "deployment": "deployed server",
@@ -811,7 +810,7 @@
  },
  "immich-app/immich": {
   "status": "ok",
-  "seconds": 39.1,
+  "seconds": 47.0,
   "commit": "a51a438",
   "kind": "mobile app",
   "deployment": "client app",
@@ -973,20 +972,19 @@
  },
  "linkwarden/linkwarden": {
   "status": "ok",
-  "seconds": 15.0,
+  "seconds": 17.1,
   "commit": "24adcc1",
   "kind": "mobile app",
   "deployment": "local-first",
   "counts": {
-   "High": 4,
+   "High": 3,
    "Medium": 5,
    "Low": 3
   },
   "serious": [
    "High: Personal data written to logs",
-   "High: iOS permission used without its usage description",
    "High: 18 errors silently swallowed",
-   "High: Important code no test reaches (89 functions)"
+   "High: Important code no test reaches (120 functions)"
   ]
  },
  "lldap/lldap": {
@@ -1021,7 +1019,7 @@
  },
  "localsend/localsend": {
   "status": "ok",
-  "seconds": 11.1,
+  "seconds": 9.5,
   "commit": "44f48f1",
   "kind": "mobile app",
   "deployment": "client app",
@@ -1113,7 +1111,7 @@
  },
  "mastodon/mastodon": {
   "status": "ok",
-  "seconds": 47.6,
+  "seconds": 61.4,
   "commit": "db13cc1",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1155,7 +1153,7 @@
  },
  "meilisearch/meilisearch": {
   "status": "ok",
-  "seconds": 18.4,
+  "seconds": 19.6,
   "commit": "9fb6a90",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -1182,7 +1180,7 @@
  },
  "monicahq/monica": {
   "status": "ok",
-  "seconds": 52.5,
+  "seconds": 65.0,
   "commit": "7317719",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1243,7 +1241,7 @@
  },
  "netbox-community/netbox": {
   "status": "ok",
-  "seconds": 36.9,
+  "seconds": 48.9,
   "commit": "04bdbf4",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -1272,23 +1270,22 @@
  },
  "outline/outline": {
   "status": "ok",
-  "seconds": 61.0,
+  "seconds": 64.9,
   "commit": "13c6c77",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
-   "High": 2,
+   "High": 1,
    "Medium": 6,
-   "Low": 5
+   "Low": 4
   },
   "serious": [
-   "High: TLS certificate checks turned off",
    "High: Import loops (7)"
   ]
  },
  "owid/etl": {
   "status": "ok",
-  "seconds": 62.0,
+  "seconds": 59.6,
   "commit": "9a2e7d68",
   "kind": "data pipeline",
   "deployment": "user's machine",
@@ -1315,13 +1312,13 @@
  },
  "paperless-ngx/paperless-ngx": {
   "status": "ok",
-  "seconds": 35.8,
+  "seconds": 26.1,
   "commit": "26599c3",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "Medium": 6,
-   "Low": 5
+   "Low": 4
   },
   "serious": []
  },
@@ -1478,7 +1475,7 @@
  },
  "saleor/saleor": {
   "status": "ok",
-  "seconds": 57.0,
+  "seconds": 49.9,
   "commit": "e1ccf4d",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1694,7 +1691,7 @@
  },
  "tldraw/tldraw": {
   "status": "ok",
-  "seconds": 92.7,
+  "seconds": 83.5,
   "commit": "94466fd",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1709,7 +1706,7 @@
  },
  "tokio-rs/axum": {
   "status": "ok",
-  "seconds": 6.1,
+  "seconds": 5.2,
   "commit": "8d8944e",
   "kind": "library",
   "deployment": "user's machine",
@@ -1736,7 +1733,7 @@
  },
  "trpc/trpc": {
   "status": "ok",
-  "seconds": 32.2,
+  "seconds": 34.0,
   "commit": "8138cd5",
   "kind": "web front-end",
   "deployment": "browser",
@@ -1822,22 +1819,19 @@
  },
  "wagtail/wagtail": {
   "status": "ok",
-  "seconds": 46.3,
+  "seconds": 38.0,
   "commit": "da32ecb",
   "kind": "web app",
   "deployment": "network server",
   "counts": {
-   "High": 1,
    "Medium": 5,
    "Low": 3
   },
-  "serious": [
-   "High: Request data reaches dangerous calls (1 proven flows)"
-  ]
+  "serious": []
  },
  "withastro/astro": {
   "status": "ok",
-  "seconds": 30.6,
+  "seconds": 30.4,
   "commit": "3e3e70f",
   "kind": "web front-end",
   "deployment": "browser",
