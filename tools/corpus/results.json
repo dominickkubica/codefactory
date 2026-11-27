@@ -40,14 +40,14 @@
  },
  "actualbudget/actual": {
   "status": "ok",
-  "seconds": 143.0,
+  "seconds": 117.3,
   "commit": "cf95cfe",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "High": 2,
    "Medium": 9,
-   "Low": 4
+   "Low": 5
   },
   "serious": [
    "High: 18 errors silently swallowed",
@@ -84,7 +84,7 @@
  },
  "appwrite/appwrite": {
   "status": "ok",
-  "seconds": 463.0,
+  "seconds": 400.1,
   "commit": "26642a47",
   "kind": "web app",
   "deployment": "deployed server",
@@ -95,8 +95,8 @@
   },
   "serious": [
    "High: Environment files committed",
-   "High: Import loops (7)",
-   "High: 107 errors silently swallowed"
+   "High: Import loops (8)",
+   "High: 62 errors silently swallowed"
   ]
  },
  "caddyserver/caddy": {
@@ -113,21 +113,22 @@
  },
  "calcom/cal.com": {
   "status": "ok",
-  "seconds": 138.2,
+  "seconds": 152.0,
   "commit": "ae027bb",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "Critical": 1,
-   "High": 4,
-   "Medium": 14,
-   "Low": 6
+   "High": 5,
+   "Medium": 13,
+   "Low": 7
   },
   "serious": [
    "Critical: Credentials in configuration files",
    "High: TLS certificate checks turned off",
+   "High: Import loops (7)",
    "High: Personal data written to logs",
-   "High: Request data reaches dangerous calls (6 proven flows)",
+   "High: Request data reaches dangerous calls (7 proven flows)",
    "High: 10 errors silently swallowed"
   ]
  },
@@ -172,7 +173,7 @@
  },
  "directus/directus": {
   "status": "ok",
-  "seconds": 101.2,
+  "seconds": 108.9,
   "commit": "4856582",
   "kind": "web app",
   "deployment": "deployed server",
@@ -367,7 +368,7 @@
  },
  "hoppscotch/hoppscotch": {
   "status": "ok",
-  "seconds": 63.0,
+  "seconds": 61.2,
   "commit": "6177eae",
   "kind": "web app",
   "deployment": "deployed server",
@@ -397,7 +398,7 @@
  },
  "immich-app/immich": {
   "status": "ok",
-  "seconds": 84.3,
+  "seconds": 86.5,
   "commit": "a51a438",
   "kind": "mobile app",
   "deployment": "client app",
@@ -465,7 +466,7 @@
  },
  "laravel/framework": {
   "status": "ok",
-  "seconds": 90.7,
+  "seconds": 46.3,
   "commit": "321caf7",
   "kind": "library",
   "deployment": "user's machine",
@@ -521,7 +522,7 @@
  },
  "marktext/marktext": {
   "status": "ok",
-  "seconds": 86.3,
+  "seconds": 56.6,
   "commit": "95a14e5",
   "kind": "desktop app",
   "deployment": "user's machine",
@@ -631,19 +632,19 @@
  },
  "nestjs/nest": {
   "status": "ok",
-  "seconds": 70.9,
+  "seconds": 77.4,
   "commit": "a4c2a51",
   "kind": "library",
   "deployment": "user's machine",
   "counts": {
    "Medium": 6,
-   "Low": 2
+   "Low": 3
   },
   "serious": []
  },
  "outline/outline": {
   "status": "ok",
-  "seconds": 109.4,
+  "seconds": 98.0,
   "commit": "13c6c77",
   "kind": "web app",
   "deployment": "deployed server",
@@ -911,7 +912,7 @@
  },
  "sveltejs/svelte": {
   "status": "ok",
-  "seconds": 67.7,
+  "seconds": 72.8,
   "commit": "35753ba",
   "kind": "web front-end",
   "deployment": "browser",
@@ -926,7 +927,7 @@
  },
  "syncthing/syncthing": {
   "status": "ok",
-  "seconds": 34.0,
+  "seconds": 34.8,
   "commit": "1107b3c",
   "kind": "web service",
   "deployment": "deployed server",
@@ -943,7 +944,7 @@
  },
  "tldraw/tldraw": {
   "status": "ok",
-  "seconds": 176.3,
+  "seconds": 180.4,
   "commit": "94466fd",
   "kind": "web app",
   "deployment": "deployed server",
@@ -983,7 +984,7 @@
  },
  "trpc/trpc": {
   "status": "ok",
-  "seconds": 57.6,
+  "seconds": 57.0,
   "commit": "8138cd5",
   "kind": "web front-end",
   "deployment": "browser",
@@ -1042,7 +1043,7 @@
  },
  "withastro/astro": {
   "status": "ok",
-  "seconds": 76.4,
+  "seconds": 84.6,
   "commit": "3e3e70f",
   "kind": "web front-end",
   "deployment": "browser",
