@@ -44,6 +44,12 @@ def expected_failure(lines: list[str], i: int) -> str | None:
     line = lines[i - 1]
     if re.search(r"\.catch\(", line) and EXPECTED_THROW.search(line.split(".catch(")[0]):
         return "expected failure"  # navigator.clipboard.writeText(x).catch(() => {}): a permission that may be refused
+    if (m := re.match(r"\s*([A-Za-z_$][\w$]*)\.catch\(\s*\(\s*\w*\s*\)\s*=>\s*\{\s*\}\s*\);?\s*$", line)) and (
+        _handled_later(lines, i, m.group(1))
+    ):
+        return "handled later"  # p.catch(() => {}); list.push(p); … await Promise.allSettled(list)
+    if (why := _query_prefetch(lines, i)) is not None:
+        return why
     if re.search(rf"=>\s*[^{{;]*\.catch\(\s*(?:\(\s*\w*\s*\)|\w+)\s*=>\s*{VALUE}\s*\)", line):
         return "fallback"  # ids.map((id) => fetch(id).catch(() => undefined)): the arrow returns the value
     if re.search(rf"\.catch\(\s*(?:\(\s*\w*\s*\)|\w+)\s*=>\s*{VALUE}\s*\)", line):
@@ -74,6 +80,43 @@ def expected_failure(lines: list[str], i: int) -> str | None:
             return None
         body.insert(0, ln)
     return None
+
+
+def _handled_later(lines: list[str], i: int, name: str, span: int = 40) -> bool:
+    """The promise `name` given a no-op catch on line i is awaited, or pushed to a list that is awaited, in the next
+    lines: the catch only stops an unhandled rejection before then; the failure is still seen where it's awaited."""
+    after = "\n".join(lines[i : i + span])
+    n = re.escape(name)
+    awaited = rf"(?:\bawait\s+|Promise\.(?:all|allSettled|race|any)\(\s*\[?[^;\n]*?\b){{}}\b"
+    if re.search(awaited.format(n), after):
+        return True
+    return any(
+        re.search(awaited.format(re.escape(arr)), after)
+        for arr in re.findall(rf"([A-Za-z_$][\w$.]*)\.push\(\s*{n}\s*\)", after)
+    )
+
+
+def _query_prefetch(lines: list[str], i: int) -> str | None:
+    """`queryClient.ensureQueryData(opts).catch(() => undefined)` whose result is discarded (a route loader warming
+    the cache): React Query keeps the error in its cache and the page shows it. Not when the result is assigned or
+    returned: then the caller gets nothing in place of the error."""
+    if not re.search(r"\.catch\(\s*\(\s*\w*\s*\)\s*=>\s*(?:\{\s*\}|undefined|null)\s*\)", lines[i - 1]):
+        return None
+    start = i - 1
+    while start > 0 and i - start < 5 and re.match(r"\s*\.", lines[start]):
+        start -= 1  # back to the line the chain starts on
+    chain = " ".join(lines[start:i])
+    if not re.search(r"\.(?:ensureQueryData|prefetchQuery|prefetchInfiniteQuery)\(", chain):
+        return None
+    head = lines[start].split(".ensureQueryData(")[0].split(".prefetch")[0]
+    used = r"(?<![=!<>])=(?![=>])|\breturn\b|\?\?|\|\||&&"
+    if re.search(used, head) or (start and re.search(r"(?:=|\breturn|\?\?)\s*$", lines[start - 1])):
+        return None
+    above = reversed(lines[max(0, start - 12) : start])
+    group = next((ln for ln in above if re.search(r"Promise\.all\w*\(\s*\[", ln)), "")
+    if re.search(used, group.split("Promise.")[0]):
+        return None  # const [org, plan] = await Promise.all([…]): the results are used
+    return "query cache"
 
 
 def swallow_intent(line: str, above: str) -> str | None:
