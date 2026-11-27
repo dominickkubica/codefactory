@@ -30,6 +30,14 @@ class TiersTest(unittest.TestCase):
         self.assertEqual([k.title for k in keep], ["SQL assembled from strings"])
         self.assertEqual([h.title for h in lower], ["Raw HTML injected into pages"])
 
+    def test_a_data_flow_in_a_script_is_lower_confidence(self):
+        keep, lower = tiers.split([finding("Request data reaches dangerous calls (2 proven flows)", [
+            "`scripts/proxy.mjs:28` openCodeProxy: req.headers → request() *(script)* — `request({`",
+            "`api/callback.ts:66` handler: req.query → axios() — `axios({`",
+        ])])  # fmt: skip
+        self.assertEqual([len(k.evidence) for k in keep], [1])
+        self.assertIn("*(script)*", lower[0].evidence[0])
+
     def test_a_finding_with_more_locations_than_shown_keeps_them(self):
         keep, lower = tiers.split([finding("Raw HTML injected into pages", ["`a.py:1` x  (no endpoint reaches it)"], more=4)])
         self.assertEqual((len(keep), keep[0].evidence, keep[0].more), (1, [], 4))

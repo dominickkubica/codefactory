@@ -8,6 +8,7 @@ hidden; the finding keeps the ones worth acting on, and the grade counts only th
 
 from __future__ import annotations
 
+import re
 from dataclasses import replace
 
 # check title (prefix) -> a location that is lower confidence
@@ -15,6 +16,8 @@ LOWER = {
     # 7 of 18 right when the project has endpoints and none reaches the line (library helpers, admin-only views);
     # 11 of 17 otherwise
     "Raw HTML injected into pages": lambda loc: "(no endpoint reaches it)" in loc,
+    # a flow in a script, test or dev setup (a local proxy, a seed script) isn't the product's attack surface
+    "Request data reaches dangerous calls": lambda loc: re.search(r"\*\((?:script|test|dev)\b", loc) is not None,
 }
 DOWN = {"Critical": "High", "High": "Medium", "Medium": "Low", "Low": "Low", "Info": "Info"}
 
