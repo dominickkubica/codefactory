@@ -314,7 +314,7 @@ def report(args) -> int:
             now, ci = "–", ""
         table.append(f"| {name} | {was} | {now} | {ci} | {r['n'] if not r['hint'] else '–'} | {r['fixed'] if not r['hint'] else '–'} "
                      f"| {r['lost'] if not r['hint'] else '–'} |")
-    rounds = sorted({v.get("round", 1) for v in load().values()} - {1})
+    rounds = sorted({v.get("round", 1) for v in load().values() if v["label"] in ("true", "false")} - {1})
     history = []
     for rnd in rounds:  # every location of the round was reported when it was drawn: its labels are the measurement
         if rnd in PUBLISHED:  # a check moved to the hints later doesn't rewrite what a round measured
@@ -324,7 +324,13 @@ def report(args) -> int:
                if v.get("round", 1) == rnd and v["label"] in ("true", "false") and not is_hint(v["check"])]  # fmt: skip
         if got:
             history.append(f"round {rnd}: {sum(got)}/{len(got)} ({sum(got) / len(got):.0%})")
-    held = [r for r in score(quiet=True, round_=rounds[-1]) if r["n"] and not r["hint"]] if rounds else []
+    # the latest round from its labels alone, like the history: a fix made after it was drawn doesn't raise it
+    per: dict[str, list[bool]] = defaultdict(list)
+    for v in load().values():
+        if rounds and v.get("round", 1) == rounds[-1] and v["label"] in ("true", "false") and not is_hint(v["check"]):
+            per[v["check"]].append(v["label"] == "true")
+    held = [{"check": c, "n": len(g), "precision": sum(g) / len(g), "true": sum(g),
+             "low": wilson(sum(g), len(g))[0], "high": wilson(sum(g), len(g))[1]} for c, g in per.items()]  # fmt: skip
     if held:
         hk, hn = sum(r["true"] for r in held), sum(r["n"] for r in held)
         lo, hi = wilson(hk, hn)

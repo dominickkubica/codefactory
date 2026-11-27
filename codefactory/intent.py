@@ -87,12 +87,11 @@ def _handled_later(lines: list[str], i: int, name: str, span: int = 40) -> bool:
     lines: the catch only stops an unhandled rejection before then; the failure is still seen where it's awaited."""
     after = "\n".join(lines[i : i + span])
     n = re.escape(name)
-    awaited = rf"(?:\bawait\s+|Promise\.(?:all|allSettled|race|any)\(\s*\[?[^;\n]*?\b){{}}\b"
+    awaited = r"(?:\bawait\s+|Promise\.(?:all|allSettled|race|any)\(\s*\[?[^;\n]*?\b){}\b"
     if re.search(awaited.format(n), after):
         return True
     return any(
-        re.search(awaited.format(re.escape(arr)), after)
-        for arr in re.findall(rf"([A-Za-z_$][\w$.]*)\.push\(\s*{n}\s*\)", after)
+        re.search(awaited.format(re.escape(arr)), after) for arr in re.findall(rf"([A-Za-z_$][\w$.]*)\.push\(\s*{n}\s*\)", after)
     )
 
 
