@@ -154,8 +154,8 @@
   "check": "Any website may call this API (CORS *)",
   "severity": "Medium",
   "location": "`packages/sync-server/src/app-cors-proxy.js:127` res.set('Access-Control-Allow-Origin', '*');",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Shipping sync-server CORS proxy always answers preflight with Allow-Origin *; endpoint is opt-in but header is unconditional when mounted.",
   "round": 3
  },
  "actualbudget/actual|Any website may call this API (CORS *)|packages/sync-server/src/app-cors-proxy.js:221": {
@@ -187,8 +187,8 @@
   "check": "Container runs as root",
   "severity": "Medium",
   "location": "`packages/sync-server/docker/ubuntu.Dockerfile:28` no USER after node:24.22.1-bookworm-slim — `FROM node:24.22.1-bookworm-slim AS prod`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Prod stage creates user actual but never switches with USER; tini/node run as root.",
   "round": 3
  },
  "actualbudget/actual|Container runs as root|sync-server.Dockerfile:54": {
@@ -378,8 +378,8 @@
   "check": "Shell commands built at runtime",
   "severity": "Medium",
   "location": "`packages/ci-actions/bin/release-notes-generate.mjs:299` await exec(`git commit -m '${commitMessage}'`);  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "commitMessage includes runtime version and is interpolated into an exec shell string.",
   "round": 3
  },
  "actualbudget/actual|Shell commands built at runtime|packages/ci-actions/bin/release-notes-generate.mjs:92": {
@@ -874,8 +874,8 @@
   "check": "Container runs as root",
   "severity": "Medium",
   "location": "`apps/console/Dockerfile:46` no USER after oven/bun:1.4 — `FROM oven/bun:1.4 AS final`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Final shipped stage on oven/bun (root default) has no USER directive before CMD.",
   "round": 3
  },
  "appwrite/appwrite|Container runs as root|packages/http/Dockerfile.fpm:1": {
@@ -1818,8 +1818,8 @@
   "check": "Shell commands built at runtime",
   "severity": "Medium",
   "location": "`apps/api/v2/scripts/docker-start.ts:5` execSync(`${command} --version`, { stdio: \"ignore\" });  (no endpoint reaches it) *(script)*",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "command only receives the literals \"docker\" and \"docker-compose\" from callers in the same file.",
   "round": 3
  },
  "calcom/cal.com|Shell commands built at runtime|apps/web/scripts/create-sentry-release.js:19": {
@@ -1901,8 +1901,8 @@
   "check": "Third-party scripts without integrity hashes",
   "severity": "Medium",
   "location": "`packages/embeds/embed-react/inline.html:4` <script src=…unpkg.com…> without integrity= — `<script src=\"https://unpkg.com/react@17/umd/react.development.js\" crossorigin></script>`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Local development playground page loading react.development.js, not a page that ships.",
   "round": 3
  },
  "calcom/cal.com|Third-party scripts without integrity hashes|packages/embeds/embed-react/inline.html:5": {
@@ -1968,8 +1968,8 @@
   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
   "severity": "Medium",
   "location": "`celery/utils/functional.py:436` exec(definition, namespace)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "exec runs source built from the function's name and argspec, non-constant values.",
   "round": 3
  },
  "celery/celery|Dynamic code execution (eval / exec / pickle / unsafe YAML)|celery/utils/serialization.py:132": {
@@ -1986,8 +1986,8 @@
   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
   "severity": "Medium",
   "location": "`celery/utils/serialization.py:164` pickle.loads(pickle.dumps(exc))",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "pickle.loads deserializes a non-constant value (round-tripped exception); rubric ignores that it's safe in practice.",
   "round": 3
  },
  "celery/celery|Dynamic code execution (eval / exec / pickle / unsafe YAML)|celery/worker/state.py:364": {
@@ -2394,8 +2394,8 @@
   "check": "Raw HTML injected into pages",
   "severity": "Low",
   "location": "`app/src/interfaces/input-block-editor/plugins.ts:201` titleElement.innerHTML = tune.title;  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "tune.title comes from a fixed in-code tunes list plus the library's static tunes, not dynamic data.",
   "round": 3
  },
  "directus/directus|Request data reaches dangerous calls (N proven flow)|api/src/auth/drivers/saml.ts:218": {
@@ -2444,8 +2444,8 @@
   "check": "SQL assembled from strings",
   "severity": "Low",
   "location": "`api/src/database/helpers/fn/dialects/postgres.ts:37` return this.knex.raw(`EXTRACT(HOUR FROM ??.??${parseLocaltime(options?.type)})`, [table, column]);  (interpolates: parseLocaltime(options?.type))  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "parseLocaltime returns only a constant AT TIME ZONE string or empty string; identifiers are bound.",
   "round": 3
  },
  "directus/directus|SQL assembled from strings|api/src/database/helpers/fn/dialects/postgres.ts:41": {
@@ -2494,8 +2494,8 @@
   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
   "severity": "Medium",
   "location": "`django/core/cache/backends/filebased.py:71` previous_value = pickle.loads(zlib.decompress(f.read()))  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "pickle.loads on bytes read from a cache file on disk.",
   "round": 3
  },
  "django/django|Dynamic code execution (eval / exec / pickle / unsafe YAML)|django/core/cache/backends/locmem.py:73": {
@@ -2511,8 +2511,8 @@
   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
   "severity": "Medium",
   "location": "`django/core/cache/backends/redis.py:29` return pickle.loads(data)  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "pickle.loads on data fetched from Redis.",
   "round": 3
  },
  "django/django|Dynamic code execution (eval / exec / pickle / unsafe YAML)|django/core/management/commands/shell.py:89": {
@@ -2661,8 +2661,8 @@
   "check": "Raw HTML injected into pages",
   "severity": "High",
   "location": "`django/utils/html.py:404` return mark_safe(word)  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "mark_safe only applied when input was already SafeData; otherwise escaped, so safety status is preserved.",
   "round": 3
  },
  "django/django|Raw HTML injected into pages|django/utils/html.py:91": {
@@ -2670,8 +2670,8 @@
   "check": "Raw HTML injected into pages",
   "severity": "High",
   "location": "`django/utils/html.py:91` return mark_safe(str(value).translate(_js_escapes))  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "escapejs translates value through the _js_escapes table before mark_safe; a sanitizer is applied.",
   "round": 3
  },
  "django/django|Raw HTML injected into pages|django/utils/numberformat.py:29": {
@@ -2719,8 +2719,8 @@
   "check": "SQL assembled from strings",
   "severity": "Low",
   "location": "`django/db/backends/mysql/creation.py:55` cursor.execute(\"DROP DATABASE %(dbname)s\" % test_db_params)  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Database name from settings (backtick-wrapped by quote_name, not escaped) is %-formatted into DROP DATABASE.",
   "round": 3
  },
  "django/django|SQL assembled from strings|django/db/backends/postgresql/creation.py:83": {
@@ -3026,8 +3026,8 @@
   "check": "Any website may call this API (CORS *)",
   "severity": "Medium",
   "location": "`routers/web/webfinger.go:116` ctx.Resp.Header().Add(\"Access-Control-Allow-Origin\", \"*\")",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Production webfinger handler unconditionally sets Access-Control-Allow-Origin * in shipped server code.",
   "round": 3
  },
  "go-gitea/gitea|Container runs as root|Dockerfile:51": {
@@ -3150,8 +3150,8 @@
   "check": "SQL assembled from strings",
   "severity": "High",
   "location": "`models/db/collation.go:147` _, err := x.Exec(\"ALTER DATABASE CHARACTER SET utf8mb4 COLLATE \" + collation)  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Collation from setting.Database.CharsetCollation config is concatenated into ALTER DATABASE.",
   "round": 3
  },
  "go-gitea/gitea|SQL assembled from strings|models/db/index.go:29": {
@@ -3168,8 +3168,8 @@
   "check": "SQL assembled from strings",
   "severity": "High",
   "location": "`models/db/index.go:39` _, errIns := e.Exec(fmt.Sprintf(\"INSERT INTO %s (group_id, max_index) VALUES (?, ?)\", tableName), groupID, maxIndex)  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "tableName's only caller passes the constant \"issue_index\"; values are bound parameters.",
   "round": 3
  },
  "go-gitea/gitea|SQL assembled from strings|models/db/sequence.go:64": {
@@ -3376,8 +3376,8 @@
   "check": "Shell commands built at runtime",
   "severity": "Medium",
   "location": "`hc/integrations/shell/transport.py:44` code = call(cmd, env=env, shell=True)  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "User-configured channel command runs via subprocess.call with shell=True.",
   "round": 3
  },
  "healthchecks/healthchecks|Unused code (N function)|hc/logs/__init__.py:12": {
@@ -3401,8 +3401,8 @@
   "check": "Container runs as root",
   "severity": "Medium",
   "location": "`packages/hoppscotch-backend/Dockerfile:31` no USER after builder — `FROM builder AS prod`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Prod stage from node:22 builder has no USER and is deployable via compose deprecated profile.",
   "round": 3
  },
  "hoppscotch/hoppscotch|Container runs as root|packages/hoppscotch-selfhost-web/Dockerfile:16": {
@@ -3410,8 +3410,8 @@
   "check": "Container runs as root",
   "severity": "Medium",
   "location": "`packages/hoppscotch-selfhost-web/Dockerfile:16` no USER after caddy:2-alpine — `FROM caddy:2-alpine`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Final caddy:2-alpine stage runs as root with no USER; deployable via compose deprecated profile.",
   "round": 3
  },
  "hoppscotch/hoppscotch|Container runs as root|packages/hoppscotch-sh-admin/Dockerfile:16": {
@@ -3647,8 +3647,8 @@
   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
   "severity": "Medium",
   "location": "`machine-learning/immich_ml/sessions/prepare.py:19` spec: GraphSpec = pickle.loads(sys.stdin.buffer.read())  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "pickle.loads of bytes read from stdin.",
   "round": 3
  },
  "immich-app/immich|Important code no test reaches (N function)|machine-learning/immich_ml/models/ocr/ctc.py:68": {
@@ -3998,8 +3998,8 @@
   "check": "Container runs as root",
   "severity": "Medium",
   "location": "`Dockerfile:1` no USER after rubylang/ruby:3.4.1-noble — `FROM rubylang/ruby:3.4.1-noble`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Dockerfile is fzf's test environment (minitest, shells, tmux), not an image that ships.",
   "round": 3
  },
  "junegunn/fzf|Shell `eval` of a variable|shell/completion.bash:338": {
@@ -4007,8 +4007,8 @@
   "check": "Shell `eval` of a variable",
   "severity": "Medium",
   "location": "`shell/completion.bash:338` eval \"${orig_complete/ -F / -o nospace -F }\"",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "eval runs orig_complete, a variable taken from complete -p output.",
   "round": 3
  },
  "junegunn/fzf|Shell `eval` of a variable|shell/completion.bash:340": {
@@ -4138,8 +4138,8 @@
   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
   "severity": "High",
   "location": "`src/Illuminate/Foundation/Console/ConfigCacheCommand.php:75` eval(var_export($value, true).';');",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "eval runs var_export of config values, non-constant; objects export as __set_state calls.",
   "round": 3
  },
  "laravel/framework|Import loops (N)|src/Illuminate/Auth/Access/AuthorizationException.php": {
@@ -4453,8 +4453,8 @@
   "check": "Shell commands built at runtime",
   "severity": "Medium",
   "location": "`extra/rebase-pr.js:29` const latestCommitID = execSync(`git rev-parse origin/${branch}`).toString().trim();  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "branch from process.argv is interpolated into an execSync shell string.",
   "round": 3
  },
  "louislam/uptime-kuma|Shell commands built at runtime|extra/rebase-pr.js:37": {
@@ -4480,8 +4480,8 @@
   "check": "Shell commands built at runtime",
   "severity": "Medium",
   "location": "`extra/release/prepare-release.mjs:65` exec(`git push origin --delete \"${branchName}\"`, true);  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "branchName built from runtime version is interpolated into shell exec.",
   "round": 3
  },
  "louislam/uptime-kuma|Shell commands built at runtime|extra/release/prepare-release.mjs:66": {
@@ -4595,8 +4595,8 @@
   "check": "Raw HTML injected into pages",
   "severity": "Medium",
   "location": "`packages/website/src/app/layout.tsx:95` <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "themeBootstrap is a constant script built from JSON.stringify of constants.",
   "round": 3
  },
  "marktext/marktext|Raw HTML injected into pages|packages/website/src/lib/render-diagram.ts:13": {
@@ -4604,8 +4604,8 @@
   "check": "Raw HTML injected into pages",
   "severity": "Medium",
   "location": "`packages/website/src/lib/render-diagram.ts:13` target.innerHTML = svg",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "SVG comes from mermaid.render with securityLevel strict, which sanitizes output.",
   "round": 3
  },
  "marktext/marktext|Shell commands built at runtime|scripts/postinstall.ts:120": {
@@ -5142,8 +5142,8 @@
   "check": "Any website may call this API (CORS *)",
   "severity": "Medium",
   "location": "`packages/cli/src/utils/cors.util.ts:11` res.setHeader('Access-Control-Allow-Origin', '*');",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Shipping helper used by waiting-webhooks/forms sets * or reflects any Origin, so any website may call.",
   "round": 3
  },
  "n8n-io/n8n|Any website may call this API (CORS *)|packages/quality/environments/containers/dockerfiles/kent/kent_cors.py:6": {
@@ -5159,8 +5159,8 @@
   "check": "Any website may call this API (CORS *)",
   "severity": "Medium",
   "location": "`scripts/telemetry/sink.mjs:130` res.setHeader('Access-Control-Allow-Origin', '*'); *(script)*",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Local development telemetry sink script, not configuration that ships.",
   "round": 3
  },
  "n8n-io/n8n|Container runs as root|docker/images/n8n-base/Dockerfile:5": {
@@ -5210,8 +5210,8 @@
   "check": "Credentials committed in source",
   "severity": "Critical",
   "location": "`packages/@n8n/nodes-langchain/nodes/trigger/ChatTrigger/shell.ts:68` const CHAT_OAUTH_REFRESH_COOKIE_NAME = 'n8n-…';",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Value is a cookie name constant, not a secret.",
   "round": 3
  },
  "n8n-io/n8n|Credentials committed in source|packages/@n8n/task-runner-python/src/constants.py:64": {
@@ -5236,8 +5236,8 @@
   "check": "Credentials committed in source",
   "severity": "Critical",
   "location": "`packages/nodes-base/nodes/Aws/IAM/test/user/get.test.ts:27` Key: 'AKIA…', *(test)*",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "AKIA-style string is a tag key in a mocked test response; test value, not a working credential.",
   "round": 3
  },
  "n8n-io/n8n|Credentials committed in source|scripts/codespace-preview/preview-labels.mjs:16": {
@@ -5303,8 +5303,8 @@
   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
   "severity": "Critical",
   "location": "`packages/@n8n/agents/src/sdk/agent.ts:506` eval(e: Eval | BuiltEval | { ensureBuilt(): BuiltEval }): this {  ← reached from `GET /healthz → TaskBrokerAuthController.validateUpgradeRequest → TaskBrokerAuthService.tryConsumeGrantToken → CacheService.take → CacheService.init → redisClient → Agent.eval`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "eval is a builder method name that pushes an Eval object; no code execution.",
   "round": 3
  },
  "n8n-io/n8n|Dynamic code execution (eval / exec / pickle / unsafe YAML)|packages/@n8n/task-runner-python/src/task_executor.py:332": {
@@ -5764,8 +5764,8 @@
   "check": "SQL assembled from strings",
   "severity": "High",
   "location": "`packages/@n8n/typeorm/src/driver/postgres/PostgresQueryRunner.ts:1924` new Query(`ALTER TABLE ${this.escapePath(clonedTable)} DROP CONSTRAINT \"${pkName}\"`),  (interpolates: pkName)  ← reached from `GET /healthz → GitHubSkillSourceClient.head → AbstractRepository.repository → Entity → DataSource.synchronize → DataSource.dropDatabase → PostgresQueryRunner.clearDatabase → PostgresQueryRunner.query → PostgresQueryRunner.connect → PostgresDriver.obtainSlaveConnection → PostgresDriver.connect → PostgresDriver.createPool → RdbmsSchemaBuilder.log → RdbmsSchemaBuilder.executeSchemaSyncOperationsInProperOrder → RdbmsSchemaBuilder.dropRemovedColumns → PostgresQueryRunner.dropColumns → PostgresQueryRunner.dropColumn`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Constraint name from column metadata/naming strategy is interpolated into ALTER TABLE SQL.",
   "round": 3
  },
  "n8n-io/n8n|SQL assembled from strings|packages/@n8n/typeorm/src/driver/postgres/PostgresQueryRunner.ts:2104": {
@@ -5798,8 +5798,8 @@
   "check": "SQL assembled from strings",
   "severity": "High",
   "location": "`packages/@n8n/typeorm/src/driver/sqlite-abstract/AbstractSqliteQueryRunner.ts:1604` return new Query(`CREATE VIEW \"${view.name}\" AS ${view.expression}`);  (interpolates: view.name, view.expression)  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "View name and expression are interpolated directly into CREATE VIEW SQL.",
   "round": 3
  },
  "n8n-io/n8n|Shell commands built at runtime|packages/@n8n/mcp-browser-extension/scripts/bundle.mjs:14": {
@@ -5824,8 +5824,8 @@
   "check": "Shell commands built at runtime",
   "severity": "Critical",
   "location": "`packages/quality/environments/containers/helm-stack.ts:350` execSync(`kubectl config use-context ${contextName}`, { stdio: 'pipe' });  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "contextName includes the option-supplied example name and goes into an execSync shell string.",
   "round": 3
  },
  "n8n-io/n8n|Shell commands built at runtime|packages/quality/environments/containers/helm-stack.ts:431": {
@@ -6110,8 +6110,8 @@
   "check": "SQL assembled from strings",
   "severity": "Low",
   "location": "`server/queues/tasks/UpdateDocumentsPopularityScoreTask.ts:297` await sequelize.query(`  (interpolates: this.workingTable)  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "workingTable is built at runtime from date and unique id and interpolated into SQL.",
   "round": 3
  },
  "outline/outline|TLS certificate checks turned off|server/config/database.js:19": {
@@ -6645,8 +6645,8 @@
   "check": "Shell commands built at runtime",
   "severity": "Medium",
   "location": "`tracker/compiler/analyze-sizes.js:294` gzip: execSync(`gzip -c -9 \"${filePath}\"`).length,  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "filePath built from directory listing filenames is interpolated into execSync shell string.",
   "round": 3
  },
  "plausible/analytics|Shell commands built at runtime|tracker/compiler/analyze-sizes.js:295": {
@@ -6687,8 +6687,8 @@
   "check": "SQL assembled from strings",
   "severity": "Low",
   "location": "`core/collection_record_table_sync.go:315` _, err := txApp.DB().NewQuery(fmt.Sprintf(\"DROP INDEX IF EXISTS [[%s]]\", parsed.IndexName)).Execute()  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Index name parsed from collection index definitions is formatted into DROP INDEX SQL.",
   "round": 3
  },
  "pocketbase/pocketbase|Unused code (N function)|ui/src/records/recordUpsertModal.js:97": {
@@ -6875,8 +6875,8 @@
   "check": "Container runs as root",
   "severity": "Medium",
   "location": "`Dockerfile:21` no USER after python:3.12-slim — `FROM python:3.12-slim`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Final image creates saleor user but has no USER directive, so uvicorn runs as root.",
   "round": 3
  },
  "saleor/saleor|File or program operations inside loops in N place|saleor/core/development/random_data.py:410": {
@@ -7552,8 +7552,8 @@
   "check": "Any website may call this API (CORS *)",
   "severity": "Medium",
   "location": "`cmd/strelaysrv/status.go:40` w.Header().Set(\"Access-Control-Allow-Origin\", \"*\")",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Shipped relay server status endpoint always sets Allow-Origin *.",
   "round": 3
  },
  "syncthing/syncthing|Any website may call this API (CORS *)|lib/api/api.go:554": {
@@ -7569,8 +7569,8 @@
   "check": "Any website may call this API (CORS *)",
   "severity": "Medium",
   "location": "`lib/api/api_csrf.go:53` w.Header().Add(\"Access-Control-Allow-Origin\", \"*\")",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Shipping GUI/API middleware sets Allow-Origin * for API-key requests in production code.",
   "round": 3
  },
  "syncthing/syncthing|Container runs as root|Dockerfile.stcrashreceiver:1": {
@@ -7594,8 +7594,8 @@
   "check": "Container runs as root",
   "severity": "Medium",
   "location": "`Dockerfile.strelaysrv:16` no USER after alpine — `FROM alpine`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Entrypoint drops privileges with su-exec to PUID:PGID 1000, so the relay doesn't run as root.",
   "round": 3
  },
  "syncthing/syncthing|Copied logic in N group (~N lines)|gui/default/vendor/daterangepicker/daterangepicker.js:1227": {
@@ -7675,8 +7675,8 @@
   "check": "Raw HTML injected into pages",
   "severity": "Low",
   "location": "`gui/default/syncthing/development/logbar.js:30` element.innerHTML = parseInt(element.innerHTML) + 1;  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Assigned value is parseInt(...)+1, always a number; also a development-only file.",
   "round": 3
  },
  "syncthing/syncthing|TLS certificate checks turned off|cmd/strelaysrv/main.go:178": {
@@ -7792,8 +7792,8 @@
   "check": "Any website may call this API (CORS *)",
   "severity": "Medium",
   "location": "`apps/dotcom/sync-worker/src/routes/tla/mcpAuth.ts:189` 'Access-Control-Allow-Origin': '*',",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Production MCP worker headers always use Allow-Origin *; deliberate, but setting is on in shipped code.",
   "round": 3
  },
  "tldraw/tldraw|Any website may call this API (CORS *)|apps/mcp-app/src/worker.ts:72": {
@@ -7801,8 +7801,8 @@
   "check": "Any website may call this API (CORS *)",
   "severity": "Medium",
   "location": "`apps/mcp-app/src/worker.ts:72` 'Access-Control-Allow-Origin': '*',",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Deployed MCP app worker applies Allow-Origin * to responses unconditionally.",
   "round": 3
  },
  "tldraw/tldraw|Any website may call this API (CORS *)|templates/agent/worker/do/AgentDurableObject.ts:79": {
@@ -8024,8 +8024,8 @@
   "check": "Shell commands built at runtime",
   "severity": "Medium",
   "location": "`skills/tldraw-migrate/detect-versions.mjs:86` const content = exec(`git show ${branch}:package.json`)  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "branch comes only from the fixed list ['main','master'].",
   "round": 3
  },
  "tldraw/tldraw|Third-party scripts without integrity hashes|apps/dotcom/client/public/reo.html:15": {
@@ -8134,8 +8134,8 @@
   "check": "Container runs as root",
   "severity": "Medium",
   "location": "`Dockerfile:2` no USER after alpine:3.24 — `FROM alpine:3.24`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Shipped traefik image on alpine has no USER; binary runs as root.",
   "round": 3
  },
  "traefik/traefik|Container runs as root|webui/buildx.Dockerfile:2": {
@@ -8175,8 +8175,8 @@
   "check": "Raw HTML injected into pages",
   "severity": "Low",
   "location": "`www/src/twoslash-hovers.ts:107` popup.innerHTML = popups[Number(index)] ?? '';  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Loaded popup HTML strings, not constants, are assigned to innerHTML unsanitized.",
   "round": 3
  },
  "vitejs/vite|Array searches inside loops over loaded data (N)|packages/vite/src/node/server/hmr.ts:526": {
@@ -8382,8 +8382,8 @@
   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
   "severity": "High",
   "location": "`packages/vue/src/index.ts:95` __GLOBAL__ ? new Function(code)() : new Function('Vue', code)(runtimeDom)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "new Function executes code compiled from a runtime template string.",
   "round": 3
  },
  "vuejs/core|Import loops (N)|packages/runtime-dom/src/apiCustomElement.ts": {
@@ -8829,8 +8829,8 @@
   "check": "Raw HTML injected into pages",
   "severity": "Low",
   "location": "`packages/astro/src/runtime/client/dev-toolbar/ui-library/select.ts:101` style.innerHTML = `  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "selectStyle from an unvalidated attribute is interpolated into style.innerHTML.",
   "round": 3
  }
 }
