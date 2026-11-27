@@ -20,8 +20,8 @@
   "check": "Important code no test reaches (N function)",
   "severity": "Medium",
   "location": "`crates/core/flags/hiargs.rs:1503` hostname: does I/O (std::io::read_to_string) — `fn hostname(bin: Option<&Path>) -> Option<String> {`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "HiArgs construction always calls take_hyperlink_config, so every rg integration test in tests/ runs hostname().",
   "round": 2
  },
  "BurntSushi/ripgrep|Unused code (N function)|crates/cli/src/human.rs:135": {
@@ -53,8 +53,8 @@
   "check": "Possible retain cycles: closures kept by self that capture self strongly",
   "severity": "Medium",
   "location": "`Loop/Managers/OnboardingManager.swift:89` self.onboardingCompletion = {",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Stored onboardingCompletion closure captures self strongly; cycle lasts until completion clears it.",
   "round": 2
  },
  "LoopKit/Loop|Possible retain cycles: closures kept by self that capture self strongly|`Loop/View Controllers/StatusTableViewController.swift:N` .sink { _ in": {
@@ -94,8 +94,8 @@
   "check": "`try!` / `as!` that crash on failure (Swift)",
   "severity": "Low",
   "location": "`Common/Extensions/NSBundle.swift:17` return object(forInfoDictionaryKey: \"CFBundleShortVersionString\") as! String",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Only called on Bundle.main, whose Info.plist always contains CFBundleShortVersionString as a string.",
   "round": 2
  },
  "LoopKit/Loop|`try!` / `as!` that crash on failure (Swift)|Learn/Configuration/NumberEntry.swift:19": {
@@ -111,8 +111,8 @@
   "check": "`try!` / `as!` that crash on failure (Swift)",
   "severity": "Low",
   "location": "`Loop/Managers/DeviceDataManager.swift:1614` let applicationSupportDirectory = try! url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Locating or creating the app's own sandbox Application Support directory practically never throws.",
   "round": 2
  },
  "LoopKit/Loop|`try!` / `as!` that crash on failure (Swift)|LoopUI/Views/HUDView.swift:20": {
@@ -356,8 +356,8 @@
   "check": "Unused code (N function)",
   "severity": "Low",
   "location": "`packages/loot-core/src/platform/server/fs/fs.legacy.ts:499` removeFile — `export const removeFile = async function (filepath: string) {`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "fs/index.ts forwards removeFile to impl.removeFile, where impl is the legacy module by default.",
   "round": 2
  },
  "android/nowinandroid|Dependency loops (N)|app/src/main/kotlin/com/google/samples/apps/nowinandroid/MainActivity.kt": {
@@ -405,8 +405,8 @@
   "check": "Copied logic in N group (~N lines)",
   "severity": "Medium",
   "location": "Merge transformSavedCustomization, transformSavedFilter (identical, ~7 lines): `superset-frontend/src/dashboard/components/nativeFilters/FiltersConfigModal/transformers/customizationTransformer.ts:186`, `superset-frontend/src/dashboard/components/nativeFilters/FiltersConfigModal/transformers/filterTransformer.ts:140`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Both functions spread the object, set id and trim description identically; a generic helper could serve both.",
   "round": 2
  },
  "apache/superset|Downloads piped straight into a shell|scripts/fossa.sh:22": {
@@ -494,8 +494,8 @@
   "check": "Important code no test reaches (N function)",
   "severity": "Medium",
   "location": "`superset-extensions-cli/src/superset_extensions_cli/cli.py:136` clean_dist: does I/O (shutil.rmtree) — `def clean_dist(cwd: Path) -> None:`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "tests/test_cli_build.py imports clean_dist and calls it directly in many tests.",
   "round": 2
  },
  "apache/superset|JWT checks turned off|superset/integrations/teams/adapter.py:228": {
@@ -535,8 +535,8 @@
   "check": "Module-level mutable state (N place)",
   "severity": "Medium",
   "location": "`superset-frontend/packages/superset-core/src/translation/TranslatorSingleton.ts:25` let singleton: Translator | undefined;",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "singleton is reassigned by configure(), lazily in getInstance, and reset to undefined at runtime.",
   "round": 2
  },
  "apache/superset|Module-level mutable state (N place)|superset-frontend/src/middleware/realtime.ts:116": {
@@ -544,8 +544,8 @@
   "check": "Module-level mutable state (N place)",
   "severity": "Medium",
   "location": "`superset-frontend/src/middleware/realtime.ts:116` let attemptSeq = 0;",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "attemptSeq is incremented on every connection attempt (line 426) as shared module state.",
   "round": 2
  },
  "apache/superset|Passwords written into docker-compose|docker-compose-light.yml:126": {
@@ -806,8 +806,8 @@
   "check": "Copied logic in N group (~N lines)",
   "severity": "Medium",
   "location": "Merge 6 copies of sljit_emit_const (96% similar, ~103 lines): `crates/utopia/php-std/pcre2/sljit/sljitNativeLOONGARCH_64.c:3716`, `crates/utopia/php-std/pcre2/sljit/sljitNativePPC_common.c:3109`, `crates/utopia/php-std/pcre2/sljit/sljitNativeRISCV_common.c:3069`, `crates/utopia/php-std/pcre2/sljit/sljitNativeARM_64.c:3423`, `crates/utopia/php-std/pcre2/sljit/sljitNativeARM_T2_32.c:4244`, `crates/utopia/php-std/pcre2/sljit/sljitNativeMIPS_common.c:4212`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Vendored PCRE2 sljit per-architecture backends; deliberate third-party copies emitting different machine instructions.",
   "round": 2
  },
  "appwrite/appwrite|Databases published on every interface (docker-compose)|docker-compose.override.yml:731": {
@@ -873,8 +873,8 @@
   "check": "Endpoints that change data without an auth check (N)",
   "severity": "High",
   "location": "`POST /v1/tablesdb/:databaseId/tables/:tableId/columns/polygon` (`src/Appwrite/Platform/Modules/Databases/Http/TablesDB/Tables/Columns/Polygon/Create.php:35`) → changes data in `StateTest.presence` (`$this->database.setPreserveDates`)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Appwrite's shared api init hook enforces the route's scope label (tables.write etc.) before any action runs.",
   "round": 2
  },
  "appwrite/appwrite|Endpoints that change data without an auth check (N)|src/Appwrite/Platform/Modules/Project/Http/Project/Policies/DenyRealtimeGuests/Update.php:28": {
@@ -882,8 +882,8 @@
   "check": "Endpoints that change data without an auth check (N)",
   "severity": "High",
   "location": "`PATCH /v1/project/policies/deny-realtime-guests` (`src/Appwrite/Platform/Modules/Project/Http/Project/Policies/DenyRealtimeGuests/Update.php:28`) → changes data in `StateTest.presence` (`$this->database.setPreserveDates`)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Appwrite's shared api init hook enforces the policies.write scope label before the action runs.",
   "round": 2
  },
  "appwrite/appwrite|Environment files committed|`.env`": {
@@ -947,8 +947,8 @@
   "check": "N error silently swallowed",
   "severity": "High",
   "location": "`app/views/install/installer/js/modules/state.js:163` } catch (error) {}",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Catch wraps a single localStorage.setItem whose only expected failure is storage being unavailable; best-effort persistence.",
   "round": 2
  },
  "appwrite/appwrite|N error silently swallowed|apps/console/src/lib/project-region.ts:44": {
@@ -972,8 +972,8 @@
   "check": "N error silently swallowed",
   "severity": "High",
   "location": "`apps/console/src/lib/react-query/hooks/waf.ts:1034` .catch(() => undefined)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "prefetchQuery never rejects; react-query records the error in query state, so the catch discards nothing meaningful.",
   "round": 2
  },
  "appwrite/appwrite|N error silently swallowed|apps/console/src/routes/player.$videoId.tsx:50": {
@@ -1111,8 +1111,8 @@
   "check": "Unused code (N function)",
   "severity": "Low",
   "location": "`apps/console/src/lib/react-query/hooks/migrations.ts:650` fetchFirebaseReport — `export async function fetchFirebaseReport(`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "ImportWizardView.tsx imports and calls fetchFirebaseReport.",
   "round": 2
  },
  "appwrite/appwrite|Unused code (N function)|apps/console/src/lib/react-query/hooks/monitors.ts:508": {
@@ -1120,8 +1120,8 @@
   "check": "Unused code (N function)",
   "severity": "Low",
   "location": "`apps/console/src/lib/react-query/hooks/monitors.ts:508` useDeleteEscalation — `export function useDeleteEscalation(organizationId: string | null | undefined) {`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Escalations.tsx imports useDeleteEscalation and uses it for the delete mutation.",
   "round": 2
  },
  "appwrite/appwrite|Unused code (N function)|apps/console/src/lib/react-query/hooks/videos.ts:608": {
@@ -1334,8 +1334,8 @@
   "check": "Module-level mutable state (N place)",
   "severity": "Medium",
   "location": "`packages/lib/holidays/GoogleCalendarClient.ts:88` let defaultClient: GoogleCalendarClient | null = null;",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Lazy singleton assigned once on first call and never changed afterward; effectively set-up-once state.",
   "round": 2
  },
  "calcom/cal.com|Module-level mutable state (N place)|packages/lib/holidays/HolidayServiceCachingProxy.ts:116": {
@@ -1408,8 +1408,8 @@
   "check": "Personal data written to logs",
   "severity": "High",
   "location": "`packages/app-store/stripepayment/lib/customer.ts:73` console.warn(`No stripe customer found for user:${user.email}`);",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "console.warn writes the user's email address into server logs.",
   "round": 2
  },
  "calcom/cal.com|Personal data written to logs|packages/features/auth/lib/verifyEmail.ts:100": {
@@ -1425,8 +1425,8 @@
   "check": "Personal data written to logs",
   "severity": "High",
   "location": "`packages/features/auth/lib/verifyEmail.ts:51` log.warn(\"Email is blocked - not sending verification email\", email);",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "log.warn passes the raw email address of a blocked user into the logs.",
   "round": 2
  },
  "calcom/cal.com|Personal data written to logs|scripts/seed-utils.ts:182": {
@@ -1613,8 +1613,8 @@
   "check": "Unused code (N function)",
   "severity": "Low",
   "location": "`packages/app-store/utils.ts:114` hasIntegrationInstalled — `export function hasIntegrationInstalled(type: App[\"type\"]): boolean {`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "No reference to hasIntegrationInstalled exists anywhere in the repository besides its definition.",
   "round": 2
  },
  "calcom/cal.com|Unused code (N function)|packages/features/profile/repositories/ProfileRepository.ts:1005": {
@@ -1935,8 +1935,8 @@
   "check": "Module-level mutable state (N place)",
   "severity": "Medium",
   "location": "`api/src/cache.ts:20` let deploymentCache: Keyv | null = null;",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "deploymentCache is lazily created once in getCache and never reassigned or reset afterward.",
   "round": 2
  },
  "directus/directus|Module-level mutable state (N place)|api/src/middleware/rate-limiter-ip.ts:11": {
@@ -1960,8 +1960,8 @@
   "check": "Module-level mutable state (N place)",
   "severity": "Medium",
   "location": "`app/src/idle.ts:11` let idle = false;",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "idle flag toggles between true and false at runtime in onIdleEvents/resetTimeout.",
   "round": 2
  },
  "directus/directus|N error silently swallowed|api/src/extensions/lib/sync/utils.ts:62": {
@@ -2571,8 +2571,8 @@
   "check": "N error silently swallowed",
   "severity": "High",
   "location": "`sentry_sdk/integrations/django/__init__.py:494` except Exception: pass",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Broad except Exception: pass discards any error from reading user.email without logging.",
   "round": 2
  },
  "getsentry/sentry-python|N error silently swallowed|sentry_sdk/tracing_utils.py:938": {
@@ -2981,8 +2981,8 @@
   "check": "Important code no test reaches (N function)",
   "severity": "Medium",
   "location": "`packages/hoppscotch-kernel/src/io/impl/desktop/v/1.ts:20` saveFileWithDialog: does I/O (writeFile) — `async saveFileWithDialog(opts: SaveFileWithDialogOptions) {`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "No test references the Tauri desktop io implementation or saveFileWithDialog; no kernel tests exist.",
   "round": 2
  },
  "hoppscotch/hoppscotch|Module-level mutable state (N place)|packages/hoppscotch-common/src/modules/loadingbar.ts:4": {
@@ -3151,8 +3151,8 @@
   "check": "Important code no test reaches (N function)",
   "severity": "Medium",
   "location": "`web/vite.config.ts:29` cspManifest: does I/O (readFileSync, writeFileSync) — `const cspManifest = (): Plugin => ({`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "ci-medium builds the web app (running this plugin) and Playwright medium tests read the generated build/.csp.json.",
   "round": 2
  },
  "immich-app/immich|Module-level mutable state (N place)|web/src/lib/utils/focus-util.ts:4": {
@@ -3192,8 +3192,8 @@
   "check": "Personal data written to logs",
   "severity": "Medium",
   "location": "`server/src/repositories/map.repository.ts:155` this.logger.debug(`Request: ${point.latitude},${point.longitude}`);",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Debug log writes exact photo GPS coordinates, which reveal users' locations.",
   "round": 2
  },
  "immich-app/immich|Personal data written to logs|server/src/services/auth.service.ts:416": {
@@ -3209,8 +3209,8 @@
   "check": "Personal data written to logs",
   "severity": "Medium",
   "location": "`server/src/services/auth.service.ts:78` this.logger.warn(`Failed login attempt for user ${dto.email} from ip address ${details.clientIp}`);",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Failed-login warning logs the submitted email and client IP address.",
   "round": 2
  },
  "immich-app/immich|Plain-HTTP URLs in code|mobile/lib/widgets/forms/login/login_form.dart:214": {
@@ -3266,8 +3266,8 @@
   "check": "`try!` / `as!` that crash on failure (Swift)",
   "severity": "Low",
   "location": "`mobile/ios/Runner/Background/BackgroundWorkerApiImpl.swift:49` handleBackgroundRefresh(task: task as! BGAppRefreshTask)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "The as! cast is guarded by an immediately preceding 'if task is BGAppRefreshTask' check, so it cannot fail.",
   "round": 2
  },
  "immich-app/immich|`try!` / `as!` that crash on failure (Swift)|mobile/ios/Runner/Core/NetworkApiImpl.swift:65": {
@@ -3283,8 +3283,8 @@
   "check": "`try!` / `as!` that crash on failure (Swift)",
   "severity": "Low",
   "location": "`mobile/ios/Runner/Core/URLSessionManager.swift:46` try! FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Creating a subfolder of the app's own caches directory with intermediate directories effectively cannot fail.",
   "round": 2
  },
  "immich-app/immich|`try!` / `as!` that crash on failure (Swift)|mobile/ios/Runner/Core/URLSessionManager.swift:7": {
@@ -3340,8 +3340,8 @@
   "check": "Copied logic in N group (~N lines)",
   "severity": "Medium",
   "location": "Merge TranscodingProfile.TranscodingProfile, TrickplayInfoDto.TrickplayInfoDto (100% similar, ~12 lines): `MediaBrowser.Model/Dto/TrickplayInfoDto.cs:15`, `MediaBrowser.Model/Dlna/TranscodingProfile.cs:26`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Copy constructors assign entirely different fields from different types; only the shape matches.",
   "round": 2
  },
  "jellyfin/jellyfin|Credentials committed in source|MediaBrowser.Providers/Plugins/Tmdb/TmdbUtils.cs:35": {
@@ -3681,8 +3681,8 @@
   "check": "`try!` / `as!` that crash on failure (Swift)",
   "severity": "Low",
   "location": "`app/macos/ShareExtension/Utilities.swift:18` var inputItemsTyped: [NSExtensionItem] { inputItems as! [NSExtensionItem] }",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "NSExtensionContext.inputItems is documented to contain only NSExtensionItem objects, so the cast cannot fail.",
   "round": 2
  },
  "louislam/uptime-kuma|Any website may call this API (CORS *)|server/util.ts:519": {
@@ -3773,8 +3773,8 @@
   "check": "Personal data written to logs",
   "severity": "Medium",
   "location": "`extra/reset-password.mts:48` console.log(\"Found user: \" + (user.name || user.email));",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Interactive admin CLI echoes the selected account name to the operator's terminal; not written to any log.",
   "round": 2
  },
  "louislam/uptime-kuma|Personal data written to logs|server/server.js:414": {
@@ -3980,8 +3980,8 @@
   "check": "Endpoints that change data without an auth check (N)",
   "severity": "High",
   "location": "`ANY sessions#create` (`app/controllers/auth/sessions_controller.rb:29`) → changes data in `AttachmentBatch.remove_files` (`attachment.send, bucket.client`)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Devise sign-in endpoint is public by design; it authenticates credentials rather than requiring a prior session.",
   "round": 2
  },
  "mastodon/mastodon|Endpoints that change data without an auth check (N)|app/controllers/settings/aliases_controller.rb:10": {
@@ -4005,8 +4005,8 @@
   "check": "Endpoints that change data without an auth check (N)",
   "severity": "High",
   "location": "`DELETE /ignored_server_checks/:key` (`config/routes/admin.rb:9`) → changes data in `AttachmentBatch.remove_files` (`attachment.send, bucket.client`)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Admin controller calls authorize check, :restore? and BaseController enforces verify_authorized via Pundit.",
   "round": 2
  },
  "mastodon/mastodon|Environment files committed|`.env.development`": {
@@ -4208,8 +4208,8 @@
   "check": "Important code no test reaches (N function)",
   "severity": "Medium",
   "location": "`crates/milli/src/vector/embedder/hf.rs:208` Embedder.new: does I/O (Api::new, Repo::model) — `pub fn new(`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "tests/vector/huggingface.rs configures a huggingFace embedder, which constructs hf::Embedder::new.",
   "round": 2
  },
  "meilisearch/meilisearch|Unused code (N function)|crates/milli/src/search/new/ranking_rule_graph/fid/mod.rs:24": {
@@ -4571,8 +4571,8 @@
   "check": "Endpoints that change data without an auth check (N)",
   "severity": "High",
   "location": "`POST /locate` (`packages/@n8n/engine/src/server/routes/resume-requests.ts:65`) → changes data in `AiService.init` (`this.client?.updateLicenseCert`)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "The flagged route is the notConfigured handler, which only returns 501 and changes no data.",
   "round": 2
  },
  "n8n-io/n8n|Endpoints that change data without an auth check (N)|packages/@n8n/engine/src/server/routes/workflow-executions.ts:57": {
@@ -4596,8 +4596,8 @@
   "check": "Endpoints that change data without an auth check (N)",
   "severity": "High",
   "location": "`POST /v1/responses` (`packages/cli/src/modules/instance-ai/eval/llm-wire-server.ts:175`) → changes data in `AiService.init` (`this.client?.updateLicenseCert`)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "handleUnrouted only returns a 500 error envelope on a local eval mock server; no data changes.",
   "round": 2
  },
  "n8n-io/n8n|Endpoints that change data without an auth check (N)|packages/cli/src/scaling/worker-server.ts:135": {
@@ -4670,8 +4670,8 @@
   "check": "Module-level mutable state (N place)",
   "severity": "Medium",
   "location": "`packages/@n8n/workflow-sdk/src/prompts/sdk-reference/engine-v2-rules.ts:119` let cachedSettingRules:",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "cachedSettingRules is a ??= memo of constant derived data, computed once and never changed.",
   "round": 2
  },
  "n8n-io/n8n|Module-level mutable state (N place)|packages/frontend/editor-ui/src/app/composables/usePolicyViolationToast.ts:27": {
@@ -4687,8 +4687,8 @@
   "check": "N error silently swallowed",
   "severity": "High",
   "location": "`packages/@n8n/instance-ai/evaluations/run/langsmith-driver.ts:448` lsClient.createFeedback(runId, 'pass_at_k', { score: passAtKValue }).catch(() => {}),",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "createFeedback network errors are discarded with .catch(() => {}) and never logged, even as a count.",
   "round": 2
  },
  "n8n-io/n8n|N error silently swallowed|packages/@n8n/nodes-langchain/nodes/vendors/OpenAi/v2/actions/text/response.operation.ts:744": {
@@ -4720,8 +4720,8 @@
   "check": "N error silently swallowed",
   "severity": "High",
   "location": "`packages/workflow/src/telemetry-helpers.ts:126` } catch (error) {}",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Empty catch discards any error from counting placeholders and silently returns zero.",
   "round": 2
  },
  "n8n-io/n8n|Network calls without a timeout|packages/@n8n/instance-ai/evaluations/harness/artifacts/types.ts:51": {
@@ -4785,8 +4785,8 @@
   "check": "Personal data written to logs",
   "severity": "High",
   "location": "`packages/cli/src/commands/mfa/disable.ts:62` this.logger.info(`User with email: ${email} does not exist`);",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "this.logger.info writes the user's email address into n8n logs.",
   "round": 2
  },
  "n8n-io/n8n|Personal data written to logs|packages/cli/src/controllers/password-reset.controller.ts:156": {
@@ -4802,8 +4802,8 @@
   "check": "Personal data written to logs",
   "severity": "High",
   "location": "`packages/cli/src/modules/token-exchange/services/identity-resolution.service.ts:217` this.logger.debug('JIT provisioning new user', { sub: claims.sub, email });",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Debug log includes the provisioned user's email address.",
   "round": 2
  },
  "n8n-io/n8n|Personal data written to logs|packages/quality/environments/containers/n8n-start-stack.ts:382": {
@@ -5156,8 +5156,8 @@
   "check": "Copied logic in N group (~N lines)",
   "severity": "Medium",
   "location": "Merge TableCell.plugins.createCellDecorations, TableHeader.plugins.createHeaderDecorations (91% similar, ~53 lines): `shared/editor/nodes/TableCell.ts:90`, `shared/editor/nodes/TableHeader.ts:385`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Decoration builders are identical except the tableRole predicate; one parameterized function could serve both.",
   "round": 2
  },
  "outline/outline|Endpoints that change data without an auth check (N)|server/main.ts:85": {
@@ -5285,8 +5285,8 @@
   "check": "Copied logic in N group (~N lines)",
   "severity": "Medium",
   "location": "Merge 3 copies of run (identical, ~48 lines): `etl/steps/data/meadow/public_health_reports/2025-03-14/polio_deaths.py:9`, `etl/steps/data/meadow/cdc/2025-03-14/polio_deaths.py:9`, `etl/steps/data/meadow/cdc/2026-11-06/polio_deaths.py:9`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Dated ETL step versions are deliberately frozen copies by repository convention, each pinned to its snapshot.",
   "round": 2
  },
  "owid/etl|Copied logic in N group (~N lines)|etl/steps/data/meadow/demography/2024-12-06/wittgenstein_human_capital_historical.py:75": {
@@ -5408,8 +5408,8 @@
   "check": "Important code no test reaches (N function)",
   "severity": "Medium",
   "location": "`etl/steps/data/open_numbers/open_numbers/latest/cait__historical_emissions.py:123` load_and_combine: does I/O (open) — `def load_and_combine(path: Path, resources: list[frictionless.Resource]) -> pd.DataFrame:`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "No test calls load_and_combine or runs this open_numbers step; tests only mention the channel name.",
   "round": 2
  },
  "owid/etl|Important code no test reaches (N function)|snapshots/lgbt_rights/2023-04-13/equaldex_extract.py:40": {
@@ -5425,8 +5425,8 @@
   "check": "Important code no test reaches (N function)",
   "severity": "Medium",
   "location": "`snapshots/usgs/2024-07-15/historical_statistics_for_mineral_and_material_commodities.py:105` download_all_files: does I/O (folder.rglob) — `def download_all_files(df: pd.DataFrame, snapshot_path: Path) -> None:`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Snapshot download script is not referenced by any test; download_all_files is only called from its main.",
   "round": 2
  },
  "owid/etl|Module-level mutable state (N place)|vscode_extensions/chart-preview/src/extension.ts:9": {
@@ -5434,8 +5434,8 @@
   "check": "Module-level mutable state (N place)",
   "severity": "Medium",
   "location": "`vscode_extensions/chart-preview/src/extension.ts:9` let lastPreviewedFile: string | undefined;",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "lastPreviewedFile is reassigned in command handlers as panels open and close.",
   "round": 2
  },
  "owid/etl|N error silently swallowed|apps/wizard/app_pages/fasttrack/app.py:51": {
@@ -5617,8 +5617,8 @@
   "check": "Unused code (N function)",
   "severity": "Low",
   "location": "`etl/steps/data/garden/faostat/2023-06-12/shared.py:603` remove_columns_with_only_nans — `def remove_columns_with_only_nans(data: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Nothing in the repo calls remove_columns_with_only_nans from the 2023-06-12 faostat version; only definitions exist.",
   "round": 2
  },
  "owid/etl|Unused code (N function)|etl/steps/data/grapher/demography/2025-10-22/efr_malani_jacob.py:9": {
@@ -5642,8 +5642,8 @@
   "check": "Unused code (N function)",
   "severity": "Low",
   "location": "`etl/steps/data/open_numbers/open_numbers/latest/wb__edu.py:243` fast_table_clean — `def fast_table_clean(dataset: Dataset, table_name: str) -> Table:`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "fast_table_clean in open_numbers.py (symlinked step) has no callers anywhere in the repository.",
   "round": 2
  },
  "owid/etl|Unused code (N function)|snapshots/un/2024-10-21/census_dates.py:79": {
@@ -5692,8 +5692,8 @@
   "check": "Personal data written to logs",
   "severity": "Medium",
   "location": "`lib/workers/accept_traffic_until_notification.ex:100` IO.puts(\"Will send weekly notification to #{notification.email}\")",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Worker prints customer email addresses to stdout, which goes to server logs, in dry-run mode.",
   "round": 2
  },
  "plausible/analytics|Personal data written to logs|lib/workers/accept_traffic_until_notification.ex:78": {
@@ -5742,8 +5742,8 @@
   "check": "Unused code (N function)",
   "severity": "Low",
   "location": "`ui/src/records/recordUpsertModal.js:97` recordUpsertModal.originalRecordHash — `get originalRecordHash() {`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "The originalRecordHash getter is read by hasChanges on line 102.",
   "round": 2
  },
  "prometheus/prometheus|Any website may call this API (CORS *)|util/httputil/cors.go:41": {
@@ -5937,8 +5937,8 @@
   "check": "Important code no test reaches (N function)",
   "severity": "Medium",
   "location": "`saleor/graphql/discount/mutations/sale/sale_remove_catalogues.py:85` SaleRemoveCatalogues.remove_items_from_catalogue: does I/O (PromotionRule.objects.bulk_update) — `def remove_items_from_catalogue(`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "test_sale_catalogues_remove.py runs the saleCataloguesRemove mutation, whose perform_mutation calls remove_items_from_catalogue.",
   "round": 2
  },
  "saleor/saleor|Important code no test reaches (N function)|saleor/graphql/discount/utils.py:141": {
@@ -6099,8 +6099,8 @@
   "check": "Copied logic in N group (~N lines)",
   "severity": "Medium",
   "location": "Merge 4 copies of ChartStyle (identical, ~96 lines): `apps/v4/registry/bases/aria/ui/chart.tsx:83`, `apps/v4/registry/bases/base/ui/chart.tsx:83`, `apps/v4/registry/new-york-v4/ui/chart.tsx:83`, `apps/v4/registry/bases/radix/ui/chart.tsx:83`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "shadcn registry ships deliberate per-base copies of components for users to copy; duplication is intentional.",
   "round": 2
  },
  "shadcn-ui/ui|Copied logic in N group (~N lines)|apps/v4/registry/bases/aria/ui/field.tsx:120": {
@@ -6108,8 +6108,8 @@
   "check": "Copied logic in N group (~N lines)",
   "severity": "Medium",
   "location": "Merge 3 copies of FieldDescription (identical, ~28 lines): `apps/v4/registry/bases/base/ui/field.tsx:120`, `apps/v4/registry/bases/aria/ui/field.tsx:120`, `apps/v4/registry/bases/radix/ui/field.tsx:120`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "shadcn registry ships deliberate per-base copies of components for users to copy; duplication is intentional.",
   "round": 2
  },
  "shadcn-ui/ui|Copied logic in N group (~N lines)|apps/v4/registry/bases/base/blocks/sidebar-08/components/nav-projects.tsx:21": {
@@ -6149,8 +6149,8 @@
   "check": "N error silently swallowed",
   "severity": "Medium",
   "location": "`apps/v4/registry/bases/radix/ui/code-block.tsx:118` .catch(() => {})",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Catch covers only clipboard.writeText rejection, an expected permission failure; copied state simply stays false.",
   "round": 2
  },
  "shadcn-ui/ui|Network calls without a timeout|apps/v4/app/(app)/(create)/lib/v0.ts:576": {
@@ -6769,8 +6769,8 @@
   "check": "Copied logic in N group (~N lines)",
   "severity": "Medium",
   "location": "Merge MinimalShaderManager.onDispose, RainbowShaderManager.onDispose, ShadowShaderManager.onDispose (identical, ~32 lines): `templates/shader/src/minimal/MinimalShaderManager.ts:147`, `templates/shader/src/rainbow/RainbowShaderManager.ts:230`, `templates/shader/src/shadow/ShadowShaderManager.ts:221`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Three onDispose bodies are identical WebGL cleanup and could move into the shared WebGLManager base class.",
   "round": 2
  },
  "tldraw/tldraw|Databases published on every interface (docker-compose)|apps/dotcom/zero-cache/docker/docker-compose.yml:17": {
@@ -6925,8 +6925,8 @@
   "check": "Unused code (N function)",
   "severity": "Low",
   "location": "`packages/editor/src/lib/primitives/Mat.ts:308` decomposeMatrix — `export function decomposeMatrix(m: MatLike) {`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "decomposeMatrix is never referenced and not re-exported from the editor package index despite @public tag.",
   "round": 2
  },
  "tokio-rs/axum|Endpoints that change data without an auth check (N)|axum-extra/src/extract/cookie/mod.rs:271": {
@@ -6950,8 +6950,8 @@
   "check": "Endpoints that change data without an auth check (N)",
   "severity": "Medium",
   "location": "`POST /` (`axum-extra/src/extract/json_deserializer.rs:243`) → changes data in `TestClient.put` (`self.client.put`)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Test-only router inside a #[cfg(test)] module that echoes deserialized input; not a shipped endpoint.",
   "round": 2
  },
  "tokio-rs/axum|Endpoints that change data without an auth check (N)|axum/src/extract/ws.rs:1202": {
@@ -6959,8 +6959,8 @@
   "check": "Endpoints that change data without an auth check (N)",
   "severity": "Medium",
   "location": "`ANY /` (`axum/src/extract/ws.rs:1202`) → changes data in `TestClient.put` (`self.client.put`)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Dead-code compile-check test in axum library; the WebSocket handler changes no data and isn't a real endpoint.",
   "round": 2
  },
  "tokio-rs/axum|Endpoints that change data without an auth check (N)|axum/src/lib.rs:57": {
@@ -7583,8 +7583,8 @@
   "check": "Module-level mutable state (N place)",
   "severity": "Medium",
   "location": "`packages/astro/src/transitions/router.ts:45` let originalLocation: URL;",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "originalLocation is reassigned on every navigation (lines 213, 656).",
   "round": 2
  },
  "withastro/astro|Module-level mutable state (N place)|packages/telemetry/src/system-info.ts:47": {
@@ -7608,8 +7608,8 @@
   "check": "N error silently swallowed",
   "severity": "High",
   "location": "`packages/astro/src/core/dev/dev.ts:86` .catch(() => {});",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": ".catch(() => {}) discards every error from update-check fetching and logging, with no debug log.",
   "round": 2
  },
  "withastro/astro|N error silently swallowed|packages/astro/src/runtime/client/dev-toolbar/apps/audit/index.ts:25": {
@@ -7625,8 +7625,8 @@
   "check": "N error silently swallowed",
   "severity": "High",
   "location": "`packages/create-astro/src/actions/template.ts:221` } catch {}",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Catch only guards logging err.cause; the surrounding handler then throws a new error, so the failure isn't swallowed.",
   "round": 2
  },
  "withastro/astro|N error silently swallowed|packages/vite-plugin-astro/src/vite-plugin-component-assets/index.ts:203": {

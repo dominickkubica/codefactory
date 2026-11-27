@@ -10,7 +10,9 @@ change command-line output.
 729 reported locations from the 76 corpus repositories, sampled per check and labeled by reading the code (labels and
 reasons in `tools/corpus/labels.json`, rubric in `docs/ACCURACY.md`; a second reviewer agreed on 87% of a blind
 sample). `python tools/precision.py score` re-scores them against the current code. The first measurement was 43%
-right; the false-positive patterns it found are fixed, each with a regression test (`tests/test_precision_lessons.py`).
+right; the false-positive patterns it found are fixed, each with a regression test (`tests/test_precision_lessons.py`),
+which takes that sample to 68%. A held-out sample of 190 more locations, labeled after the fixes, is 46% right: the
+honest figure for code codefactory hasn't been tuned on, and the target for the next round.
 
 - **Data flow for JavaScript and TypeScript** (`codefactory/jstaint.py`, with the language pack): request data in
   Express, Koa, Fastify, Next.js route handlers and Nest controllers followed through variables, closures and helper

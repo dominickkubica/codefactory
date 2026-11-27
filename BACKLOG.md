@@ -18,9 +18,13 @@ lets triage at 1,000 repositories be a sample instead of a full read.
    - Done: 729 locations labeled across 50 checks (`tools/corpus/labels.json`), a second reviewer agreeing on 87% of
      a blind sample. First measurement: 43% right. About 25 false-positive patterns fixed, each with a regression
      test (`tests/test_precision_lessons.py`).
-   - Left: re-score on a fresh corpus run and publish the table; label a fresh held-out sample (locations nobody
-     tuned against) for the honest number; take the checks still under 50% to a decision (fix further, demote to a
-     hint, or drop).
+   - Done: re-scored on a fresh corpus run (tuned sample 43% → 68%) and labeled a held-out sample of 190 locations
+     nobody tuned against: **46%**. Published in docs/ACCURACY.md.
+   - Next (round 2): the held-out misses don't repeat round 1's patterns, so the fixes generalized less than the
+     tuned number says. Decide per check: under 50% held out → a hint (listed, not counted as a finding) unless a
+     generic fix exists; known generic gaps: Appwrite's scope labels before the path, Pundit `authorize`, routes in
+     `#[cfg(test)]` modules, TLS options named in the surrounding function. Then a round-3 held-out sample, labeled
+     after, to measure the result honestly.
 
 ## Next
 
