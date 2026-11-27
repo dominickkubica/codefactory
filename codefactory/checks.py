@@ -1147,7 +1147,7 @@ def scan_repo(root: Path) -> dict:
     info["license"] = next((_rel(real, lv / f) for lv in levels for f in licenses if (lv / f).exists()), None)
     info["env_files"] = [
         p.name
-        for p in root.glob(".env*")
+        for p in sorted(root.glob(".env*"))
         if p.is_file()
         and not p.name.endswith((".example", ".sample", ".template", ".dist"))
         and not re.match(r"\.env\.(?:test|testing|ci|development|dev)\b", p.name)  # test and development settings

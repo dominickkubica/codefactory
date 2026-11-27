@@ -477,13 +477,13 @@ class _Function:
                             continue  # request data only after the `?`: it can't change where the redirect goes
                         if kind == "redirect" and _local_url(a, body):
                             continue  # a path this app builds (reverse(), url_for(), "/…"): a query string can't leave it
-                        for label in self.origins(a, env):
+                        for label in _ordered(self.origins(a, env)):
                             hits.append((label, kind, n.lineno, ast.unparse(n.func)[:50], "", self.fid))
                 summary = self.callees.get(_name(n.func))
                 if summary is not None and _name(n.func) not in SANITIZERS:  # (inside an escaper is its own business)
                     for i, a in enumerate(n.args, _bound(n, summary)):
                         for flow in summary.sinks.get(i, []):
-                            for label in self.origins(a, env):
+                            for label in _ordered(self.origins(a, env)):
                                 via = f"{_name(n.func)}({summary.params[i] if i < len(summary.params) else '…'})"
                                 hits.append(
                                     (label, flow[0], flow[1], flow[2], via + (" → " + flow[3] if flow[3] else ""), flow[4])
@@ -546,6 +546,12 @@ def _nested(node) -> set[int]:
     return cached
 
 
+def _ordered(labels: set) -> list:
+    """A set's labels in a fixed order: a summary is then the same whatever the hash seed, so the work list settles
+    (the same flows in another order counted as a change, and spent its budget) and the same flow wins a sink line."""
+    return sorted(labels, key=repr)
+
+
 def summarize(node, callees: dict[str, Summary], fid: str = "") -> Summary:
     f = _Function(node, callees, fid)
     s = Summary(f.params)
@@ -556,7 +562,7 @@ def summarize(node, callees: dict[str, Summary], fid: str = "") -> Summary:
         else:
             s.source_sinks.append((label[1], kind, line, text, via, where))
     s.returns = {lab[1] for lab in returns if lab[0] == "param"}
-    s.source_returns = next((lab[1] for lab in returns if lab[0] == "source"), "")
+    s.source_returns = min((lab[1] for lab in returns if lab[0] == "source"), default="")
     return s
 
 
@@ -633,7 +639,7 @@ def taint_flags(g: Graph, root: Path) -> list[Flag]:
                 enums.add(n.name)
     relevant &= set(nodes)
     summaries: dict[str, Summary] = {}
-    work = deque(sorted(relevant, key=lambda f: -len(callees_of.get(f, ()))))  # leaves last: callees settle first
+    work = deque(sorted(relevant, key=lambda f: (-len(callees_of.get(f, ())), f)))  # leaves last: callees settle first
     queued, budget = set(work), 8 * len(relevant) + 100
     redone: dict[str, int] = {}
     while work and budget > 0:  # a worklist to a fixed point: a function is redone only when a callee changed

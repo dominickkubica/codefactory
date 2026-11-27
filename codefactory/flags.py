@@ -100,8 +100,8 @@ def _mentioned(g: Graph) -> set[str]:
     skip = {".git", "node_modules", "vendor", "dist", "build", ".venv", "venv", "__pycache__", "target", ".next"}
     seen = 0
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in skip and not d.startswith(".")]
-        for name in filenames:
+        dirnames[:] = sorted(d for d in dirnames if d not in skip and not d.startswith("."))
+        for name in sorted(filenames):  # (sorted: which files the cap leaves out doesn't follow the file system)
             if name.endswith(VIEW_FILES) and not name.startswith("codefactory") and seen < 20_000:
                 seen += 1
                 try:

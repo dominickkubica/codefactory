@@ -842,7 +842,7 @@ class _Function:
                 hits += self._sink_hits(n, env)
                 hits += self._callee_hits(n, env)
             elif n.type == "jsx_attribute" and _text(n, self.src).startswith("dangerouslySetInnerHTML"):
-                for label in self.origins(n, env):
+                for label in _ordered(self.origins(n, env)):
                     hits.append((label, "template", self.line, "dangerouslySetInnerHTML", "", self.u.file))
             elif n.type == "return_statement":
                 for c in _kids(n):
@@ -1031,7 +1031,7 @@ class _Function:
                 continue
             if kind == "redirect" and self._local_path(s):
                 continue
-            for label in self.origins(s, env):
+            for label in _ordered(self.origins(s, env)):
                 if kind in ("redirect", "ssrf") and len(label) > 2:
                     continue  # only in the query string
                 text = _text(n.child_by_field_name("function") or n.child_by_field_name("constructor") or n, self.src)
@@ -1051,7 +1051,7 @@ class _Function:
         out = []
         for i, a in enumerate(_args(n)):
             for flow in summary.sinks.get(i, []):
-                for label in self.origins(a, env):
+                for label in _ordered(self.origins(a, env)):
                     if flow[0] in ("redirect", "ssrf") and len(label) > 2:
                         continue  # past a fixed host, as in _sink_hits
                     via = f"{name}()" + (" → " + flow[3] if flow[3] else "")
@@ -1099,6 +1099,12 @@ def _pattern_import_names(clause, src: bytes) -> list[str]:
     return out
 
 
+def _ordered(labels: set) -> list:
+    """A set's labels in a fixed order: a summary is then the same whatever the hash seed, so the work list settles
+    (the same flows in another order counted as a change, and spent its budget) and the same flow wins a sink line."""
+    return sorted(labels, key=repr)
+
+
 def summarize(fn: _Function) -> Summary:
     s = Summary()
     hits, returns = fn.run(set(range(len(fn.u.params))))
@@ -1108,7 +1114,7 @@ def summarize(fn: _Function) -> Summary:
         else:
             s.source_sinks.append((label[1], kind, line, text, via, file))
     s.returns = {lab[1] for lab in returns if lab[0] == "param"}
-    s.source_returns = next((lab[1] for lab in returns if lab[0] == "source"), "")
+    s.source_returns = min((lab[1] for lab in returns if lab[0] == "source"), default="")
     return s
 
 

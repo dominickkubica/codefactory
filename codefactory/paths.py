@@ -55,9 +55,9 @@ def walk(root, names: tuple[str, ...] = (), suffixes: tuple[str, ...] = (), skip
     root = str(root)
     plain, links = set(), []
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in skip and (hidden or not d.startswith("."))]
+        dirnames[:] = sorted(d for d in dirnames if d not in skip and (hidden or not d.startswith(".")))
         rel_dir = os.path.relpath(dirpath, root).replace("\\", "/")
-        for name in filenames:
+        for name in sorted(filenames):  # (sorted: the same order on every file system)
             if (names or suffixes) and name not in names and not name.endswith(suffixes):
                 continue
             rel = name if rel_dir == "." else f"{rel_dir}/{name}"

@@ -130,7 +130,7 @@ READERS = {
 def packages(root: Path) -> list[Package]:
     """Every pinned dependency in the repository's lockfiles (at the root and one level down, for monorepos)."""
     out: list[Package] = []
-    candidates = [root / n for n in READERS] + [p for p in root.glob("*/*") if p.name in READERS]
+    candidates = [root / n for n in READERS] + [p for p in sorted(root.glob("*/*")) if p.name in READERS]
     candidates += (
         sorted(root.glob("requirements*.txt")) + sorted(root.glob("requirements/*.txt")) + sorted(root.glob("constraints*.txt"))
     )
