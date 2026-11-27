@@ -100,7 +100,7 @@ def _root(expr: str) -> str:
     return m.group(1) if m else ""
 
 
-def safe_names(lines: list[str], i: int, span: int = 25) -> set[str]:
+def safe_names(lines: list[str], i: int, span: int = 60) -> set[str]:
     """Names that, in the lines leading up to line i, only hold values from a fixed list or that were checked
     against one: `for (const t of Object.keys(TABLES))`, `const cols = keys.filter((c) => allowed.has(c))`,
     `if (known.has(t))`, `for t in TABLES`. Followed one step through names already known to be safe."""
@@ -117,6 +117,10 @@ def safe_names(lines: list[str], i: int, span: int = 25) -> set[str]:
                 name, src = (m.group(1), m.group(2)) if m.group(1) else (m.group(3), m.group(4))
                 if CONST_NAME.search(src) or _root(src.replace("Object.keys(", "")) in safe:
                     safe.add(name)
+            # checked to be a number first: is_numeric($amount), ctype_digit, Number.isInteger, isinstance(x, int)
+            for m in re.finditer(r"(?:is_numeric|is_int|ctype_digit|Number\.isInteger|Number\.isFinite)\(\s*\$?(\w+)|"
+                                 r"isinstance\(\s*(\w+)\s*,\s*int\b", ln):  # fmt: skip
+                safe.add(m.group(1) or m.group(2))
             # typed as one of a few strings: `key: "name" | "email"` (TypeScript)
             for m in re.finditer(r"""\b(\w+)\??\s*:\s*(?:['"][^'"]*['"]\s*\|\s*)+['"][^'"]*['"]""", ln):
                 safe.add(m.group(1))

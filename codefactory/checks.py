@@ -488,6 +488,11 @@ def _safe_html(lines: list[str], i: int) -> bool:
     return False
 
 
+# languages whose strings interpolate `{name}` (Python f-strings, C#'s $"…", PHP's "{$x}", Ruby's #{x}, Kotlin and
+# Dart's ${x}, Swift's \(x))
+BRACE_LANGS = (".py", ".cs", ".php", ".rb", ".kt", ".kts", ".dart", ".scala", ".groovy", ".swift")
+
+
 def looks_random(value: str) -> bool:
     """A value that could be a working secret: long enough, varied, not a run (AAAA…) or a sequence (123456, abcdef),
     and not built from words (`magical_password`, `petclinic`, `testpass`). Placeholders and demo defaults fail."""
@@ -711,7 +716,11 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                     out[key].hits.append(Evidence(fid, i, redact(_excerpt(line)) if key == "secret" else _excerpt(line)))
             if sql_here and not in_migration and (m := SQL_CALL.search(line)) and hit("sql_built", i):
                 stmt = " ".join(lines[i - 1 : i + 4])
-                if SQL_WORD.search(stmt):
+                literal = re.search(r"""(["'`])((?:(?!\1)[^\\]|\\.)*)\1""", stmt[m.start() :])
+                # (the SQL words must be in the call's text: `queue.execute("MockWebServer …")` names a task, not a query)
+                callee = line[m.start() : m.start(1)]  # (Rails' `where("email = …")`: the method is the SQL word)
+                if SQL_WORD.search(stmt) and (literal is None or SQL_WORD.search(literal.group(2) + " " + callee)
+                                              or m.group(1).startswith("fmt.")):  # fmt: skip
                     py_format = not m.group(1).startswith("`")  # {name}: Python f-strings (and Ruby's #{name})
                     start = m.end() - 1 if m.group(1).endswith("#{") else m.end()  # keep Ruby's brace
                     body = stmt[start : start + 600]
@@ -721,6 +730,8 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                         body = body.split(";", 1)[0]
                     names = [a or (b if py_format else "") for a, b in INTERP.findall(body)]
                     names = [n for n in names if n]
+                    if py_format and not fid.endswith(BRACE_LANGS):
+                        names = []  # `{ … }` after a Go or Java call is a block, not interpolation (`return err`)
                     if m.group(1).endswith("#{"):  # Ruby: #{params[:email]} (a colon is fine inside)
                         names = re.findall(r"\{([^}]+)\}", body.split('"')[0])
                     dollar = m.group(1).startswith('"') and "$" in m.group(1) and "#{" not in m.group(1)
@@ -733,8 +744,11 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                     sprintf = m.group(1).startswith("fmt.")  # %s / %v pasted in; %d can't carry SQL
                     concat = m.group(1).endswith("+")
                     if concat:  # "… id = " + id: risky unless every value joined in is a number
-                        joined = re.findall(r"(?:^|\+)\s*([A-Za-z_$][\w$.]*(?:\(\))?)\s*(?=\+|\)|,|$)", body.split(";")[0])
-                        concat = not joined or any(not interp_safe(n, safe) for n in joined)
+                        segment = body.split(";")[0]
+                        joined = re.findall(r"(?:^|\+)\s*([A-Za-z_$][\w$.]*(?:\(\))?)\s*(?=\+|\)|,|$)", segment)
+                        only_text = not re.search(r"(?:^|\+)\s*[A-Za-z_$(]", re.sub(r"\"(?:[^\"\\]|\\.)*\"|'(?:[^'\\]|\\.)*'", "''", segment))
+                        concat = not only_text and (not joined or any(not interp_safe(n, safe) for n in joined))  # (text
+                        # joined to text, a statement split over lines, has nothing in it to inject)
                     if risky or sprintf or concat or m.group(1).endswith("%") or ".format" in m.group(1):
                         out["sql_built"].hits.append(Evidence(fid, i, _excerpt(line)))
                         out["sql_built"].data.setdefault(f"{fid}:{i}", risky[:4])

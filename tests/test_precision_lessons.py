@@ -126,6 +126,19 @@ class PatternTest(unittest.TestCase):
         })  # fmt: skip
         self.assertEqual(hits(found, "sql_built"), [("a.ts", 8)])
 
+    def test_sql_that_is_only_text_or_isnt_sql(self):
+        found = self.scan({
+            "v195.go": 'func f(sess *Session) error {\n\tif _, err := sess.Exec("INSERT INTO idx (repo_id, sha) " +\n'
+                       '\t\t"SELECT repo_id, sha FROM commit_status"); err != nil {\n\t\treturn err\n\t}\n\treturn nil\n}\n',
+            "loader.go": 'func g(tx *Tx, fixture F) error {\n\t_, err = tx.Exec("DELETE FROM " + fixture.tableNameQuoted)\n'
+                         '\tif err != nil {\n\t\treturn err\n\t}\n\treturn nil\n}\n',
+            "Builder.php": "<?php\nif (! is_numeric($amount)) { throw new Exception(); }\n"
+                           "$columns[$column] = $this->raw(\"{$this->grammar->wrap($column)} + $amount\");\n",
+            "Server.kt": 'fun s() {\n  queue.execute("MockWebServer ${raw.remoteSocketAddress}", cancelable = false) {\n    select()\n  }\n}\n',
+            "bad.go": 'func h(db *DB, owner string) {\n\tdb.Query("SELECT * FROM items WHERE owner = \'" + owner + "\'")\n}\n',
+        })  # fmt: skip
+        self.assertEqual([f for f, _ in hits(found, "sql_built")], ["bad.go"])
+
     def test_tls_off_behind_a_users_option(self):
         found = self.scan({
             "a.js": "if (notification.unsafeTls) {\n  config.httpsAgent = new https.Agent({\n    rejectUnauthorized: false,\n  });\n}\n",
