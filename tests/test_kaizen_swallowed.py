@@ -81,5 +81,17 @@ class SwallowedTest(unittest.TestCase):
         self.assertNotEqual(why.get(("pair.ts", 5)), "query cache")
 
 
+class LongChainsTest(unittest.TestCase):
+    def test_a_prefetch_chain_over_many_lines_and_a_realpath_helper(self):
+        files = {  # appwrite waf.ts: the chain starts eight lines above the catch; vite config
+            "waf.ts": "export function warm(queryClient) {\n  void queryClient\n    .prefetchQuery(\n      wafOptions(\n"
+                      "        projectId,\n        range,\n      ),\n    )\n    .catch(() => undefined)\n}\n",
+            "config.ts": "let root = cwd\ntry {\n  root = safeRealpathSync(root)\n} catch {}\n",
+            "bad.ts": "try {\n  await rm(dir, { force: true })\n} catch {}\n",
+        }  # fmt: skip
+        found = scan_sources(repo(files), list(files))
+        self.assertEqual([e.file for e in found["swallowed"].hits], ["bad.ts"])
+
+
 if __name__ == "__main__":
     unittest.main()

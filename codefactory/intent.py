@@ -28,7 +28,7 @@ TRAILING_COMMENT = re.compile(r"(?:\)|\}|;|\bpass)\s*(?://|#)\s*\S")
 # calls whose one expected failure is the reason for the catch: JSON that may not be JSON, a pointer capture on an
 # inactive pointer, a path that may not exist, a custom element already defined (re-run, hot reload)
 EXPECTED_THROW = re.compile(
-    r"JSON\.(?:parse|stringify)|(?:set|release)PointerCapture|realpath|customElements\.define|"
+    r"JSON\.(?:parse|stringify)|(?:set|release)PointerCapture|[rR]ealpath|customElements\.define|"
     r"decodeURI(?:Component)?\b|new URL\(|"
     r"\bimport\(|require\(|\bstat(?:Sync)?\(|\baccess(?:Sync)?\(|\blstat|inspect\.signature|\.resolve\(|"
     r"\bint\(|\bfloat\(|json\.loads|\.decode\(|urlparse|resolve_?url|\bresolve\(|localStorage|sessionStorage|"
@@ -60,7 +60,7 @@ def expected_failure(lines: list[str], i: int) -> str | None:
         if re.search(r"(?<![=!<>])=(?![=>])|\breturn\b|\?\?|\|\||&&|\(\s*await\b|,\s*await\b", stmt):
             return "fallback"  # the null, false or [] is the answer the code then checks
     body = []
-    for back in range(i - 2, max(-1, i - 9), -1):
+    for back in range(i - 2, max(-1, i - 20), -1):
         ln = lines[back]
         if re.match(r"\s*(?:try\s*:|try\s*\{|\}\s*try\s*\{)\s*$", ln) or re.search(r"\btry\s*\{", ln):
             text = "\n".join(body)
@@ -101,9 +101,12 @@ def _query_prefetch(lines: list[str], i: int) -> str | None:
     returned: then the caller gets nothing in place of the error."""
     if not re.search(r"\.catch\(\s*\(\s*\w*\s*\)\s*=>\s*(?:\{\s*\}|undefined|null)\s*\)", lines[i - 1]):
         return None
-    start = i - 1
-    while start > 0 and i - start < 5 and re.match(r"\s*\.", lines[start]):
-        start -= 1  # back to the line the chain starts on
+    start, depth = i - 1, 0
+    while start > 0 and i - start < 20:  # back to the line the chain starts on, through its call's arguments
+        depth += lines[start].count(")") - lines[start].count("(")
+        if depth <= 0 and not re.match(r"\s*[.)]", lines[start]):
+            break
+        start -= 1
     chain = " ".join(lines[start:i])
     if not re.search(r"\.(?:ensureQueryData|prefetchQuery|prefetchInfiniteQuery)\(", chain):
         return None
@@ -114,7 +117,7 @@ def _query_prefetch(lines: list[str], i: int) -> str | None:
     above = reversed(lines[max(0, start - 12) : start])
     group = next((ln for ln in above if re.search(r"Promise\.all\w*\(\s*\[", ln)), "")
     if re.search(used, group.split("Promise.")[0]):
-        return None  # const [org, plan] = await Promise.all([…]): the results are used
+        return "fallback"  # const [org, plan] = await Promise.all([…]): undefined in place of a failed prefetch
     return "query cache"
 
 
