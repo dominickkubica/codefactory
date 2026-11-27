@@ -39,6 +39,25 @@ honest figure for code codefactory hasn't been tuned on, and the target for the 
   frozen dated copies, build outputs and small edited copies aren't "copied logic"; TypeScript imports used only as
   types and Java imports only for a Javadoc link aren't dependencies; an import loop shows a real chain of imports.
 
+### Kaizen after round 4
+
+From the round-4 held-out misses, each checked on the repositories it touches (about 25 wrong locations gone, none
+right lost):
+
+- Credentials: constants that name a cookie, header or key to look up (`…_COOKIE_NAME`, `…_KEY_NAME`).
+- Shell: `shell=True` on a call whose command is one plain string literal. SQL: values checked against a pattern of
+  only digits, letters and separators first (`validate(x, r"^\d+,\d+$")`, also through `a, b = x.split(",")`), and
+  gitea's versioned `modelmigration/v…` folders. Raw HTML: `innerHTML =` a constant spanning several lines (an SVG,
+  a `<style>` block).
+- Swallowed errors: a `try` around only `decodeURI` or `JSON.stringify`.
+- Rust tests written next to the code (`#[test]`, `#[tokio::test]`, `#[cfg(test)]` modules) count as tests: not
+  untested code, copied logic or loops. Seed scripts (`seed-pbac-only.ts`, `seed.py`) count as one-off scripts.
+- Loops: a constant table or pattern (`POLICY_FLAGS.keys.select`, `PEM_REGEX.findAll`) isn't I/O.
+- Unused code: `from shared import f` in a folder of scripts finds the `shared.py` next to it (not inside a
+  package, where a bare name is absolute); `"./*": "./src/*"` package exports; visitor hooks (`visitClassDeclaration`).
+- Untested code: a route a test reaches by name (`reverse("api:create_locale")`, `url_for`).
+- Import loops: a PHP `use` names a class, so a folder sharing a namespace part (`Redis/`, `Image/`) isn't it.
+
 ### Round 4 held out: 65%
 
 A fresh corpus run on the kaizen code (76 of 76, no crash or timeout) and a fourth held-out sample of 110 counted

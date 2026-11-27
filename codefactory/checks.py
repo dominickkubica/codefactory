@@ -249,6 +249,11 @@ _PEM_BODY = re.compile(r"(PRIVATE KEY-----(?:\\r)?(?:\\n)?)[A-Za-z0-9+/=]{8,}")
 
 # raw HTML from a string literal with nothing put into it (no ${…}, no +): `el.innerHTML = '<b>Copied</b>'`,
 # `__html: "<br>"`, also inside a page a Go or Python file holds as text
+# migration folders: `migrations/`, `db/migrate/`, and gitea's versioned `modelmigration/v1_13/` (not its `base/`
+# helpers, nor `immigration/`)
+MIGRATION_DIR = re.compile(
+    r"(?:^|/)(?:migrations?|migrate|post_migrate)/|(?:^|/)(?:models?|schema|db|data)[_-]?migrations?/v\d", re.I
+)
 CONSTANT_HTML = re.compile(
     r"""(?:\.innerHTML\s*=|__html\s*:|mark_safe\(|v-html\s*=\s*)\s*(["'`])(?:(?!\1)(?!\$\{)[^\\]|\\.)*\1\s*[;,)}]*\s*(?:/?>)?\s*$"""
 )
@@ -342,6 +347,12 @@ def _named_not_secret(fid: str, lines: list[str], i: int) -> bool:
         return True  # the name of an environment variable that holds it (`ENV_GRANT_TOKEN = "N8N_RUNNERS_GRANT_TOKEN"`)
     if re.search(r"(?:client|app|application|project|tenant|account)_?id$", name.strip(), re.I):
         return True  # an OAuth client ID or an app ID identifies; it doesn't authenticate
+    if re.search(
+        r"(?:_|\b)(?:name|header|param|field|label|prefix)s?$",
+        re.sub(r"\W+$", "", name.split()[-1] if name.split() else ""),
+        re.I,
+    ):
+        return True  # the name of a cookie, header or key to look up (`REFRESH_COOKIE_NAME = 'n8n-chat-oauth-refresh'`)
     parts = [p for p in re.split(r"[_\-/.:]", value) if p]
     if len(parts) == 1:  # camelCase words (`consoleOAuth2Provider`), not random characters
         parts = re.findall(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|\d+", value)
@@ -461,6 +472,26 @@ def _fixed_code(line: str, text: str) -> bool:
         return True
     return bool(re.search(r"\byaml\.load\s*\(", line) and re.search(r"\bruamel\b", text)
                 and not re.search(r"typ\s*=\s*['\"]unsafe['\"]", text))  # fmt: skip
+
+
+def _constant_after(lines: list[str], i: int) -> bool:
+    """`el.innerHTML =` and then one string literal that runs over the next lines with nothing interpolated: a
+    constant SVG on the next line, a `<style>` block in a template literal."""
+    m = re.search(r"(?:\.innerHTML|\.outerHTML)\s*=\s*", lines[i - 1])
+    if not m:
+        return False
+    text = lines[i - 1][m.end() :] + "\n" + "\n".join(lines[i : i + 200])
+    lit = re.match(r"""\s*(["'`])((?:(?!\1)[^\\]|\\.)*)\1\s*(?:;|$|\n)""", text)
+    return bool(lit) and not (lit.group(1) == "`" and "${" in lit.group(2)) and (lit.group(1) == "`" or "\n" not in lit.group(2))
+
+
+def _fixed_shell(lines: list[str], i: int) -> bool:
+    """`shell=True` on a call whose command is one plain string literal (no f-string, `%`, `.format` or `+` on it)."""
+    for j in range(i, max(0, i - 8), -1):
+        if m := re.search(r"\b(?:run|Popen|call|check_output|check_call|getoutput|getstatusoutput)\s*\(", lines[j - 1]):
+            after = lines[j - 1][m.end() :] + " " + " ".join(ln.strip() for ln in lines[j:i])
+            return bool(re.match(r"""\s*r?(["'])[^"']*\1\s*,""", after))  # (then `,`: not `% x` or `.format`)
+    return False
 
 
 SANITIZED = re.compile(
@@ -685,7 +716,7 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
             if (not test or k == "secret") and (k not in LANG_ONLY or fid.endswith(LANG_ONLY[k])) and ANY[k].search(text)
         }
         sql_here = not test and SQL_HINT.search(text) is not None
-        in_migration = bool(re.search(r"(?:^|/)(?:migrations?|migrate|db/migrate|post_migrate)/", fid, re.I))  # names, by design
+        in_migration = MIGRATION_DIR.search(fid) is not None  # names, by design
         hosts_here = not test and "://" in text
         boundary_here = re.search(r"ErrorBoundary|componentDidCatch|getDerivedStateFromError", text) is not None
         state_here = not test and fid.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs")) and "let " in text
@@ -741,7 +772,9 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                         safe = safe_names(lines, i)
                         if all(interp_safe(s, safe) for s in subs):
                             continue  # every value in the command is a number or from a fixed list (parseInt, …)
-                    if key == "raw_html" and (CONSTANT_HTML.search(line) or _safe_html(lines, i)):
+                    if key == "shell" and fid.endswith(".py") and "shell" in line and _fixed_shell(lines, i):
+                        continue  # `subprocess.run("git log -1 HEAD", shell=True)`: a fixed command, nothing to inject
+                    if key == "raw_html" and (CONSTANT_HTML.search(line) or _safe_html(lines, i) or _constant_after(lines, i)):
                         continue  # a fixed string, built-in theme CSS, or sanitized first: no one's data can get into it
                     if key == "raw_html" and re.search(r"mark_safe\(.*\bsettings\.[A-Z_]+", line):
                         continue  # the site's own configuration, not user data

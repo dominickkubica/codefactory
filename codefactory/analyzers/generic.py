@@ -116,7 +116,10 @@ NOT_IO_METHOD = re.compile(
 # (`Error::query(…)`), Symfony's Finder, a statement or query *builder*, a getter for the engine (`db.GetEngine()`)
 NOT_IO_RECEIVER = re.compile(
     r"(?:^|[.:>])\w*[oO]nce\s*\.\s*Do$|(?:^|[^\w$])(?:\w*Error|\w*Exception|Finder|Statement|\w*Builder)\s*::\s*\w+$|"
-    r"(?:\.|->)GetEngine$|(?:\.|->)getEngine$"
+    r"(?:\.|->)GetEngine$|(?:\.|->)getEngine$|"
+    # a constant table or pattern, or a hash's keys: `POLICY_FLAGS.keys.select { … }`, `PEM_REGEX.findAll(text)`
+    r"(?:^|[^\w$])[A-Z][A-Z0-9]*_?(?:REGEX|RE|PATTERN|FLAGS|MAP|TABLE|LIST|KEYS|NAMES|TYPES|SET)\s*(?:\.|::)|"
+    r"\.(?:keys|values|entries|items|to_a|to_h)(?:\(\))?\s*\.\s*\w+$"
 )
 ORM_NAME = re.compile(r"(?:^|[.:>])(?:where|save!?|create!?|update!?|destroy|insert|select|delete!?)$")
 ORM_LANGS = (".rb", ".php")
@@ -265,7 +268,8 @@ def _resolve_import(source: str, idx: dict[str, list[str]], lang: str, go_mods: 
                 if len(idx[key]) == 1 or (loose and len(idx[key]) <= 3):
                     return idx[key]
                 break  # several files end the same way: don't guess which one
-            if key + "/" in idx:  # a package (Go, Java): the folder stands for its files; link to one of them
+            # (not PHP: `use Predis\Command\Redis\FLUSHDB` names a class, and a `Redis/` folder here isn't it)
+            if key + "/" in idx and lang != "php":  # a package (Go, Java): the folder stands for its files; link to one
                 files = [f for f in idx[key + "/"] if not _is_test(f)]
                 if not files:
                     continue

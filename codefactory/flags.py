@@ -149,6 +149,7 @@ def _is_entry(fn) -> bool:
         or n.startswith("test")
         or (fn.kind == "method" and n in FRAMEWORK_METHODS)
         or n in ("setUp", "tearDown", "setUpClass", "tearDownClass")
+        or re.match(r"visit_?[A-Z]\w*$", n) is not None  # a visitor's hook: the walker calls it by node type
         or is_test(fn.file)
         or is_doc_sample(fn.file)  # a tutorial's handler is there to be read and copied, not called
     )

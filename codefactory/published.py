@@ -32,6 +32,12 @@ def published_api(root: str, files: set[str]) -> tuple[set[str], set[tuple[str, 
             continue
         targets = [v for k in ("exports", "main", "module", "browser", "types") for v in _strings(meta.get(k))]
         entries = {e for t in targets if (e := _source_of(base, t, files))}
+        for t in targets:  # `"./*": "./src/*"`: every module under that folder is importable by its path
+            if t.count("*") == 1 and t.endswith("*"):
+                rel = t[2:-1] if t.startswith("./") else t[:-1]
+                for prefix in {rel, BUILT.sub("src/", rel)}:
+                    folder = posixpath.join(base, prefix)
+                    entries |= {f for f in files if f.startswith(folder) and f.endswith(SOURCE_EXT)}
         entries |= {e for e in (_resolve(base, "./src/index", files), _resolve(base, "./index", files)) if e}
         _follow(root, entries, files, whole, named)
     return whole, named

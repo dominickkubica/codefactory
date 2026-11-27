@@ -115,6 +115,36 @@ class PatternTest(unittest.TestCase):
         self.assertEqual([f for f, _ in hits(found, "shell")], ["bad.js"])
         self.assertEqual([f for f, _ in hits(found, "raw_html")], ["bad.js"])
 
+    def test_round_4_fixed_strings_names_and_expected_throws(self):
+        found = self.scan({
+            "consts.ts": "export const CHAT_OAUTH_REFRESH_COOKIE_NAME = 'n8n-chat-oauth-refresh';\n"
+                         "const N8N_SECRET_KEY_NAME = 'n8n_managed_data_api';\n",
+            "version.py": "git_log = subprocess.run(\n    \"git log --pretty=format:%ct --quiet -1 HEAD\",\n"
+                          "    capture_output=True,\n    shell=True,\n)\n",
+            "toggle.ts": "this.button.innerHTML =\n  '<svg width=\"12\"><path d=\"M8 10\" /></svg>';\n",
+            "button.ts": "this.shadowRoot.innerHTML = `\n  <style>\n    button { color: red; }\n  </style>\n`;\n",
+            "serve.ts": "let p = url;\ntry {\n  p = decodeURI(p);\n} catch {}\n",
+            "respond.ts": "if (x) {\n  try {\n    message = JSON.stringify(body, null, 2);\n  } catch (e) {}\n}\n",
+            "bad.py": 'API_SECRET = "n8n_" "Zq9xW2vK7pL3mN8r"\nsubprocess.run(f"git log {ref}", shell=True)\n'.replace('" "', ""),
+            "bad.ts": "el.innerHTML = `\n  <b>${userName}</b>\n`;\ntry {\n  await db.save(x);\n} catch {}\n",
+        })  # fmt: skip
+        self.assertEqual([f for f, _ in hits(found, "secret")], ["bad.py"])
+        self.assertEqual([f for f, _ in hits(found, "shell")], ["bad.py"])
+        self.assertEqual([f for f, _ in hits(found, "raw_html")], ["bad.ts"])
+        self.assertEqual([f for f, _ in hits(found, "swallowed")], ["bad.ts"])
+
+    def test_sql_from_values_checked_against_a_safe_pattern(self):
+        found = self.scan({  # superset's cancel-query ids; gitea's migration DDL
+            "oracle.py": 'def cancel(cls, cursor, qid):\n    if not cls.validate_cancel_query_id(qid, r"^\\d+,\\d+,\\d+$"):\n'
+                         '        return False\n    sid, serial, inst = qid.split(",")\n'
+                         '    cursor.execute(f"ALTER SYSTEM CANCEL SQL \'{sid}, {serial}, @{inst}\'")\n',
+            "modelmigration/v1_13/v145.go": 'package v1_13\n\nfunc f(sess *Session, sqlType string) {\n'
+                                            '\tsess.Exec("ALTER TABLE t ALTER COLUMN c TYPE " + sqlType)\n}\n',
+            "loose.py": 'def f(cursor, name):\n    if not re.fullmatch(r"^.*$", name):\n        return\n'
+                        '    cursor.execute(f"SELECT * FROM t WHERE n = \'{name}\'")\n',
+        })  # fmt: skip
+        self.assertEqual([f for f, _ in hits(found, "sql_built")], ["loose.py"])
+
     def test_hashes_that_only_name_things_and_more_expected_failures(self):
         found = self.scan({
             "models.py": "def bucket_for_email(email):\n    salted = (email + settings.SECRET_KEY).encode()\n"
@@ -409,6 +439,60 @@ class StructureTest(unittest.TestCase):
         })  # fmt: skip
         unused = sorted(f.target for f in build(root, cache=False).flags if f.kind == "unused")
         self.assertEqual(unused, ["apps/web/src/lib.ts::appOnly", "packages/sdk/src/more.ts::notThis"])
+
+    def test_a_script_folder_imports_its_neighbours_by_name(self):
+        root = repo({  # owid/etl: `from shared import f` next to shared.py
+            "etl/steps/2026/shared.py": "def add_share(t):\n    return t\n\n\ndef other(t):\n    return t\n\n\ndef orphan(t):\n    return t\n",
+            "etl/steps/2026/prevalence.py": "from shared import add_share\n\n\ndef run():\n    return add_share(1)\n",
+            "etl/steps/2026/burden.py": "import shared\n\n\ndef run():\n    return shared.other(1)\n",
+            # inside a package a bare name is absolute: wagtail's views/collections.py isn't `collections`
+            "app/__init__.py": "", "app/views/__init__.py": "",
+            "app/views/collections.py": "from app.views.pages import show\n\n\ndef index():\n    return show()\n",
+            "app/views/pages.py": "from collections import OrderedDict\n\n\ndef show():\n    return OrderedDict()\n",
+        })  # fmt: skip
+        g = build(root, cache=False)
+        unused = [f.target for f in g.flags if f.kind == "unused" and f.target.startswith("etl/")]
+        self.assertEqual(unused, ["etl/steps/2026/shared.py::orphan"])
+        self.assertFalse([f for f in g.flags if f.kind == "cycle"])
+
+    def test_constant_receivers_are_not_queries(self):
+        from codefactory.analyzers.generic import NOT_IO_RECEIVER
+
+        for callee in ("POLICY_FLAGS.keys.select", "PEM_REGEX.findAll", "params.keys.select"):
+            self.assertTrue(NOT_IO_RECEIVER.search(callee), callee)
+        for callee in ("DB.query", "User.where", "repo.findAll", "REDIS_CLIENT.get"):
+            self.assertFalse(NOT_IO_RECEIVER.search(callee), callee)
+
+    def test_seed_scripts_are_one_off(self):
+        from codefactory.paths import is_script
+
+        for f in ("packages/prisma/seed-pbac-only.ts", "examples/x/seed.py", "db/seeds.rb", "app/seed_data.py"):
+            self.assertTrue(is_script(f), f)
+        for f in ("src/seedling.ts", "lib/seedRandom.ts"):
+            self.assertFalse(is_script(f), f)
+
+    @unittest.skipUnless(available(), "PHP needs the language pack")
+    def test_a_php_namespace_part_is_not_a_folder_import(self):
+        root = repo({  # laravel: `use Predis\Command\Redis\FLUSHDB` isn't the Redis/ folder
+            "src/Redis/Connections/Cluster.php": "<?php\nnamespace App\\Redis\\Connections;\nuse Predis\\Command\\Redis\\FLUSHDB;\n"
+                                                 "class Cluster {}\n",
+            "src/Redis/RedisManager.php": "<?php\nnamespace App\\Redis;\nuse App\\Redis\\Connections\\Cluster;\nclass RedisManager {}\n",
+        })  # fmt: skip
+        self.assertFalse([f for f in build(root, cache=False).flags if f.kind == "cycle"])
+
+    def test_wildcard_package_exports_and_visitor_hooks(self):
+        root = repo({  # @muyajs/core's `"./*": "./src/*"`; an ast-types visitor's visitClassDeclaration
+            "packages/muya/package.json": '{"name": "@muyajs/core", "exports": {".": "./src/index.ts", "./*": "./src/*"}}',
+            "packages/muya/src/index.ts": "export const x = 1;\n",
+            "packages/muya/src/state/types.ts": "export function isCell(s) {\n  return s;\n}\n",
+            "packages/muya/src/use.ts": "import './state/types';\nexport const y = 2;\n",
+            "apps/web/package.json": '{"name": "web", "private": true, "exports": {"./*": "./src/*"}}',
+            "apps/web/src/a.ts": "export function appOnly() {\n  return 1;\n}\n", "apps/web/src/b.ts": "import './a';\n",
+            "src/sandbox.ts": "export function check(ast) {\n  astVisit(ast, {\n    visitClassDeclaration(path) {\n"
+                              "      this.traverse(path);\n    },\n  });\n}\n",
+        })  # fmt: skip
+        unused = [f.target for f in build(root, cache=False).flags if f.kind == "unused"]
+        self.assertEqual(unused, ["apps/web/src/a.ts::appOnly"])
 
     @unittest.skipUnless(available(), "Kotlin needs the language pack")
     def test_compose_previews_are_run_by_the_ide(self):

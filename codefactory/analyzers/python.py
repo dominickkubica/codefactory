@@ -58,6 +58,17 @@ class _Module:
         self.tables: dict[str, list] = data["tables"]  # their references: COMMANDS = {"run": (cmd_run, …)}
 
 
+def _sibling(mod: _Module, name: str, known: dict[str, str]) -> str | None:
+    """`from shared import f` in a folder of scripts: Python puts a script's own folder on the path, so a module next
+    to it is found by its bare name. Not inside a package, where `from collections import …` is the standard library."""
+    if mod.is_pkg or "." not in mod.name:
+        return None
+    folder = mod.name.rsplit(".", 1)[0]
+    if folder in known:  # a package (it has an __init__.py): Python 3 has no implicit relative imports there
+        return None
+    return known.get(f"{folder}.{name}")
+
+
 def _resolve_relative(mod: _Module, level: int, target: str | None) -> str:
     base = mod.name.split(".") if mod.is_pkg else mod.name.split(".")[:-1]
     if level > 1:
@@ -84,6 +95,8 @@ def _apply_imports(mod: _Module, imports: list, known: dict[str, str]) -> None:
         if imp[0] == "import":
             _, name, asname, at_load = imp
             written, name = name, known.get(name, name)  # (`lib.streamlit.util`, the long name of `streamlit.util`)
+            if name not in known and (near := _sibling(mod, name, known)):
+                name = near
             if asname:
                 mod.aliases[asname] = name
             else:
@@ -94,6 +107,8 @@ def _apply_imports(mod: _Module, imports: list, known: dict[str, str]) -> None:
         else:
             _, module, level, name, asname, at_load = imp
             src = _resolve_relative(mod, level, module) if level else known.get(module or "", module or "")
+            if not level and src and src not in known and f"{src}.{name}" not in known:
+                src = _sibling(mod, src, known) or src
             local = asname or name
             full = f"{src}.{name}" if src else name
             if full in known:

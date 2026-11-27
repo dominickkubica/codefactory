@@ -27,11 +27,13 @@ lets triage at 1,000 repositories be a sample instead of a full read.
      import loops (C# namespaces, PHP short names, Ruby gems: 11 wrong gone), Python packages under `lib/`
      (streamlit unused code 234 → 18), Compose previews, published packages' API. None right lost.
    - Done: round 4 held out: **65%** (72 of 110, 95% interval 56–74%). Medium 78%, High 57%, Low 37%.
-   - Next (kaizen from round 4): raw HTML from constant markup or a sanitizer a few lines away; SQL guarded by a regex
-     check above it or built from literals every caller passes; PHP import links that don't exist (appwrite
-     `Utopia\Image\*`, laravel `RedisManager`); tests that reach code through a PHPUnit data provider, a dynamic
-     `import()` or Django `reverse()`; unused-code callers in visitors and `./*` package exports; findings that name
-     a route which doesn't reach the call (`/healthz` reaching TypeORM DDL). Then round 5.
+   - Done (kaizen from round 4): about 25 wrong locations gone, none right lost (see the changelog).
+   - Open from round 4: tests reaching code through a PHPUnit data provider or a dynamic `import()`; unused-code
+     callers in Angular `$watch` listeners and sandbox APIs; swallowed errors whose promise is handled later
+     (`Promise.allSettled`); SQL whose interpolated value is a literal at every caller (needs call-site data);
+     findings whose "reached from" chain runs through wrong name-matched calls (`/healthz` → TypeORM DDL: not enough
+     labeled signal yet to change reachability); gitea `UpdateRepositoryNames` writes lost to the `sync.Once` fix.
+   - Next: round 5 held out once this batch is pushed.
 
 ## Next
 

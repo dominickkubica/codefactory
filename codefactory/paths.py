@@ -132,7 +132,11 @@ def is_script(path: str) -> bool:
     """One-off tooling (scripts/, tools/, bin/ at the top, or a package's own scripts/ in a monorepo): matters less
     than the product's code."""
     parts = path.replace("\\", "/").split("/")
-    return parts[0] in SCRIPT_DIRS or "scripts" in parts[1:-1]
+    # (or a seed script: fills a database with demo rows once, `prisma/seed-pbac-only.ts`, `examples/…/seed.py`)
+    return parts[0] in SCRIPT_DIRS or "scripts" in parts[1:-1] or bool(SEED.match(parts[-1]))
+
+
+SEED = re.compile(r"seed(?:s|ers?)?(?:[-_.][\w-]+)*\.(?:py|rb|php|[cm]?[jt]sx?|go|exs?)$", re.I)
 
 
 # Platform and architecture tags in file names (Go's file_linux_amd64.go, C's io_win32.c, Python's _posix.py).

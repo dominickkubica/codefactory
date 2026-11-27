@@ -28,7 +28,8 @@ TRAILING_COMMENT = re.compile(r"(?:\)|\}|;|\bpass)\s*(?://|#)\s*\S")
 # calls whose one expected failure is the reason for the catch: JSON that may not be JSON, a pointer capture on an
 # inactive pointer, a path that may not exist, a custom element already defined (re-run, hot reload)
 EXPECTED_THROW = re.compile(
-    r"JSON\.parse|(?:set|release)PointerCapture|realpath|customElements\.define|decodeURIComponent|new URL\(|"
+    r"JSON\.(?:parse|stringify)|(?:set|release)PointerCapture|realpath|customElements\.define|"
+    r"decodeURI(?:Component)?\b|new URL\(|"
     r"\bimport\(|require\(|\bstat(?:Sync)?\(|\baccess(?:Sync)?\(|\blstat|inspect\.signature|\.resolve\(|"
     r"\bint\(|\bfloat\(|json\.loads|\.decode\(|urlparse|resolve_?url|\bresolve\(|localStorage|sessionStorage|"
     r"clipboard|writeText|navigator\.share"
@@ -105,6 +106,13 @@ def _root(expr: str) -> str:
     return m.group(1) if m else ""
 
 
+def _safe_pattern(body: str) -> bool:
+    """A regex that only lets digits, letters, `_`, `-` and separators through: nothing that can end a quote."""
+    rest = re.sub(r"\[(?:[a-zA-Z0-9]-[a-zA-Z0-9]|\\[dw]|[_\-])+\]|\\[dw]", "", body)
+    rest = re.sub(r"[+*?]|\{\d+(?:,\d*)?\}", "", rest)
+    return body != rest and re.fullmatch(r"[,_\-:]*", rest) is not None
+
+
 def safe_names(lines: list[str], i: int, span: int = 60) -> set[str]:
     """Names that, in the lines leading up to line i, only hold values from a fixed list or that were checked
     against one: `for (const t of Object.keys(TABLES))`, `const cols = keys.filter((c) => allowed.has(c))`,
@@ -126,6 +134,15 @@ def safe_names(lines: list[str], i: int, span: int = 60) -> set[str]:
             for m in re.finditer(r"(?:is_numeric|is_int|ctype_digit|Number\.isInteger|Number\.isFinite)\(\s*\$?(\w+)|"
                                  r"isinstance\(\s*(\w+)\s*,\s*int\b", ln):  # fmt: skip
                 safe.add(m.group(1) or m.group(2))
+            # checked against a pattern of only digits, letters and separators: `validate(x, r"^\d+,\d+$")`,
+            # `re.fullmatch(r"^[a-zA-Z0-9]+$", x)`, `preg_match('/^\d+$/', $x)`
+            for m in re.finditer(r"""r?(["'])/?\^((?:(?!\1).)*)\$/?\w*\1""", ln):
+                if _safe_pattern(m.group(2)):
+                    args = ln[: m.start()] + ln[m.end() :]  # the names passed with it to the same call
+                    safe.update(n for pair in re.findall(r"\(\s*\$?(\w+)\s*[,)]|,\s*\$?(\w+)\s*\)", args) for n in pair if n)
+            # unpacked from a checked value: `sid, serial = cancel_query_id.split(",")`
+            if (u := re.match(r"\s*((?:\w+\s*,\s*)+\w+)\s*=\s*(\w+)\.split\(", ln)) and u.group(2) in safe:
+                safe.update(n.strip() for n in u.group(1).split(","))
             # typed as one of a few strings: `key: "name" | "email"` (TypeScript)
             for m in re.finditer(r"""\b(\w+)\??\s*:\s*(?:['"][^'"]*['"]\s*\|\s*)+['"][^'"]*['"]""", ln):
                 safe.add(m.group(1))

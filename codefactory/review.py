@@ -169,7 +169,10 @@ class Review:
         self.by_kind = defaultdict(list)
         for f in g["flags"]:
             self.by_kind[f["kind"]].append(f)
-        self.code_fns = [f for f in g["functions"] if f["kind"] != "module" and not is_test(f["file"])]
+        self.code_fns = [
+            f for f in g["functions"]
+            if f["kind"] != "module" and not is_test(f["file"]) and not self._rust_test(f["file"], f["line"])
+        ]  # fmt: skip
         self._strengths: list[str] | None = None
 
     def _tested_unlinked(self) -> set[str]:
@@ -194,6 +197,12 @@ class Review:
                 continue  # "/": every URL ends somewhere
             parts = [r"[^/\"'`?]+" if re.fullmatch(r"\{[^}]*\}|<[^>]*>|:\w+|\*\w*", p) else re.escape(p) for p in path.split("/")]
             if re.search(r"[\"'`][^\"'`\s]*" + "/".join(parts) + r"/?(?:\?[^\"'`]*)?[\"'`]", blob):
+                out.add(e.fn)
+        # a route a test reaches by its name: Django's reverse("api:create_locale"), Flask's url_for("create_locale")
+        named = set(re.findall(r"""\b(?:reverse|url_for|reverse_lazy)\(\s*["'](?:[\w-]+:)*([\w-]+)["']""", blob))
+        for e in self.surface.entries if named else ():
+            fn = self.v.fn.get(e.fn)
+            if fn and (fn["name"] in named or self._route_name(fn) in named):
                 out.add(e.fn)
         called = set(re.findall(r"\.(\w+)\s*\(", blob))
         # a method a test calls by name, in any language: through a mixin, a base class or `self.session.delete()`, the
@@ -511,6 +520,34 @@ class Review:
                         q.append(nxt)
         return found
 
+    def _route_name(self, fn: dict) -> str:
+        """The `url_name=` / `name=` a route declares in the decorator above its function (Django Ninja, FastAPI)."""
+        try:
+            lines = (self.root / fn["file"]).read_text(encoding="utf-8", errors="replace").splitlines()
+        except OSError:
+            return ""
+        above = "\n".join(lines[max(0, fn["line"] - 12) : fn["line"]])
+        m = re.findall(r"""\b(?:url_)?name\s*=\s*["']([\w-]+)["']""", above)
+        return m[-1] if m else ""
+
+    def _rust_test(self, file: str, line: int) -> bool:
+        """A Rust test written next to the code: `#[test]` / `#[tokio::test]` above it, or inside a `#[cfg(test)]` module."""
+        if not file.endswith(".rs") or line <= 0:
+            return False
+        cache = self.__dict__.setdefault("_rs_lines", {})
+        if file not in cache:
+            try:
+                cache[file] = (self.root / file).read_text(encoding="utf-8", errors="replace").splitlines()
+            except OSError:
+                cache[file] = []
+        text = cache[file]
+        if any(re.match(r"\s*#\[(?:[\w:]+::)?test\b|\s*#\[(?:rstest|test_case)\b", ln) for ln in text[max(0, line - 5) : line]):
+            return True
+        return any(
+            re.match(r"\s*#\[cfg\(test\)\]", ln) and re.match(r"\s*(?:pub(?:\([^)]*\))?\s+)?mod\b", nxt)
+            for ln, nxt in zip(text[: line - 1], text[1:line], strict=False)
+        )  # (a module, not one `use` behind the flag)
+
     def _comment_line(self, file: str, line: int) -> bool:
         try:
             text = (self.root / file).read_text(encoding="utf-8", errors="replace").splitlines()
@@ -755,7 +792,8 @@ class Review:
                 "factory.toml ([rules] forbid).",
                 "S",
             )
-        copies = [t for t in self.tasks if self._copied(t)]
+        copies = [t for t in self.tasks if self._copied(t)
+                  and not all(self._rust_test(w["file"], w.get("line", 0)) for w in t["where"])]  # fmt: skip
         if copies:
             saved = sum(int(m.group(1)) for t in copies if (m := re.search(r"~(\d+) lines", t["title"])))
             self.add(
@@ -1023,7 +1061,8 @@ class Review:
         return fn["file"] if fn else flag["target"]
 
     def _script(self, flag: dict) -> bool:
-        return is_script(self._file(flag))
+        fn = self.v.fn.get(flag["target"])  # (a Rust test written next to the code counts as test code too)
+        return is_script(self._file(flag)) or bool(fn and self._rust_test(fn["file"], fn["line"]))
 
     def _tracked(self, names: list[str]) -> list[str]:
         if not names:

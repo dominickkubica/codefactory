@@ -68,14 +68,14 @@
  },
  "apache/superset": {
   "status": "ok",
-  "seconds": 296.7,
+  "seconds": 172.0,
   "commit": "3758941",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "High": 2,
    "Medium": 8,
-   "Low": 6
+   "Low": 5
   },
   "serious": [
    "High: Session cookies without Secure / HttpOnly",
@@ -84,7 +84,7 @@
  },
  "appwrite/appwrite": {
   "status": "ok",
-  "seconds": 317.4,
+  "seconds": 477.9,
   "commit": "26642a47",
   "kind": "web app",
   "deployment": "deployed server",
@@ -95,8 +95,8 @@
   },
   "serious": [
    "High: Environment files committed",
-   "High: 107 errors silently swallowed",
-   "High: Import loops (8)"
+   "High: Import loops (7)",
+   "High: 107 errors silently swallowed"
   ]
  },
  "caddyserver/caddy": {
@@ -113,7 +113,7 @@
  },
  "calcom/cal.com": {
   "status": "ok",
-  "seconds": 30.3,
+  "seconds": 123.8,
   "commit": "ae027bb",
   "kind": "web app",
   "deployment": "deployed server",
@@ -133,7 +133,7 @@
  },
  "celery/celery": {
   "status": "ok",
-  "seconds": 20.0,
+  "seconds": 29.6,
   "commit": "14115f0",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -188,17 +188,17 @@
  },
  "django/django": {
   "status": "ok",
-  "seconds": 83.9,
+  "seconds": 97.7,
   "commit": "f0e7bd9",
   "kind": "library",
   "deployment": "user's machine",
   "counts": {
    "High": 2,
-   "Medium": 9,
-   "Low": 6
+   "Medium": 8,
+   "Low": 7
   },
   "serious": [
-   "High: Import loops (8)",
+   "High: Import loops (10)",
    "High: Raw HTML injected into pages"
   ]
  },
@@ -304,7 +304,7 @@
  },
  "go-gitea/gitea": {
   "status": "ok",
-  "seconds": 152.0,
+  "seconds": 112.4,
   "commit": "14d2bdc",
   "kind": "web app",
   "deployment": "deployed server",
@@ -344,7 +344,7 @@
  },
  "healthchecks/healthchecks": {
   "status": "ok",
-  "seconds": 15.5,
+  "seconds": 26.1,
   "commit": "c1039ad",
   "kind": "web app",
   "deployment": "deployed server",
@@ -465,7 +465,7 @@
  },
  "laravel/framework": {
   "status": "ok",
-  "seconds": 73.7,
+  "seconds": 83.8,
   "commit": "321caf7",
   "kind": "library",
   "deployment": "user's machine",
@@ -476,7 +476,7 @@
   },
   "serious": [
    "High: Dynamic code execution (eval / exec / pickle / unsafe YAML)",
-   "High: Import loops (17)"
+   "High: Import loops (16)"
   ]
  },
  "laravel/laravel": {
@@ -521,7 +521,7 @@
  },
  "marktext/marktext": {
   "status": "ok",
-  "seconds": 79.8,
+  "seconds": 91.9,
   "commit": "95a14e5",
   "kind": "desktop app",
   "deployment": "user's machine",
@@ -537,7 +537,7 @@
  },
  "mastodon/mastodon": {
   "status": "ok",
-  "seconds": 99.3,
+  "seconds": 163.8,
   "commit": "db13cc1",
   "kind": "web app",
   "deployment": "deployed server",
@@ -577,7 +577,7 @@
  },
  "mitmproxy/mitmproxy": {
   "status": "ok",
-  "seconds": 62.8,
+  "seconds": 66.2,
   "commit": "0466185",
   "kind": "web app",
   "deployment": "deployed server",
@@ -607,7 +607,7 @@
  },
  "n8n-io/n8n": {
   "status": "ok",
-  "seconds": 597.2,
+  "seconds": 634.7,
   "commit": "dcded939",
   "kind": "web app",
   "deployment": "deployed server",
@@ -624,7 +624,7 @@
    "High: Request data reaches dangerous calls (1 proven flows)",
    "High: TLS certificate checks turned off",
    "High: Personal data written to logs",
-   "High: 226 errors silently swallowed",
+   "High: 220 errors silently swallowed",
    "High: Import loops (10)",
    "High: SQL assembled from strings"
   ]
@@ -643,7 +643,7 @@
  },
  "outline/outline": {
   "status": "ok",
-  "seconds": 14.6,
+  "seconds": 151.6,
   "commit": "13c6c77",
   "kind": "web app",
   "deployment": "deployed server",
@@ -659,7 +659,7 @@
  },
  "owid/etl": {
   "status": "ok",
-  "seconds": 158.3,
+  "seconds": 103.4,
   "commit": "9a2e7d68",
   "kind": "data pipeline",
   "deployment": "user's machine",
@@ -773,7 +773,7 @@
  },
  "saleor/saleor": {
   "status": "ok",
-  "seconds": 93.5,
+  "seconds": 88.1,
   "commit": "e1ccf4d",
   "kind": "web app",
   "deployment": "deployed server",
@@ -871,12 +871,12 @@
  },
  "square/okhttp": {
   "status": "ok",
-  "seconds": 29.0,
+  "seconds": 43.3,
   "commit": "223a0cc",
   "kind": "library",
   "deployment": "user's machine",
   "counts": {
-   "Medium": 5,
+   "Medium": 4,
    "Low": 4
   },
   "serious": []
@@ -895,7 +895,7 @@
  },
  "streamlit/streamlit": {
   "status": "ok",
-  "seconds": 113.7,
+  "seconds": 95.3,
   "commit": "1819c56",
   "kind": "web app",
   "deployment": "LAN server",
@@ -943,7 +943,7 @@
  },
  "tldraw/tldraw": {
   "status": "ok",
-  "seconds": 21.8,
+  "seconds": 128.1,
   "commit": "94466fd",
   "kind": "web app",
   "deployment": "deployed server",
@@ -959,7 +959,7 @@
  },
  "tokio-rs/axum": {
   "status": "ok",
-  "seconds": 10.7,
+  "seconds": 3.9,
   "commit": "8d8944e",
   "kind": "library",
   "deployment": "user's machine",
@@ -1027,7 +1027,7 @@
  },
  "wagtail/wagtail": {
   "status": "ok",
-  "seconds": 77.8,
+  "seconds": 77.6,
   "commit": "da32ecb",
   "kind": "web app",
   "deployment": "network server",
@@ -1042,7 +1042,7 @@
  },
  "withastro/astro": {
   "status": "ok",
-  "seconds": 14.6,
+  "seconds": 105.6,
   "commit": "3e3e70f",
   "kind": "web front-end",
   "deployment": "browser",
@@ -1052,7 +1052,7 @@
    "Low": 3
   },
   "serious": [
-   "High: 38 errors silently swallowed",
+   "High: 37 errors silently swallowed",
    "High: Import loops (8)"
   ]
  }
