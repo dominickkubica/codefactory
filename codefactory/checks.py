@@ -338,6 +338,10 @@ def _named_not_secret(fid: str, lines: list[str], i: int) -> bool:
         return True
     if value.strip().upper() == re.sub(r"\W", "", name).strip().upper():
         return True  # an enum whose value is its own name (`JWT_SECRET = 'JWT_SECRET'`)
+    if re.fullmatch(r"[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+", value):
+        return True  # the name of an environment variable that holds it (`ENV_GRANT_TOKEN = "N8N_RUNNERS_GRANT_TOKEN"`)
+    if re.search(r"(?:client|app|application|project|tenant|account)_?id$", name.strip(), re.I):
+        return True  # an OAuth client ID or an app ID identifies; it doesn't authenticate
     parts = [p for p in re.split(r"[_\-/.:]", value) if p]
     if len(parts) == 1:  # camelCase words (`consoleOAuth2Provider`), not random characters
         parts = re.findall(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|\d+", value)
@@ -421,8 +425,9 @@ def internet_http(line: str) -> bool:
 
 
 PUBLIC_KEY_NOTE = re.compile(
-    r"safe to (?:embed|commit|publish|share|include)|not (?:a |really )?secret|(?:is|are) public\b|public (?:client|by design)|"
-    r"intentionally (?:public|committed|embedded)|compromised|publicly (?:known|disclosed)|for (?:the )?examples?\b",
+    r"safe to (?:be )?(?:embed|commit|publish|shar|includ)\w*|not (?:a |really )?secret|(?:is|are) public\b|"
+    r"public (?:client|by design)|intentionally (?:public|committed|embedded)|compromised|publicly (?:known|disclosed)|"
+    r"for (?:running )?(?:the |these )?examples?\b|request your own",
     re.I,
 )
 
@@ -438,6 +443,8 @@ def _not_a_working_key(lines: list[str], i: int) -> bool:
             body = re.sub(r"^[A-Za-z]{2,8}[_-](?:live_|test_)?|^AKIA|^AIza|^xox[abpr]-", "", m.group(0))
             if not looks_random(body[:40] if len(body) >= 12 else body + "x" * 12):
                 return True
+    if "PRIVATE KEY-----" in line and re.search(r"A{16,}", "".join(lines[i : i + 3])):
+        return True  # a key block padded with AAAA…: a deliberately broken example key (mitmproxy's)
     above = "\n".join(lines[max(0, i - 6) : i])
     return PUBLIC_KEY_NOTE.search(above) is not None
 

@@ -68,9 +68,12 @@ class SecretsTest(unittest.TestCase):
             "src/flow.go": "// The secret is safe to embed in version control: it's a native app's public client.\n"
                            'const oauthClientSecret = "34ddeff2b558a23d38fba8a6de74f086ede1cc0b"\n',
             "src/real.py": f'STRIPE = "{stripe}4eC39HqLyjWDarjtT1zdp7dc"\n',
+            "src/gh.go": "var (\n\toauthClientID = \"178c6fc778ccc68e1d6a\"\n\t// This value is safe to be embedded in version control\n"
+                         "\toauthClientSecret = \"34ddeff2b558a23d38fba8a6de74f086ede1cc0b\"\n)\n",
+            "src/consts.py": 'ENV_GRANT_TOKEN = "N8N_RUNNERS_GRANT_TOKEN"\n',
         })  # fmt: skip
-        self.assertEqual([e.file for e in scan_sources(root, ["src/a.spec.ts", "src/flow.go", "src/real.py"])["secret"].hits],
-                         ["src/real.py"])  # fmt: skip
+        files = ["src/a.spec.ts", "src/flow.go", "src/real.py", "src/gh.go", "src/consts.py"]
+        self.assertEqual([e.file for e in scan_sources(root, files)["secret"].hits], ["src/real.py"])
 
 
 class PatternTest(unittest.TestCase):
