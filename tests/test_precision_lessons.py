@@ -410,6 +410,7 @@ class StructureTest(unittest.TestCase):
         unused = sorted(f.target for f in build(root, cache=False).flags if f.kind == "unused")
         self.assertEqual(unused, ["apps/web/src/lib.ts::appOnly", "packages/sdk/src/more.ts::notThis"])
 
+    @unittest.skipUnless(available(), "Kotlin needs the language pack")
     def test_compose_previews_are_run_by_the_ide(self):
         root = repo({"ui/Card.kt": (
             "package ui\n\n@Composable\nfun Card() {\n    Text(\"x\")\n}\n\n@Preview\n@Composable\nprivate fun CardPreview() {\n"
