@@ -235,12 +235,14 @@ def kubernetes(rel: str, lines: list[str], out: dict) -> None:
 
 
 def html(rel: str, lines: list[str], out: dict) -> None:
+    # a page loading development builds (`react.development.js`) is a local playground, not a page that ships
+    dev_page = any(re.search(r"\.development(?:\.min)?\.js\b", ln) for ln in lines)
     for i, ln in enumerate(lines, 1):
         for m in TAG_SRC.finditer(ln):
             if not LOCAL_HOST.match(m.group(2)):
                 _hit(out, "html_mixed", rel, lines, i)
         for m in CDN_SCRIPT.finditer(ln):
-            if "integrity=" not in m.group(0).lower():
+            if "integrity=" not in m.group(0).lower() and not dev_page:
                 _hit(out, "html_no_sri", rel, lines, i, f"<script src=…{m.group(1)}…> without integrity=")
 
 

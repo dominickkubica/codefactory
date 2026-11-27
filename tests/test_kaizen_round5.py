@@ -132,3 +132,15 @@ class SqlHelpersTest(unittest.TestCase):
         }  # fmt: skip
         found = scan_sources(repo(files), list(files))
         self.assertEqual([(e.file, e.line) for e in found["sql_built"].hits], [("ch.php", 16)])
+
+
+class SriTest(unittest.TestCase):
+    def test_a_playground_page_loading_development_builds(self):
+        from codefactory.infra import html
+
+        out = {k: type("C", (), {"hits": []})() for k in ("html_mixed", "html_no_sri")}
+        dev = ['<script src="https://unpkg.com/react@18/umd/react.development.js"></script>', "<div id=root></div>"]
+        prod = ['<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>']
+        html("embed/inline.html", dev, out)
+        html("gui/index.html", prod, out)
+        self.assertEqual([h.file for h in out["html_no_sri"].hits], ["gui/index.html"])
