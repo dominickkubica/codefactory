@@ -210,3 +210,13 @@ class CredentialNoiseTest(unittest.TestCase):
         }  # fmt: skip
         found = scan_sources(repo(files), list(files))
         self.assertEqual([e.file for e in found["secret"].hits], ["config.py"])
+
+
+class ShellNoiseTest(unittest.TestCase):
+    def test_backticks_in_a_ruby_heredoc_are_markdown(self):
+        files = {
+            "agent.rb": "description <<-MD\n  The path is set to `#{interpolated['payload_path']}`.\nMD\n",
+            "run.rb": "out = `git log #{ref}`\n",
+        }  # fmt: skip
+        found = scan_sources(repo(files), list(files))
+        self.assertEqual([e.file for e in found["shell"].hits], ["run.rb"])

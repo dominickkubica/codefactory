@@ -18,6 +18,8 @@ LOWER = {
     "Raw HTML injected into pages": lambda loc: "(no endpoint reaches it)" in loc,
     # a flow in a script, test or dev setup (a local proxy, a seed script) isn't the product's attack surface
     "Request data reaches dangerous calls": lambda loc: re.search(r"\*\((?:script|test|dev)\b", loc) is not None,
+    # a command a script or a tool runs (a formatter over a fixed path, a theme generator): dev tooling
+    "Shell commands built at runtime": lambda loc: re.search(r"\*\((?:script|test|dev)\b", loc) is not None,
 }
 DOWN = {"Critical": "High", "High": "Medium", "Medium": "Low", "Low": "Low", "Info": "Info"}
 

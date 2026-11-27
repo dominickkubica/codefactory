@@ -516,6 +516,20 @@ def _template_lines(lines: list[str]) -> set[int]:
 STORIES = re.compile(r"\.stor(?:y|ies)\.(?:[cm]?[jt]sx?|mdx|svelte|vue)$")
 
 
+def _ruby_heredoc_lines(lines: list[str]) -> set[int]:
+    """Lines inside Ruby heredocs (`<<-MD` … `MD`, `<<~TEXT`): text, where backticks are formatting."""
+    out, end = set(), None
+    for n, ln in enumerate(lines, 1):
+        if end is not None:
+            if ln.strip() == end:
+                end = None
+            else:
+                out.add(n)
+        elif m := re.search(r"<<[-~]?(['\"]?)([A-Z_][A-Z0-9_]*)\1", ln):
+            end = m.group(2)
+    return out
+
+
 def _comment_line(line: str) -> bool:
     return re.match(r"\s*(?://|#|\*|/\*|--|<!--)", line) is not None
 
@@ -835,6 +849,8 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                         or OWN_VERIFY.search("\n".join(lines[max(0, i - 7) : i + 6]))
                     ):
                         continue  # chosen by a setting (`CERT_REQUIRED if verify else CERT_NONE`): the user's option
+                    if key == "shell" and fid.endswith(".rb") and i in _ruby_heredoc_lines(lines):
+                        continue  # Markdown in a heredoc (a description's `#{payload_path}`), not a command
                     if key == "shell" and fid.endswith(".rb") and re.search(r'"[^"]*`[^`"]*#\{[^}]+\}[^`"]*`[^"]*"', line):
                         continue  # backticks inside a message string ("append `--trace` to the `#{cmd}` command")
                     if key == "shell" and (subs := re.findall(r"\$\{([^}]+)\}", line)) and "`" in line:
