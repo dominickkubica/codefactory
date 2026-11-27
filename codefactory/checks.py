@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .brief import View
+from .callers import drop_fixed
 from .intent import expected_failure, interp_safe, push_skip_explained, safe_names, swallow_intent
 from .paths import is_doc_sample, is_sample_code, is_test, is_vendored, links_outside
 from .suppress import MARK
@@ -659,6 +660,7 @@ def scan_sources(root: Path, files: list[str]) -> dict[str, Check]:
             out[key].hits += [Evidence(fid, line, text) for line, text in got["hits"]]
             for k, v in got["data"].items():
                 out[key].data.setdefault(k, v)  # hosts: the first file that uses each
+    drop_fixed(root, files, out, ("sql_built", "raw_html", "shell"))  # a parameter every caller passes a literal
     if any("axios" in e.text for e in out["fetch_no_timeout"].hits) and _axios_default_timeout(root, files):
         # set once for the whole app (`axios.defaults.timeout = 300_000` in the server's constructor)
         out["fetch_no_timeout"].hits = [e for e in out["fetch_no_timeout"].hits if "axios" not in e.text]
