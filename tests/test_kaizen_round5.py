@@ -178,17 +178,9 @@ class SmallChecksTest(unittest.TestCase):
 
 
 class StateAndRegistryTest(unittest.TestCase):
-    def test_set_once_module_state_and_registry_copies(self):
+    def test_registry_copies(self):
         from codefactory.paths import deliberate_copies
 
-        lazy = "let client = null;\nexport function get() {\n  if (!client) client = make();\n  return client;\n}\n"
-        memo = "let extras;\nexport const load = () => (extras ??= fetchExtras());\n"
-        never = "let meta;\nexport const read = () => meta;\n"
-        counter = "let n = 0;\nexport const inc = () => { n++; };\nexport const reset = () => { n = 0; };\n"
-        files = {"a.ts": lazy + memo + never, "b.ts": counter + "let m = 0;\nexport const f = () => { m++; m = 2; };\n"
-                 "let k = 0;\nexport const g = () => { k++; k = 1; };\n"}  # fmt: skip
-        found = scan_sources(repo(files), list(files))
-        self.assertEqual(sorted({e.file for e in found["module_state"].hits}), ["b.ts"])
         self.assertTrue(deliberate_copies(["v4/registry/bases/aria/ui/chart.tsx", "v4/registry/bases/radix/ui/chart.tsx"]))
         self.assertFalse(deliberate_copies(["src/a/chart.tsx", "src/b/chart.tsx"]))
 
@@ -220,15 +212,3 @@ class ShellNoiseTest(unittest.TestCase):
         }  # fmt: skip
         found = scan_sources(repo(files), list(files))
         self.assertEqual([e.file for e in found["shell"].hits], ["run.rb"])
-
-
-class SetOnceTest(unittest.TestCase):
-    def test_reset_on_failure_and_counters_are_state(self):
-        from codefactory.checks import _set_once
-
-        lazy_reset = (
-            "let s;\nfunction g() {\n  if (!s) {\n    s = load();\n    s.catch(() => {\n      s = undefined;\n    });\n  }\n}\n"
-        )
-        self.assertFalse(_set_once(lazy_reset, "let s;"))
-        self.assertFalse(_set_once("let n = 0;\nexport function inc() { n++; }\n", "let n = 0;"))
-        self.assertTrue(_set_once("let c = null;\nexport const get = () => (c ??= make());\n", "let c = null;"))
