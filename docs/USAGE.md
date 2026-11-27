@@ -30,7 +30,9 @@ codefactory --version
   `npm install -g typescript@5`, or the folder of one in the `CODEFACTORY_TYPESCRIPT` environment variable
   (TypeScript 7, the native rewrite, has no JavaScript API yet). It never runs the one in the analyzed repository's
   `node_modules`: that's the repository's code, and codefactory never runs the code it analyzes. Module resolution
-  (tsconfig `paths`, aliases, `baseUrl`) still comes from the project's own files. Without a compiler,
+  (tsconfig `paths`, aliases, `baseUrl`) still comes from the project's own files. A monorepo whose source is more
+  than about 1/64 of Node's heap (128 MB at 8 GB) is type-checked in groups of packages, one at a time, with the same
+  graph (`CODEFACTORY_TS_SPLIT_MB` and `CODEFACTORY_TS_GROUP_MB` set the threshold and group size). Without a compiler,
   TypeScript/JavaScript goes through the general analyzer (matching calls by name) if the language pack is
   installed, and is skipped with a note if it isn't.
 - **Every other language** (Go, Java, Kotlin, Swift, Rust, C/C++, C#, Ruby, PHP, Scala, Dart, Lua, Elixir…) needs the

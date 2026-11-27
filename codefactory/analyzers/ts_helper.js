@@ -68,6 +68,131 @@ for (const p of pkgFiles.filter((f) => !hidden(f) && !outside(f))
     }
   } catch { /* not a package */ }
 }
+
+// A repository too big for one type checker (n8n: 27k files, past an 8 GB heap) is analyzed in groups of packages,
+// one Program each, in turn, in a child process each (its memory goes when it exits). A group's Program still loads
+// what its files import, so calls into other groups resolve as in one Program; only the group's own files are walked.
+// --group: such a child, its files on stdin.
+const own = process.argv[5] === "--group" ? new Set(JSON.parse(fs.readFileSync(0, "utf8"))) : null;
+const MB = 1024 * 1024;
+const heapMb = require("v8").getHeapStatistics().heap_size_limit / MB;
+const splitAt = (Number(process.env.CODEFACTORY_TS_SPLIT_MB) || heapMb / 64) * MB; // (one Program: ~40x its source)
+const groupBudget = (Number(process.env.CODEFACTORY_TS_GROUP_MB) || Math.min(24, splitAt / MB / 2)) * MB;
+const sizeOf = (f) => { try { return fs.statSync(f).size; } catch { return 0; } };
+
+// Files by package (nearest package.json), packed in path order up to the budget; a package over it is cut in runs.
+function groupsOf(sizes) {
+  const dirs = new Set(pkgFiles.filter((f) => !hidden(f) && !outside(f)).map((f) => path.dirname(f)));
+  const top = path.resolve(root), byPkg = new Map();
+  for (const f of [...sizes.keys()].sort()) {
+    let d = path.dirname(f);
+    while (!dirs.has(d) && d !== top && path.dirname(d) !== d) d = path.dirname(d);
+    (byPkg.get(d) || byPkg.set(d, []).get(d)).push(f);
+  }
+  const groups = [];
+  let cur = [], used = 0;
+  const flush = () => { if (cur.length) groups.push(cur); cur = []; used = 0; };
+  for (const d of [...byPkg.keys()].sort()) {
+    const list = byPkg.get(d), size = list.reduce((a, f) => a + sizes.get(f), 0);
+    if (used + size > groupBudget) flush();
+    for (const f of list) {
+      if (used && used + sizes.get(f) > groupBudget) flush();
+      cur.push(f);
+      used += sizes.get(f);
+    }
+  }
+  flush();
+  return groups;
+}
+
+// Placeholders a group leaves for a function in a file its Program didn't load (a require() from a .ts file, a mocked
+// module it doesn't import), named by file and name: P_EXPORT a top-level function, P_MODULE every function of the
+// file, P_NAMED every function of that name. The groups' results are merged and these replaced by function ids.
+const P_EXPORT = "\u0001", P_MODULE = "\u0002", P_NAMED = "\u0003", P_SEP = "\u0005";
+function splitRun(groups) {
+  const { spawnSync } = require("child_process");
+  const files = [], functions = [], calls = new Map(), refs = new Map(), imports = new Set(), sites = [];
+  const unresolved = new Set(), mocks = new Map();
+  for (const g of groups) {
+    const args = [...process.execArgv, __filename, root, tsPath, ignoreJson || "[]", "--group"];
+    const r = spawnSync(process.execPath, args, { input: JSON.stringify(g), maxBuffer: 2 ** 30 });
+    if (r.status !== 0) {
+      process.stderr.write(r.stderr || "");
+      throw new Error(`a group of ${g.length} files failed: ${r.error || r.signal || `exit ${r.status}`}`);
+    }
+    const part = JSON.parse(r.stdout.toString("utf8"));
+    files.push(...part.files);
+    functions.push(...part.functions);
+    for (const [k, n] of part.calls) calls.set(k, (calls.get(k) || 0) + n);
+    for (const [k, n] of part.refs) refs.set(k, (refs.get(k) || 0) + n);
+    for (const k of part.imports) imports.add(k);
+    sites.push(...part.sites);
+    for (const p of part.unresolved) unresolved.add(p);
+    for (const [k, ids] of part.mocks) for (const id of ids) (mocks.get(k) || mocks.set(k, new Set()).get(k)).add(id);
+  }
+  const exported = new Map(), byFile = new Map(), byId = new Map();
+  for (const f of functions) {
+    byId.set(f.id, f);
+    (byFile.get(f.file) || byFile.set(f.file, []).get(f.file)).push(f);
+    if (f.kind === "module" || f.qualname.includes(".")) continue;
+    (exported.get(f.file) || exported.set(f.file, new Map()).get(f.file)).set(f.name, f.id);
+  }
+  const resolve = (id) => { // -> [ids]
+    if (!"\u0001\u0002\u0003".includes(id[0])) return [id];
+    const [file, name] = id.slice(1).split(P_SEP), fns = byFile.get(file) || [];
+    if (id[0] === P_MODULE) return fns.map((f) => f.id);
+    if (id[0] === P_NAMED) return fns.filter((f) => f.name === name).map((f) => f.id);
+    if (name === "<module>") return byId.has(`${file}::<module>`) ? [`${file}::<module>`] : [];
+    const one = (exported.get(file) || new Map()).get(name);
+    return one ? [one] : [];
+  };
+  const relink = (m) => {
+    const out = new Map();
+    for (const [k, n] of m) {
+      const cut = k.indexOf("\u0000"), src = k.slice(0, cut);
+      for (const dst of resolve(k.slice(cut + 1))) {
+        const key = `${src}\u0000${dst}`;
+        if (dst !== src) out.set(key, (out.get(key) || 0) + n);
+      }
+    }
+    return out;
+  };
+  const callsBy = relink(calls), refsBy = relink(refs);
+  for (const f of functions) if (f.kind === "method" && unresolved.has(f.name)) f.dynamic = true;
+  for (const [fileId, set] of mocks) {
+    const top = byId.get(`${fileId}::<module>`);
+    if (top) top.mocks = [...new Set([...set].flatMap(resolve))].sort();
+  }
+  const kept = sites.filter((s) => !s.target || (s.target = resolve(s.target)[0] || ""));
+  return { files, functions, edges: edgesOf(callsBy, refsBy, imports), sites: kept };
+}
+function edgesOf(calls, refs, imports) {
+  const edges = [];
+  const edge = (k, kind, count) => { const [src, dst] = k.split("\u0000"); edges.push({ src, dst, kind, count }); };
+  for (const [k, count] of calls) edge(k, "call", count);
+  for (const [k, count] of refs) if (!calls.has(k)) edge(k, "ref", count);
+  for (const k of imports) edge(k, "import", 1);
+  return edges;
+}
+// The merged graph, written a piece at a time (as one string it can pass V8's longest string).
+function writeJson(out) {
+  let buf = "";
+  const put = (s) => { buf += s; if (buf.length > MB) { process.stdout.write(buf); buf = ""; } };
+  Object.entries(out).forEach(([k, list], i) => {
+    put(`${i ? "," : "{"}${JSON.stringify(k)}:[`);
+    list.forEach((x, j) => put((j ? "," : "") + JSON.stringify(x)));
+    put("]");
+  });
+  process.stdout.write(buf + "}");
+}
+if (!own) {
+  const sizes = new Map([...all].map((f) => [f, sizeOf(f)]));
+  if ([...sizes.values()].reduce((a, b) => a + b, 0) > splitAt) {
+    writeJson(splitRun(groupsOf(sizes)));
+    return; // (the module's own function: the rest is one Program's run)
+  }
+}
+
 const CONDITIONS = ["types", "source", "import", "module", "default", "require", "node", "browser"];
 const conditionsOf = (v) => [...CONDITIONS.filter((c) => c in v),
   ...Object.keys(v).filter((c) => !CONDITIONS.includes(c))];
@@ -195,12 +320,17 @@ host.resolveModuleNameLiterals = (lits, from, redirected, opts, sf) => lits.map(
   return resolveFull(lit.text, from, mode, redirected);
 });
 host.getModuleResolutionCache = () => resolutionCache;
-const program = ts.createProgram([...all], options, host);
+const program = ts.createProgram(own ? [...own] : [...all], options, host);
 const checker = program.getTypeChecker();
-const sources = program.getSourceFiles().filter((sf) => all.has(path.resolve(sf.fileName)));
+// (in a group, `loaded` also holds the other groups' files its own import: their functions are only named)
+const loaded = program.getSourceFiles().filter((sf) => all.has(path.resolve(sf.fileName)));
+const mine = (sf) => !own || own.has(path.resolve(sf.fileName));
+const sources = own ? loaded.filter(mine) : loaded;
+const loadedIds = new Set(loaded.map((sf) => rel(sf.fileName)));
 
 const sourceById = new Map();
 const files = [], functions = [], fnByNode = new Map(), calls = new Map(), refs = new Map(), imports = new Set();
+const known = own ? [] : functions; // (with the functions of the other groups' files a group loaded)
 const sites = [], ioOf = new Map();
 const unresolvedProps = new Set();
 const bump = (m, k) => m.set(k, (m.get(k) || 0) + 1);
@@ -430,12 +560,13 @@ function arrayish(expr) {
 
 // 1. Files and functions. Nested named functions (a hook's handlers, a component's callbacks) are their own
 // functions, qualified by what holds them ("useRun.logSet"); anonymous callbacks belong to the function around them.
-for (const sf of sources) {
-  const id = rel(sf.fileName);
-  files.push({ id, module: id.replace(EXT, ""), loc: sf.getLineAndCharacterOfPosition(sf.end).line + 1 });
+for (const sf of loaded) {
+  const id = rel(sf.fileName), full = mine(sf);
+  const add = (fn) => { known.push(fn); if (own && full) functions.push(fn); };
+  if (full) files.push({ id, module: id.replace(EXT, ""), loc: sf.getLineAndCharacterOfPosition(sf.end).line + 1 });
   const top = { id: `${id}::<module>`, file: id, name: "<module>", qualname: "<module>", line: 1, end: 1, loc: 0,
     kind: "module", decorated: false, exported: false, shape: "", tokens: "", dynamic: false, public: false, io: [] };
-  functions.push(top);
+  add(top);
   fnByNode.set(sf, top);
   sourceById.set(id, sf);
   const seen = new Map();
@@ -464,8 +595,9 @@ for (const sf of sources) {
         const fn = { id: fid, file: id, name, qualname: qual, line, end, loc: end - line + 1,
           kind: prefix && prefix === cls ? "method" : "function", decorated: !!(ts.canHaveDecorators(n) && ts.getDecorators(n)?.length),
           exported: !!asData || isDefaultExport(n) || (n.parent && ts.isVariableDeclaration(n.parent) && isDefaultExport(n.parent.parent.parent)),
-          ...shapeOf(n, sf), dynamic: false, public: isExported(n), io: [], branches: branchesOf(n) };
-        functions.push(fn);
+          ...(full ? shapeOf(n, sf) : {}), dynamic: false, public: isExported(n), io: [],
+          branches: full ? branchesOf(n) : 0 };
+        add(fn);
         fnByNode.set(n, fn);
         next = fn;
         if (prefix === cls) nextCls = null; // inside a method, nested functions are qualified by the method
@@ -511,9 +643,10 @@ function fnForSymbol(sym) {
 // codefactory: ignore module_state — filled once per run, read by the passes after it
 let exportsByFile = null;
 function exportsOf(fileId) {
+  if (own && !loadedIds.has(fileId)) return { get: (name) => ({ id: P_EXPORT + fileId + P_SEP + name }) };
   if (!exportsByFile) {
     exportsByFile = new Map();
-    for (const f of functions) {
+    for (const f of known) {
       if (f.kind === "module" || f.qualname.includes(".")) continue;
       if (!exportsByFile.has(f.file)) exportsByFile.set(f.file, new Map());
       exportsByFile.get(f.file).set(f.name, f);
@@ -673,7 +806,7 @@ function mockModule(n, fileId, sf) { // vi.mock("./repo", factory?): the whole m
   if (!dst) return;
   if (!fnsByFile) {
     fnsByFile = new Map();
-    for (const f of functions) (fnsByFile.get(f.file) || fnsByFile.set(f.file, []).get(f.file)).push(f);
+    for (const f of known) (fnsByFile.get(f.file) || fnsByFile.set(f.file, []).get(f.file)).push(f);
   }
   const factory = n.arguments[1];
   let keep = null; // a factory that spreads the real module (importOriginal, importActual) replaces only what it names
@@ -686,7 +819,9 @@ function mockModule(n, fileId, sf) { // vi.mock("./repo", factory?): the whole m
     };
     walk(factory);
   }
-  for (const f of fnsByFile.get(dst) || []) if (!keep || keep.has(f.name)) addMock(fileId, f);
+  if (own && !loadedIds.has(dst)) {
+    for (const name of keep || [""]) addMock(fileId, { id: (keep ? P_NAMED : P_MODULE) + dst + P_SEP + name });
+  } else for (const f of fnsByFile.get(dst) || []) if (!keep || keep.has(f.name)) addMock(fileId, f);
 }
 function addMock(fileId, f) {
   if (f) (mocksOf.get(fileId) || mocksOf.set(fileId, new Set()).get(fileId)).add(f.id);
@@ -719,6 +854,7 @@ for (const sf of sources) {
         for (let p = n.parent; p && !lazy; p = p.parent) lazy = isFnLike(p);
         if (!lazy) imports.add(`${fileId}\u0000${dst}`);
         const target = sourceById.get(dst);
+        if (!target && own && src) bump(refs, `${src.id}\u0000${P_EXPORT}${dst}${P_SEP}<module>`);
         let dflt = null;
         try {
           const mod = target && checker.getSymbolAtLocation(target);
@@ -796,15 +932,19 @@ for (const sf of sources) {
   };
   ts.forEachChild(sf, visit);
 }
+if (own) { // a group's part, merged with the others' by splitRun
+  for (const [fn, set] of ioOf) fn.io = [...set].sort();
+  const pairs = (m) => [...m].map(([k, v]) => [k, v instanceof Set ? [...v] : v]);
+  process.stdout.write(JSON.stringify({ files, functions, calls: pairs(calls), refs: pairs(refs), imports: [...imports],
+    sites, unresolved: [...unresolvedProps], mocks: pairs(mocksOf) }));
+  return;
+}
 for (const f of functions) if (f.kind === "method" && unresolvedProps.has(f.name)) f.dynamic = true;
 for (const [fileId, set] of mocksOf) {
   const top = sourceById.has(fileId) && fnByNode.get(sourceById.get(fileId));
   if (top) top.mocks = [...set].sort();
 }
 
-const edges = [];
-for (const [k, count] of calls) { const [src, dst] = k.split("\u0000"); edges.push({ src, dst, kind: "call", count }); }
-for (const [k, count] of refs) if (!calls.has(k)) { const [src, dst] = k.split("\u0000"); edges.push({ src, dst, kind: "ref", count }); }
-for (const k of imports) { const [src, dst] = k.split("\u0000"); edges.push({ src, dst, kind: "import", count: 1 }); }
+const edges = edgesOf(calls, refs, imports);
 for (const [fn, set] of ioOf) fn.io = [...set].sort();
 process.stdout.write(JSON.stringify({ files, functions, edges, sites }));

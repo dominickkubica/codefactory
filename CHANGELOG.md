@@ -38,6 +38,11 @@ honest figure for code codefactory hasn't been tuned on, and the target for the 
   attributes, and a method with no callers stays a hint; methods tests call by name and migrations count as tested;
   frozen dated copies, build outputs and small edited copies aren't "copied logic"; TypeScript imports used only as
   types and Java imports only for a Javadoc link aren't dependencies; an import loop shows a real chain of imports.
+- **Huge TypeScript monorepos keep the type checker**: past ~1/64 of Node's heap in source, files are analyzed in
+  groups of packages (~24 MB each), one Program per group in its own process, each loading what its files import, so
+  calls across groups resolve as in one Program. n8n (27k files): 2.2 GB peak instead of running out of memory at
+  8 GB and falling back to the general analyzer. Forced on cal.com and Appwrite, the graph matches one Program's
+  (cal.com identical; Appwrite 1 of 112,257 edges a call instead of a reference); below the threshold, unchanged.
 
 ### Data-flow guards, speed, determinism
 
