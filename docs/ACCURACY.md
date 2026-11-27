@@ -245,6 +245,30 @@ Checks whose claim is true by construction (a missing README, an unpinned versio
 | Workflow runs a fork's code with this repository's secrets | 0% | 0%–79% | 1 |
 <!-- precision:end -->
 
+### Round 8: before and after on 30 repositories nobody tuned against
+
+Round 8 asked whether fixes made from earlier rounds carry to new code. Thirty repositories (Python, Go, TypeScript,
+Ruby, PHP, Rust, Java, C#, Swift, Kotlin, Elixir; `# Round 8` in `tools/corpus/repos.txt`) were analyzed with 0.23.0
+and frozen before any fix began. The fixes came only from rounds 1–7, and each had to be a fact about a language, a
+protocol or an image rather than about one repository: a method *named* `eval` is defined, not called; a library's
+build is known by its `/*! Vue.js v2.7.14` banner or webpack runtime; the postgres and mysql images drop root in
+their own entrypoint; a module's unexported JavaScript helper is only called from its own file; SHA-1 is what the
+Pwned Passwords API takes; `RSA/ECB` names no block mode. Then both versions analyzed the same 30 commits
+(`tools/heldout.py`), and a sample drawn from the union, without saying which version reported what, was labeled.
+
+Of the 17 locations the fixes removed, **16 were wrong**; of the 7 they added back, 4 were right. On new code they
+are accurate, and narrow: 24 of about 5,600 counted locations changed. Counted precision on the sample went from
+**121 of 173 (70%, 63–76%) to 124 of 168 (74%, 67–80%)**; weighted by how many locations each check reports, from
+68% to 69%. The checks that hold up on unfamiliar code: network timeouts (12 of 12), module state (12 of 12),
+shell commands (7 of 7), import and dependency loops (16 of 19), copied logic (9 of 12). The ones that don't, and are
+next: queries inside loops (6 of 12), unused and untested code (15 of 24), containers running as root (7 of 12, the
+misses mostly images that switch user in their own entrypoint or process manager), and among the hints, endpoints
+without an auth check (0 of 12), data flow (0 of 12) and plain-HTTP URLs (1 of 12).
+
+Every change is now also checked against golden snapshots (`tools/golden.py`): every finding on nine pinned
+repositories, diffed after each change, with any removal needing a reason. On this round it caught a rule that
+read an empty list filled later (`typed: list = []`) as a fixed few items, before it shipped.
+
 ### Round 7: 126 repositories, and what generalizes
 
 A held-out sample of 225 counted locations, nearly all (142 of the 149 still counted) from the 50 repositories added
