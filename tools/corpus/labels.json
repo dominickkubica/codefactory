@@ -182,6 +182,15 @@
   "label": "false",
   "why": "Development container Dockerfile used by docker-compose for local dev, per its header comment."
  },
+ "actualbudget/actual|Container runs as root|packages/sync-server/docker/alpine.Dockerfile:38": {
+  "repo": "actualbudget/actual",
+  "check": "Container runs as root",
+  "severity": "Medium",
+  "location": "`packages/sync-server/docker/alpine.Dockerfile:38` no USER after alpine:3.23 — `FROM alpine:3.23 AS prod`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "actualbudget/actual|Container runs as root|packages/sync-server/docker/ubuntu.Dockerfile:28": {
   "repo": "actualbudget/actual",
   "check": "Container runs as root",
@@ -257,6 +266,15 @@
   "why": "exec.ts imports * from #server/db (db/index.ts), db/index.ts imports values from #server/aql (aql/index.ts), aql/index.ts imports compileAndRunAqlQuery from ./exec; all value imports",
   "round": 4
  },
+ "actualbudget/actual|Important code no test reaches (N function)|packages/loot-core/src/platform/server/fs/fs.legacy.ts:301": {
+  "repo": "actualbudget/actual",
+  "check": "Important code no test reaches (N function)",
+  "severity": "Medium",
+  "location": "`packages/loot-core/src/platform/server/fs/fs.legacy.ts:301` populateDefaultFilesystem.fetchFile: does I/O (fetch) — `const fetchFile = url => fetch(url).then(res => res.arrayBuffer());`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "actualbudget/actual|Important code no test reaches (N function)|packages/loot-core/src/platform/server/fs/fs.legacy.ts:388": {
   "repo": "actualbudget/actual",
   "check": "Important code no test reaches (N function)",
@@ -300,6 +318,15 @@
   "label": "true",
   "why": "activeEngine is reassigned at lines 116 and 123 when the storage backend is started."
  },
+ "actualbudget/actual|Module-level mutable state (N place)|packages/loot-core/src/platform/server/sqlite/storage/index.ts:14": {
+  "repo": "actualbudget/actual",
+  "check": "Module-level mutable state (N place)",
+  "severity": "Medium",
+  "location": "`packages/loot-core/src/platform/server/sqlite/storage/index.ts:14` let keepAlive: OpfsKeepAlive | null = null;",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "actualbudget/actual|Module-level mutable state (N place)|packages/loot-core/src/server/sync/index.ts:53": {
   "repo": "actualbudget/actual",
   "check": "Module-level mutable state (N place)",
@@ -324,6 +351,15 @@
   "label": "false",
   "why": "Only waits for an in-flight opening promise; its error is delivered to the caller who started that open."
  },
+ "actualbudget/actual|Network calls without a timeout|packages/ci-actions/bin/release-notes-generate.mjs:27": {
+  "repo": "actualbudget/actual",
+  "check": "Network calls without a timeout",
+  "severity": "Medium",
+  "location": "`packages/ci-actions/bin/release-notes-generate.mjs:27` const apiResult = await fetch('https://api.github.com/graphql', {",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "actualbudget/actual|Network calls without a timeout|packages/desktop-client/src/hooks/usePluggyAiStatus.ts:30": {
   "repo": "actualbudget/actual",
   "check": "Network calls without a timeout",
@@ -340,6 +376,15 @@
   "location": "`packages/desktop-client/src/hooks/useSimpleFinStatus.ts:15` async function fetch() {",
   "label": "false",
   "why": "Local function named fetch calls send() IPC to the backend, not a network fetch."
+ },
+ "actualbudget/actual|Network calls without a timeout|packages/loot-core/src/platform/server/fs/fs.web.ts:173": {
+  "repo": "actualbudget/actual",
+  "check": "Network calls without a timeout",
+  "severity": "Medium",
+  "location": "`packages/loot-core/src/platform/server/fs/fs.web.ts:173` const response = await fetch(url);",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "actualbudget/actual|Queries or requests inside loops (N) in N place|packages/loot-core/src/server/budget/actions.ts:358": {
   "repo": "actualbudget/actual",
@@ -390,6 +435,15 @@
   "label": "true",
   "why": "child_process.exec (shell) with RELEASE_BRANCH env var interpolated",
   "round": 4
+ },
+ "actualbudget/actual|Shell commands built at runtime|packages/ci-actions/bin/release-notes-generate.mjs:128": {
+  "repo": "actualbudget/actual",
+  "check": "Shell commands built at runtime",
+  "severity": "Medium",
+  "location": "`packages/ci-actions/bin/release-notes-generate.mjs:128` await exec(`git checkout origin/${releaseBranch} -- upcoming-release-notes`, {  (no endpoint reaches it)",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "actualbudget/actual|Shell commands built at runtime|packages/ci-actions/bin/release-notes-generate.mjs:269": {
   "repo": "actualbudget/actual",
@@ -574,6 +628,15 @@
   "label": "true",
   "why": "Opens and reads every file under dist found by os.walk, one read per file."
  },
+ "apache/superset|Import loops (N)|superset-frontend/packages/superset-ui-core/src/components/Label/index.tsx": {
+  "repo": "apache/superset",
+  "check": "Import loops (N)",
+  "severity": "High",
+  "location": "superset-frontend/packages/superset-ui-core/src/components/Label/index.tsx → superset-frontend/packages/superset-ui-core/src/components/Label/reusable/DatasetTypeLabel.tsx → superset-frontend/packages/superset-ui-core/src/components/Label/index.tsx (3 files in the loop)",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "apache/superset|Import loops (N)|superset-frontend/packages/superset-ui-core/src/components/Table/VirtualTable.tsx": {
   "repo": "apache/superset",
   "check": "Import loops (N)",
@@ -623,6 +686,15 @@
   "label": "false",
   "why": "tests/test_cli_build.py imports clean_dist and calls it directly in many tests.",
   "round": 2
+ },
+ "apache/superset|Important code no test reaches (N function)|superset/utils/mock_data.py:288": {
+  "repo": "apache/superset",
+  "check": "Important code no test reaches (N function)",
+  "severity": "Medium",
+  "location": "`superset/utils/mock_data.py:288` get_valid_foreign_key: does I/O (conn.execute, scalar) — `def get_valid_foreign_key(column: Column) -> Any:`",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "apache/superset|JWT checks turned off|superset/integrations/teams/adapter.py:228": {
   "repo": "apache/superset",
@@ -700,6 +772,15 @@
   "label": "true",
   "why": "exported channels object is mutated at runtime (channels[channel] = ..., delete channels[channel], lines 445/818/840)",
   "round": 4
+ },
+ "apache/superset|N error silently swallowed|superset-frontend/src/embedded/index.tsx:90": {
+  "repo": "apache/superset",
+  "check": "N error silently swallowed",
+  "severity": "Medium",
+  "location": "`superset-frontend/src/embedded/index.tsx:90` promise.catch(() => {});",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "apache/superset|Network calls without a timeout|superset-frontend/src/theme/ThemeController.ts:1237": {
   "repo": "apache/superset",
@@ -812,6 +893,15 @@
   "why": "check_chart_data_access calls validate_chart_dataset, which runs DatasetDAO.find_by_id once per chart in the user's chart list.",
   "round": 2
  },
+ "apache/superset|Queries or requests inside loops (N) in N place|superset/versioning/snapshot.py:137": {
+  "repo": "apache/superset",
+  "check": "Queries or requests inside loops (N) in N place",
+  "severity": "Medium",
+  "location": "`superset/versioning/snapshot.py:137` _reconcile_children: _reconcile_children calls connection.scalar() inside a loop (line 137) — `and not connection.scalar(`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "apache/superset|Raw HTML injected into pages|superset-frontend/plugins/preset-chart-deckgl/src/utilities/HandlebarsRenderer.tsx:82": {
   "repo": "apache/superset",
   "check": "Raw HTML injected into pages",
@@ -820,6 +910,15 @@
   "label": "false",
   "why": "htmlContent is passed through sanitizeHtml by default; sanitization is off only when HTML_SANITIZATION config is disabled.",
   "round": 2
+ },
+ "apache/superset|Raw HTML injected into pages|superset-frontend/src/dashboard/components/gridComponents/Chart/Chart.tsx:879": {
+  "repo": "apache/superset",
+  "check": "Raw HTML injected into pages",
+  "severity": "Low",
+  "location": "`superset-frontend/src/dashboard/components/gridComponents/Chart/Chart.tsx:879` This usage of dangerouslySetInnerHTML is safe since it is being used to render  (no endpoint reaches it)",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "apache/superset|Raw HTML injected into pages|superset-frontend/src/dashboard/util/injectCustomCss.ts:45": {
   "repo": "apache/superset",
@@ -886,6 +985,15 @@
   "location": "`superset/migrations/versions/2022-07-07_14-00_06e1e70058c7_migrating_legacy_area.py:35` upgrade — `def upgrade():`",
   "label": "false",
   "why": "Alembic migration upgrade() entry point, invoked by Alembic when applying revision 06e1e70058c7."
+ },
+ "apache/superset|Unused code (N function)|superset/views/database/validators.py:29": {
+  "repo": "apache/superset",
+  "check": "Unused code (N function)",
+  "severity": "Low",
+  "location": "`superset/views/database/validators.py:29` sqlalchemy_uri_validator — `def sqlalchemy_uri_validator(`",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "apache/superset|Writes inside loops in N place|superset/commands/dataset/importers/v1/utils.py:232": {
   "repo": "apache/superset",
@@ -1045,6 +1153,15 @@
   "why": "tableSuggestions is identical in mysql and postgres completion files except the row type name; one generic function would do",
   "round": 4
  },
+ "appwrite/appwrite|Copied logic in N group (~N lines)|apps/console/src/routes/_public/projects.$projectId.databases.$dbKind.$databaseId.collections.$collectionId.columns.tsx:152": {
+  "repo": "appwrite/appwrite",
+  "check": "Copied logic in N group (~N lines)",
+  "severity": "Medium",
+  "location": "Merge 2 copies of ColumnsPage (identical, ~7 lines): `apps/console/src/routes/_public/projects.$projectId.databases.$dbKind.$databaseId.collections.$collectionId.columns.tsx:152`, `apps/console/src/routes/_public/projects.$projectId.databases.$dbKind.$databaseId.tables.$tableId.columns.tsx:152`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "appwrite/appwrite|Copied logic in N group (~N lines)|crates/extension/src/validators/network.rs:276": {
   "repo": "appwrite/appwrite",
   "check": "Copied logic in N group (~N lines)",
@@ -1070,6 +1187,15 @@
   "label": "true",
   "why": "CSV and JSON downloadToLocal bodies are identical except the file-type word in the error message; easily shared.",
   "round": 3
+ },
+ "appwrite/appwrite|Copied logic in N group (~N lines)|src/Appwrite/Auth/OAuth2/Auth0.php:143": {
+  "repo": "appwrite/appwrite",
+  "check": "Copied logic in N group (~N lines)",
+  "severity": "Medium",
+  "location": "Merge Auth0.isEmailVerified, Authentik.isEmailVerified, Clerk.isEmailVerified, Dropbox.isEmailVerified, FusionAuth.isEmailVerified, Google.isEmailVerified, HuggingFace.isEmailVerified, Keycloak.isEmailVerified, Okta.isEmailVerified, Salesforce.isEmailVerified, WordPress.isEmailVerified (identical, ~100 lines): `src/Appwrite/Auth/OAuth2/Clerk.php:147`, `src/Appwrite/Auth/OAuth2/Okta.php:143`, `src/Appwrite/Auth/OAuth2/Auth0.php:143`, `src/Appwrite/Auth/OAuth2/Salesforce.php:154`, `src/Appwrite/Auth/OAuth2/FusionAuth.php:153`, `src/Appwrite/Auth/OAuth2/HuggingFace.php:174`, `src/Appwrite/Auth/OAuth2/Google.php:161`, `src/Appwrite/Auth/OAuth2/Authentik.php:154`, `src/Appwrite/Auth/OAuth2/WordPress.php:139`, `src/Appwrite/Auth/OAuth2/Dropbox.php:135`, `src/Appwrite/Auth/OAuth2/Keycloak.php:157`",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "appwrite/appwrite|Databases published on every interface (docker-compose)|docker-compose.override.yml:731": {
   "repo": "appwrite/appwrite",
@@ -1215,6 +1341,15 @@
   "why": "Neither Workerman adapter references the other; each only uses Workerman\\Worker from the vendor library and its own Adapter base.",
   "round": 3
  },
+ "appwrite/appwrite|Import loops (N)|src/Appwrite/Platform/Installer/Runtime/State.php": {
+  "repo": "appwrite/appwrite",
+  "check": "Import loops (N)",
+  "severity": "High",
+  "location": "src/Appwrite/Platform/Installer/Runtime/State.php → src/Appwrite/Platform/Installer/Server.php → src/Appwrite/Platform/Installer/Runtime/State.php",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "appwrite/appwrite|Import loops (N)|src/Appwrite/Platform/Modules/Avatars/Http/Action.php": {
   "repo": "appwrite/appwrite",
   "check": "Import loops (N)",
@@ -1223,6 +1358,15 @@
   "label": "false",
   "why": "Action.php has no use/reference of Image/Get.php (only Utopia\\Image\\* library classes); the Action->Get edge doesn't exist",
   "round": 4
+ },
+ "appwrite/appwrite|Important code no test reaches (N function)|apps/console/src/components/pages/projects/$projectId/databases/mysql/_components/MysqlSidebarContext.tsx:712": {
+  "repo": "appwrite/appwrite",
+  "check": "Important code no test reaches (N function)",
+  "severity": "Medium",
+  "location": "`apps/console/src/components/pages/projects/$projectId/databases/mysql/_components/MysqlSidebarContext.tsx:712` useMysqlSidebar, called from 9 files — `export function useMysqlSidebar() {`",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "appwrite/appwrite|Important code no test reaches (N function)|crates/utopia/php-std/pcre2/sljit/sljitLir.c:3028": {
   "repo": "appwrite/appwrite",
@@ -1292,6 +1436,24 @@
   "location": "`apps/console/src/lib/init/init-presences-realtime.ts:10` let attachPromise: Promise<void> | null = null",
   "label": "true",
   "why": "attachPromise is set to a new promise and back to null inside attachPresencesListener."
+ },
+ "appwrite/appwrite|Module-level mutable state (N place)|apps/console/src/lib/monaco-bundle.ts:8": {
+  "repo": "appwrite/appwrite",
+  "check": "Module-level mutable state (N place)",
+  "severity": "Medium",
+  "location": "`apps/console/src/lib/monaco-bundle.ts:8` let configuring: Promise<void> | null = null",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
+ "appwrite/appwrite|Module-level mutable state (N place)|apps/console/src/lib/upload-queue/indexeddb.ts:14": {
+  "repo": "appwrite/appwrite",
+  "check": "Module-level mutable state (N place)",
+  "severity": "Medium",
+  "location": "`apps/console/src/lib/upload-queue/indexeddb.ts:14` let persistenceDisabled = false",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "appwrite/appwrite|N error silently swallowed|app/views/install/installer/js/modules/state.js:163": {
   "repo": "appwrite/appwrite",
@@ -1363,6 +1525,24 @@
   "why": "loader prefetch warm-up: ensureQueryData failure stays in the React Query cache and the page's own queries surface/retry it; catch only stops the loader failing",
   "round": 4
  },
+ "appwrite/appwrite|N error silently swallowed|apps/console/src/routes/_public/projects.$projectId.analytics.tsx:70": {
+  "repo": "appwrite/appwrite",
+  "check": "N error silently swallowed",
+  "severity": "High",
+  "location": "`apps/console/src/routes/_public/projects.$projectId.analytics.tsx:70` .catch(() => undefined)",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
+ "appwrite/appwrite|N error silently swallowed|apps/console/src/routes/_public/projects.$projectId.reviews.index.tsx:51": {
+  "repo": "appwrite/appwrite",
+  "check": "N error silently swallowed",
+  "severity": "High",
+  "location": "`apps/console/src/routes/_public/projects.$projectId.reviews.index.tsx:51` .catch(() => undefined),",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "appwrite/appwrite|N error silently swallowed|apps/console/src/routes/player.$videoId.tsx:50": {
   "repo": "appwrite/appwrite",
   "check": "N error silently swallowed",
@@ -1387,6 +1567,15 @@
   "label": "true",
   "why": "fetch with no signal or timeout",
   "round": 4
+ },
+ "appwrite/appwrite|Network calls without a timeout|apps/console/src/lib/oauth2/sign-in-prompt.ts:10": {
+  "repo": "appwrite/appwrite",
+  "check": "Network calls without a timeout",
+  "severity": "Medium",
+  "location": "`apps/console/src/lib/oauth2/sign-in-prompt.ts:10` const response = await fetch(path)",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "appwrite/appwrite|Network calls without a timeout|apps/console/src/lib/smtp/bird-api.ts:66": {
   "repo": "appwrite/appwrite",
@@ -1477,6 +1666,15 @@
   "label": "false",
   "why": "Table and column ids pass through escapeIdentifier; column types come from a fixed internal mapping."
  },
+ "appwrite/appwrite|SQL assembled from strings|packages/usage/src/Adapter/ClickHouse.php:1555": {
+  "repo": "appwrite/appwrite",
+  "check": "SQL assembled from strings",
+  "severity": "Low",
+  "location": "`packages/usage/src/Adapter/ClickHouse.php:1555` $this->query(\"ALTER TABLE {$escapedTable} \" . implode(', ', array_map(  (interpolates: $index['expression'], $index['type'], $index['granularity'])  (no endpoint reaches it)",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "appwrite/appwrite|SQL assembled from strings|packages/usage/src/Adapter/ClickHouse.php:1560": {
   "repo": "appwrite/appwrite",
   "check": "SQL assembled from strings",
@@ -1494,6 +1692,15 @@
   "why": "database passes through identifier(), which rejects anything not matching ^[A-Za-z_][A-Za-z0-9_]*$ and quotes it.",
   "round": 2
  },
+ "appwrite/appwrite|SQL assembled from strings|src/Appwrite/Logs/Adapter/ClickHouse.php:97": {
+  "repo": "appwrite/appwrite",
+  "check": "SQL assembled from strings",
+  "severity": "Low",
+  "location": "`src/Appwrite/Logs/Adapter/ClickHouse.php:97` $this->query(\"CREATE DATABASE IF NOT EXISTS {$database}\");  (interpolates: database)  (no endpoint reaches it)",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "appwrite/appwrite|Tokens or passwords in unencrypted storage|app/views/install/installer/js/modules/progress.js:38": {
   "repo": "appwrite/appwrite",
   "check": "Tokens or passwords in unencrypted storage",
@@ -1501,6 +1708,15 @@
   "location": "`app/views/install/installer/js/modules/progress.js:38` sessionStorage.setItem('appwrite-installer-secret', fromQuery);",
   "label": "true",
   "why": "Stores the installer secret from the URL in plaintext sessionStorage."
+ },
+ "appwrite/appwrite|Unused code (N function)|apps/console/src/components/global/api-explorer/ExplorerQueryBuilderField.tsx:103": {
+  "repo": "appwrite/appwrite",
+  "check": "Unused code (N function)",
+  "severity": "Low",
+  "location": "`apps/console/src/components/global/api-explorer/ExplorerQueryBuilderField.tsx:103` ExplorerQueryBuilderValue — `export function ExplorerQueryBuilderValue({ value }: { value: FormValue }) {`",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "appwrite/appwrite|Unused code (N function)|apps/console/src/components/pages/projects/$projectId/analytics/_components/chart-series.ts:221": {
   "repo": "appwrite/appwrite",
@@ -1563,6 +1779,15 @@
   "label": "false",
   "why": "public SLJIT_API_FUNC_ATTRIBUTE function of vendored sljit library, declared in sljitLir.h as library API",
   "round": 4
+ },
+ "appwrite/appwrite|Unused code (N function)|crates/utopia/php-std/pcre2/sljit/sljitNativeRISCV_64.c:149": {
+  "repo": "appwrite/appwrite",
+  "check": "Unused code (N function)",
+  "severity": "Low",
+  "location": "`crates/utopia/php-std/pcre2/sljit/sljitNativeRISCV_64.c:149` sljit_emit_fcopy — `SLJIT_API_FUNC_ATTRIBUTE sljit_s32 sljit_emit_fcopy(struct sljit_compiler *compiler, sljit_s32 op,`",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "appwrite/appwrite|Writes inside loops in N place|crates/utopia/query/src/builder/mongodb.rs:1500": {
   "repo": "appwrite/appwrite",
@@ -1739,6 +1964,15 @@
   "why": "embed-iframe.ts re-exports from ./embed-iframe/react-hooks and react-hooks.ts imports useEmbedUiConfig/useIsEmbed from ../embed-iframe; both runtime imports",
   "round": 4
  },
+ "calcom/cal.com|Important code no test reaches (N function)|packages/app-store/basecamp3/api/projects.ts:12": {
+  "repo": "calcom/cal.com",
+  "check": "Important code no test reaches (N function)",
+  "severity": "Medium",
+  "location": "`packages/app-store/basecamp3/api/projects.ts:12` handler: does I/O (credential.findFirst, fetch) — `async function handler(req: NextApiRequest) {`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "calcom/cal.com|Important code no test reaches (N function)|packages/app-store/wipemycalother/api/add.ts:13": {
   "repo": "calcom/cal.com",
   "check": "Important code no test reaches (N function)",
@@ -1821,6 +2055,15 @@
   "location": "`apps/web/components/apps/btcpayserver/BtcpayPaymentComponent.tsx:177` } catch (_e) {}",
   "label": "true",
   "why": "Empty catch around the whole poll body discards fetch and redirect errors without logging."
+ },
+ "calcom/cal.com|Network calls without a timeout|apps/web/app/(use-page-wrapper)/refer/DubReferralsPage.tsx:13": {
+  "repo": "calcom/cal.com",
+  "check": "Network calls without a timeout",
+  "severity": "Medium",
+  "location": "`apps/web/app/(use-page-wrapper)/refer/DubReferralsPage.tsx:13` const response = await fetch(\"/api/user/referrals-token\");",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "calcom/cal.com|Network calls without a timeout|apps/web/components/booking/CancelBooking.tsx:283": {
   "repo": "calcom/cal.com",
@@ -1915,6 +2158,24 @@
   "label": "true",
   "why": "attendee.email interpolated into the log prefix and full attendee object logged",
   "round": 4
+ },
+ "calcom/cal.com|Personal data written to logs|packages/app-store/salesforce/lib/CrmService.ts:1033": {
+  "repo": "calcom/cal.com",
+  "check": "Personal data written to logs",
+  "severity": "High",
+  "location": "`packages/app-store/salesforce/lib/CrmService.ts:1033` this.log.error(`Error creating Salesforce contact for ${attendee.email} with error ${error}`);",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
+ "calcom/cal.com|Personal data written to logs|packages/app-store/salesforce/lib/CrmService.ts:1262": {
+  "repo": "calcom/cal.com",
+  "check": "Personal data written to logs",
+  "severity": "High",
+  "location": "`packages/app-store/salesforce/lib/CrmService.ts:1262` const log = logger.getSubLogger({ prefix: [`[getAccountIdBasedOnEmailDomainOfContacts]:${email}`] });",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "calcom/cal.com|Personal data written to logs|packages/app-store/salesforce/lib/CrmService.ts:1849": {
   "repo": "calcom/cal.com",
@@ -2250,6 +2511,24 @@
   "label": "true",
   "why": "pickle.loads deserializes zrevoked data read from the persistent worker state file, a non-constant value.",
   "round": 2
+ },
+ "celery/celery|Module-level mutable state (N place)|celery/_state.py:56": {
+  "repo": "celery/celery",
+  "check": "Module-level mutable state (N place)",
+  "severity": "Medium",
+  "location": "`celery/_state.py:56` global _task_join_will_block",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
+ "celery/celery|Module-level mutable state (N place)|celery/worker/state.py:275": {
+  "repo": "celery/celery",
+  "check": "Module-level mutable state (N place)",
+  "severity": "Medium",
+  "location": "`celery/worker/state.py:275` global all_count",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "celery/celery|TLS certificate checks turned off|celery/backends/arangodb.py:48": {
   "repo": "celery/celery",
@@ -2626,6 +2905,15 @@
   "why": "createOpenIDAuthRouter only registers routes; fetch happens inside request handlers, not per loop iteration",
   "round": 4
  },
+ "directus/directus|Queries or requests inside loops (N) in N place|api/src/database/get-ast-from-query/lib/parse-fields.ts:354": {
+  "repo": "directus/directus",
+  "check": "Queries or requests inside loops (N) in N place",
+  "severity": "Medium",
+  "location": "`api/src/database/get-ast-from-query/lib/parse-fields.ts:354` parseFields: parseFields calls getAllowedSort() inside a loop (line 354), and that reaches fetch() — `child.query.sort = await getAllowedSort(`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "directus/directus|Queries or requests inside loops (N) in N place|api/src/deployment/drivers/vercel.ts:402": {
   "repo": "directus/directus",
   "check": "Queries or requests inside loops (N) in N place",
@@ -2786,6 +3074,15 @@
   "label": "false",
   "why": "Re-exported through sdk/src/index.ts as public API of the @directus/sdk package."
  },
+ "django/django|Dynamic code execution (eval / exec / pickle / unsafe YAML)|django/core/cache/backends/filebased.py:152": {
+  "repo": "django/django",
+  "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
+  "severity": "Medium",
+  "location": "`django/core/cache/backends/filebased.py:152` exp = pickle.load(f)  (no endpoint reaches it)",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "django/django|Dynamic code execution (eval / exec / pickle / unsafe YAML)|django/core/cache/backends/filebased.py:38": {
   "repo": "django/django",
   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
@@ -2829,6 +3126,15 @@
   "label": "true",
   "why": "pickle.loads on data fetched from Redis.",
   "round": 3
+ },
+ "django/django|Dynamic code execution (eval / exec / pickle / unsafe YAML)|django/core/management/commands/shell.py:262": {
+  "repo": "django/django",
+  "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
+  "severity": "Medium",
+  "location": "`django/core/management/commands/shell.py:262` exec(options[\"command\"], {**globals(), **self.get_namespace(**options)})  (no endpoint reaches it)",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "django/django|Dynamic code execution (eval / exec / pickle / unsafe YAML)|django/core/management/commands/shell.py:89": {
   "repo": "django/django",
@@ -2905,6 +3211,15 @@
   "label": "true",
   "why": "checks/__init__ imports every check module at load, and each one does 'from . import register, Tags...' at module level."
  },
+ "django/django|Import loops (N)|django/db/models/__init__.py": {
+  "repo": "django/django",
+  "check": "Import loops (N)",
+  "severity": "High",
+  "location": "django/db/models/__init__.py → django/db/models/base.py → django/db/models/__init__.py (35 files in the loop)",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "django/django|Import loops (N)|django/template/__init__.py": {
   "repo": "django/django",
   "check": "Import loops (N)",
@@ -2946,6 +3261,15 @@
   "label": "true",
   "why": "Salted MD5 used to hash user passwords in MD5PasswordHasher."
  },
+ "django/django|Raw HTML injected into pages|django/contrib/admindocs/utils.py:96": {
+  "repo": "django/django",
+  "check": "Raw HTML injected into pages",
+  "severity": "High",
+  "location": "`django/contrib/admindocs/utils.py:96` return mark_safe(parts[\"fragment\"])  (no endpoint reaches it)",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "django/django|Raw HTML injected into pages|django/contrib/flatpages/views.py:67": {
   "repo": "django/django",
   "check": "Raw HTML injected into pages",
@@ -2954,6 +3278,15 @@
   "label": "true",
   "why": "flatpage title/content from the database marked safe and rendered unescaped (non-constant to HTML sink)",
   "round": 4
+ },
+ "django/django|Raw HTML injected into pages|django/contrib/flatpages/views.py:68": {
+  "repo": "django/django",
+  "check": "Raw HTML injected into pages",
+  "severity": "High",
+  "location": "`django/contrib/flatpages/views.py:68` f.content = mark_safe(f.content)  ← reached from `ANY /<path:url> → flatpage → render_flatpage`",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "django/django|Raw HTML injected into pages|django/forms/utils.py:55": {
   "repo": "django/django",
@@ -3047,6 +3380,15 @@
   "location": "`django/contrib/admin/options.py:1791` ModelAdmin.response_change: request.FILES → ModelAdmin._changeform_view → response_change(request) → HttpResponseRedirect() — `return HttpResponseRedirect(redirect_url)`",
   "label": "false",
   "why": "Redirect URL comes from reverse() of the admin add view; no request.FILES data reaches it."
+ },
+ "django/django|SQL assembled from strings|django/db/backends/base/creation.py:215": {
+  "repo": "django/django",
+  "check": "SQL assembled from strings",
+  "severity": "Low",
+  "location": "`django/db/backends/base/creation.py:215` cursor.execute(\"CREATE DATABASE %(dbname)s %(suffix)s\" % parameters)  (no endpoint reaches it)",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "django/django|SQL assembled from strings|django/db/backends/base/creation.py:253": {
   "repo": "django/django",
@@ -3434,6 +3776,15 @@
   "label": "true",
   "why": "Both handlers duplicate the user filter, date parsing, permission check and count/fetch logic; only issue scoping differs."
  },
+ "go-gitea/gitea|Copied logic in N group (~N lines)|routers/api/v1/repo/pull_review.go:110": {
+  "repo": "go-gitea/gitea",
+  "check": "Copied logic in N group (~N lines)",
+  "severity": "Medium",
+  "location": "Share one body between GetPullReview, GetPullReviewComments (88% similar, ~48 lines): `routers/api/v1/repo/pull_review.go:110`, `routers/api/v1/repo/pull_review.go:160`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "go-gitea/gitea|MD5 / SHA-1 used for security|models/auth/twofactor.go:102": {
   "repo": "go-gitea/gitea",
   "check": "MD5 / SHA-1 used for security",
@@ -3515,6 +3866,15 @@
   "label": "true",
   "why": "InsertProperty (with DeletePropertiesByName) issues DB writes for each container package loaded."
  },
+ "go-gitea/gitea|Raw HTML injected into pages|web_src/js/features/repo-graph.ts:46": {
+  "repo": "go-gitea/gitea",
+  "check": "Raw HTML injected into pages",
+  "severity": "Low",
+  "location": "`web_src/js/features/repo-graph.ts:46` elGraphBody.innerHTML = await resp.text();  (no endpoint reaches it)",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "go-gitea/gitea|Raw HTML injected into pages|web_src/js/features/repo-wiki.ts:32": {
   "repo": "go-gitea/gitea",
   "check": "Raw HTML injected into pages",
@@ -3531,6 +3891,15 @@
   "location": "`modelmigration/base/db.go:276` if _, err := sess.Exec(fmt.Sprintf(\"SELECT setval('%s', %d, %t)\", newSequenceName, val.LastValue, val.IsCalled)); err != nil {  (interpolates:  \t\t\t\t\t\tlog.Error(\"Unable to reset %s to %d. Error)  (no endpoint reaches it)",
   "label": "true",
   "why": "Sequence name read from the database is formatted unescaped into the setval SQL string."
+ },
+ "go-gitea/gitea|SQL assembled from strings|modelmigration/base/db.go:282": {
+  "repo": "go-gitea/gitea",
+  "check": "SQL assembled from strings",
+  "severity": "High",
+  "location": "`modelmigration/base/db.go:282` if _, err := sess.Exec(fmt.Sprintf(\"SELECT setval('%s', COALESCE((SELECT MAX(id)+1 FROM `%s`), 1), false)\", newSequenceName, tableName));…  (no endpoint reaches it)",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "go-gitea/gitea|SQL assembled from strings|modelmigration/v1_13/v145.go:75": {
   "repo": "go-gitea/gitea",
@@ -3558,6 +3927,15 @@
   "label": "true",
   "why": "Collation from setting.Database.CharsetCollation config is concatenated into ALTER DATABASE.",
   "round": 3
+ },
+ "go-gitea/gitea|SQL assembled from strings|models/db/engine.go:176": {
+  "repo": "go-gitea/gitea",
+  "check": "SQL assembled from strings",
+  "severity": "High",
+  "location": "`models/db/engine.go:176` _, err := xormEngine.Exec(\"DELETE FROM \" + tableName)  (no endpoint reaches it)",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "go-gitea/gitea|SQL assembled from strings|models/db/index.go:29": {
   "repo": "go-gitea/gitea",
@@ -3708,6 +4086,15 @@
   "label": "true",
   "why": "Shipped Instagram shortcode loads third-party embed.js without integrity."
  },
+ "gotify/server|Container runs as root|docker/Dockerfile:55": {
+  "repo": "gotify/server",
+  "check": "Container runs as root",
+  "severity": "Medium",
+  "location": "`docker/Dockerfile:55` no USER after debian:${DEBIAN} — `FROM debian:${DEBIAN}`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "gotify/server|HTTP servers without timeouts (Go)|runner/runner.go:31": {
   "repo": "gotify/server",
   "check": "HTTP servers without timeouts (Go)",
@@ -3715,6 +4102,15 @@
   "location": "`runner/runner.go:31` s := &http.Server{Handler: router}",
   "label": "true",
   "why": "http.Server{Handler: router} serves public traffic with no ReadHeaderTimeout or other timeouts set anywhere."
+ },
+ "gotify/server|Important code no test reaches (N function)|ui/src/client/ClientStore.ts:13": {
+  "repo": "gotify/server",
+  "check": "Important code no test reaches (N function)",
+  "severity": "Medium",
+  "location": "`ui/src/client/ClientStore.ts:13` ClientStore.requestItems: does I/O (axios.get, get.then) — `protected requestItems = (): Promise<IClient[]> =>`",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "gotify/server|Network calls without a timeout|ui/src/application/AppStore.ts:102": {
   "repo": "gotify/server",
@@ -3845,6 +4241,15 @@
   "label": "true",
   "why": "aio final stage built from node_base (alpine) with no USER anywhere in the file; runs as root."
  },
+ "hoppscotch/hoppscotch|Copied logic in N group (~N lines)|packages/hoppscotch-desktop/plugin-workspace/tauri-plugin-appload/build.rs:3": {
+  "repo": "hoppscotch/hoppscotch",
+  "check": "Copied logic in N group (~N lines)",
+  "severity": "Medium",
+  "location": "Merge 2 copies of main (identical, ~6 lines): `packages/hoppscotch-desktop/plugin-workspace/tauri-plugin-relay/build.rs:3`, `packages/hoppscotch-desktop/plugin-workspace/tauri-plugin-appload/build.rs:3`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "hoppscotch/hoppscotch|Credentials committed in source|packages/hoppscotch-common/src/services/__tests__/ai-chat-reset.spec.ts:123": {
   "repo": "hoppscotch/hoppscotch",
   "check": "Credentials committed in source",
@@ -3876,6 +4281,15 @@
   "location": "packages/hoppscotch-common/src/helpers/lenses/audioLens.ts → packages/hoppscotch-common/src/helpers/lenses/htmlLens.ts → packages/hoppscotch-common/src/helpers/lenses/imageLens.ts → packages/hoppscotch-common/src/helpers/lenses/jsonLens.ts → packages/hoppscotch-common/src/helpers/lenses/lenses.ts → packages/hoppscotch-common/src/helpers/lenses/pdfLens.ts → packages/hoppscotch-common/src/helpers/lenses/rawLens.ts → packages/hoppscotch-common/src/helpers/lenses/videoLens.ts → packages/hoppscotch-common/src/helpers/lenses/xmlLens.ts",
   "label": "false",
   "why": "Each lens file imports only the Lens type from lenses.ts, which is erased at compile time; only lenses.ts imports at runtime."
+ },
+ "hoppscotch/hoppscotch|Import loops (N)|packages/hoppscotch-common/src/services/oauth/flows/authCode.ts": {
+  "repo": "hoppscotch/hoppscotch",
+  "check": "Import loops (N)",
+  "severity": "High",
+  "location": "packages/hoppscotch-common/src/services/oauth/flows/authCode.ts → packages/hoppscotch-common/src/services/oauth/oauth.service.ts → packages/hoppscotch-common/src/services/oauth/flows/authCode.ts (4 files in the loop)",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "hoppscotch/hoppscotch|Import loops (N)|packages/hoppscotch-selfhost-web/src/kernel/index.ts": {
   "repo": "hoppscotch/hoppscotch",
@@ -3983,6 +4397,15 @@
   "location": "`packages/hoppscotch-kernel/src/relay/impl/web/v/1.ts:209` execute: request.headers → execute → axios() — `const axiosResponse = await axios(config)`",
   "label": "false",
   "why": "Browser-side API client: request is the request the user is sending, not one the server received."
+ },
+ "hoppscotch/hoppscotch|Unused code (N function)|packages/hoppscotch-common/src/kernel/store.ts:106": {
+  "repo": "hoppscotch/hoppscotch",
+  "check": "Unused code (N function)",
+  "severity": "Low",
+  "location": "`packages/hoppscotch-common/src/kernel/store.ts:106` getLogsDir — `export const getLogsDir = async (): Promise<string> => {`",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "hoppscotch/hoppscotch|Unused code (N function)|packages/hoppscotch-js-sandbox/src/bootstrap-code/pre-request.js:1247": {
   "repo": "hoppscotch/hoppscotch",
@@ -4252,6 +4675,15 @@
   "label": "false",
   "why": "IsAuthenticated is a non-sensitive flag cookie; the access-token cookie stays HttpOnly."
  },
+ "immich-app/immich|Shell commands built at runtime|packages/scripts/src/commands/release.ts:55": {
+  "repo": "immich-app/immich",
+  "check": "Shell commands built at runtime",
+  "severity": "Low",
+  "location": "`packages/scripts/src/commands/release.ts:55` execSync(`mise exec -- uv version ${newVersionRaw}`, {  (no endpoint reaches it) *(script)*",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "immich-app/immich|Unused code (N function)|packages/sdk/src/fetch-client.ts:4999": {
   "repo": "immich-app/immich",
   "check": "Unused code (N function)",
@@ -4338,6 +4770,15 @@
   "label": "false",
   "why": "Algolia DocSearch search-only public API key meant for client-side use."
  },
+ "jekyll/jekyll|Queries or requests inside loops (N) in N place|lib/jekyll/renderer.rb:39": {
+  "repo": "jekyll/jekyll",
+  "check": "Queries or requests inside loops (N) in N place",
+  "severity": "Medium",
+  "location": "`lib/jekyll/renderer.rb:39` Jekyll.Renderer.converters: Jekyll.Renderer.converters calls Jekyll.Convertible.converters() inside a loop (line 39), and that reaches site.converters.select() — `@converters ||= site.converters.select { |c| c.matches(document.extname) }.tap(&:sort!)`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "jekyll/jekyll|Shell commands built at runtime|lib/jekyll/command.rb:95": {
   "repo": "jekyll/jekyll",
   "check": "Shell commands built at runtime",
@@ -4378,6 +4819,15 @@
   "label": "false",
   "why": "Copy constructors assign entirely different fields from different types; only the shape matches.",
   "round": 2
+ },
+ "jellyfin/jellyfin|Copied logic in N group (~N lines)|MediaBrowser.Providers/Music/AlbumMetadataService.cs:106": {
+  "repo": "jellyfin/jellyfin",
+  "check": "Copied logic in N group (~N lines)",
+  "severity": "Medium",
+  "location": "Share one body between SetAlbumArtistFromSongs, SetArtistsFromSongs (87% similar, ~19 lines): `MediaBrowser.Providers/Music/AlbumMetadataService.cs:106`, `MediaBrowser.Providers/Music/AlbumMetadataService.cs:128`",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "jellyfin/jellyfin|Credentials committed in source|MediaBrowser.Providers/Plugins/Tmdb/TmdbUtils.cs:35": {
   "repo": "jellyfin/jellyfin",
@@ -4826,6 +5276,15 @@
   "why": "Published base3 image has no USER, and the default release stage built on it doesn't set one either, so it runs as root.",
   "round": 2
  },
+ "louislam/uptime-kuma|Container runs as root|extra/docker-latest-warning/Dockerfile.latest-warning:4": {
+  "repo": "louislam/uptime-kuma",
+  "check": "Container runs as root",
+  "severity": "Medium",
+  "location": "`extra/docker-latest-warning/Dockerfile.latest-warning:4` no USER after louislam/uptime-kuma:1.23.17-debian — `FROM louislam/uptime-kuma:1.23.17-debian`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "louislam/uptime-kuma|Endpoints that change data without an auth check (N)|server/routers/better-auth-router.ts:24": {
   "repo": "louislam/uptime-kuma",
   "check": "Endpoints that change data without an auth check (N)",
@@ -5112,6 +5571,24 @@
   "why": "renderer output is built from snabbdom vnodes (text escaped) and raw HTML tags are filtered via DOMPurify sanitize",
   "round": 4
  },
+ "marktext/marktext|Raw HTML injected into pages|packages/muya/src/utils/paste.ts:119": {
+  "repo": "marktext/marktext",
+  "check": "Raw HTML injected into pages",
+  "severity": "Medium",
+  "location": "`packages/muya/src/utils/paste.ts:119` th.innerHTML = cell.innerHTML;",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
+ "marktext/marktext|Raw HTML injected into pages|packages/website/src/app/layout.tsx:101": {
+  "repo": "marktext/marktext",
+  "check": "Raw HTML injected into pages",
+  "severity": "Medium",
+  "location": "`packages/website/src/app/layout.tsx:101` dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "marktext/marktext|Raw HTML injected into pages|packages/website/src/app/layout.tsx:95": {
   "repo": "marktext/marktext",
   "check": "Raw HTML injected into pages",
@@ -5258,6 +5735,15 @@
   "label": "true",
   "why": "index.tsx re-exports ColumnSettingsMenu, and column_settings_menu imports the ColumnHeaderButton component from index at runtime."
  },
+ "mastodon/mastodon|Import loops (N)|app/javascript/mastodon/components/form_fields/fieldset.tsx": {
+  "repo": "mastodon/mastodon",
+  "check": "Import loops (N)",
+  "severity": "High",
+  "location": "app/javascript/mastodon/components/form_fields/fieldset.tsx → app/javascript/mastodon/components/form_fields/form_field_wrapper.tsx → app/javascript/mastodon/components/form_fields/fieldset.tsx",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "mastodon/mastodon|Import loops (N)|app/javascript/mastodon/features/emoji/database.ts": {
   "repo": "mastodon/mastodon",
   "check": "Import loops (N)",
@@ -5324,6 +5810,15 @@
   "location": "`app/controllers/api/v2/search_controller.rb:49` refresh_key = \"fasp:account_search:#{Digest::MD5.base64digest(params[:q])}\" — `refresh_key = \"fasp…}\"`",
   "label": "false",
   "why": "MD5 of the search query is just a cache/refresh key."
+ },
+ "mastodon/mastodon|N error silently swallowed|app/javascript/mastodon/hooks/useStorage.ts:51": {
+  "repo": "mastodon/mastodon",
+  "check": "N error silently swallowed",
+  "severity": "Medium",
+  "location": "`app/javascript/mastodon/hooks/useStorage.ts:51` } catch {}",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "mastodon/mastodon|Plain-HTTP URLs in code|config/initializers/json_ld_identity.rb:29": {
   "repo": "mastodon/mastodon",
@@ -5400,6 +5895,15 @@
   "label": "true",
   "why": "seq_name from the column default in the catalog plus table/temp_column params interpolated unquoted into DDL",
   "round": 4
+ },
+ "mastodon/mastodon|SQL assembled from strings|lib/mastodon/migration_helpers.rb:522": {
+  "repo": "mastodon/mastodon",
+  "check": "SQL assembled from strings",
+  "severity": "Low",
+  "location": "`lib/mastodon/migration_helpers.rb:522` execute(\"ALTER TABLE #{fk.from_table} RENAME CONSTRAINT \" +  (interpolates: old_fk_name, new_fk_name)  (no endpoint reaches it)",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "mastodon/mastodon|SQL assembled from strings|lib/mastodon/migration_helpers.rb:533": {
   "repo": "mastodon/mastodon",
@@ -5607,6 +6111,15 @@
   "label": "true",
   "why": "Writes one generated HTML file per script, plus a subprocess per script."
  },
+ "mitmproxy/mitmproxy|Import loops (N)|mitmproxy/tools/console/commandexecutor.py": {
+  "repo": "mitmproxy/mitmproxy",
+  "check": "Import loops (N)",
+  "severity": "High",
+  "location": "mitmproxy/tools/console/commandexecutor.py → mitmproxy/tools/console/overlay.py → mitmproxy/tools/console/keymap.py → mitmproxy/tools/console/commandexecutor.py (19 files in the loop)",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "mitmproxy/mitmproxy|MD5 / SHA-1 used for security|mitmproxy/utils/htpasswd.py:77": {
   "repo": "mitmproxy/mitmproxy",
   "check": "MD5 / SHA-1 used for security",
@@ -5624,6 +6137,15 @@
   "why": "broad except Exception: pass also hides exceptions from the pluggable validator (e.g. LDAP failure) with no log; only treated as bad auth",
   "round": 4
  },
+ "mitmproxy/mitmproxy|N error silently swallowed|mitmproxy/version.py:39": {
+  "repo": "mitmproxy/mitmproxy",
+  "check": "N error silently swallowed",
+  "severity": "Medium",
+  "location": "`mitmproxy/version.py:39` except Exception: pass",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "mitmproxy/mitmproxy|Plain-HTTP URLs in code|web/src/js/components/Header/FileMenu.tsx:57": {
   "repo": "mitmproxy/mitmproxy",
   "check": "Plain-HTTP URLs in code",
@@ -5640,6 +6162,24 @@
   "label": "true",
   "why": "flows.map issues one POST /flows/{id}/kill per selected flow; count set by selection",
   "round": 4
+ },
+ "mitmproxy/mitmproxy|Queries or requests inside loops (N) in N place|web/src/js/ducks/flows/_backend_actions.ts:66": {
+  "repo": "mitmproxy/mitmproxy",
+  "check": "Queries or requests inside loops (N) in N place",
+  "severity": "Medium",
+  "location": "`web/src/js/ducks/flows/_backend_actions.ts:66` revert: revert calls fetchApi() inside a loop (line 66), and that reaches fetch() — ``fetchApi(`/flows/${flow.id}/revert`, { method: \"POST\" }),``",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
+ "mitmproxy/mitmproxy|Unused code (N function)|mitmproxy/utils/strutils.py:18": {
+  "repo": "mitmproxy/mitmproxy",
+  "check": "Unused code (N function)",
+  "severity": "Low",
+  "location": "`mitmproxy/utils/strutils.py:18` always_bytes — `def always_bytes(str_or_bytes: None | str | bytes, *encode_args) -> None | bytes:`",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "monicahq/monica|Copied logic in N group (~N lines)|app/Mcp/Tools/DeletePossessionProvenanceEvent.php:49": {
   "repo": "monicahq/monica",
@@ -5664,6 +6204,15 @@
   "location": "`app/Http/Controllers/Api/ValueListItemPositionController.php:16` ValueListItemPositionController.update: does I/O (ValueList::query) — `public function update(Request $request, string $valueList, string $valueListItem): JsonResponse`",
   "label": "false",
   "why": "tests/Feature/Controllers/Api/ValueListItemPositionControllerTest exercises this route."
+ },
+ "monicahq/monica|Network calls without a timeout|resources/js/confirm-password.js:11": {
+  "repo": "monicahq/monica",
+  "check": "Network calls without a timeout",
+  "severity": "Medium",
+  "location": "`resources/js/confirm-password.js:11` const response = await fetch(config.statusUrl, {",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "monicahq/monica|Unused code (N function)|resources/js/contact-name-editor.js:79": {
   "repo": "monicahq/monica",
@@ -5766,6 +6315,15 @@
   "why": "Local development telemetry sink script, not configuration that ships.",
   "round": 3
  },
+ "n8n-io/n8n|Container runs as root|docker/images/n8n-base/Dockerfile.debian:16": {
+  "repo": "n8n-io/n8n",
+  "check": "Container runs as root",
+  "severity": "Medium",
+  "location": "`docker/images/n8n-base/Dockerfile.debian:16` no USER after ${DHI_REF} — `FROM ${DHI_REF}`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "n8n-io/n8n|Container runs as root|docker/images/n8n-base/Dockerfile:5": {
   "repo": "n8n-io/n8n",
   "check": "Container runs as root",
@@ -5774,6 +6332,15 @@
   "label": "false",
   "why": "This is the n8nio/base runtime base; the shipped n8n image built on it sets USER node.",
   "round": 2
+ },
+ "n8n-io/n8n|Copied logic in N group (~N lines)|packages/@n8n/nodes-langchain/nodes/agents/OpenAiAssistant/utils.ts:36": {
+  "repo": "n8n-io/n8n",
+  "check": "Copied logic in N group (~N lines)",
+  "severity": "Medium",
+  "location": "Merge 2 copies of formatToOpenAIAssistantTool (identical, ~10 lines): `packages/@n8n/nodes-langchain/nodes/agents/OpenAiAssistant/utils.ts:36`, `packages/@n8n/nodes-langchain/nodes/vendors/OpenAi/helpers/utils.ts:39`",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "n8n-io/n8n|Copied logic in N group (~N lines)|packages/@n8n/workflow-sdk/src/codegen/composite-handlers/error-handler.ts:25": {
   "repo": "n8n-io/n8n",
@@ -5791,6 +6358,15 @@
   "location": "Merge CredentialTypePolicyInstanceController.getInstancePolicy, TypeAvailabilityPolicyInstanceController.getInstancePolicy (identical, ~10 lines): `packages/cli/src/modules/type-availability-policies/credential-type-policy-instance.controller.ts:51`, `packages/cli/src/modules/type-availability-policies/type-availability-policy-instance.controller.ts:53`",
   "label": "true",
   "why": "Same effective-policy fetch and projection, differing only by the kind constant passed."
+ },
+ "n8n-io/n8n|Copied logic in N group (~N lines)|packages/nodes-base/nodes/Google/Sheet/v1/GoogleSheet.ts:107": {
+  "repo": "n8n-io/n8n",
+  "check": "Copied logic in N group (~N lines)",
+  "severity": "Medium",
+  "location": "Merge 2 copies of GoogleSheet.spreadsheetGetSheets (identical, ~15 lines): `packages/nodes-base/nodes/Google/Sheet/v1/GoogleSheet.ts:107`, `packages/nodes-base/nodes/Google/Sheet/v2/helpers/GoogleSheet.ts:117`",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "n8n-io/n8n|Credentials committed in source|packages/@n8n/ai-utilities/src/__tests__/utils/redact-secrets.test.ts:40": {
   "repo": "n8n-io/n8n",
@@ -5842,6 +6418,15 @@
   "location": "`packages/cli/src/modules/instance-ai/eval/__tests__/request-sanitizer.test.ts:30` ['a Slack token', 'use xoxb… please', /xoxb-/], *(test)*",
   "label": "false",
   "why": "Fake xoxb test string in a sanitizer test."
+ },
+ "n8n-io/n8n|Credentials committed in source|packages/frontend/@n8n/design-system/src/components/N8nCopyInput/CopyInput.stories.ts:107": {
+  "repo": "n8n-io/n8n",
+  "check": "Credentials committed in source",
+  "severity": "Critical",
+  "location": "`packages/frontend/@n8n/design-system/src/components/N8nCopyInput/CopyInput.stories.ts:107` const INITIAL_TOKEN = 'n8n_…';",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "n8n-io/n8n|Credentials committed in source|packages/nodes-base/nodes/Aws/IAM/test/user/get.test.ts:27": {
   "repo": "n8n-io/n8n",
@@ -6106,6 +6691,15 @@
   "why": "registryCache is reassigned at line 225 as a TTL cache after import",
   "round": 4
  },
+ "n8n-io/n8n|Module-level mutable state (N place)|packages/@n8n/instance-ai/src/tracing/langsmith-tracing.ts:176": {
+  "repo": "n8n-io/n8n",
+  "check": "Module-level mutable state (N place)",
+  "severity": "Medium",
+  "location": "`packages/@n8n/instance-ai/src/tracing/langsmith-tracing.ts:176` let cachedProxyClient: { client: Client; apiUrl: string } | null = null;",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "n8n-io/n8n|Module-level mutable state (N place)|packages/@n8n/mcp-browser/src/browser-discovery.ts:286": {
   "repo": "n8n-io/n8n",
   "check": "Module-level mutable state (N place)",
@@ -6165,6 +6759,15 @@
   "label": "false",
   "why": "fsAccess failure (missing icon file) is the expected error and is turned into a 404 response."
  },
+ "n8n-io/n8n|N error silently swallowed|packages/core/src/nodes-loader/output-schema-resolver.ts:257": {
+  "repo": "n8n-io/n8n",
+  "check": "N error silently swallowed",
+  "severity": "High",
+  "location": "`packages/core/src/nodes-loader/output-schema-resolver.ts:257` } catch {}",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "n8n-io/n8n|N error silently swallowed|packages/frontend/editor-ui/src/features/agents/composables/useAgentChatStream.ts:1633": {
   "repo": "n8n-io/n8n",
   "check": "N error silently swallowed",
@@ -6181,6 +6784,15 @@
   "label": "true",
   "why": "Broad .catch(() => {}) silently discards chunk-load and store errors without logging.",
   "round": 3
+ },
+ "n8n-io/n8n|N error silently swallowed|packages/frontend/editor-ui/src/features/shared/commandBar/composables/useExecutionCommands.ts:132": {
+  "repo": "n8n-io/n8n",
+  "check": "N error silently swallowed",
+  "severity": "High",
+  "location": "`packages/frontend/editor-ui/src/features/shared/commandBar/composables/useExecutionCommands.ts:132` .catch(() => {});",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "n8n-io/n8n|N error silently swallowed|packages/nodes-base/nodes/HttpRequest/V2/HttpRequestV2.node.ts:1108": {
   "repo": "n8n-io/n8n",
@@ -6459,6 +7071,15 @@
   "label": "false",
   "why": "Only the table name is interpolated and it passes through escapePath."
  },
+ "n8n-io/n8n|SQL assembled from strings|packages/@n8n/typeorm/src/driver/postgres/PostgresQueryRunner.ts:3654": {
+  "repo": "n8n-io/n8n",
+  "check": "SQL assembled from strings",
+  "severity": "High",
+  "location": "`packages/@n8n/typeorm/src/driver/postgres/PostgresQueryRunner.ts:3654` return new Query(`ALTER TABLE ${this.escapePath(table)} DROP CONSTRAINT \"${checkName}\"`);  (interpolates: checkName)  ← reached from `GET /healthz → GitHubSkillSourceClient.head → AbstractRepository.repository → Entity → DataSource.synchronize → DataSource.dropDatabase → PostgresQueryRunner.clearDatabase → PostgresQueryRunner.query → PostgresQueryRunner.connect → PostgresDriver.obtainSlaveConnection → PostgresDriver.connect → PostgresDriver.createPool → RdbmsSchemaBuilder.log → RdbmsSchemaBuilder.executeSchemaSyncOperationsInProperOrder → RdbmsSchemaBuilder.dropOldChecks → PostgresQueryRunner.dropCheckConstraints → PostgresQueryRunner.dropCheckConstraint → PostgresQueryRunner.dropCheckConstraintSql`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "n8n-io/n8n|SQL assembled from strings|packages/@n8n/typeorm/src/driver/postgres/PostgresQueryRunner.ts:882": {
   "repo": "n8n-io/n8n",
   "check": "SQL assembled from strings",
@@ -6476,6 +7097,15 @@
   "label": "true",
   "why": "View name and expression are interpolated directly into CREATE VIEW SQL.",
   "round": 3
+ },
+ "n8n-io/n8n|SQL assembled from strings|packages/cli/src/modules/instance-ai/self-healing/database/self-healing-configuration.repository.ts:147": {
+  "repo": "n8n-io/n8n",
+  "check": "SQL assembled from strings",
+  "severity": "High",
+  "location": "`packages/cli/src/modules/instance-ai/self-healing/database/self-healing-configuration.repository.ts:147` .where(`projectSelection.projectId = ${configurationAlias}.projectId`)  (interpolates: configurationAlias)  ← reached from `GET /${publicApiEndpoint}/${version}/openapi.yml → SelectQueryBuilder.join → SelectQueryBuilder.getQuery → SelectQueryBuilder.createLimitOffsetExpression → SelectQueryBuilder.take → CoverageWindows.take → boot → freePort → InstanceAiCloudBrowserService.createServer → InstanceAiCloudBrowserService.getSessionProvider → InstanceAiCloudBrowserService.buildGatewaySessionProvider → InstanceAiBrowserSessionService.createSession → InstanceAiBrowserSessionService.handleExtensionConnected → BrowserLocalMcpServer.callTool → executeBrowserTool → SelfHealingConfigurationsController.checkAccess → SelfHealingStatusController.status → SelfHealingConfigurationService.getStatus → SelfHealingConfigurationRepository.canReceiveResults → whereCoversWorkflow`",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "n8n-io/n8n|Shell commands built at runtime|packages/@n8n/mcp-browser-extension/scripts/bundle.mjs:14": {
   "repo": "n8n-io/n8n",
@@ -6569,6 +7199,15 @@
   "location": "`packages/quality/environments/containers/services/proxy.ts:44` NODE_TLS_REJECT_UNAUTHORIZED: '0',",
   "label": "false",
   "why": "Test-container environment for a MockServer proxy in the quality package; not shipped code."
+ },
+ "n8n-io/n8n|Unused code (N function)|packages/@n8n/ai-workflow-builder.ee/evaluations/langsmith/types.ts:42": {
+  "repo": "n8n-io/n8n",
+  "check": "Unused code (N function)",
+  "severity": "Low",
+  "location": "`packages/@n8n/ai-workflow-builder.ee/evaluations/langsmith/types.ts:42` formatViolations — `export function formatViolations(violations: Array<{ type: string; description: string }>): string {`",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "n8n-io/n8n|Unused code (N function)|packages/frontend/editor-ui/src/features/agents/utils/agent-elapsed-time.ts:3": {
   "repo": "n8n-io/n8n",
@@ -6709,6 +7348,15 @@
   "label": "false",
   "why": "Loop returns on first suffix match; the filter/map is a single linear pass, not a nested search."
  },
+ "outline/outline|Container runs as root|Dockerfile.base:2": {
+  "repo": "outline/outline",
+  "check": "Container runs as root",
+  "severity": "Medium",
+  "location": "`Dockerfile.base:2` no USER after node:26.13.1 — `FROM node:26.13.1 AS deps`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "outline/outline|Copied logic in N group (~N lines)|app/components/Sharing/components/ShareSettingsPopover.tsx:131": {
   "repo": "outline/outline",
   "check": "Copied logic in N group (~N lines)",
@@ -6750,6 +7398,15 @@
   "label": "false",
   "why": "GET /sitemap.xml only redirects or 404s; it changes no data."
  },
+ "outline/outline|Import loops (N)|server/logging/Logger.ts": {
+  "repo": "outline/outline",
+  "check": "Import loops (N)",
+  "severity": "High",
+  "location": "server/logging/Logger.ts → server/utils/ShutdownHelper.ts → server/logging/Logger.ts",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "outline/outline|Important code no test reaches (N function)|app/actions/index.ts:54": {
   "repo": "outline/outline",
   "check": "Important code no test reaches (N function)",
@@ -6790,6 +7447,24 @@
   "label": "false",
   "why": "Sitemap XML namespace, not a requested address."
  },
+ "outline/outline|Queries or requests inside loops (N) in N place|app/components/DocumentExplorer/DocumentExplorer.tsx:238": {
+  "repo": "outline/outline",
+  "check": "Queries or requests inside loops (N) in N place",
+  "severity": "Medium",
+  "location": "`app/components/DocumentExplorer/DocumentExplorer.tsx:238` DocumentExplorer: DocumentExplorer calls Collection.fetchDocuments() inside a loop (line 238), and that reaches fetch() — `void collection.fetchDocuments();`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
+ "outline/outline|Raw HTML injected into pages|server/emails/templates/GroupDocumentMentionedEmail.tsx:178": {
+  "repo": "outline/outline",
+  "check": "Raw HTML injected into pages",
+  "severity": "Low",
+  "location": "`server/emails/templates/GroupDocumentMentionedEmail.tsx:178` <div dangerouslySetInnerHTML={{ __html: body }} />  (no endpoint reaches it)",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "outline/outline|Raw HTML injected into pages|shared/editor/nodes/ToggleBlockView.ts:44": {
   "repo": "outline/outline",
   "check": "Raw HTML injected into pages",
@@ -6815,6 +7490,24 @@
   "label": "true",
   "why": "workingTable is built at runtime from date and unique id and interpolated into SQL.",
   "round": 3
+ },
+ "outline/outline|Shell commands built at runtime|server/scripts/release.js:94": {
+  "repo": "outline/outline",
+  "check": "Shell commands built at runtime",
+  "severity": "Low",
+  "location": "`server/scripts/release.js:94` execSync(`git tag v${newVersion} -m v${newVersion}`, opts);  (no endpoint reaches it) *(script)*",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
+ "outline/outline|Shell commands built at runtime|server/scripts/release.js:95": {
+  "repo": "outline/outline",
+  "check": "Shell commands built at runtime",
+  "severity": "Low",
+  "location": "`server/scripts/release.js:95` execSync(`git push origin v${newVersion}`, opts);  (no endpoint reaches it) *(script)*",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "outline/outline|TLS certificate checks turned off|server/config/database.js:19": {
   "repo": "outline/outline",
@@ -7041,6 +7734,24 @@
   "why": "No test calls load_and_combine or runs this open_numbers step; tests only mention the channel name.",
   "round": 2
  },
+ "owid/etl|Important code no test reaches (N function)|snapshots/cdc/latest/measles_cases.py:20": {
+  "repo": "owid/etl",
+  "check": "Important code no test reaches (N function)",
+  "severity": "Medium",
+  "location": "`snapshots/cdc/latest/measles_cases.py:20` main: does I/O (requests.utils.default_user_agent) — `def main(upload: bool) -> None:`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
+ "owid/etl|Important code no test reaches (N function)|snapshots/climate/2024-01-31/climate_change_impacts.py:79": {
+  "repo": "owid/etl",
+  "check": "Important code no test reaches (N function)",
+  "severity": "Medium",
+  "location": "`snapshots/climate/2024-01-31/climate_change_impacts.py:79` find_date_published: does I/O (requests.get) — `def find_date_published(snap: Snapshot) -> str | None:`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "owid/etl|Important code no test reaches (N function)|snapshots/lgbt_rights/2023-04-13/equaldex_extract.py:40": {
   "repo": "owid/etl",
   "check": "Important code no test reaches (N function)",
@@ -7076,6 +7787,15 @@
   "why": "lastPreviewedFile is reassigned in command handlers as panels open and close.",
   "round": 2
  },
+ "owid/etl|Module-level mutable state (N place)|vscode_extensions/chart-preview/src/extension.ts:990": {
+  "repo": "owid/etl",
+  "check": "Module-level mutable state (N place)",
+  "severity": "Medium",
+  "location": "`vscode_extensions/chart-preview/src/extension.ts:990` let selectedEntity = null;",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "owid/etl|N error silently swallowed|apps/wizard/app_pages/fasttrack/app.py:51": {
   "repo": "owid/etl",
   "check": "N error silently swallowed",
@@ -7110,6 +7830,15 @@
   "why": "requests.head to unstats.un.org with no timeout argument.",
   "round": 3
  },
+ "owid/etl|Network calls without a timeout|snapshots/cbc_taiwan/2025-12-22/twd_usd_exchange_rate.py:60": {
+  "repo": "owid/etl",
+  "check": "Network calls without a timeout",
+  "severity": "Medium",
+  "location": "`snapshots/cbc_taiwan/2025-12-22/twd_usd_exchange_rate.py:60` response = requests.get(url)",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "owid/etl|Network calls without a timeout|snapshots/cdc/latest/measles_cases.py:45": {
   "repo": "owid/etl",
   "check": "Network calls without a timeout",
@@ -7135,6 +7864,15 @@
   "label": "true",
   "why": "requests.get(url) to a remote download URL with no timeout argument.",
   "round": 2
+ },
+ "owid/etl|Network calls without a timeout|snapshots/ihme_gbd/2020-12-19/child_mortality.py:24": {
+  "repo": "owid/etl",
+  "check": "Network calls without a timeout",
+  "severity": "Medium",
+  "location": "`snapshots/ihme_gbd/2020-12-19/child_mortality.py:24` response = requests.get(WALDEN_URL)",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "owid/etl|Network calls without a timeout|snapshots/un/2025-05-15/un_members.py:28": {
   "repo": "owid/etl",
@@ -7253,6 +7991,15 @@
   "why": "Loop is a retry loop with exponential backoff around one download.",
   "round": 3
  },
+ "owid/etl|Queries or requests inside loops (N) in N place|snapshots/wb/2024-11-04/edstats.py:37": {
+  "repo": "owid/etl",
+  "check": "Queries or requests inside loops (N) in N place",
+  "severity": "Medium",
+  "location": "`snapshots/wb/2024-11-04/edstats.py:37` main: main calls fetch_indicator_metadata() inside a loop (line 37), and that reaches requests.get() — `result = fetch_indicator_metadata(indicator)`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "owid/etl|Raw HTML injected into pages|apps/mdim_simulator/simulator.js:1577": {
   "repo": "owid/etl",
   "check": "Raw HTML injected into pages",
@@ -7355,6 +8102,24 @@
   "location": "`etl/steps/data/meadow/wvs/2026-06-30/world_values_survey.py:16` run — `def run() -> None:`",
   "label": "false",
   "why": "ETL step entry point invoked via run_module_run; step listed in dag/main.yml."
+ },
+ "owid/etl|Unused code (N function)|etl/steps/data/open_numbers/open_numbers/latest/gapminder__co2_emission.py:243": {
+  "repo": "owid/etl",
+  "check": "Unused code (N function)",
+  "severity": "Low",
+  "location": "`etl/steps/data/open_numbers/open_numbers/latest/gapminder__co2_emission.py:243` fast_table_clean — `def fast_table_clean(dataset: Dataset, table_name: str) -> Table:`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
+ "owid/etl|Unused code (N function)|etl/steps/data/open_numbers/open_numbers/latest/gapminder__fasttrack.py:243": {
+  "repo": "owid/etl",
+  "check": "Unused code (N function)",
+  "severity": "Low",
+  "location": "`etl/steps/data/open_numbers/open_numbers/latest/gapminder__fasttrack.py:243` fast_table_clean — `def fast_table_clean(dataset: Dataset, table_name: str) -> Table:`",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "owid/etl|Unused code (N function)|etl/steps/data/open_numbers/open_numbers/latest/unicef__immunization.py:243": {
   "repo": "owid/etl",
@@ -7772,6 +8537,15 @@
   "label": "true",
   "why": "assign_user_gift_cards runs GiftCard queries/updates per updated customer in the loop."
  },
+ "saleor/saleor|Queries or requests inside loops (N) in N place|saleor/graphql/discount/utils.py:262": {
+  "repo": "saleor/saleor",
+  "check": "Queries or requests inside loops (N) in N place",
+  "severity": "Medium",
+  "location": "`saleor/graphql/discount/utils.py:262` _handle_or_data: _handle_or_data calls _handle_predicate() inside a loop (line 262), and that reaches Checkout.objects.filter() — `qs = _handle_predicate(`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "saleor/saleor|Queries or requests inside loops (N) in N place|saleor/warehouse/channel_stock_availability.py:92": {
   "repo": "saleor/saleor",
   "check": "Queries or requests inside loops (N) in N place",
@@ -7779,6 +8553,15 @@
   "location": "`saleor/warehouse/channel_stock_availability.py:92` trigger_out_of_stock_in_channel_events_for_stocks: trigger_out_of_stock_in_channel_events_for_stocks calls _get_variant_channels_without_other_availability() inside a loop (line 92), and that reaches ChannelWarehouse.objects.filter()",
   "label": "false",
   "why": "Loop runs over a fixed two-element list (click-and-collect vs not), not a data-sized count."
+ },
+ "saleor/saleor|Queries or requests inside loops (N) in N place|saleor/webhook/transport/utils.py:596": {
+  "repo": "saleor/saleor",
+  "check": "Queries or requests inside loops (N) in N place",
+  "severity": "Medium",
+  "location": "`saleor/webhook/transport/utils.py:596` clear_successful_deliveries: clear_successful_deliveries calls EventPayload.objects.filter() inside a loop (line 596) — `payloads_to_delete = EventPayload.objects.filter(`",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "saleor/saleor|Writes inside loops in N place|saleor/graphql/order/mutations/draft_order_complete.py:236": {
   "repo": "saleor/saleor",
@@ -7943,6 +8726,15 @@
   "location": "`packages/shadcn/src/commands/registry/build.ts:137` buildRegistry — `const stat = await fs.stat(absPath)`",
   "label": "true",
   "why": "fs.stat and readFile per registry item file."
+ },
+ "shadcn-ui/ui|N error silently swallowed|apps/v4/components/docs-sidebar.tsx:87": {
+  "repo": "shadcn-ui/ui",
+  "check": "N error silently swallowed",
+  "severity": "Medium",
+  "location": "`apps/v4/components/docs-sidebar.tsx:87` } catch {}",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "shadcn-ui/ui|N error silently swallowed|apps/v4/registry/bases/aria/ui/code-block.tsx:118": {
   "repo": "shadcn-ui/ui",
@@ -8299,6 +9091,15 @@
   "why": "RegularElement.js imports from shared/element.js, which imports the build_*_directives_object functions back from RegularElement.js.",
   "round": 2
  },
+ "sveltejs/svelte|Import loops (N)|packages/svelte/src/reactivity/url-search-params.js": {
+  "repo": "sveltejs/svelte",
+  "check": "Import loops (N)",
+  "severity": "High",
+  "location": "packages/svelte/src/reactivity/url-search-params.js → packages/svelte/src/reactivity/url.js → packages/svelte/src/reactivity/url-search-params.js",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "sveltejs/svelte|Raw HTML injected into pages|packages/svelte/src/internal/client/dom/elements/customizable-select.js:18": {
   "repo": "sveltejs/svelte",
   "check": "Raw HTML injected into pages",
@@ -8426,6 +9227,15 @@
   "why": "Entrypoint drops privileges with su-exec to PUID:PGID 1000, so the relay doesn't run as root.",
   "round": 3
  },
+ "syncthing/syncthing|Container runs as root|Dockerfile.stupgrades:1": {
+  "repo": "syncthing/syncthing",
+  "check": "Container runs as root",
+  "severity": "Medium",
+  "location": "`Dockerfile.stupgrades:1` no USER after alpine — `FROM alpine`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "syncthing/syncthing|Container runs as root|Dockerfile.ursrv:1": {
   "repo": "syncthing/syncthing",
   "check": "Container runs as root",
@@ -8434,6 +9244,15 @@
   "label": "true",
   "why": "shipped usage-reporting server image (built by build-infra-dockers workflow) on plain alpine with no USER",
   "round": 4
+ },
+ "syncthing/syncthing|Container runs as root|Dockerfile:29": {
+  "repo": "syncthing/syncthing",
+  "check": "Container runs as root",
+  "severity": "Medium",
+  "location": "`Dockerfile:29` no USER after alpine — `FROM alpine`",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "syncthing/syncthing|Copied logic in N group (~N lines)|gui/default/vendor/daterangepicker/daterangepicker.js:1227": {
   "repo": "syncthing/syncthing",
@@ -8726,6 +9545,15 @@
   "label": "true",
   "why": "readRenderPageError is byte-identical in the sync and render workers; could live in a shared module."
  },
+ "tldraw/tldraw|Copied logic in N group (~N lines)|templates/agent/client/actions/AlignActionUtil.ts:11": {
+  "repo": "tldraw/tldraw",
+  "check": "Copied logic in N group (~N lines)",
+  "severity": "Medium",
+  "location": "Merge AlignActionUtil.getInfo, BringToFrontActionUtil.getInfo, DistributeActionUtil.getInfo, MoveActionUtil.getInfo, ResizeActionUtil.getInfo, RotateActionUtil.getInfo, SendToBackActionUtil.getInfo, StackActionUtil.getInfo, UpdateActionUtil.getInfo (identical, ~48 lines): `templates/agent/client/actions/DistributeActionUtil.ts:11`, `templates/agent/client/actions/UpdateActionUtil.ts:16`, `templates/agent/client/actions/StackActionUtil.ts:11`, `templates/agent/client/actions/ResizeActionUtil.ts:11`, `templates/agent/client/actions/RotateActionUtil.ts:11`, `templates/agent/client/actions/SendToBackActionUtil.ts:11`, `templates/agent/client/actions/MoveActionUtil.ts:11`, `templates/agent/client/actions/BringToFrontActionUtil.ts:11`, `templates/agent/client/actions/AlignActionUtil.ts:11`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "tldraw/tldraw|Copied logic in N group (~N lines)|templates/shader/src/minimal/MinimalShaderManager.ts:147": {
   "repo": "tldraw/tldraw",
   "check": "Copied logic in N group (~N lines)",
@@ -8870,6 +9698,15 @@
   "location": "`apps/dotcom/client/src/tla/hooks/useFetchJson.ts:18` .catch(() => null)",
   "label": "false",
   "why": "Fetch errors become null data returned by the hook, the same value callers check for failed responses."
+ },
+ "tldraw/tldraw|Network calls without a timeout|apps/dotcom/client/src/pages/admin/EffectsSection.tsx:26": {
+  "repo": "tldraw/tldraw",
+  "check": "Network calls without a timeout",
+  "severity": "Medium",
+  "location": "`apps/dotcom/client/src/pages/admin/EffectsSection.tsx:26` fetch('/api/app/admin/outbox'),",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "tldraw/tldraw|Network calls without a timeout|apps/dotcom/client/src/pages/admin/FileStats.tsx:33": {
   "repo": "tldraw/tldraw",
@@ -9114,6 +9951,15 @@
   "location": "`www/src/components/page-actions.tsx:64` const markdown = fetch(markdownPath).then(async (response) => {",
   "label": "true",
   "why": "fetch of markdown with no timeout or signal."
+ },
+ "trpc/trpc|Raw HTML injected into pages|www/src/components/doc-body.tsx:233": {
+  "repo": "trpc/trpc",
+  "check": "Raw HTML injected into pages",
+  "severity": "Low",
+  "location": "`www/src/components/doc-body.tsx:233` dangerouslySetInnerHTML={{ __html: part }}  (no endpoint reaches it)",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "trpc/trpc|Raw HTML injected into pages|www/src/twoslash-hovers.ts:107": {
   "repo": "trpc/trpc",
@@ -9694,6 +10540,15 @@
   "label": "true",
   "why": "heading-ids imports the getTextContent function from runtime, and runtime imports the setupHeadingConfig function from heading-ids."
  },
+ "withastro/astro|Important code no test reaches (N function)|examples/ssr/src/api.ts:20": {
+  "repo": "withastro/astro",
+  "check": "Important code no test reaches (N function)",
+  "severity": "Medium",
+  "location": "`examples/ssr/src/api.ts:20` getJson: does I/O (fetch) — `async function getJson<T>(incomingReq: Request, endpoint: string): Promise<T> {`",
+  "label": null,
+  "why": "",
+  "round": 5
+ },
  "withastro/astro|Important code no test reaches (N function)|packages/astro/src/cli/server.ts:316": {
   "repo": "withastro/astro",
   "check": "Important code no test reaches (N function)",
@@ -9719,6 +10574,15 @@
   "label": "true",
   "why": "originalSleep is reassigned at line 95 (with activeChecks counter) while volarCommon.sleep is patched",
   "round": 4
+ },
+ "withastro/astro|Module-level mutable state (N place)|packages/renderers/react/src/vnode-children.ts:11": {
+  "repo": "withastro/astro",
+  "check": "Module-level mutable state (N place)",
+  "severity": "Medium",
+  "location": "`packages/renderers/react/src/vnode-children.ts:11` let ids = 0;",
+  "label": null,
+  "why": "",
+  "round": 5
  },
  "withastro/astro|Module-level mutable state (N place)|packages/renderers/solid-js/src/server.ts:32": {
   "repo": "withastro/astro",
