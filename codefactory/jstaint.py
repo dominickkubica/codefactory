@@ -38,10 +38,11 @@ REQUEST_ATTRS = {"query", "params", "body", "cookies", "headers", "payload", "qu
 BODY_READERS = {"json", "formData", "text"}  # `await request.json()` in a Next.js / web-standard route handler
 NEST_SOURCES = {"Body", "Query", "Param", "Params", "Headers"}  # (@Req(): only its query/body/params are request data)
 SAFE_PIPES = re.compile(r"Parse(?:Int|Float|Bool|UUID|Enum|Array)Pipe|DefaultValuePipe")
+# (toQuery: knex's, which escapes its bindings)
 SANITIZERS = {"Number", "parseInt", "parseFloat", "Boolean", "encodeURIComponent", "escape", "escapeHtml", "escapeHTML",
               "escapeXml", "sanitize", "sanitizeHtml", "sanitizeUrl", "basename", "quote", "escapeShellArg", "shellEscape",
               "escapeLiteral", "escapeIdentifier", "escapeId", "toFixed", "isValid", "uuidValidate", "validate", "xss",
-              "encode", "htmlEscape", "stringify_safe"}  # fmt: skip
+              "encode", "htmlEscape", "stringify_safe", "toQuery"}  # fmt: skip
 # methods whose result is a yes/no or a number: no attacker text comes out
 CLEAN_METHODS = {"includes", "startsWith", "endsWith", "test", "indexOf", "lastIndexOf", "has", "some", "every",
                  "isArray", "isInteger", "isNaN", "isFinite", "localeCompare", "getTime", "valueOf", "charCodeAt"}  # fmt: skip
@@ -78,6 +79,13 @@ PASS_THROUGH = {"parse", "parseAsync", "safeParse", "cast", "concat", "join", "r
                 "from", "assign", "push", "fromEntries", "entries", "stringify"}  # fmt: skip
 LOOKUP = re.compile(r"(?:load|find|lookup|retrieve|query|select)[A-Z_]|get\w*(?:From|For|By)[A-Z]")
 CHECKED = re.compile(r"[Vv]alidat|[Ss]aniti[sz]|[Ss]afe|[Aa]llowed|[Tt]rusted|[Ww]hitelist|[Aa]llowlist|[Vv]erif")
+# checks by name beyond VALIDATOR's: assertUrl(x), checkRedirect(x), isPathInside(base, p), isSameOrigin(x)
+TARGET = r"(?:Url|URL|Uri|URI|Redirect|Path|Host|Origin|Domain|Webhook|SSRF|Ssrf)"  # what a check of a place is about
+GUARD = re.compile(rf"(?:[Aa]ssert|[Cc]heck|[Vv]erify|[Ee]nsure)\w*{TARGET}"
+                   r"|(?:[Ii]nside|[Ww]ithin|[Cc]ontained)(?:[A-Z]|$)|[Ss]ame[Oo]rigin")  # fmt: skip
+# an agent or fetch that refuses private addresses: ssrfSafeAgent, getSafeAxiosAgents(), request-filtering-agent
+SAFE_AGENT = re.compile(r"[Ss]srf\w*(?:Agent|Fetch)|[Ss]afe\w*Agents?\b|[Ff]iltering\w*Agent")
+URL_KEYS = {"url", "uri", "baseURL", "baseUrl", "host", "hostname", "href", "origin"}  # an options object's target
 ITERATORS = {"map", "forEach", "flatMap", "filter", "find", "findIndex"}
 INJECTED = r"(?:private|protected|public|readonly)\s+(?:readonly\s+)?(\w+)\s*[?!]?\s*:\s*([A-Z]\w*)"  # field: Type
 RESPONSE_WRITE = {"send", "write", "end"}
@@ -506,10 +514,12 @@ class _Function:
                         "?" in s
                         or re.search(r"//[^/?#]+[/?#]", s)
                         or (k == 0 and s.startswith("/") and not s.startswith(("//", "/\\")))
-                        or (k == 1 and s.startswith("/") and self._constant_base(parts[0]))
+                        or (k == 1 and s.startswith("/") and self._constant_base(parts[0], env))
                     ):
                         query = True
                 elif c.type == "template_substitution":
+                    if k == 1 and self._constant_base(parts[0], env) and re.search(r"\.pathname\b", _text(c, self.src)):
+                        query = True  # `${POSTHOG_URL}${url.pathname}`: a URL's pathname starts with "/"
                     for e in _kids(c):
                         labels = self.origins(e, env)
                         out |= {(*lab[:2], "query") for lab in labels} if query else labels
@@ -531,9 +541,16 @@ class _Function:
         if t == "unary_expression":
             return set()  # typeof, !, -, +x (a number), void
         if t == "ternary_expression":
-            return self.origins(n.child_by_field_name("consequence"), env) | self.origins(
-                n.child_by_field_name("alternative"), env
-            )
+            # `isValidRedirect(x) ? x : "/"`: the branch the check leads to holds a checked x
+            cond = n.child_by_field_name("condition")
+            checked = self._validated_names(cond, ("===", "==")) if cond is not None else set()
+            negated = cond is not None and _text(cond, self.src).lstrip("( ").startswith("!")
+            out, saved = set(), self.guard
+            for branch, ok in (("consequence", not negated), ("alternative", negated)):
+                self.guard = saved | checked if ok else saved
+                out |= self.origins(n.child_by_field_name(branch), env)
+            self.guard = saved
+            return out
         if t in ("call_expression", "new_expression"):
             return self._call_origins(n, env)
         if t in ("arrow_function", "function_expression", "function"):
@@ -556,6 +573,10 @@ class _Function:
         if recv in ("Number", "Date") or name in ("isUUID", "isInt", "isEmail", "isNumeric"):
             return set()
         args = _args(n)
+        if re.match(r"(?:decode|unseal|unsign)", name, re.I) and re.search(
+            r"\b(?:secret|key|password)\b", " ".join(_text(a, self.src) for a in args[1:] or args), re.I
+        ):
+            return set()  # decode({ token, secret }), unsign(cookie, secret): signed by the server, not request text
         summary = self.callees.get(name) if self._direct(recv) else self.callees.get(f"{recv}.{name}")
         if summary is not None:
             out = set()
@@ -573,17 +594,31 @@ class _Function:
             # service.process(x), sp.createLogoutRequest(idp, x), stripe.sessions.create({…x}): an object's own method
             # handed the value returns that object's answer, not the text; a method of the text (x.trim()) keeps it
             return receiver
+        if name in ("replace", "replaceAll"):
+            args = args[1:]  # what's searched for is taken out, not put in
         out = set(receiver)
         for a in args:
             out |= self.origins(a, env)
         return out
 
-    def _constant_base(self, sub) -> bool:
-        """`${POSTHOG_URL}`, `${process.env.API}`, `${env.URL}`, `${config.baseUrl}`: a base the request doesn't set."""
+    def _constant_base(self, sub, env) -> bool:
+        """`${POSTHOG_URL}`, `${process.env.API}`, `${env.URL}`, `${config.baseUrl}`, `${nconf.get("relative_path")}`,
+        `${dev ? "http://localhost" : "https://app.x.dev"}`: a base the request doesn't set."""
         inner = _kids(sub)
-        if not inner:
+        return bool(inner) and self._constant(_strip(inner[0]), env)
+
+    def _constant(self, e, env) -> bool:
+        if e is None:
             return False
-        e = _strip(inner[0])
+        if e.type == "string":
+            return True
+        if e.type == "ternary_expression":
+            return all(self._constant(_strip(e.child_by_field_name(b)), env) for b in ("consequence", "alternative"))
+        if e.type == "call_expression":  # a settings getter: nconf.get("url"), config.get("app.base")
+            args = _args(e)
+            if not args or any(a.type != "string" for a in args):
+                return False
+            return _callee_name(e, self.src)[1].split(".")[0] not in REQUEST_BASES and not self.origins(e, env)
         text = _text(e, self.src)
         return bool(
             re.fullmatch(r"[A-Z][A-Z0-9_]+|(?:process\.)?env\.\w+|(?:this\.)?(?:config|settings|options)\.\w+(?:\.\w+)*", text)
@@ -603,6 +638,7 @@ class _Function:
                 name, recv = _callee_name(c, self.src)
                 if (
                     VALIDATOR.search(name)
+                    or GUARD.search(name)
                     or name in ("includes", "has", "test", "isUUID", "isInt", "matches")
                     or (name == "match" and recv)
                 ):
@@ -612,6 +648,8 @@ class _Function:
                             out.add(_text(a, self.src))
                     if name == "match" and recv and re.fullmatch(r"[\w.]+", recv):
                         out.add(recv)
+                elif name == "startsWith" and re.fullmatch(r"[\w.]+", recv) and self._prefix_check(recv, _args(c)):
+                    out.add(recv)  # `p.startsWith(base + path.sep)`, `url.startsWith("https://x.com/")`
             elif c.type == "binary_expression" and equal_ops:
                 op = c.child_by_field_name("operator")
                 if op is not None and _text(op, self.src) in equal_ops:
@@ -623,6 +661,22 @@ class _Function:
                             out.add(_text(side, self.src))  # `x === "a"`: inside, x is that constant
             stack.extend(_kids(c))
         return out
+
+    def _prefix_check(self, recv: str, args) -> bool:
+        """A prefix that pins where a value points: a full origin, or any base of a resolved path (`..` gone)."""
+        a = _strip(args[0]) if args else None
+        if a is None:
+            return False
+        if a.type == "string" and re.match(r"https?://[^/]+/", _text(a, self.src).strip("'\"`")):
+            return True
+        for n in self.body:
+            if n.type == "variable_declarator" and _text(n.child_by_field_name("name"), self.src) == recv:
+                v = _strip(n.child_by_field_name("value"))
+                if v is not None and v.type == "call_expression" and _callee_name(v, self.src)[0] in (
+                    "resolve", "normalize", "join", "realpath", "realpathSync"
+                ):  # fmt: skip
+                    return True
+        return False
 
     def _guards(self) -> dict[int, set[str]]:
         """For each call, the names an enclosing `if` validated: `if (isSafe(x)) { redirect(x) }`."""
@@ -649,6 +703,13 @@ class _Function:
         """`if (!isSafe(x)) return …` / `throw` / `x = "/"`: from the end of that `if`, x reads as clean. So does a value
         passed back through a checker: `redirect = resolveLoginRedirect(redirect)` (it throws on a bad one)."""
         out: dict[str, int] = {}
+
+        def clean(name: str, line: int):
+            out[name] = min(out.get(name, line), line)
+
+        # what a check's result stands for: `const r = await validateWebhookUrl(url)` -> {"r": {"url"}}; likewise
+        # `const rel = path.relative(base, p)`, whose `..` or absolute form is what a containment check rejects
+        results: dict[str, set[str]] = {}
         for n in self.body:
             if n.type == "assignment_expression":
                 left, right = n.child_by_field_name("left"), _strip(n.child_by_field_name("right"))
@@ -656,8 +717,26 @@ class _Function:
                     name, _ = _callee_name(right, self.src)
                     args = [_text(a, self.src) for a in _args(right)]
                     if _text(left, self.src) in args and (CHECKED.search(name) or re.search(r"resolve\w*(?:Redirect|Url)", name)):
-                        line = n.end_point[0] + 1
-                        out[_text(left, self.src)] = min(out.get(_text(left, self.src), line), line)
+                        clean(_text(left, self.src), n.end_point[0] + 1)
+            elif n.type == "variable_declarator":
+                left, right = n.child_by_field_name("name"), _strip(n.child_by_field_name("value"))
+                if getattr(left, "type", "") == "identifier" and getattr(right, "type", "") == "call_expression":
+                    name, recv = _callee_name(right, self.src)
+                    args = [_strip(a) for a in _args(right)]
+                    if name == "relative" and (not recv or recv.split(".")[-1] in ("path", "posix", "win32")):
+                        args = args[1:]
+                    elif not self._place_check(name):
+                        continue
+                    kept = [a for a in args if a is not None and a.type in ("identifier", "member_expression")]
+                    results[_text(left, self.src)] = {_text(a, self.src) for a in kept}
+            elif n.type == "expression_statement" and (call := _strip(_kids(n)[0] if _kids(n) else None)) is not None:
+                # `await assertSafeUrl(url)`, `validateUrlOrThrow(url)`: a check called for its throw
+                name, _ = _callee_name(call, self.src) if call.type == "call_expression" else ("", "")
+                if re.match(r"(?:assert|ensure|validate|verify|check)", name, re.I) and self._place_check(name):
+                    for a in _args(call):
+                        a = _strip(a)
+                        if a is not None and a.type in ("identifier", "member_expression"):
+                            clean(_text(a, self.src), n.end_point[0] + 1)
         for n in self.body:
             if n.type != "if_statement":
                 continue
@@ -668,16 +747,21 @@ class _Function:
             negated = [c for c in self._walk(cond) if c.type == "unary_expression" and _text(c, self.src).startswith("!")]
             names = set().union(*(self._validated_names(c) for c in negated)) if negated else set()
             names |= self._validated_names(cond, ("!==", "!="))  # `if (x !== "a" && x !== "b") return`
-            if not names:
-                continue
             body = _text(cons, self.src)
             leaves = re.search(r"\b(?:return|throw)\b", body) is not None
+            if leaves:  # `if (!check.safe) return`, `if (rel.startsWith("..") || path.isAbsolute(rel)) throw`
+                used = {_text(c, self.src) for c in self._walk(cond) if c.type == "identifier"}
+                names |= set().union(*(results[r] for r in used & results.keys()))
             for name in names:
                 assigned = re.search(rf"(?<![\w.]){re.escape(name)}\s*=(?!=)", body) is not None
                 if leaves or assigned:
-                    end = n.end_point[0] + 1
-                    out[name] = min(out.get(name, end), end)
+                    clean(name, n.end_point[0] + 1)
         return out
+
+    @staticmethod
+    def _place_check(name: str) -> bool:
+        """validateWebhookUrl, assertSafeUrl, isAllowedHost: a check of where a value points (not a schema's parse)."""
+        return name not in SANITIZERS and bool(GUARD.search(name) or VALIDATOR.search(name) and re.search(TARGET, name))
 
     @staticmethod
     def _walk(n):
@@ -699,7 +783,11 @@ class _Function:
             return []
         left = _strip(left)
         if left.type in ("member_expression", "subscript_expression"):
-            base, _ = _member_chain(left, self.src)
+            base, props = _member_chain(left, self.src)
+            if props and props[-1] in ("pathname", "search", "hash"):
+                return []  # `next.pathname = x` (a URL's): the host stays what it was
+            if base in REQUEST_BASES and props and props[0] in REQUEST_ATTRS:
+                return []  # `req.params.slug = x`: request data already, the rest of `req` (its path) isn't x
             return [base] if base and base != "this" else []
         if left.type in ("lexical_declaration", "variable_declaration"):
             return [
@@ -825,7 +913,8 @@ class _Function:
             return "path", args[:1]
         if name in SEND_FILE and recv in ("res", "response", "reply"):
             return "path", args[:1]
-        if (name in HTTP_FUNCS and not recv) or (name in HTTP_METHODS and base in HTTP_OBJECTS):
+        own = {p for names in self.u.params for p in names}  # `fetch` a parameter (a loader callback): not the global
+        if (name in HTTP_FUNCS and not recv and name not in own) or (name in HTTP_METHODS and base in HTTP_OBJECTS):
             return "ssrf", args[:1]
         if name in REDIRECTS and (recv in ("res", "response", "reply", "ctx", "NextResponse", "Response")
                                   or (not recv and self.imports.get(name) in ("next/navigation", "@remix-run/node",
@@ -881,11 +970,57 @@ class _Function:
             return True  # relative to this page
         return lead.startswith("/") and not lead.startswith("//") and not lead.startswith("/\\")
 
+    def _url_parts(self, a) -> list:
+        """What in an outgoing request's argument picks the host: `request({ url, body })` -> [url]."""
+        s = _strip(a)
+        if s is None or s.type != "object":
+            return [a]
+        out = []
+        for c in _kids(s):
+            if c.type == "pair":
+                key = c.child_by_field_name("key")
+                if key is not None and _text(key, self.src).strip("'\"") in URL_KEYS:
+                    out.append(c.child_by_field_name("value"))
+            elif c.type == "shorthand_property_identifier" and _text(c, self.src) in URL_KEYS:
+                out.append(c)
+            elif c.type == "spread_element":
+                out += _kids(c)
+        return [v for v in out if v is not None]
+
+    def _ssrf_opt_out(self, call) -> bool:
+        """Inside `if (isSsrfProtectionDisabled())`: the operator turned the guard off, the code otherwise has one."""
+        p = call.parent
+        while p is not None and p is not self.u.node:
+            if p.type == "if_statement":
+                cond = p.child_by_field_name("condition")
+                text = _text(cond, self.src) if cond is not None else ""
+                if re.search(r"ssrf\w*(?:disabled|off)|disable\w*ssrf", text, re.I):
+                    return True
+            p = p.parent
+        return False
+
+    def _rooted(self, call) -> bool:
+        """`res.sendFile(name, { root })`, Fastify's `reply.sendFile(name, root)`: send refuses a path out of root."""
+        name, recv = _callee_name(call, self.src)
+        args = _args(call)
+        if name not in SEND_FILE or len(args) < 2:
+            return False
+        second = _strip(args[1])
+        if second.type == "object":
+            return re.search(r"(?<![\w.])root\b", _text(second, self.src)) is not None
+        return recv == "reply" and name == "sendFile" and second.type not in ("arrow_function", "function_expression")
+
     def _sink_hits(self, n, env) -> list:
         sink = self._sink(n)
         if not sink:
             return []
         kind, args = sink
+        if kind == "ssrf":
+            if SAFE_AGENT.search(" ".join(_text(a, self.src) for a in _args(n))) or self._ssrf_opt_out(n):
+                return []
+            args = [v for a in args for v in self._url_parts(a)]
+        if kind == "path" and self._rooted(n):
+            return []
         out = []
         self.guard = self.guarded.get(n.start_byte, set())
         for a in args:
@@ -917,6 +1052,8 @@ class _Function:
         for i, a in enumerate(_args(n)):
             for flow in summary.sinks.get(i, []):
                 for label in self.origins(a, env):
+                    if flow[0] in ("redirect", "ssrf") and len(label) > 2:
+                        continue  # past a fixed host, as in _sink_hits
                     via = f"{name}()" + (" → " + flow[3] if flow[3] else "")
                     out.append((label, flow[0], flow[1], flow[2], via, flow[4]))
         return out
@@ -1012,6 +1149,8 @@ def js_taint_flags(g: Graph, root: Path) -> list[Flag]:
                 stack.append(d)
     wanted = sorted((reach & with_sink) | (with_source & with_sink) | {f for f in with_source if deps.get(f, set()) & with_sink})
     wanted = sorted(set(wanted) | {d for f in wanted for d in deps.get(f, ()) if d in with_sink})
+    # …and what a handler calls even without a sink there, for what it returns: decodeToken(x) hands back a signed value
+    wanted = sorted(set(wanted) | {d for f in wanted if f in with_source for d in deps.get(f, ()) if d in texts})
     units: list[Unit] = []
     trees: dict[str, tuple] = {}
     unloadable: dict[str, str] = {}

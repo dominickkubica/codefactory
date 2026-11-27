@@ -74,5 +74,19 @@ class JsTaintTest(unittest.TestCase):
         self.assertTrue(any(t.startswith("Request data reaches dangerous calls (17 proven flows)") for t in titles), titles)
 
 
+GUARDS = Path(__file__).parent / "fixtures" / "jsguardapp"
+
+
+@unittest.skipUnless(available(), "needs the language pack (tree-sitter)")
+class JsGuardTest(unittest.TestCase):
+    def test_guarded_flows_are_clean_and_their_unguarded_twins_reported(self):
+        # validators before the sink (by result, by throw, in a ternary), path containment, send's root, fixed bases,
+        # options objects, signed tokens, knex's toQuery, SSRF-safe agents: each beside the same flow unguarded
+        text = (GUARDS / "guards.ts").read_text(encoding="utf-8").splitlines()
+        marked = {i for i, line in enumerate(text, 1) if line.rstrip().endswith("// flow")}
+        found = {f.line for f in build(GUARDS, cache=False).flags if f.kind == "taint"}
+        self.assertEqual(found, marked)
+
+
 if __name__ == "__main__":
     unittest.main()
