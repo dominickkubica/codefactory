@@ -268,6 +268,135 @@ class _Ctx:
         return None
 
 
+# A Django QuerySet (and a boto3 collection) is lazy: building one runs nothing, evaluating it runs the query
+LAZY_QS = {
+    "all", "filter", "exclude", "annotate", "alias", "order_by", "reverse", "distinct", "values", "values_list", "none",
+    "union", "intersection", "difference", "select_related", "prefetch_related", "defer", "only", "using", "extra",
+    "select_for_update", "dates", "datetimes",
+}  # fmt: skip
+EVALUATES = {"list", "len", "bool", "tuple", "set", "frozenset", "sorted", "sum", "any", "all", "next", "iter", "dict",
+             "enumerate", "zip", "max", "min", "reversed", "print", "str", "repr", "map", "filter"}  # fmt: skip
+STORES = {"append", "extend", "insert", "add", "appendleft"}
+QS_WRAPPERS = {"Exists", "Subquery", "Q", "Prefetch"}
+COMBINE = (ast.BitOr, ast.BitAnd, ast.BitXor)
+
+
+def _pos(n) -> tuple[int, int]:
+    return n.lineno, n.col_offset
+
+
+class _Lazy:
+    """Whether a QuerySet built in a function is ever evaluated there. Where it goes is followed through further
+    chaining (`.filter()`), `|`/`&`, Exists()/Subquery() and local variables; returning it, storing it (a list, an
+    attribute) or comparing it with `is` runs nothing. Anything else (iteration, len(), indexing, a `.get()`/`.count()`
+    /`.delete()`, a call whose result is discarded) counts as evaluating it. Once it has gone through some other call
+    (`where_filter(qs, …)`), only chaining or `|`/`&` on the result shows it's still a QuerySet."""
+
+    def __init__(self, roots):
+        self.nodes = [n for r in roots for n in ast.walk(r)]
+        self.up = {id(c): n for n in self.nodes for c in ast.iter_child_nodes(n)}
+
+    def unevaluated(self, call: ast.Call) -> bool:
+        if not (isinstance(call.func, ast.Attribute) and call.func.attr in LAZY_QS):
+            return False
+        return not self.evaluated(call, set(), False)
+
+    def evaluated(self, e, seen: set, via: bool) -> bool:
+        p = self.up.get(id(e))
+        if isinstance(p, ast.keyword):
+            e, p = p, self.up.get(id(p))
+        if isinstance(p, ast.Attribute):
+            q = self.up.get(id(p))
+            if isinstance(q, ast.Call) and q.func is p:
+                return p.attr not in LAZY_QS or self.evaluated(q, seen, False)
+            return via  # qs.model, qs.query: reading an attribute runs nothing
+        if isinstance(p, ast.Subscript) and p.value is e:
+            return not isinstance(p.slice, ast.Slice) or self.evaluated(p, seen, via)
+        if isinstance(p, ast.Call) and p.func is not e:
+            f = p.func
+            name = f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else ""
+            if isinstance(f, ast.Name) and name in EVALUATES:
+                return True
+            if isinstance(f, ast.Attribute) and name in STORES:
+                return via
+            return self.evaluated(p, seen, via or not (name in QS_WRAPPERS or name in LAZY_QS))
+        if isinstance(p, ast.BinOp) and isinstance(p.op, COMBINE):
+            return self.evaluated(p, seen, False)
+        if isinstance(p, ast.IfExp) and p.test is not e:
+            return self.evaluated(p, seen, via)
+        if isinstance(p, (ast.Return, ast.Yield, ast.Lambda, ast.List, ast.Tuple, ast.Set, ast.Dict)):
+            return via
+        if isinstance(p, ast.Compare):
+            return via or not all(isinstance(o, (ast.Is, ast.IsNot)) for o in p.ops)
+        if isinstance(p, (ast.Assign, ast.AnnAssign)) and p.value is e:
+            return self.bound(p, seen, via)
+        if isinstance(p, ast.AugAssign) and p.value is e:
+            return not isinstance(p.op, COMBINE) or self.bound(p, seen, False)
+        return True
+
+    def bound(self, stmt, seen: set, via: bool) -> bool:
+        """Whether the value a statement binds is evaluated by a later use of the names it binds."""
+        if id(stmt) in seen:
+            return False
+        seen.add(id(stmt))
+        targets = stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]
+        if any(isinstance(t, (ast.Tuple, ast.List, ast.Starred)) for t in targets):
+            return True  # a, b = qs: unpacking iterates it
+        if via and not all(isinstance(t, ast.Name) for t in targets):
+            return True
+        for name in {t.id for t in targets if isinstance(t, ast.Name)}:
+            for n in self.nodes:
+                if isinstance(n, ast.AugAssign) and isinstance(n.target, ast.Name) and n.target.id == name:
+                    # qs |= more: still a QuerySet, under the same name; qs += x reads it
+                    if (
+                        n is not stmt
+                        and self.reaches(stmt, n.target, name)
+                        and (not isinstance(n.op, COMBINE) or self.bound(n, seen, False))
+                    ):
+                        return True
+                elif (
+                    isinstance(n, ast.Name)
+                    and n.id == name
+                    and isinstance(n.ctx, ast.Load)
+                    and (self.reaches(stmt, n, name) and self.evaluated(n, seen, via))
+                ):
+                    return True
+        return False
+
+    def _ancestors(self, n) -> list:
+        out = []
+        while (n := self.up.get(id(n))) is not None:
+            out.append(n)
+        return out
+
+    def _block(self, s):
+        p = self.up.get(id(s))
+        for field in ("body", "orelse", "finalbody"):
+            if any(x is s for x in getattr(p, field, None) or []):
+                return id(p), field
+        return None if p is not None else "root"
+
+    def reaches(self, a, use, name: str) -> bool:
+        """Whether binding `a` may be the one `use` reads: not when a later assignment in an enclosing block always
+        runs in between (`x = qs` in a loop, then `x = other` after it)."""
+        anc = self._ancestors(use)
+        if any(x is a for x in anc):
+            return False  # qs = qs.filter(…): the right side reads the earlier binding
+        if _pos(use) < _pos(a):  # only through a loop around both
+            return any(isinstance(x, (ast.For, ast.AsyncFor, ast.While)) and x in self._ancestors(a) for x in anc)
+        blocks = {self._block(s): s for s in anc if isinstance(s, ast.stmt)}
+        for b in self.nodes:
+            if b is a or not isinstance(b, (ast.Assign, ast.AnnAssign)) or not _pos(a) < _pos(b) < _pos(use):
+                continue
+            targets = b.targets if isinstance(b, ast.Assign) else [b.target]
+            if not any(isinstance(t, ast.Name) and t.id == name for t in targets) or any(x is b for x in anc):
+                continue
+            s = blocks.get(self._block(b))
+            if s is not None and _pos(b) < _pos(s):
+                return False
+        return True
+
+
 BY_NAME = {"getattr", "hasattr", "setattr", "delattr"}
 
 
@@ -284,7 +413,9 @@ def events(nodes, ctx: _Ctx, sites: bool = True) -> list:
     out: list = []
     refs: list = []
     call_funcs = set()
+    nodes = list(nodes)
     walked = list(walk_loops(nodes, ctx.local_consts, ctx.from_locals))
+    lazy = None
     for n, loop, stmt, bounded, tx in walked:
         b = sorted(bounded) if bounded is not None else None
         if isinstance(n, ast.Await) and stmt and sites:
@@ -302,7 +433,11 @@ def events(nodes, ctx: _Ctx, sites: bool = True) -> list:
             else:
                 expr = None
             attr = f.attr if isinstance(f, ast.Attribute) else None
-            out.append(["c", n.lineno, bool(loop), b, expr, io_call(f, n), attr, tx])
+            sink = io_call(f, n)
+            if sink and ".objects." in f".{sink}.":
+                lazy = lazy or _Lazy(nodes)
+                sink = None if lazy.unevaluated(n) else sink
+            out.append(["c", n.lineno, bool(loop), b, expr, sink, attr, tx])
             # getattr(obj, "save"): the same as obj.save, written as a string
             name = by_name(n)
             target = n.args[0] if name and isinstance(n.args[0], (ast.Name, ast.Attribute)) else None
@@ -373,6 +508,7 @@ def parse_module(path: str, rel: str) -> dict | None:
         defs.append({
             "qualname": qualname, "name": node.name, "line": node.lineno, "end": getattr(node, "end_lineno", node.lineno),
             "kind": kind, "decorated": bool(node.decorator_list), "exported": node.name in exports or node.name == "main",
+            "overload": any((dotted(x) or "").rsplit(".", 1)[-1] == "overload" for x in node.decorator_list),
             "shape": shape, "tokens": tokens, "cls": cls,
             "deco": events(node.decorator_list, ctx, sites=False), "body": events(node.body, ctx), "doc": doc,
             "branches": branches(node),

@@ -55,8 +55,10 @@ class LinkOutTest(unittest.TestCase):
             root = Path(d)
             (root / "config.py").symlink_to(secret)
             (root / "requirements.txt").symlink_to(secret)
-            (root / "inside.py").write_text("x = 1\n", encoding="utf-8")
-            (root / "alias.py").symlink_to(root / "inside.py")  # a link within the repository is fine
+            (root / ".shared").mkdir()
+            (root / ".shared" / "inside.py").write_text("x = 1\n", encoding="utf-8")
+            # a link within the repository is fine (to a file not read under its own path, or it'd be read twice)
+            (root / "alias.py").symlink_to(root / ".shared" / "inside.py")
             files = source_files(root, build(root, cache=False).to_dict())
             self.assertNotIn("config.py", files)
             self.assertIn("alias.py", files)

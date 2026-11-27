@@ -121,17 +121,23 @@ def _apply_imports(mod: _Module, imports: list, known: dict[str, str]) -> None:
 
 def _functions(mod: _Module) -> list[tuple[Function, dict]]:
     """Top-level functions and class methods. Nested functions belong to the function that holds them. The same name
-    defined twice (a property's getter and setter) gets its line in the id; name lookups keep finding the first."""
+    defined twice (a property's getter and setter) gets its line in the id; name lookups keep finding the first, or
+    with @overload stubs, the implementation under them: that's what a call runs."""
     out = []
+    first: dict[str, dict] = {}
+    for d in mod.data["defs"]:
+        if d["qualname"] not in first or (first[d["qualname"]].get("overload") and not d.get("overload")):
+            first[d["qualname"]] = d
     for d in mod.data["defs"]:
         q = d["qualname"]
-        fid = f"{mod.rel}::{q}" if q not in mod.funcs else f"{mod.rel}::{q}@{d['line']}"
+        fid = f"{mod.rel}::{q}" if first[q] is d else f"{mod.rel}::{q}@{d['line']}"
         f = Function(
             id=fid, file=mod.rel, name=d["name"], qualname=q, line=d["line"], end=d["end"], loc=d["end"] - d["line"] + 1,
             kind=d["kind"], decorated=d["decorated"], exported=d["exported"], shape=d["shape"], tokens=d["tokens"],
             doc=d.get("doc", 0), branches=d.get("branches", 0),
         )  # fmt: skip
-        mod.funcs.setdefault(q, f)
+        if first[q] is d:
+            mod.funcs[q] = f
         out.append((f, d))
     return out
 

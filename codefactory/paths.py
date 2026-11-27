@@ -53,6 +53,7 @@ def walk(root, names: tuple[str, ...] = (), suffixes: tuple[str, ...] = (), skip
     import os
 
     root = str(root)
+    plain, links = set(), []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in skip and (hidden or not d.startswith("."))]
         rel_dir = os.path.relpath(dirpath, root).replace("\\", "/")
@@ -60,8 +61,15 @@ def walk(root, names: tuple[str, ...] = (), suffixes: tuple[str, ...] = (), skip
             if (names or suffixes) and name not in names and not name.endswith(suffixes):
                 continue
             rel = name if rel_dir == "." else f"{rel_dir}/{name}"
-            if not links_outside(root, rel):
+            if os.path.islink(os.path.join(root, rel)):
+                links.append(rel)
+            else:
+                plain.add(rel)
                 yield rel
+    copies = link_copies(root, plain | set(links))
+    for rel in links:
+        if rel not in copies and not links_outside(root, rel):
+            yield rel
 
 
 # someone else's code copied in (a bundled jQuery, a minified build): its patterns aren't this project's to fix
@@ -209,8 +217,9 @@ def racy(st, now_ns: int) -> bool:
 
 def links_outside(root, rel) -> bool:
     """A file that is a symbolic link to somewhere outside `root`. Its text isn't the repository's (a pull request can
-    commit `config.py -> ~/.aws/credentials`), so no check reads it. A link within the repository is fine: its target
-    is read under its own path anyway. (Folder links aren't descended into: os.walk doesn't follow them.)"""
+    commit `config.py -> ~/.aws/credentials`), so no check reads it. A link within the repository is fine, and
+    skipped where its target is read anyway (link_copies). (Folder links aren't descended into: os.walk doesn't
+    follow them.)"""
     import os
 
     full = os.path.join(str(root), str(rel))
@@ -220,6 +229,33 @@ def links_outside(root, rel) -> bool:
         return not Path(full).resolve().is_relative_to(Path(root).resolve())
     except (OSError, RuntimeError):  # a loop, or unreadable: not ours either
         return True
+
+
+def link_copies(root, rels) -> set[str]:
+    """The links among `rels` (files under `root`) to a file of the repository that is read anyway: listed itself, or
+    through an earlier link. Its text would be analyzed, and reported, once per path (owid/etl links 102 step files to
+    one shared module). Links to outside the repository are left to links_outside."""
+    import os
+
+    rels = set(rels)
+    out: set[str] = set()
+    links = sorted(r for r in rels if os.path.islink(os.path.join(str(root), r)))
+    if not links:
+        return out
+    top = Path(root).resolve()
+    seen: set[str] = set()
+    for rel in links:
+        try:
+            real = Path(root, rel).resolve()
+        except (OSError, RuntimeError):
+            continue
+        if not real.is_relative_to(top):
+            continue
+        target = real.relative_to(top).as_posix()
+        if target in seen or (target in rels and target not in links):
+            out.add(rel)
+        seen.add(target)
+    return out
 
 
 def write_file(path, text: str) -> None:

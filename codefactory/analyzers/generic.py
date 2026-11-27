@@ -18,7 +18,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from ..graph import Edge, File, Function, Graph, Site
-from ..paths import links_outside
+from ..paths import link_copies, links_outside
 from . import parallel
 
 # extension -> tree-sitter language. Python and TypeScript/JavaScript have their own analyzers.
@@ -173,7 +173,8 @@ def find_files(root: Path, ignore: list[str], include_js: bool) -> list[tuple[st
             rel = Path(dirpath, name).relative_to(root).as_posix()
             if lang and not name.endswith((".d.ts", ".min.js")) and not links_outside(root, rel):
                 out.append((rel, lang))
-    return out
+    copies = link_copies(root, [rel for rel, _ in out])
+    return [f for f in out if f[0] not in copies]
 
 
 _PARSERS: dict = {}
