@@ -166,6 +166,30 @@ def _step_template(where: list[dict], known: set[str]) -> bool:
     return any(k.rpartition("/")[0] == folder and SHARED_MODULE.match(k.rpartition("/")[2]) for k in known)
 
 
+LIVE_TEST = re.compile(r"\b(?:it|test|describe|context)\s*\(|\bdef test|\bfunc Test|@Test\b|\bfunction test")
+SKIPPED_JS = re.compile(r"\b(?:(?:describe|it|test|context|suite)\.(?:skip|todo)|x(?:it|describe|test|context))\s*\(")
+SKIPPED_PY = re.compile(
+    r"^([ \t]*)@(?:unittest\.skip|pytest\.mark\.skip|skip)\b[^\n]*\n(?:\1@[^\n]*\n)*"
+    r"\1(?:async[ \t]+)?(?:def|class)\b[^\n]*\n(?:(?:\1[ \t]+[^\n]*|[ \t]*)(?:\n|$))*",
+    re.M,
+)
+
+
+def _unskipped(text: str) -> str:
+    """A test file without its skipped tests (describe.skip(…), xit(…), @unittest.skip, @pytest.mark.skip): they
+    never run, so the names and URLs in them reach nothing."""
+    text = SKIPPED_PY.sub("", text)
+    out, pos = [], 0
+    while m := SKIPPED_JS.search(text, pos):
+        depth, i = 1, m.end()
+        while i < len(text) and depth:  # to the closing parenthesis (brackets in strings may throw it: rare)
+            depth += {"(": 1, ")": -1}.get(text[i], 0)
+            i += 1
+        out.append(text[pos : m.start()])
+        pos = i
+    return "".join(out) + text[pos:] if out else text
+
+
 class Review:
     def __init__(self, g: dict, root: Path, online: bool = False, full: bool = False):
         self.full = full  # every location of every finding (the audit export), not the first few (the report)
@@ -212,13 +236,14 @@ class Review:
         ]  # fmt: skip
         self._strengths: list[str] | None = None
 
-    def _tested_unlinked(self) -> set[str]:
+    def _tested_unlinked(self) -> dict[str, set[str]]:
         """Functions tests run that the call graph doesn't link to them: a route's handler, when a test sends a request
         to its URL (TestClient, httptest, supertest); and in languages matched by name (Go, Java, …) a method a test
         calls on a value whose type isn't known (an interface, what a helper returns). "No test reaches it" was wrong
-        for both on real repositories."""
+        for both on real repositories. Each maps to the test files that name it (none: not known which), so what a
+        file mocks stops what it reaches (test_reach)."""
         files = [f["id"] for f in self.g["files"] if is_test(f["id"])]
-        texts, js = [], []
+        texts, js, read, dead = [], [], [], set()
         for i, rel in enumerate(files):
             if i >= 2000 and not rel.endswith(JS):
                 continue  # (browser tests are read past the cap: a few, and each opens many pages)
@@ -226,13 +251,17 @@ class Review:
                 text = (self.root / rel).read_text(encoding="utf-8", errors="replace")[:2_000_000]
             except OSError:
                 continue
+            if (kept := _unskipped(text)) != text and not LIVE_TEST.search(kept):
+                dead.add(rel)  # every test in it is skipped
+            text = kept
             if i < 2000:
                 texts.append(text)
+                read.append(rel)
             if rel.endswith(JS):
                 js.append(text)
         blob = "\n".join(texts)
         if not blob:
-            return set()
+            return {}
         out = set()
         for e in self.surface.entries:
             path = e.path.rstrip("/")
@@ -249,40 +278,60 @@ class Review:
                 out.add(e.fn)
         # `.name(`, and PHP's `$transport->write(` / `Client::create(` (appwrite: TlsTransport.write, run by a test
         # through a data provider)
-        called = set(re.findall(r"(?:\.|->|::)(\w+)\s*\(", blob))
+        called: dict[str, set[str]] = defaultdict(set)  # name -> the test files calling it
+        plain: dict[str, set[str]] = defaultdict(set)
+        for rel, text in zip(read, texts, strict=True):
+            for name in set(re.findall(r"(?:\.|->|::)(\w+)\s*\(", text)):
+                called[name].add(rel)
+            # a function a test calls by a distinctive name (`clean_dist(tmp)`): imported through a package path or
+            # a test helper the call graph didn't link
+            for name in set(re.findall(r"(?<![\w.])([A-Za-z_]\w{7,})\s*\(", text)):
+                if "_" in name.strip("_") or re.search(r"[a-z][A-Z]", name):
+                    plain[name].add(rel)
+        by: dict[str, set[str]] = defaultdict(set)
         # a method a test calls by name, in any language: through a mixin, a base class or `self.session.delete()`, the
         # call graph can't tell which class's method runs, and "no test reaches it" was wrong for most of these
-        out |= {fid for fid, f in self.v.fn.items() if f["kind"] == "method" and f["name"] in called
-                and not is_test(f["file"])}  # fmt: skip
+        for fid, f in self.v.fn.items():
+            if f["kind"] == "method" and f["name"] in called and not is_test(f["file"]):
+                by[fid] |= called[f["name"]]
 
         # a test named for the file (ValueListItemPositionControllerTest.php, accounts_spec.rb, test_crud.py): request
         # specs and feature tests reach controllers through the router, which the call graph can't follow
         def stem(path: str, test: bool) -> str:
-            s = path.rsplit("/", 1)[-1].split(".", 1)[0].lower()
+            folder, _, name = path.rpartition("/")
+            s = name.split(".", 1)[0].lower()
             if test:
                 s = re.sub(r"^test_|_test$|_spec$|tests?$|spec$|\.test$|\.spec$", "", s)
+            if s == "index":  # index.test.ts tests the index.ts next to it (or above its __tests__), not every one
+                kept = [p for p in folder.split("/") if not (test and p in ("__tests__", "test", "tests"))]
+                return "/".join(kept) + "/index"
             return re.sub(r"_?controller$|_?handler$|_?view$|_?views$|_?service$", "", s.replace("-", "_"))
 
-        tested_stems = {stem(f, True) for f in files}
-        tested_stems.discard("")
-        out |= {fid for fid, f in self.v.fn.items() if not is_test(f["file"]) and len(stem(f["file"], False)) > 3
-                and stem(f["file"], False) in tested_stems}  # fmt: skip
-        # a function a test calls by a distinctive name (`clean_dist(tmp)`): imported through a package path or a
-        # test helper the call graph didn't link
-        names = re.findall(r"(?<![\w.])([A-Za-z_]\w{7,})\s*\(", blob)
-        plain = {n for n in names if "_" in n.strip("_") or re.search(r"[a-z][A-Z]", n)}
-        out |= {
-            fid
-            for fid, f in self.v.fn.items()
-            if f["kind"] == "function"
-            and (f["name"] in plain or (f["name"] in called and len(f["name"]) >= 8))
-            and not is_test(f["file"])
-        }  # (`crud.create_item(…)`)
+        tested_stems: dict[str, set[str]] = defaultdict(set)
+        for f in files:
+            if f not in dead:
+                tested_stems[stem(f, True)].add(f)
+        tested_stems.pop("", None)
+        # a name a test file's calls already resolve to one function doesn't name its namesakes elsewhere
+        linked: dict[str, set[str]] = defaultdict(set)
+        for e in self.g["edges"]:
+            if e["kind"] in ("call", "ref") and (src := self.v.fn.get(e["src"])) and is_test(src["file"]):
+                linked[src["file"]].add(e["dst"])
+        resolved = {t: {self.v.fn[d]["name"] for d in dsts if d in self.v.fn} for t, dsts in linked.items()}
+        for fid, f in self.v.fn.items():
+            if is_test(f["file"]):
+                continue
+            if len(s := stem(f["file"], False)) > 3 and s in tested_stems:
+                by[fid] |= tested_stems[s]
+            name = f["name"]  # a function by its name (`crud.create_item(…)`), unless the test calls a namesake
+            if f["kind"] == "function" and (name in plain or (name in called and len(name) >= 8)):
+                tests = plain.get(name, set()) | (called.get(name, set()) if len(name) >= 8 else set())
+                by[fid] |= {t for t in tests if fid in linked[t] or name not in resolved.get(t, ())}
         # a page a browser test opens by URL (Playwright, Puppeteer, Cypress): its code and what it renders run
         out |= pages_reached(self.root, self.g, self.v.fn, js)
         # migrations: a test run builds its database by applying them (pytest-django, Rails, Laravel)
         out |= {fid for fid, f in self.v.fn.items() if re.search(r"(?:^|/)(?:migrations|db/migrate)/", f["file"])}
-        return out
+        return {fid: set() for fid in out} | {fid: tests for fid, tests in by.items() if tests and fid not in out}
 
     def n(self, shown: int) -> int:
         """How many locations a finding lists: a few in the report, all of them in the export."""

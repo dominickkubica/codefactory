@@ -17,6 +17,8 @@ import hashlib
 import re
 from pathlib import Path
 
+from ..paths import is_test
+
 DB_METHODS = {
     "execute", "executemany", "executescript", "fetchone", "fetchall", "fetchmany", "commit", "rollback", "scalars",
     "scalar", "query", "bulk_create", "bulk_update", "get_or_create", "update_or_create",
@@ -255,6 +257,7 @@ class _Ctx:
         }
         self.bases = {"self", "cls"} | self.classes | self.from_locals | self.import_heads
         self.local_consts: set[str] = set()
+        self.mocked: set[int] = set()  # nodes naming what a test mocks: not a reference to it
 
     def expr(self, node: ast.AST) -> list | None:
         if isinstance(node, ast.Name):
@@ -444,11 +447,53 @@ def events(nodes, ctx: _Ctx, sites: bool = True) -> list:
             if target is not None and (e := ctx.expr(ast.Attribute(value=target, attr=name, ctx=ast.Load()))):
                 refs.append(["r", e])
     for n, *_ in walked:
-        if id(n) in call_funcs:
+        if id(n) in call_funcs or id(n) in ctx.mocked:
             continue
         if isinstance(n, (ast.Name, ast.Attribute)) and isinstance(n.ctx, ast.Load) and (e := ctx.expr(n)):
             refs.append(["r", e])
     return out + refs
+
+
+MOCK_ATTRS = re.compile(
+    r"^(?:return_value|side_effect|call_count|called|call_args(?:_list)?|mock_calls|reset_mock"
+    r"|assert_\w+)$"
+)
+MOCKS = re.compile(r"^(?:Mock|MagicMock|AsyncMock|NonCallableMock|create_autospec)$")
+SKIP = re.compile(r"(?:^|\.)(?:unittest\.skip|pytest\.mark\.skip|skip)$")
+
+
+def mock_targets(tree: ast.Module, ctx: _Ctx) -> list:
+    """What a test file replaces with mocks: ["s", "pkg.mod.fn"] for patch("…") / monkeypatch.setattr("…", v),
+    ["o", expr, "name"] for patch.object(Obj, "name") / monkeypatch.setattr(Obj, "name", v), ["e", expr] for
+    `Obj.fn = Mock()` and `Obj.fn.return_value = …`. The nodes naming them go in ctx.mocked: mocking a function
+    doesn't run it."""
+    out: list = []
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Call) and (d := dotted(n.func)) and n.args:
+            first = n.args[0]
+            text = first.value if isinstance(first, ast.Constant) and isinstance(first.value, str) else None
+            last = d.rsplit(".", 1)[-1]
+            if text and (last == "patch" or d.endswith("monkeypatch.setattr")):
+                out.append(["s", text])
+            elif (d.endswith("patch.object") or d.endswith("monkeypatch.setattr")) and len(n.args) >= 2:
+                name = n.args[1]
+                if isinstance(name, ast.Constant) and isinstance(name.value, str) and (e := ctx.expr(first)):
+                    out.append(["o", e, name.value])
+                    ctx.mocked.add(id(first))
+        elif isinstance(n, ast.Assign) and isinstance(n.value, ast.Call):
+            d = dotted(n.value.func) or ""
+            if MOCKS.match(d.rsplit(".", 1)[-1]):
+                out += [["e", e] for t in n.targets if isinstance(t, ast.Attribute) and (e := ctx.expr(t))]
+        elif isinstance(n, ast.Attribute) and MOCK_ATTRS.match(n.attr) and isinstance(n.value, ast.Attribute):
+            if e := ctx.expr(n.value):  # Obj.fn.return_value = …, Obj.fn.assert_called_once()
+                out.append(["e", e])
+                ctx.mocked.add(id(n.value))
+    return out
+
+
+def _skipped(node) -> bool:
+    """@unittest.skip / @pytest.mark.skip (not the conditional skipIf): the test never runs."""
+    return any(SKIP.search(dotted(x.func if isinstance(x, ast.Call) else x) or "") for x in node.decorator_list)
 
 
 def _local_imports(fn) -> list:
@@ -493,6 +538,7 @@ def parse_module(path: str, rel: str) -> dict:
                     consts.append(t.id)
                     tables[t.id] = [e for x in ast.walk(value) if isinstance(x, (ast.Name, ast.Attribute)) and (e := ctx.expr(x))]
     ctx.local_consts = set(consts)
+    mocks = mock_targets(tree, ctx) if is_test(rel) else []
     exports = []
     for node in tree.body:
         if (
@@ -503,7 +549,7 @@ def parse_module(path: str, rel: str) -> dict:
             exports += [e.value for e in node.value.elts if isinstance(e, ast.Constant)]
     defs = []
 
-    def add(node, qualname: str, kind: str, cls: str | None) -> None:
+    def add(node, qualname: str, kind: str, cls: str | None, skip: bool = False) -> None:
         shape, tokens = shape_of(node)
         first = node.body[0] if node.body else None
         doc = (
@@ -516,7 +562,8 @@ def parse_module(path: str, rel: str) -> dict:
             "kind": kind, "decorated": bool(node.decorator_list), "exported": node.name in exports or node.name == "main",
             "overload": any((dotted(x) or "").rsplit(".", 1)[-1] == "overload" for x in node.decorator_list),
             "shape": shape, "tokens": tokens, "cls": cls,
-            "deco": events(node.decorator_list, ctx, sites=False), "body": events(node.body, ctx), "doc": doc,
+            "deco": events(node.decorator_list, ctx, sites=False), "doc": doc,
+            "body": [] if is_test(rel) and (skip or _skipped(node)) else events(node.body, ctx),
             "branches": branches(node),
             "imports": _local_imports(node),
         })  # fmt: skip
@@ -528,7 +575,7 @@ def parse_module(path: str, rel: str) -> dict:
         elif isinstance(node, ast.ClassDef):
             for item in node.body:
                 if isinstance(item, FUNCS):
-                    add(item, f"{node.name}.{item.name}", "method", node.name)
+                    add(item, f"{node.name}.{item.name}", "method", node.name, _skipped(node))
             # the class body's own statements, its methods' decorators and its own decorators
             stmts = [s for s in node.body if not isinstance(s, FUNCS)]
             stmts += [d for s in node.body if isinstance(s, FUNCS) for d in s.decorator_list]
@@ -544,6 +591,7 @@ def parse_module(path: str, rel: str) -> dict:
         "classes": sorted(ctx.classes),
         "defs": defs,
         "top": top,
+        "mocks": mocks,
         # names used as obj.name, or as getattr(obj, "name"): a method of that name may be what runs
         "attrs": sorted(
             {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}

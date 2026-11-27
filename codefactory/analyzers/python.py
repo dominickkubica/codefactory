@@ -252,11 +252,29 @@ def _link(
                 refs[(src_id, target)] += 1
 
 
+def _mocked(res: _Resolver, mod: _Module, target: list) -> str | None:
+    """The function a mock target names (see python_parse.mock_targets), if it's one of the codebase's."""
+    if target[0] == "e":
+        return res.expr(mod, target[1], None)
+    if target[0] == "o":  # patch.object(Obj, "name"): Obj a class or a module, here or imported
+        e, name = target[1], target[2]
+        if e[0] == "n":
+            return res.attr(mod, e[1], name, None, None)
+        return res.attr(mod, None, name, f"{e[3]}.{name}", None) or res.in_module(
+            mod.aliases.get(e[1] or "", e[1] or ""), f"{e[2]}.{name}"
+        )
+    parts = target[1].split(".")  # patch("pkg.mod.fn") / patch("pkg.mod.Class.method"): where it's looked up
+    for i in range(len(parts) - 1, 0, -1):
+        if (fid := res.in_module(".".join(parts[:i]), ".".join(parts[i:]))) is not None:
+            return fid
+    return None
+
+
 def analyze_python(root: Path, ignore: list[str], cache: bool = True) -> Graph:
     g = Graph(root=str(root), language="python")
     paths = [p.relative_to(root) for p in iter_files(root, ignore)]
     parsed = parallel.run(root, "python", [(rel.as_posix(), (str(root / rel), rel.as_posix())) for rel in paths], parse_module,
-                          tool="python-ir-7", cache=cache)  # fmt: skip
+                          tool="python-ir-8", cache=cache)  # fmt: skip
     failed: dict[str, dict] = {}  # files this Python couldn't parse: reported, and analyzed by tree-sitter when it can
     for rel in paths:
         data = parsed.get(rel.as_posix())
@@ -302,6 +320,7 @@ def analyze_python(root: Path, ignore: list[str], cache: bool = True) -> Graph:
             _link(d["body"], _scoped(m, d.get("imports", []), known), d["cls"], fn.id, res, calls, refs, consts, g.sites, fn_io)
             fn.io = sorted(fn_io)
         top.io = sorted(top_io)
+        top.mocks = sorted({fid for t in m.data.get("mocks", ()) if (fid := _mocked(res, m, t))})
         for t in m.load_imports:
             dst = modules.get(t)
             while dst is None and "." in t:  # "pkg.mod.attr" style: the closest known module

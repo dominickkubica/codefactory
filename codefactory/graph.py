@@ -26,6 +26,7 @@ class Function:
     tokens: str = ""  # structure tokens for near-duplicate detection; emptied after flags run
     doc: int = 0  # lines of its docstring or own-line comments (counted in loc, but not code)
     branches: int = 0  # decision points (if, loops, case, catch, and/or): how hard it is to follow
+    mocks: list[str] = field(default_factory=list)  # a test file's <module>: functions it replaces with mocks
 
 
 @dataclass

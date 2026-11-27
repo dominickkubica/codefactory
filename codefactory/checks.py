@@ -1163,18 +1163,47 @@ def scan_repo(root: Path) -> dict:
 # ---- testing -------------------------------------------------------------------------------------------------------
 
 
-def test_reach(v: View, also: set[str] | frozenset = frozenset()) -> set[str]:
+def test_reach(v: View, also: dict[str, set[str]] | set[str] | frozenset = frozenset()) -> set[str]:
     """Functions a test calls or hands on (a callback), directly or through others (`also`: ones tests reach in ways
-    the graph doesn't link, followed the same way)."""
+    the graph doesn't link, followed the same way; as a dict, with the test files that reach each, if known)."""
     out_edges: dict[str, list[str]] = {}
     for e in v.g["edges"]:
         if e["kind"] in ("call", "ref"):
             out_edges.setdefault(e["src"], []).append(e["dst"])
-    start = [fid for fid, f in v.fn.items() if is_test(f["file"])] + [fid for fid in also if fid in v.fn]
+    tests = [fid for fid, f in v.fn.items() if is_test(f["file"])]
+    mocks = {f["file"]: set(f["mocks"]) for f in v.fn.values() if f.get("mocks") and is_test(f["file"])}
+    by = also if isinstance(also, dict) else {}
+    mine: dict[str, list[str]] = {}
+    for fid in tests:
+        if v.fn[fid]["file"] in mocks:
+            mine.setdefault(v.fn[fid]["file"], []).append(fid)
+    start = [fid for fid in tests if v.fn[fid]["file"] not in mocks]
+    for fid in also:  # reached by name: as it is, unless every test file naming it mocks things (then with each's)
+        files = by.get(fid) or ()
+        if fid not in v.fn:
+            continue
+        if not files or any(file not in mocks for file in files):
+            start.append(fid)
+        else:
+            for file in files:
+                mine[file].append(fid)
     seen, q = set(start), deque(start)
     while q:
         for nxt in out_edges.get(q.popleft(), []):
             if nxt not in seen:
                 seen.add(nxt)
                 q.append(nxt)
-    return seen
+    # a test file that mocks functions (vi.mock, patch): what it runs reaches them only when the test calls them
+    # itself. Each such file goes on from where the rest stopped (what they reach, it reaches without mocks too).
+    more: set[str] = set()
+    for file, mocked in mocks.items():
+        local, q = set(mine[file]), deque(mine[file])
+        while q:
+            cur = q.popleft()
+            for nxt in out_edges.get(cur, []):
+                if nxt in seen or nxt in local or (nxt in mocked and v.fn.get(cur, {}).get("file") != file):
+                    continue
+                local.add(nxt)
+                q.append(nxt)
+        more |= local
+    return seen | more

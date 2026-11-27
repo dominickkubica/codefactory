@@ -627,8 +627,75 @@ const typeOnly = (d) => {
   return locals.every((id) => !used.has(id.text));
 };
 
+// Mocks: what a test replaces (vi.mock / jest.mock of a module, vi.spyOn(Obj, "m").mockX(…), Obj.m = vi.fn(),
+// vi.mocked(Obj.m), (Obj.m as Mock), Obj.m.mockResolvedValue(…), expect(Obj.m).toHaveBeenCalled()) isn't run by
+// it: no ref, and the file's <module> lists it, so what the test runs reaches it only if the test calls it itself.
+const mocksOf = new Map(); // file id -> Set of function ids
+const MOCK_PROP = /^mock(?:[A-Z]\w*)?$/, MOCK_TYPE = /\b(?:Mock|Mocked\w*|MockInstance|Spy\w*|SinonStub)\b/;
+const MOCK_IMPL = /^mock(?:Implementation|ReturnValue|ResolvedValue|RejectedValue|ReturnThis)(?:Once)?$/;
+const CALLED = /^to(?:HaveBeen|Be)(?:Last|Nth)?Called|^toHave(?:Last|Nth)?Returned/;
+const SKIPPED = /^(?:(?:describe|it|test|context|suite)\.(?:skip|todo)|x(?:it|describe|test|context))$/;
+const calleeText = (c) => ts.isIdentifier(c) ? c.text
+  : ts.isPropertyAccessExpression(c) && ts.isIdentifier(c.expression) ? `${c.expression.text}.${c.name.text}` : "";
+function mockContext(e) {
+  let p = e.parent;
+  while (p && (ts.isParenthesizedExpression(p) || ts.isNonNullExpression(p))) { e = p; p = p.parent; }
+  if (!p) return false;
+  if (ts.isPropertyAccessExpression(p)) return p.expression === e && MOCK_PROP.test(p.name.text);
+  if (ts.isAsExpression(p) || ts.isTypeAssertionExpression(p)) {
+    return MOCK_TYPE.test(p.type.getText()) || (/^(?:unknown|any)$/.test(p.type.getText()) && mockContext(p));
+  }
+  if (ts.isCallExpression(p) && p.arguments.includes(e)) {
+    const c = calleeText(p.expression);
+    if (/^(?:(?:vi|jest)\.)?mocked$/.test(c)) return true;
+    if (c !== "expect") return false;
+    for (let q = p.parent; q && ts.isPropertyAccessExpression(q); q = q.parent) {
+      if (CALLED.test(q.name.text)) return true;
+    }
+    return false;
+  }
+  return ts.isBinaryExpression(p) && p.operatorToken.kind === ts.SyntaxKind.EqualsToken && p.left === e &&
+    /^(?:(?:vi|jest)\.fn\b|sinon\.(?:stub|spy|fake)\b)/.test(p.right.getText());
+}
+// 0: not in a mock context; 1: part of what's mocked (`Obj` in vi.mocked(Obj.m)); 2: the mocked function itself
+function mockedAt(n) {
+  let e = n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.name === n ? n.parent : n, last = true;
+  while (e.parent && ts.isPropertyAccessExpression(e.parent) && e.parent.expression === e &&
+         !MOCK_PROP.test(e.parent.name.text)) {
+    e = e.parent;
+    last = false;
+  }
+  return mockContext(e) ? (last ? 2 : 1) : 0;
+}
+let fnsByFile = null;
+function mockModule(n, fileId, sf) { // vi.mock("./repo", factory?): the whole module, or what a partial mock names
+  const dst = resolveModule(n.arguments[0].text, sf);
+  if (!dst) return;
+  if (!fnsByFile) {
+    fnsByFile = new Map();
+    for (const f of functions) (fnsByFile.get(f.file) || fnsByFile.set(f.file, []).get(f.file)).push(f);
+  }
+  const factory = n.arguments[1];
+  let keep = null; // a factory that spreads the real module (importOriginal, importActual) replaces only what it names
+  if (factory && /\b(?:importOriginal|importActual|requireActual)\b/.test(factory.getText(sf))) {
+    keep = new Set();
+    const walk = (x) => {
+      if ((ts.isPropertyAssignment(x) || ts.isShorthandPropertyAssignment(x) || ts.isMethodDeclaration(x)) &&
+          x.name && ts.isIdentifier(x.name)) keep.add(x.name.text);
+      ts.forEachChild(x, walk);
+    };
+    walk(factory);
+  }
+  for (const f of fnsByFile.get(dst) || []) if (!keep || keep.has(f.name)) addMock(fileId, f);
+}
+function addMock(fileId, f) {
+  if (f) (mocksOf.get(fileId) || mocksOf.set(fileId, new Set()).get(fileId)).add(f.id);
+}
+
 for (const sf of sources) {
   const fileId = rel(sf.fileName);
+  let skipping = 0; // inside describe.skip(…) / it.skip / xit: the test never runs, so it reaches nothing
+  const edgeOwner = (n) => skipping ? null : ownerOf(n);
   const visit = (n) => {
     if ((ts.isImportDeclaration(n) || ts.isExportDeclaration(n)) && n.moduleSpecifier && ts.isStringLiteral(n.moduleSpecifier)
         && !(ts.isImportDeclaration(n) && typeOnly(n)) && !(ts.isExportDeclaration(n) && n.isTypeOnly)) {
@@ -646,7 +713,7 @@ for (const sf of sources) {
       // import("./x"): the caller runs the module and uses what it exports (lazy(() => import("./Page")) renders its
       // default export). Only an import outside any function loads with the file (a lazy one can't form a loop).
       const dst = resolveModule(n.arguments[0].text, sf);
-      const src = ownerOf(n);
+      const src = edgeOwner(n);
       if (dst && dst !== fileId) {
         let lazy = false;
         for (let p = n.parent; p && !lazy; p = p.parent) lazy = isFnLike(p);
@@ -662,7 +729,24 @@ for (const sf of sources) {
         }
       }
     } else if (isCall) {
-      const src = ownerOf(n), dst = calleeOf(n);
+      const src = edgeOwner(n), dst = calleeOf(n);
+      const c = ts.isCallExpression(n) ? calleeText(n.expression) : "";
+      if (/^(?:vi|jest)\.(?:mock|doMock|unstable_mockModule)$/.test(c) && n.arguments[0] &&
+          ts.isStringLiteralLike(n.arguments[0])) {
+        mockModule(n, fileId, sf);
+      } else if (/^(?:vi|jest)\.spyOn$/.test(c) && n.arguments.length >= 2 && ts.isStringLiteralLike(n.arguments[1]) &&
+                 ts.isPropertyAccessExpression(n.parent) && MOCK_IMPL.test(n.parent.name.text)) {
+        // vi.spyOn(Obj, "m").mockResolvedValue(…) replaces it (a bare spy still calls through)
+        try {
+          const prop = checker.getTypeAtLocation(n.arguments[0]).getProperty(n.arguments[1].text);
+          addMock(fileId, fnForSymbol(prop));
+        } catch { /* no type: nothing to name */ }
+      } else if (SKIPPED.test(c)) {
+        skipping++;
+        ts.forEachChild(n, visit);
+        skipping--;
+        return;
+      }
       if (src && ts.isCallExpression(n) && ts.isElementAccessExpression(n.expression)) linkTable(n, src);
       const where = src && (ts.isCallExpression(n) || ts.isNewExpression(n)) ? loopState(n) : { loop: false };
       const line = lineOf(sf, n.getStart(sf));
@@ -696,15 +780,16 @@ for (const sf of sources) {
       if (!callee && !tag && !declName && !memberCallee) {
         const sym = p && ts.isShorthandPropertyAssignment(p) ? checker.getShorthandAssignmentValueSymbol(p) : checker.getSymbolAtLocation(n);
         const dst = fnForSymbol(sym) || fnViaRequire(sym, null);
-        const src = ownerOf(n);
-        if (src && dst && dst !== src) bump(refs, `${src.id}\u0000${dst.id}`);
+        const src = edgeOwner(n), mocked = dst ? mockedAt(n) : 0;
+        if (mocked === 2) addMock(fileId, dst);
+        else if (src && dst && dst !== src && !mocked) bump(refs, `${src.id}\u0000${dst.id}`);
       }
     }
     // $watch(x, function watchGroupAction() {…}): a named function expression passed as an argument is a callback,
     // handed on by the function around it (its name is only visible inside itself)
     if (ts.isFunctionExpression(n) && n.name && fnByNode.has(n) && n.parent &&
         (ts.isCallExpression(n.parent) || ts.isNewExpression(n.parent)) && (n.parent.arguments || []).includes(n)) {
-      const src = ownerOf(n);
+      const src = edgeOwner(n);
       if (src) bump(refs, `${src.id}\u0000${fnByNode.get(n).id}`);
     }
     ts.forEachChild(n, visit);
@@ -712,6 +797,10 @@ for (const sf of sources) {
   ts.forEachChild(sf, visit);
 }
 for (const f of functions) if (f.kind === "method" && unresolvedProps.has(f.name)) f.dynamic = true;
+for (const [fileId, set] of mocksOf) {
+  const top = sourceById.has(fileId) && fnByNode.get(sourceById.get(fileId));
+  if (top) top.mocks = [...set].sort();
+}
 
 const edges = [];
 for (const [k, count] of calls) { const [src, dst] = k.split("\u0000"); edges.push({ src, dst, kind: "call", count }); }
