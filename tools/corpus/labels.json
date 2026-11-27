@@ -111,8 +111,8 @@
   "check": "`try!` / `as!` that crash on failure (Swift)",
   "severity": "Low",
   "location": "`Loop/Managers/DeviceDataManager.swift:1490` return BGTaskScheduler.shared.register(forTaskWithIdentifier: criticalEventLogHistoricalExportBackgroundTaskIdentifier, using: nil) { handle",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Identifier is only submitted as BGProcessingTaskRequest, so the system always passes BGProcessingTask.",
   "round": 3
  },
  "LoopKit/Loop|`try!` / `as!` that crash on failure (Swift)|Loop/Managers/DeviceDataManager.swift:1614": {
@@ -137,8 +137,8 @@
   "check": "`try!` / `as!` that crash on failure (Swift)",
   "severity": "Low",
   "location": "`Loop/View Controllers/CarbAbsorptionViewController.swift:44` let context = note.userInfo?[LoopDataManager.LoopUpdateContextKey] as! LoopDataManager.LoopUpdateContext.RawValue",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "The only poster of LoopDataUpdated always sets LoopUpdateContextKey to a rawValue, so the cast cannot fail.",
   "round": 3
  },
  "LoopKit/Loop|`try!` / `as!` that crash on failure (Swift)|`LoopTests/Mock Stores/MockDoseStore.swift:N` startDate: dateFormatter.date(from: $N[\"date\"] as! String)!,": {
@@ -311,8 +311,8 @@
   "check": "Network calls without a timeout",
   "severity": "Medium",
   "location": "`packages/desktop-client/src/hooks/usePluggyAiStatus.ts:30` void fetch();",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Local function named fetch calls internal send('pluggyai-status') IPC, not a network call.",
   "round": 3
  },
  "actualbudget/actual|Network calls without a timeout|packages/desktop-client/src/hooks/useSimpleFinStatus.ts:15": {
@@ -461,8 +461,8 @@
   "check": "Unused code (N function)",
   "severity": "Low",
   "location": "`core/ui/src/main/kotlin/com/google/samples/apps/nowinandroid/core/ui/InterestsItem.kt:191` InterestsCardSelectedPreview — `@Preview`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "@Preview composable is invoked by Android Studio tooling, a framework hook.",
   "round": 3
  },
  "apache/superset|Container runs as root|.devcontainer/Dockerfile:2": {
@@ -692,8 +692,8 @@
   "check": "Queries or requests inside loops (N) in N place",
   "severity": "Medium",
   "location": "`superset/commands/chart/importers/v1/utils.py:639` _resolve_query_context_annotations: _resolve_query_context_annotations calls _resolve_annotation_list() inside a loop (line 639), and that reaches db.session.query()",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Per-annotation _resolve_uuid_to_id falls back to db.session.query when UUID not in map; count set by data.",
   "round": 3
  },
  "apache/superset|Queries or requests inside loops (N) in N place|superset/examples/helpers.py:67": {
@@ -709,8 +709,8 @@
   "check": "Queries or requests inside loops (N) in N place",
   "severity": "Medium",
   "location": "`superset/key_value/shared_entries.py:58` get_shared_value: get_shared_value calls KeyValueDAO.get_value() inside a loop (line 58), and that reaches db.session.query() — `value = KeyValueDAO.get_value(RESOURCE, uuid_key_fallback, CODEC)`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Loop over small configured fallback hash algorithms is a fallback lookup, not data-driven N+1.",
   "round": 3
  },
  "apache/superset|Queries or requests inside loops (N) in N place|superset/mcp_service/dashboard/tool/generate_dashboard.py:280": {
@@ -1154,8 +1154,8 @@
   "check": "N error silently swallowed",
   "severity": "High",
   "location": "`app/views/install/installer/js/modules/state.js:33` } catch (error) {}",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Empty catch around dispatchEvent discards any error without logging or returning it.",
   "round": 3
  },
  "appwrite/appwrite|N error silently swallowed|apps/console/src/lib/marketing/marketing-route-guard.ts:47": {
@@ -1163,8 +1163,8 @@
   "check": "N error silently swallowed",
   "severity": "High",
   "location": "`apps/console/src/lib/marketing/marketing-route-guard.ts:47` } catch (e) {}",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Broad empty catch in boot script discards JSON.parse/localStorage/redirect errors silently.",
   "round": 3
  },
  "appwrite/appwrite|N error silently swallowed|apps/console/src/lib/project-region.ts:44": {
@@ -1327,8 +1327,8 @@
   "check": "Unused code (N function)",
   "severity": "Low",
   "location": "`apps/console/src/components/pages/projects/$projectId/analytics/_components/chart-series.ts:221` sumAnalyticsSeries — `export function sumAnalyticsSeries(`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "sumAnalyticsSeries is referenced nowhere else in the repo besides its definition.",
   "round": 3
  },
  "appwrite/appwrite|Unused code (N function)|apps/console/src/lib/api-explorer/parse-spec.ts:634": {
@@ -1336,8 +1336,8 @@
   "check": "Unused code (N function)",
   "severity": "Low",
   "location": "`apps/console/src/lib/api-explorer/parse-spec.ts:634` findMethodById — `export function findMethodById(`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "findMethodById is referenced nowhere else in the repo besides its definition.",
   "round": 3
  },
  "appwrite/appwrite|Unused code (N function)|apps/console/src/lib/react-query/hooks/migrations.ts:650": {
@@ -1635,8 +1635,8 @@
   "check": "Network calls without a timeout",
   "severity": "Medium",
   "location": "`packages/app-store/lyra/lib/VideoApiAdapter.ts:47` return fetch(`${LYRA_API_URL}/api/oauth/token`, {",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Global fetch to OAuth token endpoint with no timeout or abort signal on the path.",
   "round": 3
  },
  "calcom/cal.com|Network calls without a timeout|packages/app-store/zoho-bigin/lib/CrmService.ts:87": {
@@ -1644,8 +1644,8 @@
   "check": "Network calls without a timeout",
   "severity": "Medium",
   "location": "`packages/app-store/zoho-bigin/lib/CrmService.ts:87` await axios.post(accountsUrl, qs.stringify(formData), {",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "axios.post to Zoho accounts URL with no timeout config; default axios timeout is 0.",
   "round": 3
  },
  "calcom/cal.com|Network calls without a timeout|packages/lib/domainManager/deploymentServices/cloudflare.ts:186": {
@@ -1678,8 +1678,8 @@
   "check": "Personal data written to logs",
   "severity": "High",
   "location": "`packages/app-store/salesforce/lib/CrmService.ts:1849` this.log.info(`No contact or lead found for email ${email}`);",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Logs the user's email address in an info message.",
   "round": 3
  },
  "calcom/cal.com|Personal data written to logs|packages/app-store/stripepayment/lib/customer.ts:73": {
@@ -1713,8 +1713,8 @@
   "check": "Personal data written to logs",
   "severity": "High",
   "location": "`packages/features/profile/repositories/ProfileRepository.ts:192` log.debug(\"_create\", safeStringify({ userId, organizationId, username, email }));",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Debug log serializes email and username into the log.",
   "round": 3
  },
  "calcom/cal.com|Personal data written to logs|scripts/seed-utils.ts:182": {
@@ -2376,8 +2376,8 @@
   "check": "Queries or requests inside loops (N) in N place",
   "severity": "Medium",
   "location": "`api/src/services/users.ts:435` UsersService.inviteUser: UsersService.inviteUser calls ItemsService.updateOne() inside a loop (line 435), and that reaches fetch() — `await this.updateOne(user.id, { role }, opts);`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Per-email loop does getUserByEmail and createOne/updateOne DB queries each iteration.",
   "round": 3
  },
  "directus/directus|Queries or requests inside loops (N) in N place|api/src/utils/schema/apply-diff.ts:222": {
@@ -2385,8 +2385,8 @@
   "check": "Queries or requests inside loops (N) in N place",
   "severity": "Medium",
   "location": "`api/src/utils/schema/apply-diff.ts:222` applyDiff: applyDiff calls FieldsService.createField() inside a loop (line 222), and that reaches fetch() — `await fieldsService.createField(collection, rhs, undefined, mutationOptions);`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Each schema-diff field triggers createField DB work plus getSchema refresh per iteration.",
   "round": 3
  },
  "directus/directus|Raw HTML injected into pages|app/src/interfaces/input-block-editor/plugins.ts:201": {
@@ -3068,8 +3068,8 @@
   "check": "N error silently swallowed",
   "severity": "Medium",
   "location": "`web_src/js/features/repo-release.ts:74` } catch {}",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Try body only calls compareVersions; the catch skips tags with invalid version format, one expected error.",
   "round": 3
  },
  "go-gitea/gitea|Personal data written to logs|services/doctor/misc.go:166": {
@@ -3316,8 +3316,8 @@
   "check": "Network calls without a timeout",
   "severity": "Medium",
   "location": "`ui/src/application/AppStore.ts:40` const response = await axios.put(`${config.get('url')}application/${id}/security`, {",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "axios.put with no timeout; gotify UI sets no axios default timeout or abort signal.",
   "round": 3
  },
  "gotify/server|Network calls without a timeout|ui/src/message/MessagesStore.ts:129": {
@@ -3325,8 +3325,8 @@
   "check": "Network calls without a timeout",
   "severity": "Medium",
   "location": "`ui/src/message/MessagesStore.ts:129` await axios.delete(config.get('url') + 'message/' + message.id, {",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "axios.delete with fetch adapter and no timeout or abort signal; no global axios timeout set.",
   "round": 3
  },
  "healthchecks/healthchecks|MD5 / SHA-1 used for security|hc/api/models.py:1490": {
@@ -3501,8 +3501,8 @@
   "check": "Network calls without a timeout",
   "severity": "Medium",
   "location": "`packages/hoppscotch-common/src/platform/std/kernel-interceptors/agent/index.ts:170` const response = await axios.post(",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Request carries a cancelToken (abort mechanism) and targets localhost agent.",
   "round": 3
  },
  "hoppscotch/hoppscotch|Network calls without a timeout|packages/hoppscotch-common/src/platform/std/kernel-interceptors/agent/store.ts:346": {
@@ -3722,8 +3722,8 @@
   "check": "Personal data written to logs",
   "severity": "Medium",
   "location": "`server/src/services/auth.service.ts:484` this.logger.warn(`OAuth link account failed: sub is already linked to another user (${duplicate.email}).`);",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Warning log includes another user's email address.",
   "round": 3
  },
  "immich-app/immich|Personal data written to logs|server/src/services/auth.service.ts:78": {
@@ -3780,8 +3780,8 @@
   "check": "Unused code (N function)",
   "severity": "Low",
   "location": "`packages/sdk/src/fetch-client.ts:4999` updateBulkAssetMetadata — `export function updateBulkAssetMetadata({ assetMetadataBulkUpsertDto }: {`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Generated function exported from the published @immich/sdk library as public API.",
   "round": 3
  },
  "immich-app/immich|Unused code (N function)|packages/sdk/src/fetch-client.ts:6414": {
@@ -3789,8 +3789,8 @@
   "check": "Unused code (N function)",
   "severity": "Low",
   "location": "`packages/sdk/src/fetch-client.ts:6414` deletePeople — `export function deletePeople({ peopleDeleteDto }: {`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Generated function exported from the published @immich/sdk library as public API.",
   "round": 3
  },
  "immich-app/immich|`try!` / `as!` that crash on failure (Swift)|mobile/ios/Runner/Background/BackgroundWorkerApiImpl.swift:31": {
@@ -3823,8 +3823,8 @@
   "check": "`try!` / `as!` that crash on failure (Swift)",
   "severity": "Low",
   "location": "`mobile/ios/Runner/Core/URLSessionManager.swift:258` let credential = URLCredential(identity: identity as! SecIdentity, — `let credential = URLC… identity as! SecIdentity,`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "SecItemCopyMatching for kSecClassIdentity returns a SecIdentity; a CF type cast cannot fail.",
   "round": 3
  },
  "immich-app/immich|`try!` / `as!` that crash on failure (Swift)|mobile/ios/Runner/Core/URLSessionManager.swift:46": {
@@ -3849,8 +3849,8 @@
   "check": "`try!` / `as!` that crash on failure (Swift)",
   "severity": "Low",
   "location": "`mobile/ios/Runner/Images/LocalImagesImpl.swift:140` let exactOptions = Self.requestOptions.copy() as! PHImageRequestOptions",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "copy() of a PHImageRequestOptions always returns a PHImageRequestOptions; cast cannot fail.",
   "round": 3
  },
  "jekyll/jekyll|Credentials in configuration files|docs/_includes/search/script.html:3": {
@@ -4428,8 +4428,8 @@
   "check": "Queries or requests inside loops (N) in N place",
   "severity": "Medium",
   "location": "`server/notification-providers/amootsms.js:269` AmootSMS.sendWithPatternOwn: AmootSMS.sendWithPatternOwn calls axios.post() inside a loop (line 269) — `const response = await axios.post(`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "axios.post to Amoot SMS API once per mobile number, count set by data.",
   "round": 3
  },
  "louislam/uptime-kuma|SQL assembled from strings|server/database.js:375": {
@@ -4896,8 +4896,8 @@
   "check": "Queries or requests inside loops (N) in N place",
   "severity": "Medium",
   "location": "`app/models/holding/forward_calculator.rb:17` ForwardCalculator.calculate: ForwardCalculator.calculate calls ForwardCalculator.build_holdings() inside a loop (line 17), and that reaches find_by() — `holdings += build_holdings(next_portfolio, date)`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Per date and security, get_price calls exchange_to which runs ExchangeRate find_by when currencies differ.",
   "round": 3
  },
  "meilisearch/meilisearch|Container runs as root|Dockerfile:21": {
@@ -5548,8 +5548,8 @@
   "check": "N error silently swallowed",
   "severity": "High",
   "location": "`packages/frontend/editor-ui/src/features/core/dataTable/module.descriptor.ts:45` .catch(() => {});",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Broad .catch(() => {}) silently discards chunk-load and store errors without logging.",
   "round": 3
  },
  "n8n-io/n8n|N error silently swallowed|packages/nodes-base/nodes/Microsoft/Outlook/v2/transport/index.ts:154": {
@@ -5557,8 +5557,8 @@
   "check": "N error silently swallowed",
   "severity": "High",
   "location": "`packages/nodes-base/nodes/Microsoft/Outlook/v2/transport/index.ts:154` } catch (e) {}",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Catch only falls back from prettifying; original error is still rethrown below.",
   "round": 3
  },
  "n8n-io/n8n|N error silently swallowed|packages/workflow/src/telemetry-helpers.ts:126": {
@@ -6377,8 +6377,8 @@
   "check": "Network calls without a timeout",
   "severity": "Medium",
   "location": "`etl/steps/data/grapher/un/2025-10-29/un_sdg.py:391` r = requests.head(url)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "requests.head to unstats.un.org with no timeout argument.",
   "round": 3
  },
  "owid/etl|Network calls without a timeout|snapshots/cdc/latest/measles_cases.py:45": {
@@ -6386,8 +6386,8 @@
   "check": "Network calls without a timeout",
   "severity": "Medium",
   "location": "`snapshots/cdc/latest/measles_cases.py:45` response = requests.get(url)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "requests.get to cdc.gov with no timeout argument.",
   "round": 3
  },
  "owid/etl|Network calls without a timeout|snapshots/climate/2024-05-20/climate_change_impacts.py:110": {
@@ -6502,8 +6502,8 @@
   "check": "Queries or requests inside loops (N) in N place",
   "severity": "Medium",
   "location": "`snapshots/ihme_gbd/2026-02-07/gbd_risk_cancer.py:78` download_data: download_data calls requests.get() inside a loop (line 78) — `response = requests.get(url_to_download)`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Loop is a retry loop with exponential backoff around one download.",
   "round": 3
  },
  "owid/etl|Raw HTML injected into pages|apps/mdim_simulator/simulator.js:1577": {
@@ -6951,8 +6951,8 @@
   "check": "Queries or requests inside loops (N) in N place",
   "severity": "Medium",
   "location": "`saleor/csv/utils/products_data.py:158` prepare_products_relations_data: prepare_products_relations_data calls add_image_uris_to_data() inside a loop (line 158), and that reaches Site.objects.get_current() — `result_data = add_image_uris_to_data(pk, image, \"media__image\", result_data)`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Site.objects.get_current is cached (THREADED_SITE_CACHE) and PUBLIC_URL short-circuits; no per-row query.",
   "round": 3
  },
  "saleor/saleor|Queries or requests inside loops (N) in N place|saleor/discount/tasks.py:186": {
@@ -7148,8 +7148,8 @@
   "check": "N error silently swallowed",
   "severity": "Medium",
   "location": "`apps/v4/registry/bases/aria/ui/code-block.tsx:118` .catch(() => {})",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Clipboard writeText rejection is discarded with an empty catch, no logging or user feedback.",
   "round": 3
  },
  "shadcn-ui/ui|N error silently swallowed|apps/v4/registry/bases/radix/ui/code-block.tsx:118": {
@@ -7449,8 +7449,8 @@
   "check": "Unused code (N function)",
   "severity": "Low",
   "location": "`lib/streamlit/file_util.py:250` get_main_script_directory — `def get_main_script_directory(main_script: str) -> str:`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Called in button.py and execution_control.py and tested in file_util_test.py.",
   "round": 3
  },
  "streamlit/streamlit|Unused code (N function)|lib/streamlit/string_util.py:43": {
@@ -7458,8 +7458,8 @@
   "check": "Unused code (N function)",
   "severity": "Low",
   "location": "`lib/streamlit/string_util.py:43` clean_text — `def clean_text(text: SupportsStr) -> str:`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "clean_text is imported and called in progress, spinner, text and markdown elements.",
   "round": 3
  },
  "streamlit/streamlit|Writes inside loops in N place|frontend/lib/src/components/elements/ArrowVegaLiteChart/useVegaEmbed.ts:448": {
@@ -7509,8 +7509,8 @@
   "check": "Unused code (N function)",
   "severity": "Low",
   "location": "`packages/svelte/src/easing/index.js:161` elasticInOut — `export function elasticInOut(t) {`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "elasticInOut is public API exported via svelte/easing package export.",
   "round": 3
  },
  "syncthing/syncthing|Any website may call this API (CORS *)|cmd/infra/strelaypoolsrv/main.go:320": {
@@ -8300,8 +8300,8 @@
   "check": "N error silently swallowed",
   "severity": "High",
   "location": "`packages/vite/bin/vite.js:63` } catch {}",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Broad empty catch around enableCompileCache discards any error silently.",
   "round": 3
  },
  "vitejs/vite|N error silently swallowed|packages/vite/src/node/config.ts:1661": {
@@ -8753,8 +8753,8 @@
   "check": "Module-level mutable state (N place)",
   "severity": "Medium",
   "location": "`packages/renderers/solid-js/src/server.ts:32` let renderExtras: Promise<RenderExtras> | undefined;",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "renderExtras is only assigned once by lazy ??= memoization and never reset or changed afterward.",
   "round": 3
  },
  "withastro/astro|Module-level mutable state (N place)|packages/telemetry/src/system-info.ts:47": {
@@ -8770,8 +8770,8 @@
   "check": "N error silently swallowed",
   "severity": "High",
   "location": "`packages/astro/src/content/data-store.ts:169` } catch {}",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Broad catch discards import and data parse errors, silently returning an empty store.",
   "round": 3
  },
  "withastro/astro|N error silently swallowed|packages/astro/src/content/mutable-data-store.ts:572": {
