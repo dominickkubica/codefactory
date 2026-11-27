@@ -36,3 +36,11 @@ app.post("/user", async (req, res) => {
   if (typeof name === "string") eval(name);    // BAD code
   const re = /a/; re.exec(name);               // ok
 });
+
+app.post("/jobs", (req, res) => {
+  const { body, user } = req;
+  exec(`run ${body.job}`);                     // BAD shell: destructured from the request
+  exec(`whoami ${user.name}`);                 // ok: req.user is the session's, not request data
+  req.body.files.forEach((f) => fs.unlinkSync(f));   // BAD path: each item of a request list
+  ["a.log", "b.log"].forEach((f) => fs.unlinkSync(f));   // ok: a fixed list
+});

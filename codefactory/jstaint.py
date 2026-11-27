@@ -78,10 +78,12 @@ PASS_THROUGH = {"parse", "parseAsync", "safeParse", "cast", "concat", "join", "r
                 "from", "assign", "push", "fromEntries", "entries", "stringify"}  # fmt: skip
 LOOKUP = re.compile(r"(?:load|find|lookup|retrieve|query|select)[A-Z_]|get\w*(?:From|For|By)[A-Z]")
 CHECKED = re.compile(r"[Vv]alidat|[Ss]aniti[sz]|[Ss]afe|[Aa]llowed|[Tt]rusted|[Ww]hitelist|[Aa]llowlist|[Vv]erif")
+ITERATORS = {"map", "forEach", "flatMap", "filter", "find", "findIndex"}
+INJECTED = r"(?:private|protected|public|readonly)\s+(?:readonly\s+)?(\w+)\s*[?!]?\s*:\s*([A-Z]\w*)"  # field: Type
 RESPONSE_WRITE = {"send", "write", "end"}
 SOURCE_HINT = re.compile(
     r"\b(?:req|request|ctx|context|event)\s*\.\s*(?:query|params|body|cookies|headers|payload|querystring|nextUrl|json\(|"
-    r"formData\(|text\(|request\b)|searchParams|@(?:Body|Query|Param|Headers)\(|\bparams\b"
+    r"formData\(|text\(|request\b)|searchParams|@(?:Body|Query|Param|Headers)\b|\bparams\b|\.input\(|\binput\s*[,}]"
 )
 SINK_HINT = re.compile(
     r"\bexec(?:Sync)?\s*\(|spawn|execFile|\.query\s*\(|\.raw\s*\(|Unsafe\s*\(|Raw\s*\(|\beval\s*\(|new\s+Function|vm\.|"
@@ -167,6 +169,8 @@ class Unit:
     fid: str = ""  # the graph function, when one matches
     parent: int = -1  # the unit around it (index in the file's list): a closure sees its variables
     inline: bool = False  # passed as an argument (a handler, a callback): never called by name
+    cls: str = ""  # the class a method belongs to
+    source_names: dict[str, str] = field(default_factory=dict)  # names a parameter binds to request data: tRPC `input`
 
 
 @dataclass
@@ -299,6 +303,12 @@ def units_of(file: str, tree, src: bytes) -> list[Unit]:
                         u.sources.add(1)  # { params }
                 if next_api and _is_default_export(n):
                     u.entry = f"ROUTE {_next_path(file)}"
+                if n.type == "method_definition":
+                    u.cls = _class_name(n, src)
+                if ps and (trpc := _trpc_input(n, ps[0][1], file, src)):
+                    u.source_names = {name: "input" for name in trpc}
+                    key = _procedure_key(n, src) if inline else ""
+                    u.entry = u.entry or (f"tRPC {key}" if key else "a tRPC procedure")
                 out.append(u)
                 parent = len(out) - 1
         for c in n.children:
@@ -306,6 +316,56 @@ def units_of(file: str, tree, src: bytes) -> list[Unit]:
 
     visit(root, 0)
     return out
+
+
+def _class_name(method, src: bytes) -> str:
+    cls = method.parent
+    while cls is not None and cls.type not in ("class_declaration", "class", "abstract_class_declaration"):
+        cls = cls.parent
+    n = cls.child_by_field_name("name") if cls is not None else None
+    return _text(n, src) if n is not None else ""
+
+
+def _pattern_keys(pattern, src: bytes) -> dict[str, list[str]]:
+    """`{ ctx, input: { id }, body = {} }` -> {"ctx": ["ctx"], "input": ["id"], "body": ["body"]}."""
+    keys: dict[str, list[str]] = {}
+    if pattern is None or pattern.type != "object_pattern":
+        return keys
+    for c in _kids(pattern):
+        if c.type == "shorthand_property_identifier_pattern":
+            keys[_text(c, src)] = [_text(c, src)]
+        elif c.type == "pair_pattern" and c.child_by_field_name("key") is not None:
+            keys[_text(c.child_by_field_name("key"), src)] = _pattern_names(c.child_by_field_name("value"), src)
+        elif c.type == "object_assignment_pattern" and _kids(c):
+            keys[_text(_kids(c)[0], src)] = _pattern_names(_kids(c)[0], src)
+    return keys
+
+
+def _trpc_input(fn, first, file: str, src: bytes) -> list[str]:
+    """The names a tRPC resolver binds to its client's input: `.input(schema).mutation(({ input }) => …)` inline, or a
+    handler in its own file, `export const getHandler = async ({ ctx, input }: GetOptions) => …` (cal.com)."""
+    target = first.child_by_field_name("pattern") or first
+    if target.type in ("required_parameter", "optional_parameter"):
+        target = next((c for c in _kids(target) if c.type not in ("decorator", "type_annotation")), target)
+    keys = _pattern_keys(target, src)
+    if "input" not in keys:
+        return []
+    call = fn.parent.parent if fn.parent is not None and fn.parent.type == "arguments" else None
+    if call is not None and call.type == "call_expression":
+        name, recv = _callee_name(call, src)
+        return keys["input"] if name in ("query", "mutation", "subscription") and ".input(" in recv else []
+    if "ctx" in keys and (re.search(r"trpc", file, re.I) or file.endswith((".handler.ts", ".handler.js"))):
+        return keys["input"]
+    return []
+
+
+def _procedure_key(fn, src: bytes) -> str:
+    """`run: publicProcedure.input(…).mutation(fn)` -> "run"."""
+    p = fn.parent
+    while p is not None and p.type not in ("pair", "statement_block", "program"):
+        p = p.parent
+    k = p.child_by_field_name("key") if p is not None and p.type == "pair" else None
+    return _text(k, src).strip("'\"") if k is not None else ""
 
 
 def _is_default_export(fn) -> bool:
@@ -376,6 +436,8 @@ class _Function:
             or bool({"reply", "res", "response", "h"} & {name for names in unit.params for name in names})
         )
         self.outer: dict[str, set] = {}  # the enclosing unit's variables, for a closure
+        self.items: set = set()  # what its first parameter holds, for a callback over a list: ids.map((id) => …)
+        self.callbacks: dict[int, set] = {}  # per callback this unit hands a list's items to (by start byte)
         self.guard: set[str] = set()  # what an `if` around the sink being checked has validated
         self.env: dict[str, set] = {}
         self.body = _own_body(unit)
@@ -494,7 +556,7 @@ class _Function:
         if recv in ("Number", "Date") or name in ("isUUID", "isInt", "isEmail", "isNumeric"):
             return set()
         args = _args(n)
-        summary = self.callees.get(name) if self._direct(recv) else None
+        summary = self.callees.get(name) if self._direct(recv) else self.callees.get(f"{recv}.{name}")
         if summary is not None:
             out = set()
             for i, a in enumerate(args):
@@ -652,7 +714,14 @@ class _Function:
             if i in tainted:
                 for name in names:
                     env[name] = {("param", i)}
+        for name in self.u.params[0] if self.items and self.u.params else ():
+            env[name] = env.get(name, set()) | self.items
+        for name, label in self.u.source_names.items():
+            env[name] = {("source", label)}
         assigns = list(self._assignments())
+        for left, value, _ in assigns:
+            for name, label in self._request_parts(left, value).items():
+                env[name] = {("source", label)}
         for _ in range(4):
             changed = False
             for left, value, node in assigns:
@@ -669,6 +738,15 @@ class _Function:
             if not changed:
                 break
         self.env = env
+        self.callbacks = {}
+        for n in self.body:
+            if n.type == "call_expression" and _callee_name(n, self.src)[0] in ITERATORS:
+                f = _strip(n.child_by_field_name("function"))
+                fns = [a for a in _args(n) if a.type in ("arrow_function", "function_expression", "function")]
+                if fns and f is not None and f.type == "member_expression":
+                    self.line = n.start_point[0] + 1
+                    if items := self.origins(f.child_by_field_name("object"), env):
+                        self.callbacks[fns[0].start_byte] = items
         hits, returns = [], set()
         for n in self.body:
             self.line = n.start_point[0] + 1
@@ -684,6 +762,27 @@ class _Function:
             elif n.type == "arrow_function" and n.parent is not None and n.parent.type != "arguments":
                 pass
         return hits, returns
+
+    def _request_parts(self, left, value) -> dict[str, str]:
+        """`const { body, query: q } = req` or `= ctx.request`: the names bound to request data."""
+        value = _strip(value)
+        if left is None or value is None or value.type not in ("identifier", "member_expression"):
+            return {}
+        if value.type == "member_expression":
+            base, props = _member_chain(value, self.src)
+        else:
+            base, props = _text(value, self.src), []
+        if base not in REQUEST_BASES or (base == "request" and not self.server) or props not in ([], ["request"]):
+            return {}
+        if props and base != "ctx":
+            return {}
+        whole = _text(value, self.src)
+        return {
+            name: f"{whole}.{key}"
+            for key, names in _pattern_keys(_strip(left), self.src).items()
+            if key in REQUEST_ATTRS
+            for name in names
+        }
 
     def _sink(self, n) -> tuple[str, list] | None:
         name, recv = _callee_name(n, self.src)
@@ -808,7 +907,11 @@ class _Function:
     def _callee_hits(self, n, env) -> list:
         name, recv = _callee_name(n, self.src)
         summary = self.callees.get(name)
-        if summary is None or name in SANITIZERS or (recv and recv != "this" and not re.fullmatch(r"\w+", recv)):
+        if re.fullmatch(r"this\.\w+", recv):  # an injected service's method: this.usersService.update(id, dto)
+            summary = self.callees.get(f"{recv}.{name}")
+        elif summary is None or name in SANITIZERS or (recv and recv != "this" and not re.fullmatch(r"\w+", recv)):
+            return []
+        if summary is None:
             return []
         out = []
         for i, a in enumerate(_args(n)):
@@ -949,17 +1052,39 @@ def js_taint_flags(g: Graph, root: Path) -> list[Flag]:
                 return others[0]
         return None
 
+    # Nest and n8n inject services: `this.usersService.update(dto)` is UsersService's update, by the field's type
+    methods = {(u.cls, u.name): i for i, u in enumerate(units) if u.cls}
+    field_types: dict[int, dict[str, str]] = {}
+
+    def fields_of(i: int) -> dict[str, str]:
+        cls = units[i].node
+        while cls is not None and cls.type not in ("class_declaration", "class", "abstract_class_declaration"):
+            cls = cls.parent
+        if cls is None:
+            return {}
+        if cls.id not in field_types:
+            text = _text(cls, texts[units[i].file])
+            field_types[cls.id] = dict(re.findall(INJECTED, text))
+        return field_types[cls.id]
+
     calls_of: dict[int, dict[str, int]] = {}
     callers_of: dict[int, set[int]] = {}
     for i, u in enumerate(units):
         src = texts[u.file]
-        names = {m.group(1) for m in re.finditer(r"(?<![\w$])([A-Za-z_$][\w$]*)\s*(?:<[^<>()]*>)?\s*\(", _text(u.node, src))}
+        text = _text(u.node, src)
+        names = {m.group(1) for m in re.finditer(r"(?<![\w$])([A-Za-z_$][\w$]*)\s*(?:<[^<>()]*>)?\s*\(", text)}
         resolved = {}
         for name in names:
             j = resolve(i, name)
             if j is not None:
                 resolved[name] = j
-                callers_of.setdefault(j, set()).add(i)
+        if methods and "this." in text:
+            for fld, name in set(re.findall(r"\bthis\.(\w+)\.(\w+)\s*(?:<[^<>()]*>)?\s*\(", text)):
+                typ = fields_of(i).get(fld) or fld[:1].upper() + fld[1:]
+                if (j := methods.get((typ, name))) is not None and j != i:
+                    resolved[f"this.{fld}.{name}"] = j
+        for j in resolved.values():
+            callers_of.setdefault(j, set()).add(i)
         calls_of[i] = resolved
 
     def depth(i: int) -> int:
@@ -992,6 +1117,7 @@ def js_taint_flags(g: Graph, root: Path) -> list[Flag]:
         fn.callees = callees
         if u.parent >= 0 and u.parent in fns:
             fn.outer = fns[u.parent].env
+            fn.items = fns[u.parent].callbacks.get(u.node.start_byte, set())
         s = summarize(fn)
         old = summaries.get(i)
         if old is None or (s.sinks, s.returns, s.source_sinks, s.source_returns) != (

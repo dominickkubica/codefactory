@@ -98,3 +98,8 @@ router.get("/:origin/:path+", async (ctx: any) => {
   if (!isValidOrigin(origin)) return;
   await fetch(new URL(`${protocol}://${origin}/${path}`));
 });
+
+// a function taking `{ ctx, input }` outside tRPC: a build step's own options, not a client's
+export function transform({ ctx, input }: { ctx: any; input: string }) {
+  return fs.readFileSync(input);
+}
