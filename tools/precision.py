@@ -36,6 +36,9 @@ from corpus import CACHE, HERE, repos  # noqa: E402
 LABELS = HERE / "labels.json"
 ACCURACY = ROOT / "docs" / "ACCURACY.md"
 SEVERITIES = ("Critical", "High", "Medium", "Low", "Info")
+# Training apps written to be insecure (OWASP Juice Shop, NodeGoat, WebGoat): ground truth for recall, but a sample
+# drawn from them would make precision look better than it is on real code
+VULNERABLE_BY_DESIGN = {"juice-shop/juice-shop", "OWASP/NodeGoat", "WebGoat/WebGoat"}
 # Held-out rounds as published (right, counted locations), frozen once the next round's fixes begin: recomputing
 # them with today's hint list would drop the checks that did worst and flatter the past.
 PUBLISHED = {2: (79, 153), 3: (77, 132)}
@@ -124,7 +127,8 @@ def sample(args) -> int:
     labels, now = load(), reported()
     by_check: dict[str, list[str]] = defaultdict(list)
     for k, hit in now.items():
-        by_check[hit["check"]].append(k)
+        if hit["repo"] not in VULNERABLE_BY_DESIGN:
+            by_check[hit["check"]].append(k)
     added = 0
     for check, keys in sorted(by_check.items()):
         have = [k for k in keys if k in labels and labels[k].get("round", 1) == args.round]

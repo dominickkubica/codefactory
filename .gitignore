@@ -7,3 +7,4 @@ factory.html
 *.graph.json
 *.db
 .codefactory/
+.claude/worktrees/
