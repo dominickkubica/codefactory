@@ -105,7 +105,10 @@ def signatures(g: Graph, fns: list) -> dict[str, list[int]]:
 
 
 def similar_pairs(g: Graph, min_tokens: int = 40, threshold: float = 0.75) -> dict[tuple[str, str], float]:
-    fns = [f for f in g.functions if f.tokens and len(f.tokens.split()) >= min_tokens]
+    from .paths import BUILD_OUTPUT, is_vendored
+
+    fns = [f for f in g.functions if f.tokens and len(f.tokens.split()) >= min_tokens
+           and not BUILD_OUTPUT.search(f.file) and not is_vendored(f.file)]  # fmt: skip
     sets: dict[str, set[int]] = {}  # built only for functions that land in a bucket with another
 
     def shingled(fid: str) -> set[int]:

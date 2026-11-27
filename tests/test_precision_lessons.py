@@ -325,6 +325,14 @@ class StructureTest(unittest.TestCase):
         dead = {f.target.split("::")[-1] for f in build(root, cache=False).flags if f.kind == "unused" and f.severity == "warn"}
         self.assertEqual(dead & {"useDeleteEscalation", "reallyDead"}, {"reallyDead"})
 
+    def test_build_outputs_dont_take_part_in_copies(self):
+        body = "  let total = 0;\n  for (const x of xs) {\n    if (x > 0) total += x * 2;\n    else total -= x;\n  }\n" * 2
+        root = repo({
+            "assets/js/sum.js": "export function sum(xs) {\n" + body + "  return total;\n}\n",
+            "priv/static/app.js": "function sum(xs) {\n" + body + "  return total;\n}\n",
+        })  # fmt: skip
+        self.assertFalse([f for f in build(root, cache=False).flags if f.kind in ("duplicate", "similar")])
+
     def test_copies_that_are_variants_or_constructors(self):
         from codefactory.review import _variants
 

@@ -213,7 +213,8 @@ class Review:
         # a function a test calls by a distinctive name (`clean_dist(tmp)`): imported through a package path or a
         # test helper the call graph didn't link
         plain = {n for n in re.findall(r"(?<![\w.])([A-Za-z_]\w{7,})\s*\(", blob) if "_" in n.strip("_") or re.search(r"[a-z][A-Z]", n)}
-        out |= {fid for fid, f in self.v.fn.items() if f["kind"] == "function" and f["name"] in plain and not is_test(f["file"])}
+        out |= {fid for fid, f in self.v.fn.items() if f["kind"] == "function" and (f["name"] in plain or (
+                f["name"] in called and len(f["name"]) >= 8)) and not is_test(f["file"])}  # (`crud.create_item(…)`)
         # migrations: a test run builds its database by applying them (pytest-django, Rails, Laravel)
         out |= {fid for fid, f in self.v.fn.items() if re.search(r"(?:^|/)(?:migrations|db/migrate)/", f["file"])}
         return out

@@ -185,9 +185,12 @@ TEST_COPY = " (all in tests: one table-driven or parametrized test, or a shared 
 
 
 def duplicates(g: Graph, cfg: Config) -> list[Flag]:
+    from .paths import BUILD_OUTPUT, is_vendored
+
     groups = defaultdict(list)
     for fn in g.functions:
-        if fn.shape and fn.loc >= cfg.duplicate_min_lines:
+        # (not a build's output or a vendored library: phoenix's priv/static bundles copy its own sources, by design)
+        if fn.shape and fn.loc >= cfg.duplicate_min_lines and not BUILD_OUTPUT.search(fn.file) and not is_vendored(fn.file):
             groups[fn.shape].append(fn)
     out = []
     for group in groups.values():
