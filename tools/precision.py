@@ -282,13 +282,15 @@ def report(args) -> int:
     for v in labels.values():
         if v["label"] in ("true", "false"):
             first[v["check"]][v["label"] == "true"] += 1
-    k, n = sum(r["true"] for r in rows), sum(r["n"] for r in rows)
+    counted = [r for r in rows if not r["hint"]]
+    k, n = sum(r["true"] for r in counted), sum(r["n"] for r in counted)
     k0, n0 = sum(c[1] for c in first.values()), sum(c[0] + c[1] for c in first.values())
-    fixed, lost = sum(r["fixed"] for r in rows), sum(r["lost"] for r in rows)
+    fixed, lost = sum(r["fixed"] for r in counted), sum(r["lost"] for r in counted)
     table = [
-        f"{n0} locations labeled across {len({v['repo'] for v in labels.values()})} repositories. **First measurement: "
-        f"{k0} right ({k0 / n0:.0%}). Now: {k} of the {n} still reported are right ({k / n:.0%})**: the fixes removed "
-        f"{fixed} wrong ones and lost {lost} right ones.",
+        f"{n0} locations labeled across {len({v['repo'] for v in labels.values()})} repositories (round 1, the sample "
+        f"the fixes were made against). **First measurement: {k0} right ({k0 / n0:.0%}). Now, counted findings only: "
+        f"{k} of the {n} still reported are right ({k / n:.0%})**: the fixes removed {fixed} wrong ones and lost {lost} "
+        "right ones. Checks marked *hint* are listed, not counted.",
         "",
         "| Check | First measured | Now | 95% interval (now) | Still reported | Wrong removed | Right lost |",
         "|---|--:|--:|--:|--:|--:|--:|",
@@ -300,16 +302,28 @@ def report(args) -> int:
         was = f"{f_true / (f_false + f_true):.0%}"
         now = f"{r['precision']:.0%}" if r["n"] else "–"
         ci = f"{r['low']:.0%}–{r['high']:.0%}" if r["n"] else ""
-        table.append(f"| {r['check']} | {was} | {now} | {ci} | {r['n']} | {r['fixed']} | {r['lost']} |")
-    held = [r for r in score(quiet=True, round_=2) if r["n"]]
+        name = f"{r['check']} *(hint)*" if r["hint"] else r["check"]
+        if r["hint"]:
+            now, ci = "–", ""
+        table.append(f"| {name} | {was} | {now} | {ci} | {r['n'] if not r['hint'] else '–'} | {r['fixed'] if not r['hint'] else '–'} "
+                     f"| {r['lost'] if not r['hint'] else '–'} |")
+    rounds = sorted({v.get("round", 1) for v in load().values()} - {1})
+    history = []
+    for rnd in rounds:  # every location of the round was reported when it was drawn: its labels are the measurement
+        got = [v["label"] == "true" for v in load().values()
+               if v.get("round", 1) == rnd and v["label"] in ("true", "false") and not is_hint(v["check"])]  # fmt: skip
+        if got:
+            history.append(f"round {rnd}: {sum(got)}/{len(got)} ({sum(got) / len(got):.0%})")
+    held = [r for r in score(quiet=True, round_=rounds[-1]) if r["n"] and not r["hint"]] if rounds else []
     if held:
         hk, hn = sum(r["true"] for r in held), sum(r["n"] for r in held)
         lo, hi = wilson(hk, hn)
         table += [
             "",
-            f"**Held out**: {hn} more locations, sampled and labeled after the fixes, that no fix was made against: "
-            f"**{hk} right ({hk / hn:.0%}, 95% interval {lo:.0%}–{hi:.0%})**. This is the number to expect on code "
-            "codefactory hasn't been tuned on.",
+            f"**Held out (latest, round {rounds[-1]})**: {hn} more locations of counted findings, sampled and labeled "
+            f"after the fixes before it, that no fix was made against: **{hk} right ({hk / hn:.0%}, 95% interval "
+            f"{lo:.0%}–{hi:.0%})**. This is the number to expect on code codefactory hasn't been tuned on. Each "
+            f"held-out round, counted findings only, as measured then: {'; '.join(history)}.",
             "",
             "| Check | Held out | 95% interval | Labeled |",
             "|---|--:|--:|--:|",

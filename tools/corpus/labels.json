@@ -253,8 +253,8 @@
   "check": "Important code no test reaches (N function)",
   "severity": "Medium",
   "location": "`packages/loot-core/src/platform/server/fs/fs.legacy.ts:388` size: does I/O (FS.stat) — `export const size = async function (filepath) {`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "fs.legacy size is not forwarded by the fs facade nor called anywhere, so no test reaches it.",
   "round": 3
  },
  "actualbudget/actual|Module-level mutable state (N place)|packages/desktop-electron/index.ts:91": {
@@ -262,8 +262,8 @@
   "check": "Module-level mutable state (N place)",
   "severity": "Medium",
   "location": "`packages/desktop-electron/index.ts:91` let lastAppInitFailure: AppInitFailurePayload | null = null;",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "lastAppInitFailure is reassigned at runtime (set on failure at line 298, cleared at 307) and read across handlers.",
   "round": 3
  },
  "actualbudget/actual|Module-level mutable state (N place)|packages/loot-core/src/platform/server/sqlite/engine.sqljs.legacy.ts:47": {
@@ -634,8 +634,8 @@
   "check": "Module-level mutable state (N place)",
   "severity": "Medium",
   "location": "`superset-frontend/webpack.proxy-config.js:42` let manifest;",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "manifest is declared empty and reassigned from a webpack callback at line 189, then read by the proxy response handler.",
   "round": 3
  },
  "apache/superset|Passwords written into docker-compose|docker-compose-light.yml:126": {
@@ -915,8 +915,8 @@
   "check": "Copied logic in N group (~N lines)",
   "severity": "Medium",
   "location": "Merge 2 copies of NUMERIC_PRECISION_PROPERTY (identical, ~11 lines): `apps/console/src/lib/postgres-column-types.ts:105`, `apps/console/src/lib/mysql-column-types.ts:114`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Both files define the same NUMERIC_PRECISION_PROPERTY factory with identical values, differing only in the structurally identical return type name.",
   "round": 3
  },
  "appwrite/appwrite|Copied logic in N group (~N lines)|crates/extension/src/validators/network.rs:276": {
@@ -941,8 +941,8 @@
   "check": "Copied logic in N group (~N lines)",
   "severity": "Medium",
   "location": "Merge CSV.downloadToLocal, JSON.downloadToLocal (93% similar, ~30 lines): `packages/migration/src/Sources/CSV.php:574`, `packages/migration/src/Sources/JSON.php:301`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "CSV and JSON downloadToLocal bodies are identical except the file-type word in the error message; easily shared.",
   "round": 3
  },
  "appwrite/appwrite|Databases published on every interface (docker-compose)|docker-compose.override.yml:731": {
@@ -1008,8 +1008,8 @@
   "check": "Endpoints that change data without an auth check (N)",
   "severity": "High",
   "location": "`PUT /v1/account/verifications/email/otp` (`src/Appwrite/Platform/Modules/Account/Http/Account/Verifications/Email/OTP/Update.php:38`) → changes data in `StateTest.presence` (`$this->database.setPreserveDates`)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Public by design: verifies a one-time code against the user's token before updating; reported sink is a unit test class.",
   "round": 3
  },
  "appwrite/appwrite|Endpoints that change data without an auth check (N)|src/Appwrite/Platform/Modules/Databases/Http/TablesDB/Tables/Columns/Polygon/Create.php:35": {
@@ -1035,8 +1035,8 @@
   "check": "Endpoints that change data without an auth check (N)",
   "severity": "High",
   "location": "`PATCH /v1/teams/:teamId/memberships/:membershipId/status` (`src/Appwrite/Platform/Modules/Teams/Http/Memberships/Status/Update.php:49`) → changes data in `StateTest.presence` (`$this->database.setPreserveDates`)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Invitation-accept endpoint is public by design and verifies the membership secret and userId before changing anything.",
   "round": 3
  },
  "appwrite/appwrite|Environment files committed|`.env`": {
@@ -1076,8 +1076,8 @@
   "check": "Import loops (N)",
   "severity": "High",
   "location": "packages/domains/src/Registrar.php → packages/domains/src/Registrar/Adapter.php → packages/domains/src/Registrar.php",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "PHP use statements only alias names; the edges are a constructor type hint and a constant default, both resolved lazily by autoload.",
   "round": 3
  },
  "appwrite/appwrite|Import loops (N)|packages/queue/src/Adapter/Workerman.php": {
@@ -1085,8 +1085,8 @@
   "check": "Import loops (N)",
   "severity": "High",
   "location": "packages/queue/src/Adapter/Workerman.php → packages/websocket/src/Adapter/Workerman.php → packages/queue/src/Adapter/Workerman.php",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Neither Workerman adapter references the other; each only uses Workerman\\Worker from the vendor library and its own Adapter base.",
   "round": 3
  },
  "appwrite/appwrite|Important code no test reaches (N function)|crates/utopia/php-std/pcre2/sljit/sljitLir.c:3028": {
@@ -1094,8 +1094,8 @@
   "check": "Important code no test reaches (N function)",
   "severity": "Medium",
   "location": "`crates/utopia/php-std/pcre2/sljit/sljitLir.c:3028` check_sljit_emit_mov_addr, called from 9 files — `static SLJIT_INLINE CHECK_RETURN_TYPE check_sljit_emit_mov_addr(struct sljit_compiler *compiler, sljit_s32 dst, sljit_sw dstw)`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Vendored third-party PCRE2/sljit source; a debug-only argument-check helper, not project code the finding targets.",
   "round": 3
  },
  "appwrite/appwrite|Important code no test reaches (N function)|packages/cache/src/Adapter/RedisCluster.php:239": {
@@ -1111,8 +1111,8 @@
   "check": "Important code no test reaches (N function)",
   "severity": "Medium",
   "location": "`packages/psr7/src/UploadedFile.php:48` UploadedFile.getStream: does I/O (fopen) — `public function getStream(): StreamInterface`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "No test calls UploadedFile::getStream; the only UploadedFile test constructs one and checks withUploadedFiles, never opening the stream.",
   "round": 3
  },
  "appwrite/appwrite|Module-level mutable state (N place)|apps/console/src/lib/appwrite-analytics.ts:5": {
@@ -1128,8 +1128,8 @@
   "check": "Module-level mutable state (N place)",
   "severity": "Medium",
   "location": "`apps/console/src/lib/favicon.ts:134` let activeStatusVariant: FaviconVariant | null = null",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "activeStatusVariant is reassigned at runtime by the status setter (line 318) and read by theme-change logic.",
   "round": 3
  },
  "appwrite/appwrite|Module-level mutable state (N place)|apps/console/src/lib/init/init-presences-realtime.ts:10": {
@@ -1496,8 +1496,8 @@
   "check": "Copied logic in N group (~N lines)",
   "severity": "Medium",
   "location": "Merge CancelBookingInputPipe.formatErrors, CreateBookingInputPipe.formatErrors, GetSlotsInputPipe.formatErrors, OAuth2TokenInputPipe.formatErrors, RescheduleBookingInputPipe.formatErrors (identical, ~40 lines): `packages/platform/types/slots/slots-2024-09-04/inputs/get-slots-input.pipe.ts:120`, `packages/platform/types/bookings/2024-08-13/inputs/cancel-booking-input.pipe.ts:66`, `apps/api/v2/src/modules/auth/oauth2/inputs/token.input.pipe.ts:82`, `packages/platform/types/bookings/2024-08-13/inputs/create-booking-input.pipe.ts:68`, `packages/platform/types/bookings/2024-08-13/inputs/reschedule-booking-input.pipe.ts:71`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "All five pipes contain the byte-identical recursive formatErrors method that could be one shared helper.",
   "round": 3
  },
  "calcom/cal.com|Credentials in configuration files|apps/web/calendso.yaml:349": {
@@ -1594,8 +1594,8 @@
   "check": "Module-level mutable state (N place)",
   "severity": "Medium",
   "location": "`packages/platform/atoms/scripts/dev-on.js:16` let viteConfig = fs.readFileSync(viteConfigPath, \"utf-8\"); *(script)*",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Run-once CLI script; viteConfig is just a top-level local threaded through string replacements, not state shared across imports.",
   "round": 3
  },
  "calcom/cal.com|N error silently swallowed|apps/web/components/apps/btcpayserver/BtcpayPaymentComponent.tsx:177": {
@@ -2251,8 +2251,8 @@
   "check": "Import loops (N)",
   "severity": "High",
   "location": "app/src/api.ts → app/src/sdk.ts → app/src/api.ts",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "api.ts imports sdk default from ./sdk and sdk.ts imports requestQueue from ./api, both runtime value imports at module load.",
   "round": 3
  },
  "directus/directus|Import loops (N)|packages/errors/src/errors/addon-not-available.ts": {
@@ -3940,8 +3940,8 @@
   "check": "Dependency loops (N)",
   "severity": "Medium",
   "location": "MediaBrowser.Controller/Entities/AggregateFolder.cs → MediaBrowser.Controller/Entities/Extensions.cs → MediaBrowser.Controller/Entities/AggregateFolder.cs",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Extensions.cs never references AggregateFolder; the edge comes from 'using Jellyfin.Extensions', an unrelated namespace.",
   "round": 3
  },
  "jellyfin/jellyfin|Dependency loops (N)|src/Jellyfin.Database/Jellyfin.Database.Implementations/Entities/Libraries/Artwork.cs": {
@@ -3949,8 +3949,8 @@
   "check": "Dependency loops (N)",
   "severity": "Medium",
   "location": "src/Jellyfin.Database/Jellyfin.Database.Implementations/Entities/Libraries/Artwork.cs → src/Jellyfin.Database/Jellyfin.Database.Implementations/Interfaces/IHasArtwork.cs → src/Jellyfin.Database/Jellyfin.Database.Implementations/Entities/Libraries/Artwork.cs",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Artwork.cs uses only IHasConcurrencyToken from the Interfaces namespace, never IHasArtwork; no file-level cycle exists.",
   "round": 3
  },
  "jellyfin/jellyfin|Dependency loops (N)|src/Jellyfin.Extensions/Json/Converters/JsonBoolNumberConverter.cs": {
@@ -4220,8 +4220,8 @@
   "check": "Important code no test reaches (N function)",
   "severity": "Medium",
   "location": "`packages/core/src/webrtc/webrtc.rs:1073` create_peer_connection: does I/O (api.new_peer_connection) — `async fn create_peer_connection(`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Only callers are send_offer and accept_offer, and neither the in-file tests nor tests/ exercise them.",
   "round": 3
  },
  "localsend/localsend|Plain-HTTP URLs in code|packages/core/src/http/client/url.rs:139": {
@@ -4327,8 +4327,8 @@
   "check": "Endpoints that change data without an auth check (N)",
   "severity": "High",
   "location": "`ALL /api/auth/*` (`server/routers/better-auth-router.ts:24`) → changes data in `Database.writeDBConfig` (`fs.writeFileSync`)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "This is the better-auth sign-in/sign-up handler, public by design; it performs authentication itself.",
   "round": 3
  },
  "louislam/uptime-kuma|Endpoints that change data without an auth check (N)|server/routers/better-auth-router.ts:41": {
@@ -4638,8 +4638,8 @@
   "check": "Copied logic in N group (~N lines)",
   "severity": "Medium",
   "location": "Merge AvatarsController.destroy, HeadersController.destroy (identical, ~6 lines): `app/controllers/api/v1/profile/headers_controller.rb:7`, `app/controllers/api/v1/profile/avatars_controller.rb:7`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Avatar and header destroy actions are identical except the attribute key passed to UpdateAccountService; could share a parameterized helper.",
   "round": 3
  },
  "mastodon/mastodon|Endpoints that change data without an auth check (N)|app/controllers/api/fasp/data_sharing/v0/backfill_requests_controller.rb:4": {
@@ -4655,8 +4655,8 @@
   "check": "Endpoints that change data without an auth check (N)",
   "severity": "High",
   "location": "`ANY instances#show` (`app/controllers/api/v2/instances_controller.rb:14`) → changes data in `AttachmentBatch.remove_files` (`attachment.send, bucket.client`)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Public read-only instance info endpoint rendering cached JSON; it changes no data.",
   "round": 3
  },
  "mastodon/mastodon|Endpoints that change data without an auth check (N)|app/controllers/auth/sessions_controller.rb:29": {
@@ -4681,8 +4681,8 @@
   "check": "Endpoints that change data without an auth check (N)",
   "severity": "High",
   "location": "`ANY node_info#index` (`app/controllers/well_known/node_info_controller.rb:11`) → changes data in `AttachmentBatch.remove_files` (`attachment.send, bucket.client`)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Public read-only nodeinfo discovery endpoint that only renders cached JSON; the attachment-removal chain is spurious.",
   "round": 3
  },
  "mastodon/mastodon|Endpoints that change data without an auth check (N)|config/routes.rb:175": {
@@ -4739,8 +4739,8 @@
   "check": "Import loops (N)",
   "severity": "High",
   "location": "config/initializers/prometheus_exporter.rb → lib/mastodon/prometheus_exporter/local_server.rb → config/initializers/prometheus_exporter.rb",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "local_server.rb requires the prometheus_exporter gem's server/client, not the initializer file; no cycle exists.",
   "round": 3
  },
  "mastodon/mastodon|Important code no test reaches (N function)|app/controllers/admin/moderation_suggestions_controller.rb:15": {
@@ -4748,8 +4748,8 @@
   "check": "Important code no test reaches (N function)",
   "severity": "Medium",
   "location": "`app/controllers/admin/moderation_suggestions_controller.rb:15` ModerationSuggestionsController.destroy: does I/O (ModerationSuggestion.where) — `def destroy`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "No controller, request or system spec covers admin moderation_suggestions; only policy, service and mailer specs exist.",
   "round": 3
  },
  "mastodon/mastodon|Important code no test reaches (N function)|app/controllers/api/v2/notifications/accounts_controller.rb:20": {
@@ -4773,8 +4773,8 @@
   "check": "Important code no test reaches (N function)",
   "severity": "Medium",
   "location": "`db/post_migrate/20260720124731_clean_up_invalid_accounts.rb:7` CleanUpInvalidAccounts.up: does I/O (Account.where) — `def up`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "CI test-migrations workflow runs db:migrate over a prepared legacy database via tests:migrations, executing this migration's up.",
   "round": 3
  },
  "mastodon/mastodon|MD5 / SHA-1 used for security|app/controllers/api/v2/search_controller.rb:49": {
@@ -5177,8 +5177,8 @@
   "check": "Copied logic in N group (~N lines)",
   "severity": "Medium",
   "location": "Merge 4 copies of buildFromNodeSimple (identical, ~87 lines): `packages/@n8n/workflow-sdk/src/codegen/composite-handlers/if-else-handler.ts:26`, `packages/@n8n/workflow-sdk/src/codegen/composite-handlers/switch-case-handler.ts:19`, `packages/@n8n/workflow-sdk/src/codegen/composite-handlers/error-handler.ts:25`, `packages/@n8n/workflow-sdk/src/codegen/composite-handlers/sib-handler.ts:17`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "buildFromNodeSimple is byte-identical across the four handler files and could live once in build-utils.",
   "round": 3
  },
  "n8n-io/n8n|Copied logic in N group (~N lines)|packages/cli/src/modules/type-availability-policies/credential-type-policy-instance.controller.ts:51": {
@@ -5354,8 +5354,8 @@
   "check": "Endpoints that change data without an auth check (N)",
   "severity": "High",
   "location": "`POST /:id/resolve` (`packages/@n8n/engine/src/server/routes/resume-requests.ts:107`) → changes data in `AiService.init` (`this.client?.updateLicenseCert`)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Line 107 registers a 501 notConfigured stub, and the router is mounted under /api behind createAuthenticationMiddleware.",
   "round": 3
  },
  "n8n-io/n8n|Endpoints that change data without an auth check (N)|packages/@n8n/engine/src/server/routes/resume-requests.ts:65": {
@@ -5388,8 +5388,8 @@
   "check": "Endpoints that change data without an auth check (N)",
   "severity": "High",
   "location": "`POST /eval/:root/v1/chat/completions` (`packages/cli/src/modules/instance-ai/eval/llm-wire-server.ts:170`) → changes data in `AiService.init` (`this.client?.updateLicenseCert`)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Eval-only loopback mock LLM server bound to 127.0.0.1 that records intercepted requests; it changes no app data.",
   "round": 3
  },
  "n8n-io/n8n|Endpoints that change data without an auth check (N)|packages/cli/src/modules/instance-ai/eval/llm-wire-server.ts:175": {
@@ -5431,8 +5431,8 @@
   "check": "Import loops (N)",
   "severity": "High",
   "location": "packages/@n8n/engine/src/server/create-engine-server.ts → packages/@n8n/engine/src/server/routes/workflow-executions.ts → packages/@n8n/engine/src/server/create-engine-server.ts",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "workflow-executions.ts imports EngineServerDeps from create-engine-server via 'import type', which is erased at runtime.",
   "round": 3
  },
  "n8n-io/n8n|Import loops (N)|packages/nodes-base/credentials/common/aws/system-credentials-sdk.ts": {
@@ -5440,8 +5440,8 @@
   "check": "Import loops (N)",
   "severity": "High",
   "location": "packages/nodes-base/credentials/common/aws/system-credentials-sdk.ts → packages/nodes-base/credentials/common/aws/system-credentials-utils.ts → packages/nodes-base/credentials/common/aws/system-credentials-sdk.ts",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "system-credentials-sdk.ts imports Resolvers from the utils module type-only, deliberately to avoid a runtime cycle.",
   "round": 3
  },
  "n8n-io/n8n|Important code no test reaches (N function)|packages/@n8n/eslint-plugin-community-nodes/src/utils/ast-utils.ts:190": {
@@ -5481,8 +5481,8 @@
   "check": "Module-level mutable state (N place)",
   "severity": "Medium",
   "location": "`packages/@n8n/mcp-browser/src/browser-discovery.ts:286` let defaultDiscovery: BrowserDiscovery | undefined;",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Lazy singleton initialized once with ??= and never reset or reassigned afterwards.",
   "round": 3
  },
  "n8n-io/n8n|Module-level mutable state (N place)|packages/@n8n/task-runner/src/start.ts:32": {
@@ -6192,8 +6192,8 @@
   "check": "Copied logic in N group (~N lines)",
   "severity": "Medium",
   "location": "Merge 6 copies of _description_key_bullets (identical, ~50 lines): `etl/steps/viz/chart/lis/latest/relative_poverty_lis.py:133`, `etl/steps/viz/chart/wid/latest/palma_ratio_wid.py:135`, `etl/steps/viz/chart/wid/latest/incomes_wid.py:260`, `etl/steps/viz/chart/wid/latest/gini_wid.py:135`, `etl/steps/viz/chart/lis/latest/gini_lis.py:136`, `etl/steps/viz/chart/lis/latest/incomes_lis.py:301`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "The same 15-line _description_key_bullets normalizer is pasted verbatim into six chart step files; one shared helper would do.",
   "round": 3
  },
  "owid/etl|Copied logic in N group (~N lines)|snapshots/wb/2025-06-05/pip_api.py:1749": {
@@ -6283,8 +6283,8 @@
   "check": "Important code no test reaches (N function)",
   "severity": "Medium",
   "location": "`apps/chart_critic/cli.py:300` _review_one: does I/O (time.sleep) — `def _review_one(`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "test_chart_critic_cli imports only _merge and _resolve_cache_ttl; nothing in tests calls _review_one or the CLI path using it.",
   "round": 3
  },
  "owid/etl|Important code no test reaches (N function)|etl/grapher/model.py:199": {
@@ -6334,8 +6334,8 @@
   "check": "Important code no test reaches (N function)",
   "severity": "Medium",
   "location": "`snapshots/worldbank_wdi/2026-02-27/wdi.py:122` fetch_single_indicator_metadata: does I/O (requests.get) — `def fetch_single_indicator_metadata(indicator_code: str) -> dict | None:`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "No test imports this snapshot script; tests only reference WDI step names in dependency-graph fixtures.",
   "round": 3
  },
  "owid/etl|Module-level mutable state (N place)|vscode_extensions/chart-preview/src/extension.ts:9": {
@@ -6713,8 +6713,8 @@
   "check": "Copied logic in N group (~N lines)",
   "severity": "Medium",
   "location": "Merge floatHistogramIterator.Seek, floatHistogramSTIterator.Seek, histogramIterator.Seek, histogramSTIterator.Seek, xor2Iterator.Seek, xorIterator.Seek (85% similar, ~58 lines): `tsdb/chunkenc/xor.go:256`, `tsdb/chunkenc/xor2.go:531`, `tsdb/chunkenc/float_histogram.go:870`, `tsdb/chunkenc/histogram_st.go:540`, `tsdb/chunkenc/histogram.go:929`, `tsdb/chunkenc/float_histogram_st.go:549`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Ten-line Seek interface methods on different iterator structs returning different value types; Go per-type boilerplate, not mergeable logic.",
   "round": 3
  },
  "prometheus/prometheus|Credentials in configuration files|documentation/examples/prometheus-scaleway.yml:10": {
@@ -6738,8 +6738,8 @@
   "check": "Import loops (N)",
   "severity": "High",
   "location": "web/ui/mantine-ui/src/pages/query/urlStateEncoding.ts → web/ui/mantine-ui/src/state/queryPageSlice.ts → web/ui/mantine-ui/src/pages/query/urlStateEncoding.ts",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "urlStateEncoding imports newDefaultPanel from queryPageSlice, which imports encodePanelOptionsToURLParams back; both are runtime value imports.",
   "round": 3
  },
  "prometheus/prometheus|Import loops (N)|web/ui/module/codemirror-promql/src/complete/hybrid.ts": {
@@ -7089,8 +7089,8 @@
   "check": "Copied logic in N group (~N lines)",
   "severity": "Medium",
   "location": "Merge 4 copies of SiteHeader (96% similar, ~111 lines): `apps/v4/registry/bases/aria/blocks/sidebar-16/components/site-header.tsx:16`, `apps/v4/registry/new-york-v4/blocks/sidebar-16/components/site-header.tsx:18`, `apps/v4/registry/bases/radix/blocks/sidebar-16/components/site-header.tsx:17`, `apps/v4/registry/bases/base/blocks/sidebar-16/components/site-header.tsx:17`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Deliberate per-base registry copies shipped to users, importing different UI libraries (onPress vs onClick, extra separators).",
   "round": 3
  },
  "shadcn-ui/ui|Copied logic in N group (~N lines)|apps/v4/registry/bases/aria/ui/chart.tsx:83": {
@@ -7891,8 +7891,8 @@
   "check": "Import loops (N)",
   "severity": "High",
   "location": "apps/dotcom/sync-worker/src/routes/tla/headlessShadow.ts → apps/dotcom/sync-worker/src/routes/tla/mcpServer.ts → apps/dotcom/sync-worker/src/routes/tla/headlessShadow.ts",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "headlessShadow.ts imports resolveSharedBoardForUser from mcpServer, which imports compareMeasureInShadow back; both are top-level value imports.",
   "round": 3
  },
  "tldraw/tldraw|Import loops (N)|apps/dotcom/sync-worker/src/routes/tla/initUser.ts": {
@@ -7942,8 +7942,8 @@
   "check": "Module-level mutable state (N place)",
   "severity": "Medium",
   "location": "`packages/tldraw/src/lib/shapes/shared/freehand/core.ts:403` export let srcIsCap = new Uint8Array(srcCapacity)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Exported let buffer is reallocated in ensureSrcCapacity and its contents mutated per stroke; shared scratch state across calls.",
   "round": 3
  },
  "tldraw/tldraw|Module-level mutable state (N place)|packages/tldraw/src/lib/shapes/shared/freehand/fmt.ts:14": {
@@ -8267,8 +8267,8 @@
   "check": "Module-level mutable state (N place)",
   "severity": "Medium",
   "location": "`packages/vite/src/client/client.ts:175` let bundledDevClient: BundledDevHMRClient | undefined",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "bundledDevClient is reassigned after import through registerBundledDevClient and changes how HMR messages are dispatched.",
   "round": 3
  },
  "vitejs/vite|Module-level mutable state (N place)|packages/vite/src/module-runner/importMetaResolver.ts:39": {

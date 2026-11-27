@@ -155,96 +155,86 @@ code reports, so a change to a check shows at once which wrong findings it remov
 Checks whose claim is true by construction (a missing README, an unpinned version, a long function) aren't sampled.
 
 <!-- precision:start -->
-741 locations labeled across 69 repositories. **First measurement: 322 right (43%). Now: 306 of the 448 still reported are right (68%)**: the fixes removed 277 wrong ones and lost 16 right ones.
+741 locations labeled across 69 repositories (round 1, the sample the fixes were made against). **First measurement: 322 right (43%). Now, counted findings only: 272 of the 346 still reported are right (79%)**: the fixes removed 252 wrong ones and lost 15 right ones. Checks marked *hint* are listed, not counted.
 
 | Check | First measured | Now | 95% interval (now) | Still reported | Wrong removed | Right lost |
 |---|--:|--:|--:|--:|--:|--:|
+| Container runs as root | 36% | 100% | 70%–100% | 9 | 16 | 0 |
 | Possible retain cycles: closures kept by self that capture self strongly | 100% | 100% | 57%–100% | 5 | 0 | 0 |
 | Required-reason API without a privacy manifest | 100% | 100% | 44%–100% | 3 | 0 | 0 |
+| Predictable random numbers for secrets | 33% | 100% | 34%–100% | 2 | 4 | 0 |
 | Broken encryption mode or cipher (ECB, DES, RC4) | 100% | 100% | 21%–100% | 1 | 0 | 0 |
 | No error boundary around the UI | 100% | 100% | 21%–100% | 1 | 0 | 0 |
 | Personal data in unencrypted storage | 100% | 100% | 21%–100% | 1 | 0 | 0 |
+| Unused code (N function) | 12% | 100% | 21%–100% | 1 | 22 | 2 |
+| Network calls without a timeout | 80% | 95% | 76%–99% | 20 | 4 | 1 |
+| MD5 / SHA-1 used for security | 64% | 90% | 60%–98% | 10 | 4 | 0 |
+| TLS certificate checks turned off | 53% | 90% | 60%–98% | 10 | 8 | 1 |
+| Copied logic in N group (~N lines) | 60% | 88% | 66%–97% | 17 | 8 | 0 |
 | Any website may call this API (CORS *) | 88% | 88% | 70%–96% | 25 | 0 | 0 |
 | Module-level mutable state (N place) | 88% | 88% | 70%–96% | 25 | 0 | 0 |
 | Dynamic code execution (eval / exec / pickle / unsafe YAML) | 56% | 88% | 64%–97% | 16 | 9 | 0 |
+| Raw HTML injected into pages | 40% | 83% | 55%–95% | 12 | 13 | 0 |
+| Shell commands built at runtime | 72% | 82% | 61%–93% | 22 | 3 | 0 |
 | Tokens or passwords in unencrypted storage | 80% | 80% | 38%–96% | 5 | 0 | 0 |
-| Network calls without a timeout | 80% | 79% | 60%–91% | 24 | 0 | 1 |
-| Copied logic in N group (~N lines) | 60% | 79% | 57%–91% | 19 | 6 | 0 |
 | App allows unencrypted HTTP | 78% | 78% | 45%–94% | 9 | 0 | 0 |
 | Third-party scripts without integrity hashes | 76% | 76% | 53%–90% | 17 | 0 | 0 |
-| File or program operations inside loops in N place | 76% | 76% | 57%–89% | 25 | 0 | 0 |
-| Container runs as root | 36% | 75% | 47%–91% | 12 | 13 | 0 |
 | Personal data written to logs | 36% | 75% | 47%–91% | 12 | 13 | 0 |
 | Queries or requests inside loops (N) in N place | 44% | 75% | 47%–91% | 12 | 11 | 2 |
-| TLS certificate checks turned off | 53% | 75% | 47%–91% | 12 | 6 | 1 |
-| Shell commands built at runtime | 72% | 72% | 52%–86% | 25 | 0 | 0 |
 | Downloads piped straight into a shell | 71% | 71% | 36%–92% | 7 | 0 | 0 |
 | HTTP servers without timeouts (Go) | 71% | 71% | 36%–92% | 7 | 0 | 0 |
 | Request data reaches dangerous calls (N proven flow) | 32% | 70% | 40%–89% | 10 | 12 | 0 |
+| SQL assembled from strings | 32% | 70% | 40%–89% | 10 | 14 | 1 |
+| Dependency loops (N) | 58% | 69% | 44%–86% | 16 | 3 | 0 |
 | Import loops (N) | 52% | 69% | 44%–86% | 16 | 7 | 2 |
-| Raw HTML injected into pages | 40% | 67% | 42%–85% | 15 | 10 | 0 |
+| Important code no test reaches (N function) | 38% | 67% | 30%–90% | 6 | 13 | 5 |
 | Credentials in configuration files | 40% | 67% | 21%–94% | 3 | 2 | 0 |
 | Shell `eval` of a variable | 40% | 67% | 21%–94% | 3 | 2 | 0 |
-| Dependency loops (N) | 58% | 65% | 41%–83% | 17 | 2 | 0 |
-| MD5 / SHA-1 used for security | 64% | 64% | 39%–84% | 14 | 0 | 0 |
-| Plain-HTTP URLs in code | 12% | 60% | 23%–88% | 5 | 20 | 0 |
 | Endpoints that change data without an auth check (N) | 16% | 57% | 25%–84% | 7 | 18 | 0 |
-| Important code no test reaches (N function) | 38% | 57% | 25%–84% | 7 | 12 | 5 |
 | Session cookies without Secure / HttpOnly | 50% | 50% | 19%–81% | 6 | 0 | 0 |
+| Credentials committed in source | 9% | 50% | 9%–91% | 2 | 9 | 0 |
 | Privileged containers or the host's network (docker-compose) | 50% | 50% | 9%–91% | 2 | 0 | 0 |
-| SQL assembled from strings | 32% | 47% | 26%–69% | 17 | 8 | 0 |
-| Writes inside loops in N place | 24% | 44% | 19%–73% | 9 | 14 | 2 |
-| Array searches inside loops over loaded data (N) | 28% | 44% | 23%–67% | 16 | 9 | 0 |
-| N error silently swallowed | 28% | 40% | 20%–64% | 15 | 9 | 1 |
-| Predictable random numbers for secrets | 33% | 33% | 10%–70% | 6 | 0 | 0 |
-| Unused code (N function) | 12% | 33% | 6%–79% | 3 | 20 | 2 |
-| Credentials committed in source | 9% | 17% | 3%–56% | 6 | 5 | 0 |
-| Databases published on every interface (docker-compose) | 0% | 0% | 0%–39% | 6 | 16 | 0 |
+| N error silently swallowed | 28% | 43% | 21%–67% | 14 | 10 | 1 |
 | Environment files committed | 0% | 0% | 0%–79% | 1 | 1 | 0 |
 | Kubernetes Secrets committed with their values | 0% | 0% | 0%–79% | 1 | 1 | 0 |
+| Array searches inside loops over loaded data (N) *(hint)* | 28% | – |  | – | – | – |
+| Databases published on every interface (docker-compose) *(hint)* | 0% | – |  | – | – | – |
 | Debug mode switched on in code | 0% | – |  | 0 | 1 | 0 |
+| File or program operations inside loops in N place *(hint)* | 76% | – |  | – | – | – |
 | JWT checks turned off | 0% | – |  | 0 | 4 | 0 |
 | Passwords for CI services written into workflows | 0% | – |  | 0 | 7 | 0 |
 | Passwords written into docker-compose | 0% | – |  | 0 | 16 | 0 |
-| Plain-HTTP URLs in configuration (Pkl, TOML, Terraform…) | 0% | – |  | 0 | 6 | 0 |
+| Plain-HTTP URLs in code *(hint)* | 12% | – |  | – | – | – |
+| Plain-HTTP URLs in configuration (Pkl, TOML, Terraform…) *(hint)* | 0% | – |  | – | – | – |
+| Writes inside loops in N place *(hint)* | 24% | – |  | – | – | – |
 | `rm -rf` on a variable that may be empty | 0% | – |  | 0 | 6 | 0 |
 | `try!` / `as!` that crash on failure (Swift) | 0% | – |  | 0 | 11 | 0 |
 
-**Held out**: 190 more locations, sampled and labeled after the fixes, that no fix was made against: **88 right (46%, 95% interval 39%–53%)**. This is the number to expect on code codefactory hasn't been tuned on.
+**Held out (latest, round 3)**: 132 more locations of counted findings, sampled and labeled after the fixes before it, that no fix was made against: **77 right (58%, 95% interval 50%–66%)**. This is the number to expect on code codefactory hasn't been tuned on. Each held-out round, counted findings only, as measured then: round 2: 79/153 (52%); round 3: 77/132 (58%).
 
 | Check | Held out | 95% interval | Labeled |
 |---|--:|--:|--:|
-| Any website may call this API (CORS *) | 100% | 68%–100% | 8 |
-| Shell `eval` of a variable | 100% | 34%–100% | 2 |
-| Possible retain cycles: closures kept by self that capture self strongly | 100% | 21%–100% | 1 |
-| Container runs as root | 88% | 53%–98% | 8 |
+| Personal data written to logs | 100% | 44%–100% | 3 |
+| Shell `eval` of a variable | 100% | 21%–100% | 1 |
+| Any website may call this API (CORS *) | 88% | 53%–98% | 8 |
 | Dynamic code execution (eval / exec / pickle / unsafe YAML) | 88% | 53%–98% | 8 |
-| Personal data written to logs | 88% | 53%–98% | 8 |
-| Import loops (N) | 75% | 41%–93% | 8 |
-| Dependency loops (N) | 75% | 30%–95% | 4 |
+| Container runs as root | 75% | 41%–93% | 8 |
+| Copied logic in N group (~N lines) | 75% | 41%–93% | 8 |
+| Important code no test reaches (N function) | 75% | 41%–93% | 8 |
+| N error silently swallowed | 75% | 41%–93% | 8 |
+| Network calls without a timeout | 75% | 41%–93% | 8 |
+| SQL assembled from strings | 75% | 41%–93% | 8 |
+| Shell commands built at runtime | 75% | 41%–93% | 8 |
 | Module-level mutable state (N place) | 62% | 31%–86% | 8 |
-| Network calls without a timeout | 62% | 31%–86% | 8 |
-| Shell commands built at runtime | 62% | 31%–86% | 8 |
-| Array searches inside loops over loaded data (N) | 50% | 22%–78% | 8 |
-| N error silently swallowed | 50% | 22%–78% | 8 |
-| Queries or requests inside loops (N) in N place | 50% | 22%–78% | 8 |
-| Unused code (N function) | 50% | 22%–78% | 8 |
-| Copied logic in N group (~N lines) | 38% | 14%–69% | 8 |
-| Important code no test reaches (N function) | 38% | 14%–69% | 8 |
-| SQL assembled from strings | 38% | 14%–69% | 8 |
-| File or program operations inside loops in N place | 25% | 7%–59% | 8 |
-| Plain-HTTP URLs in code | 25% | 7%–59% | 8 |
+| Queries or requests inside loops (N) in N place | 62% | 31%–86% | 8 |
+| Import loops (N) | 38% | 14%–69% | 8 |
 | Raw HTML injected into pages | 25% | 7%–59% | 8 |
-| Writes inside loops in N place | 12% | 2%–47% | 8 |
-| Endpoints that change data without an auth check (N) | 0% | 0%–32% | 8 |
-| Databases published on every interface (docker-compose) | 0% | -0%–43% | 5 |
-| TLS certificate checks turned off | 0% | -0%–43% | 5 |
-| `try!` / `as!` that crash on failure (Swift) | 0% | -0%–43% | 5 |
+| Unused code (N function) | 25% | 7%–59% | 8 |
+| Endpoints that change data without an auth check (N) | 0% | 0%–35% | 7 |
+| `try!` / `as!` that crash on failure (Swift) | 0% | 0%–49% | 4 |
 | Credentials committed in source | 0% | 0%–66% | 2 |
-| MD5 / SHA-1 used for security | 0% | 0%–66% | 2 |
-| Third-party scripts without integrity hashes | 0% | 0%–66% | 2 |
-| App allows unencrypted HTTP | 0% | 0%–79% | 1 |
-| Request data reaches dangerous calls (N proven flow) | 0% | 0%–79% | 1 |
+| Dependency loops (N) | 0% | 0%–66% | 2 |
+| Third-party scripts without integrity hashes | 0% | 0%–79% | 1 |
 <!-- precision:end -->
 
 ### What the first measurement found
