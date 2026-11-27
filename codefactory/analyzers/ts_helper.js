@@ -108,8 +108,77 @@ function workspaceFile(spec) {
 }
 const host = ts.createCompilerHost(options);
 const resolutionCache = ts.createModuleResolutionCache(root, (f) => host.getCanonicalFileName(f), options);
+
+// Each file resolves its imports with its nearest tsconfig/jsconfig (a monorepo app's own "@/*" paths and baseUrl),
+// `extends` followed, also to a workspace package's config ("@org/tsconfig/base.json") that has no node_modules link.
+// A solution-style config ("files": [], references) hands a file to the referenced config that includes it.
+function packageConfig(spec) {
+  const parts = spec.split("/");
+  const name = spec.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
+  const pkg = packages.get(name);
+  if (!pkg) return null;
+  const sub = spec.slice(name.length);
+  const tries = sub ? [sub, sub + ".json", path.join(sub, "tsconfig.json")]
+    : [typeof pkg.json.tsconfig === "string" ? pkg.json.tsconfig : "tsconfig.json", "tsconfig.json"];
+  for (const t of tries) {
+    const f = path.join(pkg.dir, t);
+    if (ts.sys.fileExists(f) && !outside(f)) return f;
+  }
+  return null;
+}
+const configHost = { ...ts.sys, readFile(f) {
+  const text = ts.sys.readFile(f);
+  if (!text || !/\.json$/i.test(f)) return text;
+  const { config } = ts.parseConfigFileTextToJson(f, text);
+  if (!config || config.extends === undefined) return text;
+  const bare = (e) => typeof e === "string" && !/^[./]/.test(e) && !path.isAbsolute(e) ? packageConfig(e) || e : e;
+  config.extends = Array.isArray(config.extends) ? config.extends.map(bare) : bare(config.extends);
+  return JSON.stringify(config);
+} };
+const configAt = new Map(), settingsAt = new Map(), settingsOfFile = new Map();
+function nearestConfig(dir) {
+  if (configAt.has(dir)) return configAt.get(dir);
+  let found = null;
+  for (const n of ["tsconfig.json", "jsconfig.json"]) {
+    const f = path.join(dir, n);
+    if (ts.sys.fileExists(f) && !outside(f)) { found = f; break; }
+  }
+  const up = path.dirname(dir);
+  if (!found && dir !== path.resolve(root) && up !== dir && !rel(up).startsWith("..")) found = nearestConfig(up);
+  configAt.set(dir, found);
+  return found;
+}
+function settingsFor(cfgFile) {
+  if (settingsAt.has(cfgFile)) return settingsAt.get(cfgFile);
+  settingsAt.set(cfgFile, null); // (a reference loop)
+  let s = null;
+  const cfg = ts.readConfigFile(cfgFile, configHost.readFile);
+  if (!cfg.error) {
+    const parsed = ts.parseJsonConfigFileContent(cfg.config, configHost, path.dirname(cfgFile), undefined, cfgFile);
+    const opts = { ...parsed.options, allowJs: true, noEmit: true };
+    s = { options: opts, cache: ts.createModuleResolutionCache(path.dirname(cfgFile),
+      (f) => host.getCanonicalFileName(f), opts), files: new Set(parsed.fileNames.map((f) => path.resolve(f))),
+    refs: opts.paths ? [] : (parsed.projectReferences || []).map((r) => ts.resolveProjectReferencePath(r)) };
+  }
+  settingsAt.set(cfgFile, s);
+  return s;
+}
+function settingsOf(from) {
+  const file = path.resolve(from);
+  if (settingsOfFile.has(file)) return settingsOfFile.get(file);
+  const cfgFile = all.has(file) ? nearestConfig(path.dirname(file)) : null;
+  let s = cfgFile && settingsFor(cfgFile);
+  if (s) for (const r of s.refs) {
+    const sub = settingsFor(path.resolve(r));
+    if (sub && sub.files.has(file)) { s = sub; break; }
+  }
+  settingsOfFile.set(file, s || null);
+  return s || null;
+}
 function resolveFull(spec, from, mode, redirected) {
-  const r = ts.resolveModuleName(spec, from, options, host, resolutionCache, redirected, mode);
+  const s = settingsOf(from);
+  const r = s ? ts.resolveModuleName(spec, from, s.options, host, s.cache, redirected, mode)
+    : ts.resolveModuleName(spec, from, options, host, resolutionCache, redirected, mode);
   if (r.resolvedModule) return r;
   const f = workspaceFile(spec);
   if (!f) return r;
