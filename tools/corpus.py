@@ -136,6 +136,11 @@ def run(args) -> int:
     if args.new:
         wanted = [r for r in wanted if r not in results]
     print(f"{len(wanted)} repositories, {args.jobs} at a time", flush=True)
+    try:  # each job's TypeScript analyzer gets its share of memory: half of it each, at 4 jobs, ran the box out
+        total = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") // (1024 * 1024)
+        os.environ.setdefault("CODEFACTORY_TS_HEAP_MB", str(max(2048, int(total * 0.8) // max(1, args.jobs))))
+    except (AttributeError, ValueError, OSError):
+        pass
 
     def one(repo: str) -> tuple[str, dict]:
         try:

@@ -225,7 +225,9 @@ def _run_helper(root: Path, ignore: list[str], saved: Path | None = None, source
 
 def heap_mb() -> int:
     """Node's heap for the type checker: half this machine's memory, between 4 and 16 GB (Node's own default is lower
-    than a large monorepo needs)."""
+    than a large monorepo needs). CODEFACTORY_TS_HEAP_MB overrides it: several analyses at once share the memory."""
+    if (env := os.environ.get("CODEFACTORY_TS_HEAP_MB", "")).isdigit():
+        return max(1024, int(env))
     try:
         total = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") // (1024 * 1024)
     except (AttributeError, ValueError, OSError):  # Windows has no sysconf

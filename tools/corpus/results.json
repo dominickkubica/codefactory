@@ -354,14 +354,14 @@
  },
  "calcom/cal.com": {
   "status": "ok",
-  "seconds": 85.3,
+  "seconds": 73.8,
   "commit": "ae027bb",
   "kind": "web app",
   "deployment": "deployed server",
   "counts": {
    "Critical": 2,
    "High": 4,
-   "Medium": 13,
+   "Medium": 12,
    "Low": 6
   },
   "serious": [
@@ -674,7 +674,7 @@
  },
  "getsentry/sentry-python": {
   "status": "ok",
-  "seconds": 12.4,
+  "seconds": 12.8,
   "commit": "566beb0",
   "kind": "library",
   "deployment": "user's machine",
@@ -716,12 +716,12 @@
  },
  "gohugoio/hugo": {
   "status": "ok",
-  "seconds": 61.0,
+  "seconds": 25.4,
   "commit": "b3d0a6d",
   "kind": "web service",
   "deployment": "deployed server",
   "counts": {
-   "Medium": 5,
+   "Medium": 4,
    "Low": 5
   },
   "serious": []
@@ -855,7 +855,7 @@
  },
  "jekyll/jekyll": {
   "status": "ok",
-  "seconds": 6.0,
+  "seconds": 4.2,
   "commit": "97c3bdc",
   "kind": "command-line tool",
   "deployment": "user's machine",
@@ -1480,7 +1480,7 @@
  },
  "pydantic/pydantic": {
   "status": "ok",
-  "seconds": 47.0,
+  "seconds": 24.8,
   "commit": "6449f80",
   "kind": "library",
   "deployment": "user's machine",
@@ -1665,7 +1665,7 @@
  },
  "square/retrofit": {
   "status": "ok",
-  "seconds": 36.8,
+  "seconds": 15.5,
   "commit": "54c2047",
   "kind": "library",
   "deployment": "user's machine",
@@ -1711,7 +1711,7 @@
  },
  "syncthing/syncthing": {
   "status": "ok",
-  "seconds": 20.5,
+  "seconds": 17.6,
   "commit": "1107b3c",
   "kind": "web service",
   "deployment": "deployed server",
@@ -1750,7 +1750,7 @@
  },
  "tldraw/tldraw": {
   "status": "ok",
-  "seconds": 93.4,
+  "seconds": 75.4,
   "commit": "94466fd",
   "kind": "web app",
   "deployment": "deployed server",
@@ -1858,20 +1858,9 @@
   ]
  },
  "vuejs/core": {
-  "status": "ok",
-  "seconds": 171.0,
-  "commit": "d690dee",
-  "kind": "web front-end",
-  "deployment": "browser",
-  "counts": {
-   "High": 2,
-   "Medium": 5,
-   "Low": 3
-  },
-  "serious": [
-   "High: Dynamic code execution (eval / exec / pickle / unsafe YAML)",
-   "High: Import loops (6)"
-  ]
+  "status": "crash",
+  "seconds": 99.8,
+  "error": ""
  },
  "wagtail/wagtail": {
   "status": "ok",
