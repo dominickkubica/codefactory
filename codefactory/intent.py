@@ -204,6 +204,10 @@ def safe_names(lines: list[str], i: int, span: int = 60) -> set[str]:
                     or (_root(rhs) in safe and _root(rhs) != a.group(1))
                     or NUMERIC.match(rhs.strip().rstrip(";"))  # size = int(request.args["size"])
                     or re.search(r"""\.join\(\s*\(?['"]\?['"]""", rhs)  # placeholders: ",".join("?" * len(ids))
+                    # quoted as an identifier: `$database = $this->identifier($db)`, quote_ident, quoteIdentifier
+                    or re.match(
+                        r"(?:\$?\w+(?:->|\.|::))*(?:identifier|quote_?[iI]dent\w*|quoteName|escape_?[iI]dentifier\w*)\(", rhs
+                    )
                 ):
                     safe.add(a.group(1))
     joined = " ".join(window)  # `$scope = cond ? 'concat(?, id)' : 'cast(? as text)';` (PHP, JS) or `x = 'a' if c else 'b'`

@@ -104,6 +104,26 @@ def _script_lines(lines: list[str]) -> list[int]:
     return out
 
 
+DROP_ROOT = re.compile(r"\b(?:su-exec|gosu|setpriv|runuser|s6-setuidgid|chpst\s+-u|setuidgid)\b")
+
+
+def _drops_root(root: Path, dockerfile: Path, text: str) -> bool:
+    """Starts as root only to switch user before the program runs: `su-exec`/`gosu` in the Dockerfile or in the
+    entrypoint script it copies in (syncthing's docker-entrypoint.sh)."""
+    if DROP_ROOT.search(text):
+        return True
+    for script in set(re.findall(r"[\w./-]+\.sh\b", text)):
+        for base in (dockerfile.parent, root):
+            p = (base / script.lstrip("/")).resolve()
+            if p.is_file() and p.is_relative_to(root.resolve()):
+                try:
+                    if DROP_ROOT.search(p.read_text(encoding="utf-8", errors="replace")[:200_000]):
+                        return True
+                except OSError:
+                    pass
+    return False
+
+
 def dockerfiles(root: Path, files: list[Path], out: dict[str, Check]) -> None:
     for path in files:
         rel = path.relative_to(root).as_posix()
@@ -120,7 +140,10 @@ def dockerfiles(root: Path, files: list[Path], out: dict[str, Check]) -> None:
         dev = is_dev_setup(rel) or tests_image or re.search(r"\bAS\s+(?:dev|develop\w*|test\w*|ci)\s*$", final, re.I)  # (a final
         # stage named `build` still ships: cal.com's API image)
         nonroot = re.search(r"nonroot|distroless|chainguard|rootless|unprivileged", final, re.I)
-        if (not users or users[-1] in ("root", "0", "0:0")) and not dev and not nonroot:
+        # a base image other Dockerfiles build on (`Dockerfile.base`, `images/n8n-base/`): the shipped one sets USER
+        base = re.search(r"(?:^|/)Dockerfile\.base$|(?:^|/)base\.Dockerfile$|(?:^|[/_-])base/Dockerfile(?:\.[\w-]+)?$", rel, re.I)
+        exempt = dev or nonroot or base or _drops_root(root, path, text)
+        if (not users or users[-1] in ("root", "0", "0:0")) and not exempt:
             out["docker_root"].hits.append(Evidence(rel, _line(text, froms[-1].start()), f"no USER after {froms[-1].group(1)}"))
         for m in froms:
             image = m.group(1)

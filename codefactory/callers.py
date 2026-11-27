@@ -100,7 +100,8 @@ def fixed_expr(e: str, lang: str) -> bool:
     m = ESCAPING.match(e)
     if (m and _whole_call(e, m)) or literal(e, lang):
         return True
-    return re.fullmatch(r"[\w$.]+\.id|[A-Z][A-Z0-9_]{2,}", e) is not None  # a record's id, a named constant
+    # a named constant (not a record's `.id`: one read from an API response can carry anyone's text)
+    return re.fullmatch(r"[A-Z][A-Z0-9_]{2,}", e) is not None
 
 
 def params(lines: list[str], i: int, lang: str) -> tuple[str, list[str | None]] | None:

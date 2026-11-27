@@ -475,6 +475,22 @@ def _fixed_code(line: str, text: str) -> bool:
                 and not re.search(r"typ\s*=\s*['\"]unsafe['\"]", text))  # fmt: skip
 
 
+STORIES = re.compile(r"\.stories\.(?:[cm]?[jt]sx?|mdx|svelte|vue)$")
+
+
+def _in_comment(lines: list[str], i: int) -> bool:
+    """Line i is a comment: a `//` or `#` line, or inside a `/* … */` block opened on an earlier line."""
+    if re.match(r"\s*(?://|#(?!\[)|\*|/\*|\{/\*|<!--)", lines[i - 1]):
+        return True
+    for back in range(i - 2, max(-1, i - 40), -1):
+        ln = re.sub(r"""(["'`])(?:(?!\1)[^\\]|\\.)*\1""", "", lines[back])  # (not `"src/**/*.ts"` in a string)
+        if "*/" in ln:
+            return False
+        if "/*" in ln:
+            return True
+    return False
+
+
 def _constant_after(lines: list[str], i: int) -> bool:
     """`el.innerHTML =` and then one string literal that runs over the next lines with nothing interpolated: a
     constant SVG on the next line, a `<style>` block in a template literal."""
@@ -705,6 +721,7 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
         lines = text.splitlines()
         # generated code, and examples and docs samples, are checked like a test: only for vendor credentials
         test = (is_test(fid) or is_doc_sample(fid) or is_sample_code(fid)
+                or STORIES.search(fid) is not None  # Storybook stories: demo props, not the product's data
                 or GENERATED.search("\n".join(lines[:12])) is not None)  # fmt: skip
         marks = [parse_mark(m.group(2))[0] for ln in lines if (m := MARK.search(ln)) and m.group(1)]
         file_kinds = set().union(*marks) if marks and all(marks) else (set() if marks else None)
@@ -774,6 +791,8 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                         safe = safe_names(lines, i)
                         if all(interp_safe(s, safe) for s in subs):
                             continue  # every value in the command is a number or from a fixed list (parseInt, …)
+                    if key in ("raw_html", "sql_built", "shell", "eval") and _in_comment(lines, i):
+                        continue  # prose about the call ("This usage of dangerouslySetInnerHTML is safe since…")
                     if key == "shell" and fid.endswith(".py") and "shell" in line and _fixed_shell(lines, i):
                         continue  # `subprocess.run("git log -1 HEAD", shell=True)`: a fixed command, nothing to inject
                     if key == "raw_html" and (CONSTANT_HTML.search(line) or _safe_html(lines, i) or _constant_after(lines, i)):

@@ -41,7 +41,7 @@ function showNotice(message) {
 
 function render(err, link) {
   if (!link) return showNotice("Every dropdown needs at least one option.");
-  showNotice(`Couldn't load indicator ${link.id}: ${esc(err.message)}`);
+  showNotice(`Couldn't load indicator ${esc(link.id)}: ${esc(err.message)}`);
   return showNotice(link.ready
     ? "Start by linking an indicator."
     : "No indicator linked yet.");

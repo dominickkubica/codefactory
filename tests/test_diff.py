@@ -51,7 +51,7 @@ def find(conn, name):
 
 
 def main():
-    return total([]) + len(find(None, "x"))
+    return total([]) + len(find(None, input("name: ")))
 """
 
 
