@@ -24,7 +24,7 @@ from .config import load_config
 from .coverage import measured
 from .e2e import JS, pages_reached
 from .infra import scan as infra_scan
-from .paths import BUILD_OUTPUT, deliberate_copies, is_doc_sample, is_example_code, is_script, is_test, walk
+from .paths import BUILD_OUTPUT, deliberate_copies, is_doc_sample, is_example_code, is_script, is_test, is_vendored, walk
 from .plan import make_plan
 from .privacy import scan as privacy_scan
 from .profile import detect as detect_profile
@@ -67,6 +67,7 @@ class Finding:
     data: dict = field(default_factory=dict)
 
 
+MIGRATION_FILE = re.compile(r"(?:^|/)(?:db/(?:post_)?migrate|migrations?|alembic/versions)/")
 LOOP_HEAD = re.compile(r"^\s*(?:for|while)\b|\bfor\s*\(|\.(?:forEach|map|each)\b")
 RETRY_HEAD = re.compile(r"\brange\(\s*(?:\w*(?:retr|attempt|tries)\w*|MAX_\w+|\d)\s*\)|\b(?:attempt|retry|tries)\w*\s*<", re.I)
 SLEEP = re.compile(r"\b(?:time\.sleep|asyncio\.sleep|sleep|setTimeout|backoff|Thread\.sleep)\b")
@@ -304,6 +305,15 @@ class Review:
             if found[path]:
                 out.add(e.fn)
         # a route a test reaches by its name: Django's reverse("api:create_locale"), Flask's url_for("create_locale")
+        # a Django command a test runs (`call_command("create_log_entries_from_revisions")`): its `handle`
+        commands = set(re.findall(r"""\bcall_command\(\s*["']([\w-]+)["']""", blob))
+        out |= {fid for fid, f in self.v.fn.items() if f["name"] == "handle"
+                and re.search(r"(?:^|/)management/commands/([\w-]+)\.py$", f["file"])
+                and re.search(r"/([\w-]+)\.py$", f["file"]).group(1) in commands}  # fmt: skip
+        # tests that run the built program (`Command::cargo_bin("rg")`, CARGO_BIN_EXE_rg): its main reaches the rest
+        if re.search(r"CARGO_BIN_EXE_|cargo_bin\(|\bassert_cmd\b", blob):
+            out |= {fid for fid, f in self.v.fn.items() if f["name"] == "main" and f["file"].endswith(".rs")
+                    and not is_test(f["file"])}  # fmt: skip
         named = set(re.findall(r"""\b(?:reverse|url_for|reverse_lazy)\(\s*["'](?:[\w-]+:)*([\w-]+)["']""", blob))
         for e in self.surface.entries if named else ():
             fn = self.v.fn.get(e.fn)
@@ -1050,6 +1060,10 @@ class Review:
             and (f.get("io") or len(callers[f["id"]]) >= 8)
             and not is_script(f["file"])
             and not self._di_provider(f)
+            # (vendored libraries, migrations CI runs once, a bundler's config: not the code this finding is about)
+            and not is_vendored(f["file"])
+            and not MIGRATION_FILE.search(f["file"])
+            and not re.search(r"(?:^|/)[\w.-]+\.config\.[cm]?[jt]s$", f["file"])
         ]
         # writes first (a wrong one loses data), then I/O, then code that keeps changing, then the most depended-on
         risky.sort(
