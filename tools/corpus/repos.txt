@@ -133,3 +133,35 @@ jesseduffield/lazygit # Go CLI/TUI
 eza-community/eza # Rust CLI
 colinhacks/zod # TypeScript library
 Textualize/rich # Python library
+# Round 8: held out. Drawn before the round-8 fixes and not read while making them: the fixes come from rounds 1-7,
+# and these measure whether they carry to code nobody tuned against (before vs after, same repositories)
+simonw/datasette
+searxng/searxng
+sissbruecker/linkding
+ArchiveBox/ArchiveBox
+Chainlit/chainlit
+go-shiori/shiori
+writefreely/writefreely
+thomiceli/opengist
+glanceapp/glance
+gofiber/fiber
+nektos/act
+apache/answer
+docmost/docmost
+usebruno/bruno
+Lissy93/dashy
+karakeep-app/karakeep
+makeplane/plane
+chatwoot/chatwoot
+solidusio/solidus
+openstreetmap/openstreetmap-website
+koel/koel
+wallabag/wallabag
+FreshRSS/FreshRSS
+atuinsh/atuin
+zellij-org/zellij
+linlinjava/litemall
+Radarr/Radarr
+mastodon/mastodon-ios
+mihonapp/mihon
+hexpm/hexpm

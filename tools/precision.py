@@ -119,7 +119,7 @@ def save(labels: dict) -> None:
     LABELS.write_text(json.dumps(dict(sorted(labels.items())), indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def _stable(s: str) -> str:
+def stable(s: str) -> str:
     return hashlib.sha1(s.encode()).hexdigest()
 
 
@@ -140,7 +140,7 @@ def sample(args) -> int:
             per_repo[now[k]["repo"]] += 1
         # the more serious first, then a stable shuffle; at most --per-repo from one repository
         order = sorted((k for k in keys if k not in labels),
-                       key=lambda k: (SEVERITIES.index(now[k]["severity"]) > 2, _stable(k)))  # fmt: skip
+                       key=lambda k: (SEVERITIES.index(now[k]["severity"]) > 2, stable(k)))  # fmt: skip
         for k in order:
             if want <= 0:
                 break
