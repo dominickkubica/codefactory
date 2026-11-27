@@ -30,7 +30,7 @@ TRAILING_COMMENT = re.compile(r"(?:\)|\}|;|\bpass)\s*(?://|#)\s*\S")
 EXPECTED_THROW = re.compile(
     r"JSON\.(?:parse|stringify)|(?:set|release)PointerCapture|[rR]ealpath|customElements\.define|"
     r"decodeURI(?:Component)?\b|new URL\(|"
-    r"\bimport\(|require\(|\bstat(?:Sync)?\(|\baccess(?:Sync)?\(|\blstat|inspect\.signature|\.resolve\(|"
+    r"\bimport\(|require\(|\bstat(?:Sync)?\(|(?:\b|fs)[aA]ccess(?:Sync)?\(|\blstat|inspect\.signature|\.resolve\(|"
     r"\bint\(|\bfloat\(|json\.loads|\.decode\(|urlparse|resolve_?url|\bresolve\(|localStorage|sessionStorage|"
     r"clipboard|writeText|navigator\.share"
 )
@@ -52,6 +52,11 @@ def expected_failure(lines: list[str], i: int) -> str | None:
         return why
     if re.search(rf"=>\s*[^{{;]*\.catch\(\s*(?:\(\s*\w*\s*\)|\w+)\s*=>\s*{VALUE}\s*\)", line):
         return "fallback"  # ids.map((id) => fetch(id).catch(() => undefined)): the arrow returns the value
+    nxt = lines[i] if i < len(lines) else ""
+    if re.search(rf"\.catch\(\s*(?:\(\s*\w*\s*\)|\w+)\s*=>\s*{VALUE}\s*\)\s*(?:\.then\(|$)", line) and (
+        ".then(" in line.split(".catch(")[-1] or re.match(r"\s*\.then\(", nxt)
+    ):
+        return "fallback"  # load().catch(() => null).then((data) => …): the next step handles the null
     if re.search(rf"\.catch\(\s*(?:\(\s*\w*\s*\)|\w+)\s*=>\s*{VALUE}\s*\)", line):
         start = i - 1
         while start > 0 and not re.search(r"[;{}]\s*$", lines[start - 1]) and i - start < 8:
@@ -72,9 +77,10 @@ def expected_failure(lines: list[str], i: int) -> str | None:
             if (
                 text
                 and EXPECTED_THROW.search(text)
-                and len([b for b in body if b.strip()]) <= 3
+                and len([b for b in body if b.strip() and not re.match(r"\s*(?://|#)", b)]) <= 3
                 and not bare
-                and not re.search(r"\breturn\b", text)
+                # (not `return JSON.parse(x)` itself: a return after the call that may throw is the normal path)
+                and not any(re.search(r"\breturn\b", b) and EXPECTED_THROW.search(b) for b in body)
             ):
                 return "expected failure"
             return None

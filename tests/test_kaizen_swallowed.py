@@ -93,5 +93,17 @@ class LongChainsTest(unittest.TestCase):
         self.assertEqual([e.file for e in found["swallowed"].hits], ["bad.ts"])
 
 
+class ReturnsAndChainsTest(unittest.TestCase):
+    def test_a_return_after_the_throwing_call_and_a_chained_fallback(self):
+        files = {  # n8n server.ts (fsAccess then return), tldraw useFetchJson (.catch(() => null).then)
+            "server.ts": "if (filePath) {\n  try {\n    await fsAccess(filePath);\n    return send(res, filePath);\n  } catch {}\n}\n",
+            "hook.ts": "load()\n  .catch(() => null)\n  .then((data) => setData(data))\n",
+            "parse.ts": "function f(s) {\n  try {\n    return JSON.parse(s);\n  } catch {}\n}\n",
+            "bad.ts": "try {\n  await save(item);\n  return item;\n} catch {}\n",
+        }  # fmt: skip
+        found = scan_sources(repo(files), list(files))
+        self.assertEqual(sorted({e.file for e in found["swallowed"].hits}), ["bad.ts", "parse.ts"])
+
+
 if __name__ == "__main__":
     unittest.main()
