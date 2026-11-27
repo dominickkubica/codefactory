@@ -44,6 +44,18 @@ honest figure for code codefactory hasn't been tuned on, and the target for the 
   8 GB and falling back to the general analyzer. Forced on cal.com and Appwrite, the graph matches one Program's
   (cal.com identical; Appwrite 1 of 112,257 edges a call instead of a reference); below the threshold, unchanged.
 
+### Round 7 held out, and weak checks become hints
+
+A corpus run of all 126 repositories (no crash or timeout) and a held-out sample of 225 counted locations: **106
+right (47%)** as drawn, mostly from the 50 repositories added in round 6. Fifteen checks under half right across
+the held-out rounds are now hints until fixed (credentials, data flow, SQL, raw HTML, TLS off, JWT, CI injection,
+image secrets, debug mode, predictable random, iOS usage strings, .env files, signing keys, Go server timeouts);
+the checks still counted were 95 of 149 right (64%) on the same labels. Also: confidence tiers within a check
+(raw HTML no endpoint reaches; data flow in scripts and tests; test locations of security checks); untested-code
+fixes (commands tests run, programs tests run as binaries, migrations, vendored code, build config); loop fixes
+(retry and poll loops, literal lists, Django's cached lookups); SQL through fixed or quoting helpers; swallowed-error
+refinements; a crash fix (JS data-flow summaries grew without bound on vue/core) and per-job TypeScript memory.
+
 ### Data-flow guards, speed, determinism
 
 - Data flow recognizes guards that dominate the sink, in Python and JS/TS: safe-URL validators before a redirect

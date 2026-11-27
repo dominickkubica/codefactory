@@ -70,7 +70,7 @@ class JsTaintTest(unittest.TestCase):
         g = build(APP, cache=False)
         r = Review(g.to_dict(), APP)
         r.run()
-        titles = [f.title for f in r.findings]
+        titles = [f.title for f in r.findings + r.hints]  # (a hint until data flow is measured right on real code)
         self.assertTrue(any(t.startswith("Request data reaches dangerous calls (17 proven flows)") for t in titles), titles)
 
 

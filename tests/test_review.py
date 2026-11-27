@@ -56,7 +56,7 @@ class ReviewTest(unittest.TestCase):
         r = Review(build(cls.root).to_dict(), cls.root)
         r.run()
         cls.r = r
-        cls.titles = {f.title: f for f in r.findings}
+        cls.titles = {f.title: f for f in r.findings + r.hints}  # (some security checks are hints: docs/ACCURACY.md)
 
     def find(self, part):
         return next((f for t, f in self.titles.items() if part in t), None)
@@ -81,7 +81,7 @@ class ReviewTest(unittest.TestCase):
         for part in (
             "# Technical review:",
             "## 1. Executive summary",
-            "**Overall health: At risk.**",
+            "**Overall health: Fragile.**",
             "Top 5 actions",
             "## 3. System map",
             "## 5. Findings",

@@ -40,7 +40,12 @@ lets triage at 1,000 repositories be a sample instead of a full read.
      twice). Then round 7 held out, including the new repositories.
    - In flight (agent branches, not merged): per-package TypeScript programs for huge monorepos (n8n falls back
      on heap); a determinism sweep (teable data-flow flows came and went between runs).
-   - Next: round 7 held out over all 126 repositories, data flow included.
+   - Done: round 7 held out **47%** as drawn (106 of 225), 64% for the checks still counted (95 of 149); 15 checks
+     under half right pooled are hints until fixed.
+   - Next, one check at a time, each until its held-out number clears 85% or it stays a hint: credentials (test,
+     seed and placeholder values; feature-flag and alphabet strings), shell commands (constant commands, Markdown
+     backticks in heredocs, fixed lists), SQL and data flow (sanitizers like `conditional_escape`, signed values,
+     query builders), eval (bundled vendor code, methods named eval), containers (seeders, toolchain images).
    - Open: mocks set in vitest/jest setup files; `const s = vi.spyOn(…)` then `s.mockX`; Ruby `.select { }` blocks
      read as queries; PHP `use` loops (no load-time edge); "reached from" chains through wrong name-matched calls.
 

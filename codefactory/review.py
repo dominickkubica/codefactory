@@ -121,7 +121,17 @@ HINT = re.compile(
     r"Databases published on every interface|Plain-HTTP URLs in|"
     # whether a route needs auth (a sign-in, an OTP or invite secret, a read) and whether a cast can fail are decided
     # by code elsewhere: 0 of 15 and 0 of 9 right on held-out samples
-    r"Endpoints that change data without an auth check|`try!` / `as!` that crash"
+    r"Endpoints that change data without an auth check|`try!` / `as!` that crash|"
+    # under half right across the held-out rounds (2-7, pooled), most of them 0 right on the 50 repositories added
+    # in round 6: hints until each is fixed (docs/ACCURACY.md). Credentials 0/15, data flow 2/43, SQL 18/40, raw HTML
+    # 13/40, TLS off 4/13, and 0 right for config credentials, image secrets, CI injection, JWT, debug mode,
+    # predictable random, iOS usage strings, committed .env files, signing keys; Go server timeouts 1/3
+    r"Credentials committed in source|Credentials in configuration files|Secrets baked into a container image|"
+    r"Untrusted text run as a shell command in CI|JWT checks turned off|Debug mode switched on in code|"
+    r"Predictable random numbers for secrets|iOS permission used without its usage description|"
+    r"Environment files committed|Signing key written in the code|Request data reaches dangerous calls|"
+    r"TLS certificate checks turned off|Raw HTML injected into pages|HTTP servers without timeouts \(Go\)|"
+    r"SQL assembled from strings"
 )
 
 

@@ -164,12 +164,12 @@ class RerankTest(unittest.TestCase):
         root = repo(EXPO)
         r = Review(build(root, cache=False).to_dict(), root)
         r.run()
-        sql = next(f for f in r.findings if f.title.startswith("SQL assembled"))
+        sql = next(f for f in r.findings + r.hints if f.title.startswith("SQL assembled"))
         self.assertEqual(sql.severity, "Low")
         self.assertEqual(sql.data["ranked"]["from"], "Medium")
         text = r.markdown()
         self.assertIn("## 2. Project profile", text)
-        self.assertIn("Ranked Low for this project (default Medium)", text)
+        self.assertIn("| SQL assembled from strings | Medium | ↓ **Low** |", text)  # (a hint now: ranked in the table)
 
     def test_one_rule_per_finding_and_direction(self):
         p = profile(EXPO)

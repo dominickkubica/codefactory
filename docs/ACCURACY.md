@@ -155,53 +155,53 @@ code reports, so a change to a check shows at once which wrong findings it remov
 Checks whose claim is true by construction (a missing README, an unpinned version, a long function) aren't sampled.
 
 <!-- precision:start -->
-741 locations labeled across 69 repositories (round 1, the sample the fixes were made against). **First measurement: 322 right (43%). Now, counted findings only: 268 of the 333 still reported are right (80%)**: the fixes removed 229 wrong ones and lost 15 right ones. Checks marked *hint* are listed, not counted.
+741 locations labeled across 69 repositories (round 1, the sample the fixes were made against). **First measurement: 321 right (43%). Now, counted findings only: 217 of the 251 still reported are right (86%)**: the fixes removed 179 wrong ones and lost 20 right ones. Checks marked *hint* are listed, not counted.
 
 | Check | First measured | Now | 95% interval (now) | Still reported | Wrong removed | Right lost |
 |---|--:|--:|--:|--:|--:|--:|
-| Container runs as root | 36% | 100% | 70%–100% | 9 | 16 | 0 |
+| Import loops (N) | 52% | 100% | 72%–100% | 10 | 12 | 3 |
+| Container runs as root | 36% | 100% | 68%–100% | 8 | 16 | 1 |
+| Raw HTML injected into pages *(hint)* | 40% | – |  | – | – | – |
+| HTTP servers without timeouts (Go) *(hint)* | 71% | – |  | – | – | – |
 | Possible retain cycles: closures kept by self that capture self strongly | 100% | 100% | 57%–100% | 5 | 0 | 0 |
+| Important code no test reaches (N function) | 38% | 100% | 51%–100% | 4 | 15 | 5 |
 | Required-reason API without a privacy manifest | 100% | 100% | 44%–100% | 3 | 0 | 0 |
-| Predictable random numbers for secrets | 33% | 100% | 34%–100% | 2 | 4 | 0 |
+| Predictable random numbers for secrets *(hint)* | 33% | – |  | – | – | – |
 | Broken encryption mode or cipher (ECB, DES, RC4) | 100% | 100% | 21%–100% | 1 | 0 | 0 |
 | No error boundary around the UI | 100% | 100% | 21%–100% | 1 | 0 | 0 |
 | Personal data in unencrypted storage | 100% | 100% | 21%–100% | 1 | 0 | 0 |
 | Unused code (N function) | 12% | 100% | 21%–100% | 1 | 22 | 2 |
 | Network calls without a timeout | 80% | 95% | 76%–99% | 20 | 4 | 1 |
-| Import loops (N) | 52% | 92% | 65%–99% | 12 | 11 | 2 |
+| Third-party scripts without integrity hashes | 76% | 93% | 69%–99% | 14 | 3 | 0 |
 | MD5 / SHA-1 used for security | 64% | 90% | 60%–98% | 10 | 4 | 0 |
-| TLS certificate checks turned off | 53% | 90% | 60%–98% | 10 | 8 | 1 |
-| Copied logic in N group (~N lines) | 60% | 88% | 66%–97% | 17 | 8 | 0 |
+| TLS certificate checks turned off *(hint)* | 53% | – |  | – | – | – |
 | Any website may call this API (CORS *) | 88% | 88% | 70%–96% | 25 | 0 | 0 |
 | Module-level mutable state (N place) | 88% | 88% | 70%–96% | 25 | 0 | 0 |
 | Dynamic code execution (eval / exec / pickle / unsafe YAML) | 56% | 88% | 64%–97% | 16 | 9 | 0 |
-| Raw HTML injected into pages | 40% | 83% | 55%–95% | 12 | 13 | 0 |
+| Queries or requests inside loops (N) in N place | 44% | 88% | 53%–98% | 8 | 13 | 4 |
+| Request data reaches dangerous calls (N proven flow) *(hint)* | 32% | – |  | – | – | – |
+| Copied logic in N group (~N lines) | 60% | 87% | 62%–96% | 15 | 8 | 2 |
+| App allows unencrypted HTTP | 67% | 86% | 49%–97% | 7 | 2 | 0 |
+| Downloads piped straight into a shell | 71% | 83% | 44%–97% | 6 | 1 | 0 |
 | Shell commands built at runtime | 72% | 82% | 61%–93% | 22 | 3 | 0 |
 | Tokens or passwords in unencrypted storage | 80% | 80% | 38%–96% | 5 | 0 | 0 |
-| Dependency loops (N) | 58% | 79% | 52%–92% | 14 | 5 | 0 |
-| App allows unencrypted HTTP | 78% | 78% | 45%–94% | 9 | 0 | 0 |
-| Third-party scripts without integrity hashes | 76% | 76% | 53%–90% | 17 | 0 | 0 |
+| SQL assembled from strings *(hint)* | 32% | – |  | – | – | – |
+| Dependency loops (N) | 58% | 77% | 50%–92% | 13 | 5 | 1 |
 | Personal data written to logs | 36% | 75% | 47%–91% | 12 | 13 | 0 |
-| Queries or requests inside loops (N) in N place | 44% | 75% | 47%–91% | 12 | 11 | 2 |
-| Downloads piped straight into a shell | 71% | 71% | 36%–92% | 7 | 0 | 0 |
-| HTTP servers without timeouts (Go) | 71% | 71% | 36%–92% | 7 | 0 | 0 |
-| Request data reaches dangerous calls (N proven flow) | 32% | 70% | 40%–89% | 10 | 12 | 0 |
-| SQL assembled from strings | 32% | 70% | 40%–89% | 10 | 14 | 1 |
-| Important code no test reaches (N function) | 38% | 67% | 30%–90% | 6 | 13 | 5 |
-| Credentials in configuration files | 40% | 67% | 21%–94% | 3 | 2 | 0 |
+| Session cookies without Secure / HttpOnly | 50% | 75% | 30%–95% | 4 | 2 | 0 |
+| N error silently swallowed | 28% | 67% | 35%–88% | 9 | 15 | 1 |
+| Credentials in configuration files *(hint)* | 40% | – |  | – | – | – |
 | Shell `eval` of a variable | 40% | 67% | 21%–94% | 3 | 2 | 0 |
-| Session cookies without Secure / HttpOnly | 50% | 50% | 19%–81% | 6 | 0 | 0 |
-| Credentials committed in source | 9% | 50% | 9%–91% | 2 | 9 | 0 |
+| Credentials committed in source *(hint)* | 9% | – |  | – | – | – |
 | Privileged containers or the host's network (docker-compose) | 50% | 50% | 9%–91% | 2 | 0 | 0 |
-| N error silently swallowed | 28% | 43% | 21%–67% | 14 | 10 | 1 |
-| Environment files committed | 0% | 0% | 0%–79% | 1 | 1 | 0 |
+| Environment files committed *(hint)* | 0% | – |  | – | – | – |
 | Kubernetes Secrets committed with their values | 0% | 0% | 0%–79% | 1 | 1 | 0 |
 | Array searches inside loops over loaded data (N) *(hint)* | 28% | – |  | – | – | – |
 | Databases published on every interface (docker-compose) *(hint)* | 0% | – |  | – | – | – |
-| Debug mode switched on in code | 0% | – |  | 0 | 1 | 0 |
+| Debug mode switched on in code *(hint)* | 0% | – |  | – | – | – |
 | Endpoints that change data without an auth check (N) *(hint)* | 16% | – |  | – | – | – |
 | File or program operations inside loops in N place *(hint)* | 76% | – |  | – | – | – |
-| JWT checks turned off | 0% | – |  | 0 | 4 | 0 |
+| JWT checks turned off *(hint)* | 0% | – |  | – | – | – |
 | Passwords for CI services written into workflows | 0% | – |  | 0 | 7 | 0 |
 | Passwords written into docker-compose | 0% | – |  | 0 | 16 | 0 |
 | Plain-HTTP URLs in code *(hint)* | 12% | – |  | – | – | – |
@@ -210,28 +210,58 @@ Checks whose claim is true by construction (a missing README, an unpinned versio
 | `rm -rf` on a variable that may be empty | 0% | – |  | 0 | 6 | 0 |
 | `try!` / `as!` that crash on failure (Swift) *(hint)* | 0% | – |  | – | – | – |
 
-**Held out (latest, round 4)**: 110 more locations of counted findings, sampled and labeled after the fixes before it, that no fix was made against: **72 right (65%, 95% interval 56%–74%)**. This is the number to expect on code codefactory hasn't been tuned on. Each held-out round, counted findings only, as measured then: round 2: 79/153 (52%); round 3: 77/132 (58%); round 4: 72/110 (65%).
+**Held out (latest, round 7)**: 149 more locations of counted findings, sampled and labeled after the fixes before it, that no fix was made against: **95 right (64%, 95% interval 56%–71%)**. This is the number to expect on code codefactory hasn't been tuned on. Each held-out round, counted findings only, as measured then: round 2: 79/153 (52%); round 3: 77/132 (58%); round 4: 72/110 (65%); round 5: 68/96 (71%); round 6: 0/34 (0%); round 7: 106/225 (47%).
 
 | Check | Held out | 95% interval | Labeled |
 |---|--:|--:|--:|
+| Dependency loops (N) | 100% | 68%–100% | 8 |
 | Module-level mutable state (N place) | 100% | 68%–100% | 8 |
 | Network calls without a timeout | 100% | 68%–100% | 8 |
-| Dynamic code execution (eval / exec / pickle / unsafe YAML) | 100% | 61%–100% | 6 |
-| Any website may call this API (CORS *) | 100% | 44%–100% | 3 |
-| Dependency loops (N) | 100% | 21%–100% | 1 |
-| Container runs as root | 88% | 53%–98% | 8 |
-| Shell commands built at runtime | 88% | 53%–98% | 8 |
-| Copied logic in N group (~N lines) | 75% | 41%–93% | 8 |
-| Import loops (N) | 75% | 41%–93% | 8 |
+| App allows unencrypted HTTP | 100% | 34%–100% | 2 |
+| Personal data sent to analytics or crash reporting | 100% | 34%–100% | 2 |
+| Downloads piped straight into a shell | 100% | 21%–100% | 1 |
+| No error boundary around the UI | 100% | 21%–100% | 1 |
+| Possible retain cycles: closures kept by self that capture self strongly | 100% | 21%–100% | 1 |
+| Required-reason API without a privacy manifest | 100% | 21%–100% | 1 |
+| Copied logic in N group (~N lines) | 88% | 53%–98% | 8 |
+| Import loops (N) | 88% | 53%–98% | 8 |
+| Third-party scripts without integrity hashes | 80% | 38%–96% | 5 |
+| Any website may call this API (CORS *) | 75% | 41%–93% | 8 |
+| MD5 / SHA-1 used for security | 75% | 41%–93% | 8 |
+| Important code no test reaches (N function) | 62% | 31%–86% | 8 |
+| Unused code (N function) | 62% | 31%–86% | 8 |
 | N error silently swallowed | 50% | 22%–78% | 8 |
+| Personal data written to logs | 50% | 22%–78% | 8 |
 | Queries or requests inside loops (N) in N place | 50% | 22%–78% | 8 |
-| SQL assembled from strings | 50% | 22%–78% | 8 |
-| Personal data written to logs | 50% | 9%–91% | 2 |
-| Important code no test reaches (N function) | 38% | 14%–69% | 8 |
-| Raw HTML injected into pages | 25% | 7%–59% | 8 |
-| Unused code (N function) | 25% | 7%–59% | 8 |
-| Credentials committed in source | 0% | 0%–66% | 2 |
+| Tokens or passwords in unencrypted storage | 50% | 22%–78% | 8 |
+| Passwords written into docker-compose | 50% | 9%–91% | 2 |
+| Shell `eval` of a variable | 50% | 9%–91% | 2 |
+| Container runs as root | 38% | 14%–69% | 8 |
+| Dynamic code execution (eval / exec / pickle / unsafe YAML) | 25% | 7%–59% | 8 |
+| Shell commands built at runtime | 0% | 0%–32% | 8 |
+| Broken encryption mode or cipher (ECB, DES, RC4) | 0% | 0%–79% | 1 |
+| Personal data in unencrypted storage | 0% | 0%–79% | 1 |
+| Pods using the node's network, processes or files (Kubernetes) | 0% | 0%–79% | 1 |
+| Workflow runs a fork's code with this repository's secrets | 0% | 0%–79% | 1 |
 <!-- precision:end -->
+
+### Round 7: 126 repositories, and what generalizes
+
+A held-out sample of 225 counted locations, nearly all (142 of the 149 still counted) from the 50 repositories added
+in round 6, which no check had been tuned on: **106 right (47%, 95% interval 41–54%)** as drawn, against 71% in
+round 5 on the first 76 repositories. The checks tuned on those didn't carry over to new web backends: credentials
+0 of 8, shell commands built at runtime 0 of 8, SQL 1 of 8, data flow 2 of 8, eval 2 of 8, and 0 right for JWT,
+CI injection, image secrets, debug mode, predictable random and iOS usage strings. The same misses kept recurring:
+test, seed and dev code; placeholder values; sanitizers and validators the check doesn't know (`conditional_escape`,
+signed redirects, knex bindings); options that are off only behind a setting; names that look like the risky thing.
+
+Every check under half right across the held-out rounds pooled (2–7) is now a hint, listed but not counted, until
+it is fixed: credentials (0 of 15), config credentials, image secrets, CI injection, JWT, debug mode, predictable
+random, iOS usage strings, committed .env files, signing keys, data flow (2 of 43), SQL (18 of 40), raw HTML (13 of
+40), TLS off (4 of 13), Go server timeouts. On the same round-7 labels the checks still counted were **95 of 149
+right (64%, 95% interval 56–71%)**; by severity High 19 of 24, Medium 71 of 116. That is the number to expect on
+unfamiliar code today. Network timeouts (8 of 8), dependency and import loops (15 of 16), module state (8 of 8),
+copied logic (7 of 8), CORS (6 of 8) and MD5/SHA-1 (6 of 8) held up.
 
 ### Data flow on real apps: 0 of 34
 
