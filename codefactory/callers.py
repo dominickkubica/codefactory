@@ -12,6 +12,7 @@ from bisect import bisect_right
 from pathlib import Path
 
 from .intent import NUMERIC, interp_safe, safe_names
+from .paths import is_test
 
 LANG = {".py": "py", ".go": "go", ".php": "php", ".rb": "rb",
         **{e: "js" for e in (".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".mts", ".cts")}}  # fmt: skip
@@ -154,16 +155,30 @@ class Callers:
         if not names:
             return
         found = {n: (set(), []) for n in names}
-        call = re.compile(r"(?<![\w$])(" + "|".join(sorted(map(re.escape, names))) + r")\s*\(")
+        escapes: set[str] = set()
+        alt = "|".join(sorted(map(re.escape, names)))
+        call = re.compile(r"(?<![\w$])(" + alt + r")\s*\(")
+        # the name as a value (`decodeEntities: __BROWSER__ ? decodeHtmlBrowser : undefined`): called from places
+        # this index can't see, with arguments it can't read
+        bare = re.compile(r"(?<![\w$.])(" + alt + r")(?![\w$]|\s*\()")
         for fid in self.files:
             if LANG.get(Path(fid).suffix) != lang:
                 continue
+            if is_test(fid):
+                continue  # a test passing a literal says nothing about what the product passes
             try:
                 text = (self.root / fid).read_text(encoding="utf-8", errors="replace")
             except OSError:
                 continue
             if not any(n in text for n in names):
                 continue
+            for ln in text.splitlines():
+                if not bare.search(ln) or re.match(r"\s*(?:import\b|export\s*\{|from\s+\S+\s+import\b|use\b|#|//|\*)", ln):
+                    continue
+                code = re.sub(r"""(["'`])(?:(?!\1)[^\\]|\\.)*\1""", '""', ln).split("//")[0]  # not in strings or comments
+                for m in bare.finditer(code):
+                    if not DEF_BEFORE.search(code[: m.start()]):
+                        escapes.add(m.group(1))
             starts = None
             for m in call.finditer(text):
                 starts = starts or [0] + [n.end() for n in re.finditer("\n", text)]
@@ -177,7 +192,7 @@ class Callers:
                 else:
                     sites.append((fid, bisect_right(starts, m.start()), args_of(text[m.end() :])))
         for n, (defs, sites) in found.items():
-            self.sites[(lang, n)] = (len(defs), sites)
+            self.sites[(lang, n)] = (len(defs), [] if n in escapes else sites)
 
     def fixed(self, lang: str, name: str, pos: int, keyword: str, depth: int = DEPTH, seen=None) -> bool:
         """Every call of `name` passes a fixed value at parameter `pos` (named `keyword`)."""

@@ -476,17 +476,17 @@ def _fixed_code(line: str, text: str) -> bool:
 
 
 def _template_lines(lines: list[str]) -> set[int]:
-    """Lines inside a JavaScript template literal (between backticks spanning lines), roughly: quotes and comments
-    aside, an odd count of unescaped backticks so far."""
-    inside, out = False, set()
+    """Lines inside a multi-line template literal that opens at the end of a line or straight into markup
+    (`` const html = ` `` / `` `<!DOCTYPE html> ``) and runs to the next backtick. Narrow on purpose: counting
+    backticks goes wrong on a regex like `/[`{|}]/`."""
+    out, inside = set(), False
     for n, ln in enumerate(lines, 1):
         if inside:
             out.add(n)
-        stripped = re.sub(r"""\\.|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'""", "", ln) if not inside else ln
-        if not inside and stripped.lstrip().startswith("//"):
-            continue
-        if (stripped.count("`") - stripped.count("\\`")) % 2:
-            inside = not inside
+            if "`" in ln.replace("\\`", ""):
+                inside = False
+        elif re.search(r"(?:^|[=(,:]|return)\s*`\s*(?:<[^`]*)?$", ln):
+            inside = True
     return out
 
 

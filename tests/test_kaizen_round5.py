@@ -42,6 +42,15 @@ class Round5Test(unittest.TestCase):
         })  # fmt: skip
         self.assertEqual(sorted(set(hits(found, "module_state"))), ["store.ts"])
 
+    def test_callers_that_are_tests_or_pass_the_function_along_prove_nothing(self):
+        found = self.scan({  # vue: decodeHtmlBrowser is handed to the parser; only its test calls it, with a literal
+            "src/decode.ts": "export function decodeHtmlBrowser(raw: string): string {\n  decoder.innerHTML = raw\n"
+                             "  return decoder.textContent\n}\n",
+            "src/options.ts": "import { decodeHtmlBrowser } from './decode'\nexport const o = { decode: decodeHtmlBrowser }\n",
+            "__tests__/decode.spec.ts": "import { decodeHtmlBrowser } from '../src/decode'\ndecodeHtmlBrowser(' abc ')\n",
+        })  # fmt: skip
+        self.assertEqual(hits(found, "raw_html"), ["src/decode.ts"])
+
     def test_base_images_and_entrypoints_that_drop_root(self):
         root = repo({
             "Dockerfile.base": "FROM node:22 AS deps\nRUN npm ci\n",
@@ -49,7 +58,7 @@ class Round5Test(unittest.TestCase):
             "Dockerfile": "FROM alpine\nCOPY script/docker-entrypoint.sh /bin/entrypoint.sh\n"
                           'ENTRYPOINT ["/bin/entrypoint.sh"]\n',
             "script/docker-entrypoint.sh": "#!/bin/sh\nexec su-exec 1000:1000 \"$@\"\n",
-            "server/Dockerfile": "FROM python:3.13\nCMD [\"python\", \"app.py\"]\n",
+            "server/Dockerfile": "FROM python:3.13\n# util-linux = for setpriv (to drop later)\nCMD [\"python\", \"app.py\"]\n",
             # gitea: installs su-exec, but s6 runs as root
             "gitea/Dockerfile": "FROM alpine\nRUN apk add --no-cache \\\n    s6 \\\n    su-exec \\\n    git\n"
                                 'ENTRYPOINT ["/usr/bin/entrypoint"]\n',
