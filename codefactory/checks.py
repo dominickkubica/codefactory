@@ -462,7 +462,11 @@ def _fixed_code(line: str, text: str) -> bool:
                 and not re.search(r"typ\s*=\s*['\"]unsafe['\"]", text))  # fmt: skip
 
 
-SANITIZED = re.compile(r"saniti[sz]e|purify|DOMPurify|escape\w*\(|trusted_?html\(\s*['\"`]|&quot;|&lt;|xss\(|textContent", re.I)
+SANITIZED = re.compile(
+    r"saniti[sz]e|purify|DOMPurify|escape\w*\(|\besc\(|trusted_?html\(\s*['\"`]|&quot;|&lt;|xss\(|textContent|"
+    r"\w+_safe\b|\brender(?:_to_string)?\(",  # (Django: arguments escaped into *_safe, a rendered template autoescapes)
+    re.I,
+)
 
 
 def _safe_html(lines: list[str], i: int) -> bool:
@@ -474,6 +478,18 @@ def _safe_html(lines: list[str], i: int) -> bool:
     rhs = re.split(r"innerHTML\s*=|__html\s*:|mark_safe\(|\bv-html\s*=", line, maxsplit=1)[-1]
     if SANITIZED.search(rhs):
         return True
+    if re.search(r"\btemplate\w*\.innerHTML\s*=", line, re.I):
+        return True  # parsed into an inert <template>: nothing runs until it's taken out and used
+    subs = re.findall(r"\$\{([^}]+)\}", rhs)
+    whole = rhs.strip().rstrip(";")
+    if (subs and all(interp_safe(s, safe_names(lines, i)) for s in subs)) or (
+        re.fullmatch(r"[A-Za-z_$][\w$]*", whole) and whole in safe_names(lines, i, span=400)
+    ):
+        return True  # only fixed values: `window.status = '${pageStatus}'` (one of four literals), a constant SVG sprite
+    if re.search(r"dangerouslySetInnerHTML=\{\{\s*$", line) and re.match(r"\s*__html\s*:\s*`", lines[i] if i < len(lines) else ""):
+        literal = "\n".join(lines[i : i + 60]).split("`", 2)
+        if len(literal) > 2 and "${" not in literal[1]:
+            return True  # a fixed script in a template literal over several lines
     if not rhs.strip() or rhs.count("`") % 2 or rhs.count("(") > rhs.count(")") or rhs.rstrip().endswith(("(", "+", "`")):
         return False  # the value goes on below (`mark_safe(` / a template literal over several lines): read, not judged
     rest = re.sub(r"""(["'])(?:(?!\1)[^\\]|\\.)*\1""", "", rhs)
@@ -686,6 +702,8 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                         or OWN_VERIFY.search("\n".join(lines[max(0, i - 7) : i + 6]))
                     ):
                         continue  # chosen by a setting (`CERT_REQUIRED if verify else CERT_NONE`): the user's option
+                    if key == "shell" and fid.endswith(".rb") and re.search(r'"[^"]*`[^`"]*#\{[^}]+\}[^`"]*`[^"]*"', line):
+                        continue  # backticks inside a message string ("append `--trace` to the `#{cmd}` command")
                     if key == "shell" and (subs := re.findall(r"\$\{([^}]+)\}", line)) and "`" in line:
                         safe = safe_names(lines, i)
                         if all(interp_safe(s, safe) for s in subs):

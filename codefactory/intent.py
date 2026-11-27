@@ -133,6 +133,8 @@ def safe_names(lines: list[str], i: int, span: int = 60) -> set[str]:
                 safe.add(m.group(1) or m.group(2) or m.group(3))
             if (a := re.match(r"\s*(?:const|let|var)?\s*\$?(\w+)\s*=\s*(.+)", ln)) and not a.group(2).startswith("="):
                 rhs = a.group(2)
+                if re.fullmatch(r"""\s*(?:'[^'$`{]*'|"[^"$`{]*"|`[^`$]*`)\s*;?\s*""", rhs):
+                    safe.add(a.group(1))  # a fixed string: `const botName = 'github-actions[bot]'`
                 if (
                     re.match(r"(?:Object\.(?:keys|values)\(\s*)?[A-Z][A-Z0-9_]{2,}\b", rhs)
                     or (_root(rhs) in safe and _root(rhs) != a.group(1))
@@ -142,7 +144,7 @@ def safe_names(lines: list[str], i: int, span: int = 60) -> set[str]:
                     safe.add(a.group(1))
     joined = " ".join(window)  # `$scope = cond ? 'concat(?, id)' : 'cast(? as text)';` (PHP, JS) or `x = 'a' if c else 'b'`
     lit = r"""(?:'[^']*'|"[^"]*")"""
-    for m in re.finditer(rf"\$?(\w+)\s*=\s*[^;=]*?\?\s*{lit}\s*:\s*{lit}\s*;|(\w+)\s*=\s*{lit}\s+if\s+[^\n]+?\s+else\s+{lit}",
+    for m in re.finditer(rf"\$?(\w+)\s*=(?!=)\s*[^;]*?\?\s*{lit}\s*:\s*{lit}\s*;|(\w+)\s*=\s*{lit}\s+if\s+[^\n]+?\s+else\s+{lit}",
                          joined):  # fmt: skip
         safe.add(m.group(1) or m.group(2))
     return safe

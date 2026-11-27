@@ -100,6 +100,21 @@ class PatternTest(unittest.TestCase):
         })  # fmt: skip
         self.assertEqual(hits(found, "raw_html"), [("bad.ts", 1)])
 
+    def test_commands_and_html_built_only_from_fixed_strings(self):
+        found = self.scan({
+            "release.mjs": "const botName = 'github-actions[bot]';\nconst baseBranch = 'master';\n"
+                           "await exec(`git config user.name '${botName}'`);\nawait exec(`git fetch origin ${baseBranch}`);\n",
+            "command.rb": 'msg = " Please append `--trace` to the `#{cmd.name}` command "\n',
+            "icons.js": "const svgSprite = '<svg><symbol id=\"a\"></symbol></svg>';\ndiv.innerHTML = svgSprite\n",
+            "page.tsx": "const pageStatus = code === 404 ? '404' : '200';\n"
+                        "const s = <script dangerouslySetInnerHTML={{ __html: `window.status = '${pageStatus}'` }} />;\n",
+            "sim.js": "picker.innerHTML = `<option>${esc(name)}</option>`\n",
+            "pdf.ts": "template.innerHTML = contentHtml\n",
+            "bad.js": "await exec(`git checkout ${process.argv[2]}`);\nel.innerHTML = `<b>${userName}</b>`;\n",
+        })  # fmt: skip
+        self.assertEqual([f for f, _ in hits(found, "shell")], ["bad.js"])
+        self.assertEqual([f for f, _ in hits(found, "raw_html")], ["bad.js"])
+
     def test_plain_http_that_no_one_requests(self):
         for line in ('xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"', "'http://superset:8088'", "'http://10.1.15.216:2283/api'",
                      '"http://example.com/test"', 'id: "http://purl.org/dc/terms/created"', '<a href="http://mitm.it/">',
