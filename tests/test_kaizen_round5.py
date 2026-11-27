@@ -114,3 +114,21 @@ class LoopsTest(unittest.TestCase):
         root = repo({"app/q.py": "def f(items):\n    for i in items:\n        ContentType.objects.get_for_id(i.ct)\n\n\n"
                                  "def g(ids):\n    for i in ids:\n        Item.objects.get(id=i)\n"})  # fmt: skip
         self.assertEqual({s.detail for s in build(root, cache=False).sites if s.kind == "loop_io"}, {"Item.objects.get"})
+
+
+class SqlHelpersTest(unittest.TestCase):
+    def test_helpers_that_return_fixed_text_or_quote_identifiers(self):
+        files = {  # directus parseLocaltime; appwrite buildTableReference
+            "pg.ts": "const parseLocaltime = (columnType?: string) => {\n  if (columnType === 'timestamp') {\n"
+                     "    return ` AT TIME ZONE 'UTC'`;\n  }\n  return '';\n};\n"
+                     "export function week(table, column, type) {\n"
+                     "  return this.knex.raw(`EXTRACT(WEEK FROM ??.??${parseLocaltime(type)})`, [table, column]);\n}\n",
+            "ch.php": "<?php\nclass A {\n    private function ref(string $t): string\n    {\n"
+                      "        return $this->escapeIdentifier($this->db) . '.' . $this->escapeIdentifier($t);\n    }\n"
+                      "    private function loose(string $t): string\n    {\n        return $this->db . '.' . $t;\n    }\n"
+                      "    public function ensure(): void\n    {\n        $table = $this->ref('samples');\n"
+                      "        $this->query(\"ALTER TABLE {$table} ADD COLUMN x String\");\n"
+                      "        $other = $this->loose('samples');\n        $this->query(\"DROP TABLE {$other}\");\n    }\n}\n",
+        }  # fmt: skip
+        found = scan_sources(repo(files), list(files))
+        self.assertEqual([(e.file, e.line) for e in found["sql_built"].hits], [("ch.php", 16)])

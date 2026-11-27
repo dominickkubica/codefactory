@@ -158,12 +158,73 @@ def _safe_pattern(body: str) -> bool:
     return body != rest and re.fullmatch(r"[,_\-:]*", rest) is not None
 
 
+FN_DEF = re.compile(
+    r"^\s*(?:export\s+)?(?:(?:const|let|var)\s+)?(?:async\s+)?(?:(?:private|protected|public|static)\s+)*(?:function\s+|def\s+)?"
+    r"([A-Za-z_$][\w$]*)\s*(?:=\s*(?:async\s*)?)?\(([^)]*)\)\s*(?::\s*[^={]+)?(?:=>)?\s*[{:]?\s*$"
+)
+IDENT_ESCAPE = re.compile(r"\b(?:escape_?[iI]dentifier\w*|quote_?[iI]dent\w*|quoteIdentifier|quote_name|quoteName|identifier)\(")
+ESCAPE_CALL = re.compile(
+    r"(?:\$?\w+(?:->|\.|::))*(?:escape_?[iI]dentifier\w*|quote_?[iI]dent\w*|quoteIdentifier|quote_name|quoteName|identifier)"
+    r"\([^()]*(?:\([^()]*\)[^()]*)*\)"
+)
+LITERAL_RETURN = re.compile(
+    r"""\breturn\s+(?:'[^'$]*'|"[^"$]*"|`[^`$]*`|\w+\s*\?\s*(?:'[^']*'|"[^"]*")\s*:\s*(?:'[^']*'|"[^"]*"))\s*;?\s*$"""
+)
+
+
+def _escaped_only(ret: str) -> bool:
+    """`return $this->escapeIdentifier($db) . '.' . $this->escapeIdentifier($t);`: escape calls and literals only."""
+    e = re.sub(r"^\s*return\s+", "", ret).rstrip("; ")
+    if not IDENT_ESCAPE.search(e):
+        return False
+    e = ESCAPE_CALL.sub("", e)
+    e = re.sub(r"""'[^']*'|"[^"$]*"|`[^`$]*`""", "", e)
+    return re.fullmatch(r"[\s.+]*", e) is not None
+
+
+_FIXED: dict[int, tuple[list[str], set[str]]] = {}
+
+
+def _fixed_cached(lines: list[str]) -> set[str]:
+    """fixed_functions once per file: safe_names runs for every hit in it."""
+    got = _FIXED.get(id(lines))
+    if got is None or got[0] is not lines:
+        if len(_FIXED) > 64:
+            _FIXED.clear()
+        got = _FIXED[id(lines)] = (lines, fixed_functions(lines) if len(lines) < 50_000 else set())
+    return got[1]
+
+
+def fixed_functions(lines: list[str]) -> set[str]:
+    """Functions in this file whose result can't carry anyone's text: every `return` a string literal (or a ternary
+    of two), or the body quoting an identifier on the way (`buildTableReference` calling `escapeIdentifier`)."""
+    out = set()
+    for n, ln in enumerate(lines):
+        m = FN_DEF.match(ln)
+        if not m or m.group(1) in ("if", "for", "foreach", "while", "switch", "catch", "return", "function", "elseif"):
+            continue
+        indent = len(ln) - len(ln.lstrip())
+        body = []
+        for k, nxt in enumerate(lines[n + 1 : n + 60]):
+            if k == 0 and nxt.strip() == "{":
+                continue  # (PHP, C#: the brace on its own line)
+            if nxt.strip() and len(nxt) - len(nxt.lstrip()) <= indent:
+                break  # (the closing brace, or the next definition at the same depth)
+            body.append(nxt)
+        returns = [b for b in body if re.match(r"\s*return\b", b)]
+        if returns and all(LITERAL_RETURN.search(r) or _escaped_only(r) for r in returns):
+            out.add(m.group(1))
+    return out
+
+
 def safe_names(lines: list[str], i: int, span: int = 60) -> set[str]:
     """Names that, in the lines leading up to line i, only hold values from a fixed list or that were checked
     against one: `for (const t of Object.keys(TABLES))`, `const cols = keys.filter((c) => allowed.has(c))`,
     `if (known.has(t))`, `for t in TABLES`. Followed one step through names already known to be safe."""
     safe: set[str] = set()
     window = lines[max(0, i - span) : i]
+    fixed = _fixed_cached(lines)
+    safe |= fixed  # `${parseLocaltime(type)}`: a helper that only returns fixed text
     for _ in range(2):  # a second pass picks up names derived from names the first pass found
         for ln in window:
             for m in re.finditer(r"(?:\.has|\.includes|\bin)\s*\(\s*([A-Za-z_$][\w$]*)\s*\)", ln):
@@ -207,6 +268,8 @@ def safe_names(lines: list[str], i: int, span: int = 60) -> set[str]:
                     or (_root(rhs) in safe and _root(rhs) != a.group(1))
                     or NUMERIC.match(rhs.strip().rstrip(";"))  # size = int(request.args["size"])
                     or re.search(r"""\.join\(\s*\(?['"]\?['"]""", rhs)  # placeholders: ",".join("?" * len(ids))
+                    # the result of a helper in this file that only returns fixed text or quotes an identifier
+                    or any(re.match(rf"(?:\$?\w+(?:->|\.|::))*{re.escape(f)}\(", rhs) for f in fixed)
                     # quoted as an identifier: `$database = $this->identifier($db)`, quote_ident, quoteIdentifier
                     or re.match(
                         r"(?:\$?\w+(?:->|\.|::))*(?:identifier|quote_?[iI]dent\w*|quoteName|escape_?[iI]dentifier\w*)\(", rhs
