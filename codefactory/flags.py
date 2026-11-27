@@ -71,6 +71,8 @@ ENTRY_NAMES = {"main", "run", "upgrade", "downgrade", "handler", "lambda_handler
 # a helper imported by a .vue file)
 VIEW_FILES = (".vue", ".svelte", ".astro", ".html", ".htm", ".erb", ".haml", ".slim", ".blade.php", ".twig", ".hbs",
               ".njk", ".jinja", ".jinja2", ".j2", ".liquid", ".ejs", ".pug", ".mdx", ".xml", ".yml", ".yaml")  # fmt: skip
+IMPORT_LIST = re.compile(r"\b(?:import|export)\s*(?:type\s*)?\{([^}]*)\}")
+PROPERTY = re.compile(r"(?:this|self)\.([A-Za-z_$][\w$]{2,})\b(?!\s*\()")
 QUOTED_NAME = re.compile(r"""['"`]([A-Za-z_$][\w$]{2,})['"`]""")
 WORD = re.compile(r"[A-Za-z_$][\w$]{2,}")
 
@@ -85,9 +87,15 @@ def _mentioned(g: Graph) -> set[str]:
     out: set[str] = set()
     for f in g.files:
         try:
-            out.update(QUOTED_NAME.findall((root / f.id).read_text(encoding="utf-8", errors="replace")))
+            text = (root / f.id).read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
+        out.update(QUOTED_NAME.findall(text))
+        # imported or re-exported by name (`import { useDeleteEscalation } from "@/lib/…"`: an alias or a route file
+        # the analyzer couldn't resolve still names what it uses), or read as a property (a getter: `this.hash`)
+        for m in IMPORT_LIST.finditer(text):
+            out.update(WORD.findall(m.group(1)))
+        out.update(PROPERTY.findall(text))
     skip = {".git", "node_modules", "vendor", "dist", "build", ".venv", "venv", "__pycache__", "target", ".next"}
     seen = 0
     for dirpath, dirnames, filenames in os.walk(root):
@@ -206,6 +214,56 @@ ENTRY_FILES = {"__init__.py", "index.ts", "index.tsx", "index.js", "index.mjs", 
 NOT_PRODUCT = re.compile(r"(?:^|/)(?:database/factories|database/seeders|factories|seeds?|seeders)/")
 
 
+def _cs_projects(g: Graph):
+    """For C#: whether one file can depend on another. A file belongs to the nearest .csproj above it, and a project
+    sees only itself and the projects it references (transitively): `using` resolved by namespace can't point from
+    MediaBrowser.Controller into Emby.Server.Implementations when the project file has no such reference."""
+    import os
+    from pathlib import Path
+
+    root = Path(g.root)
+    projects: dict[str, set[str]] = {}  # project dir (relative) -> referenced project dirs
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if not d.startswith(".") and d not in ("bin", "obj", "node_modules")]
+        for name in filenames:
+            if name.endswith(".csproj"):
+                here = Path(dirpath)
+                try:
+                    text = (here / name).read_text(encoding="utf-8", errors="replace")
+                except OSError:
+                    continue
+                refs = set()
+                for ref in re.findall(r'ProjectReference\s+Include="([^"]+)"', text):
+                    target = os.path.normpath(here / ref.replace("\\", "/")).rsplit(os.sep, 1)[0]
+                    refs.add(os.path.relpath(target, root).replace(os.sep, "/"))
+                projects[os.path.relpath(here, root).replace(os.sep, "/")] = refs
+    if not projects:
+        return lambda a, b: True
+
+    def project_of(path: str) -> str | None:
+        parts = path.split("/")[:-1]
+        while parts:
+            if "/".join(parts) in projects:
+                return "/".join(parts)
+            parts.pop()
+        return "." if "." in projects else None
+
+    reach: dict[str, set[str]] = {}
+
+    def sees(p: str) -> set[str]:
+        if p not in reach:
+            reach[p] = {p}
+            for r in projects.get(p, ()):
+                reach[p] |= sees(r)
+        return reach[p]
+
+    def allowed(a: str, b: str) -> bool:
+        pa, pb = project_of(a), project_of(b)
+        return pa is None or pb is None or pb in sees(pa)
+
+    return allowed
+
+
 def import_cycles(g: Graph) -> list[Flag]:
     """Strongly connected groups of files in the import graph (Tarjan)."""
     adj = defaultdict(set)
@@ -217,6 +275,11 @@ def import_cycles(g: Graph) -> list[Flag]:
             x.endswith(".rs") or is_test(x) or is_doc_sample(x) or NOT_PRODUCT.search(x) for x in (e.src, e.dst)
         ):
             adj[e.src].add(e.dst)
+    if any(k.endswith(".cs") for k in adj):
+        allowed = _cs_projects(g)
+        for src in list(adj):
+            if src.endswith(".cs"):
+                adj[src] = {d for d in adj[src] if allowed(src, d)}
     index, low, stack, on, comps, counter = {}, {}, [], set(), [], [0]
 
     def visit(v: str) -> None:

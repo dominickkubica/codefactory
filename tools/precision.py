@@ -213,11 +213,11 @@ def check(args) -> int:
     whose fate changed: a wrong one no longer reported (fixed), a right one no longer reported (lost: a regression)."""
     import subprocess
 
-    before = reported()
+    before = reported(hints=True)  # (a check moved to the hints is still listed, not lost)
     names = args.repos.split(",")
     if not args.no_run:
         subprocess.run([sys.executable, str(ROOT / "tools" / "corpus.py"), "run", "--only", ",".join(names)], check=False)
-    now = reported()
+    now = reported(hints=True)
     labels = {k: v for k, v in load().items() if v["repo"] in names and v["label"] in ("true", "false")}
     fixed = [v for k, v in labels.items() if v["label"] == "false" and k in before and k not in now]
     lost = [v for k, v in labels.items() if v["label"] == "true" and k in before and k not in now]

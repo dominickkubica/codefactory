@@ -65,7 +65,10 @@ def walk(root, names: tuple[str, ...] = (), suffixes: tuple[str, ...] = (), skip
 
 
 # someone else's code copied in (a bundled jQuery, a minified build): its patterns aren't this project's to fix
-VENDORED = re.compile(r"(?:^|/)(?:vendor|vendored|third_party|thirdparty|bower_components)/|\.min\.(?:js|css)$")
+VENDORED = re.compile(
+    r"(?:^|/)(?:vendor|vendored|third_party|thirdparty|3rdparty|bower_components|external-crates|sljit|pcre2)/|"
+    r"\.min\.(?:js|css)$"
+)  # (whole libraries copied in: Appwrite's crates/…/pcre2/sljit, meilisearch's external-crates)
 
 
 def is_vendored(path: str) -> bool:

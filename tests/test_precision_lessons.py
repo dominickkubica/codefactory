@@ -317,6 +317,33 @@ class StructureTest(unittest.TestCase):
         self.assertIn("reallyDead", dead)
         self.assertFalse(dead & {"getWarehouses", "formatElapsed"})
 
+    def test_imported_names_and_property_reads_are_uses(self):
+        root = repo({
+            "src/hooks.ts": "export {};\nfunction useDeleteEscalation() { return 1; }\nfunction reallyDead() { return 2; }\n",
+            "src/routes/$id/View.tsx": "import { useDeleteEscalation } from '@/lib/hooks';\n",
+        })  # fmt: skip
+        dead = {f.target.split("::")[-1] for f in build(root, cache=False).flags if f.kind == "unused" and f.severity == "warn"}
+        self.assertEqual(dead & {"useDeleteEscalation", "reallyDead"}, {"reallyDead"})
+
+    def test_copies_that_are_variants_or_constructors(self):
+        from codefactory.review import _variants
+
+        self.assertTrue(_variants(["r/bases/aria/ui/chart.tsx", "r/bases/base/ui/chart.tsx", "r/bases/radix/ui/chart.tsx"]))
+        self.assertFalse(_variants(["a/x.py", "b/y.py", "c/x.py"]))
+        self.assertTrue(Review._copied({"kind": "similar", "title": "Merge A.A, B.B (100% similar, ~12 lines)",
+                                        "where": [{"file": "a.cs", "name": "TranscodingProfile.TranscodingProfile"},
+                                                  {"file": "b.cs", "name": "TrickplayInfoDto.TrickplayInfoDto"}]}) is False)  # fmt: skip
+
+    @unittest.skipUnless(available(), "needs the language pack")
+    def test_csharp_projects_bound_dependencies(self):
+        root = repo({
+            "Core/Core.csproj": "<Project></Project>\n",
+            "Server/Server.csproj": '<Project><ItemGroup><ProjectReference Include="../Core/Core.csproj" /></ItemGroup></Project>\n',
+            "Core/Paths.cs": "using Server;\nnamespace Core { public class Paths { public Manager M; } }\n",
+            "Server/Manager.cs": "using Core;\nnamespace Server { public class Manager { public Paths P; } }\n",
+        })  # fmt: skip
+        self.assertFalse([f for f in build(root, cache=False).flags if f.kind == "cycle"])
+
     def test_a_method_without_callers_is_a_hint_not_unused_code(self):
         root = repo({"svc.py": "class Handler(logging.Handler):\n    def emit(self, record):\n        return 1\n"})
         r = Review(build(root, cache=False).to_dict(), root)

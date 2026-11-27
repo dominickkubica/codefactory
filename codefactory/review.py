@@ -117,6 +117,15 @@ HINT = re.compile(
 )
 
 
+def _variants(files: list[str]) -> bool:
+    """The same path but for one folder, for every copy: `registry/bases/{aria,base,radix}/ui/chart.tsx`."""
+    parts = [f.split("/") for f in files]
+    if len({len(p) for p in parts}) != 1:
+        return False
+    differing = [i for i in range(len(parts[0])) if len({p[i] for p in parts}) > 1]
+    return len(differing) == 1 and differing[0] < len(parts[0]) - 1
+
+
 class Review:
     def __init__(self, g: dict, root: Path, online: bool = False, full: bool = False):
         self.full = full  # every location of every finding (the audit export), not the first few (the report)
@@ -201,6 +210,10 @@ class Review:
         tested_stems.discard("")
         out |= {fid for fid, f in self.v.fn.items() if not is_test(f["file"]) and len(stem(f["file"], False)) > 3
                 and stem(f["file"], False) in tested_stems}  # fmt: skip
+        # a function a test calls by a distinctive name (`clean_dist(tmp)`): imported through a package path or a
+        # test helper the call graph didn't link
+        plain = {n for n in re.findall(r"(?<![\w.])([A-Za-z_]\w{7,})\s*\(", blob) if "_" in n.strip("_") or re.search(r"[a-z][A-Z]", n)}
+        out |= {fid for fid, f in self.v.fn.items() if f["kind"] == "function" and f["name"] in plain and not is_test(f["file"])}
         # migrations: a test run builds its database by applying them (pytest-django, Rails, Laravel)
         out |= {fid for fid, f in self.v.fn.items() if re.search(r"(?:^|/)(?:migrations|db/migrate)/", f["file"])}
         return out
@@ -1350,6 +1363,12 @@ class Review:
             return False  # samples and tutorials repeat their setup on purpose: each stands alone
         if deliberate_copies([w["file"] for w in task["where"]]):
             return False  # frozen versions, build outputs, vendored code, standalone examples
+        files = [w["file"] for w in task["where"]]
+        if "identical" in task["title"] and len(files) >= 3 and _variants(files):
+            return False  # the same file under each of several sibling folders (a registry's per-theme copies)
+        if all(re.search(r"(?:^|\.)(\w+)\.\1$|\.(?:constructor|__init__|init)$", w.get("qualname", w.get("name", "")))
+               for w in task["where"]):
+            return False  # constructors that only assign what they're given: the shape matches, not the logic
         m = re.search(r"(\d+)% similar", task["title"])
         lines = re.search(r"~(\d+) lines", task["title"])
         # a near copy of a few lines is boilerplate more often than logic (a DI constructor, a one-line action):
