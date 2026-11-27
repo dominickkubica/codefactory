@@ -138,7 +138,8 @@ def _param(p: str, lang: str) -> str | None:
 class Callers:
     def __init__(self, root: Path, files: list[str]):
         self.root, self.files = root, files
-        self.sites: dict[tuple[str, str], tuple[int, list]] = {}  # (lang, name) -> (files defining it, call sites)
+        # (lang, name) -> (files defining it, call sites, files using the name as a value)
+        self.sites: dict[tuple[str, str], tuple[set, list, set]] = {}
         self.texts: dict[str, list[str]] = {}
 
     def lines(self, fid: str) -> list[str]:
@@ -155,7 +156,7 @@ class Callers:
         if not names:
             return
         found = {n: (set(), []) for n in names}
-        escapes: set[str] = set()
+        escapes: dict[str, set[str]] = {n: set() for n in names}
         alt = "|".join(sorted(map(re.escape, names)))
         call = re.compile(r"(?<![\w$])(" + alt + r")\s*\(")
         # the name as a value (`decodeEntities: __BROWSER__ ? decodeHtmlBrowser : undefined`): called from places
@@ -177,8 +178,9 @@ class Callers:
                     continue
                 code = re.sub(r"""(["'`])(?:(?!\1)[^\\]|\\.)*\1""", '""', ln).split("//")[0]  # not in strings or comments
                 for m in bare.finditer(code):
-                    if not DEF_BEFORE.search(code[: m.start()]):
-                        escapes.add(m.group(1))
+                    is_key = re.match(r"\s*\??:(?!:)", code[m.end() :]) and not re.search(r"\?\s*$", code[: m.start()])
+                    if not DEF_BEFORE.search(code[: m.start()]) and not is_key:  # (`git: {…}`, `git: string`: a key, a type)
+                        escapes[m.group(1)].add(fid)
             starts = None
             for m in call.finditer(text):
                 starts = starts or [0] + [n.end() for n in re.finditer("\n", text)]
@@ -192,7 +194,7 @@ class Callers:
                 else:
                     sites.append((fid, bisect_right(starts, m.start()), args_of(text[m.end() :])))
         for n, (defs, sites) in found.items():
-            self.sites[(lang, n)] = (len(defs), [] if n in escapes else sites)
+            self.sites[(lang, n)] = (defs, sites, escapes[n])
 
     def fixed(self, lang: str, name: str, pos: int, keyword: str, depth: int = DEPTH, seen=None) -> bool:
         """Every call of `name` passes a fixed value at parameter `pos` (named `keyword`)."""
@@ -200,8 +202,14 @@ class Callers:
         if (name, pos) in seen:
             return True  # a recursive call passing its own parameter brings in nothing new
         self.index(lang, {name})
-        defs, sites = self.sites[(lang, name)]
-        if not sites or defs > MAX_DEFS or len(sites) > MAX_SITES or depth <= 0:
+        defs, sites, escapes = self.sites[(lang, name)]
+        if len(defs) == 1 and lang == "js" and not self._exported(next(iter(defs)), name):
+            # a module's own function, not exported: nothing outside its file can call it or see the name
+            home = next(iter(defs))
+            sites, escapes = [s for s in sites if s[0] == home], escapes & {home}
+        if escapes:
+            return False
+        if not sites or len(defs) > MAX_DEFS or len(sites) > MAX_SITES or depth <= 0:
             return False
         for fid, line, got in sites:
             if got is None or any(a.startswith(("*", "...")) for a in got):
@@ -213,6 +221,23 @@ class Callers:
             if arg is None or not self._fixed_arg(arg, lang, fid, line, depth, seen | {(name, pos)}):
                 return False
         return True
+
+    def _exported(self, fid: str, name: str) -> bool:
+        """A JavaScript/TypeScript function other modules can reach: exported where it's defined or in an export
+        list, assigned to module.exports or exports, the file has a default export of an object, or it's a script
+        whose functions are globals."""
+        n = re.escape(name)
+        text = "\n".join(self.lines(fid))
+        if not re.search(r"^\s*(?:import\b|export\b)|\brequire\s*\(", text, re.M):
+            return True  # a classic script, not a module: its top-level functions are globals other scripts call
+        return (
+            re.search(
+                rf"\bexport\s+(?:default\s+)?(?:async\s+)?(?:function\s*\*?\s*|const\s+|let\s+|var\s+){n}\b|"
+                rf"\bexport\s*\{{[^}}]*\b{n}\b|module\.exports\b|\bexports\.\w+\s*=|export\s+default\s*\{{",
+                text,
+            )
+            is not None
+        )
 
     def _fixed_arg(self, arg: str, lang: str, fid: str, line: int, depth: int, seen: set) -> bool:
         if fixed_expr(arg, lang):

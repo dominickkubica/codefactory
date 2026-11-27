@@ -231,6 +231,28 @@ class _QuotedTexts:
         return bool(url.search("".join(f'"{t}"' for t in self.texts if key in t)))
 
 
+def _few_written_out(lines: list[str], at: int, name: str, span: int = 40) -> bool:
+    """`name` was set, in the lines above `at`, to a list written out with at most four items (saleor's two
+    (stocks, trigger, options) tuples): the loop over it runs a fixed few times, whatever the data."""
+    for n in range(at - 1, max(-1, at - span), -1):
+        m = re.match(rf"\s*(?:(?:const|let|var)\s+)?{re.escape(name)}\s*(?::[^=]+)?=\s*([\[(])", lines[n])
+        if not m:
+            continue
+        text, depth, items, i = "\n".join(lines[n : n + 60])[m.end(1) - 1 :], 0, 1, 0
+        for i, ch in enumerate(text):
+            depth += ch in "([{"
+            depth -= ch in ")]}"
+            if depth == 1 and ch == ",":
+                items += text[i + 1 :].lstrip()[:1] not in ")]"  # (a trailing comma isn't an item)
+            if depth == 0:
+                break
+        body, between = text[: i + 1], "\n".join(lines[n + 1 : at])
+        grown = re.search(rf"\b{re.escape(name)}\s*(?:\.(?:append|push|extend|add|insert|unshift|concat)\b|\+=|\[)", between)
+        empty = re.fullmatch(r"[\[(]\s*[\])]", body) is not None  # (`typed: list = []`, filled by the lines after)
+        return depth == 0 and items <= 4 and not empty and not grown and not re.search(r"\bfor\b|\.\.\.|\*\w", body)
+    return False
+
+
 class Review:
     def __init__(self, g: dict, root: Path, online: bool = False, full: bool = False):
         self.full = full  # every location of every finding (the audit export), not the first few (the report)
@@ -714,7 +736,10 @@ class Review:
                 return True
             items = re.search(r"(?:\bin\s*|\bof\s*)([\[(][^\])]*[\])])\s*[:)]|^\s*(\[[^\]]*\])\.forEach\(", ln)
             lit = items and (items.group(1) or items.group(2))
-            return bool(lit and lit.count(",") <= 3 and re.fullmatch(r"[\[(]\s*(?:[\w.'\"-]+\s*,?\s*)+[\])]", lit))
+            if lit:
+                return lit.count(",") <= 3 and re.fullmatch(r"[\[(]\s*(?:[\w.'\"-]+\s*,?\s*)+[\])]", lit) is not None
+            name = re.search(r"\bin\s+([A-Za-z_]\w*)\s*:|\bof\s+([A-Za-z_$][\w$]*)\s*\)|^\s*([A-Za-z_$][\w$]*)\.forEach\(", ln)
+            return bool(name and _few_written_out(lines, n, next(g for g in name.groups() if g)))
         return False
 
     def _rust_test(self, file: str, line: int) -> bool:

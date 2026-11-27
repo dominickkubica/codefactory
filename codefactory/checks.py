@@ -177,7 +177,8 @@ COMMENT_LINE = re.compile(r"\s*(?:#|//|\*|/\*|<!--|--\s)")
 # words that say a credential-looking value isn't real ("xoxb-not-a-real-token", "sk_test_fake…", "<your key>")
 PLACEHOLDER = (
     r"(?i)example|placeholder|dummy|xxxx|your[_-]|changeme|<|not[-_ ]?a[-_ ]?real|fake|redacted|sample|mock|"
-    r"['\"](?:e2e|test)[-_]|['\"]0{8,}|['\"]abcd(?:ef)?[0-9]*(?:abcd|1234)"  # `e2e-test-secret`, all zeros, `abcd…1234`
+    r"['\"](?:e2e|test)[-_]|['\"]0{8,}|['\"]abcd(?:ef)?[0-9]*(?:abcd|1234)|"  # `e2e-test-secret`, all zeros, `abcd…1234`
+    r"['\"]([A-Za-z0-9])\1{7,}['\"]"  # one character over and over (`SECRET_KEY = "AAAAAAAAAAAAAAAAAAAA"` in a test config)
 )
 # Checks for built-ins only some languages have: Go's eval() or Java's exec() are ordinary functions.
 LANG_ONLY = {
@@ -470,6 +471,22 @@ def _not_a_working_key(lines: list[str], i: int) -> bool:
     return PUBLIC_KEY_NOTE.search(above) is not None
 
 
+def _method_named_eval(lines: list[str], i: int) -> bool:
+    """A class method named eval being defined, not called: `eval(params: T[]): string {`, its parameters and
+    return type over several lines. After the closing parenthesis a definition goes on to a return type or a body; a
+    call goes on to the end of its statement."""
+    m = re.match(r"\s*(?:(?:public|private|protected|static|async|override)\s+)*eval\s*\(", lines[i - 1])
+    if not m:
+        return False
+    text = "\n".join(lines[i - 1 : i + 11])
+    depth = 0
+    for j in range(m.end() - 1, len(text)):
+        depth += {"(": 1, ")": -1}.get(text[j], 0)
+        if depth == 0:
+            return re.match(r"\s*(?::|\{)", text[j + 1 :]) is not None
+    return False
+
+
 def _fixed_code(line: str, text: str) -> bool:
     """Code execution of nothing anyone supplies: `new Function` with only literal arguments, `exec` of a file the
     repository ships by a literal name, or a YAML load in a file using ruamel.yaml (whose loader is safe by default)."""
@@ -543,12 +560,46 @@ def _constant_after(lines: list[str], i: int) -> bool:
     return bool(lit) and not (lit.group(1) == "`" and "${" in lit.group(2)) and (lit.group(1) == "`" or "\n" not in lit.group(2))
 
 
+# setItem("jwt", "") clears it; a timestamp next to a token's name (a dismissal time) isn't one
+STORED_NOTHING = (
+    r"""setItem\(\s*(['"`])[^'"`]*\1\s*,\s*(?:(['"`])\2|null|undefined|String\(\s*Date\.now\(\)\s*\)|Date\.now\(\)|"""
+    r"[\w.]+\.getTime\(\))"
+)
+
+
+def _in_outbound_request(lines: list[str], i: int) -> bool:
+    """Line i sits inside the arguments of an outgoing request (`fetch(url, { headers: {…} })`): what it sets is a
+    request header, not the response this server sends."""
+    for j in range(i, max(0, i - 12), -1):
+        m = re.search(r"(?<![\w$.])(?:fetch|axios(?:\.\w+)?|got|ky|request|\$fetch|ofetch)\s*\(", lines[j - 1])
+        if m:
+            seg = lines[j - 1][m.end() :] + "\n" + "\n".join(lines[j:i])
+            seg = re.sub(r"""(["'`])(?:(?!\1)[^\\]|\\.)*\1""", '""', seg)
+            return seg.count("(") >= seg.count(")")  # (still inside the call's parentheses)
+    return False
+
+
+def _fixed_fstring(lines: list[str], i: int, name: str) -> bool:
+    """`name` was last set, in the few lines before line i, to an f-string of only fixed values:
+    `cmd = rf'grep -rl {SNAPSHOTS_DIR}'`."""
+    safe = None
+    for j in range(i - 1, max(0, i - 12), -1):
+        if m := re.match(rf"""\s*{name}\s*=\s*(?:[rR]?[fF]|[fF][rR])(["'])(.*)\1\s*$""", lines[j - 1]):
+            safe = safe_names(lines, j) if safe is None else safe
+            return all(interp_safe(e, safe) for e in re.findall(r"\{([^{}:!]+)", m.group(2)))
+        if re.match(rf"\s*{name}\s*[+]?=", lines[j - 1]):
+            return False
+    return False
+
+
 def _fixed_shell(lines: list[str], i: int) -> bool:
     """`shell=True` on a call whose command is one plain string literal (no f-string, `%`, `.format` or `+` on it)."""
     for j in range(i, max(0, i - 8), -1):
         if m := re.search(r"\b(?:run|Popen|call|check_output|check_call|getoutput|getstatusoutput)\s*\(", lines[j - 1]):
             after = lines[j - 1][m.end() :] + " " + " ".join(ln.strip() for ln in lines[j:i])
-            return bool(re.match(r"""\s*r?(["'])[^"']*\1\s*,""", after))  # (then `,`: not `% x` or `.format`)
+            if re.match(r"""\s*r?(["'])[^"']*\1\s*,""", after):  # (then `,`: not `% x` or `.format`)
+                return True
+            return bool((v := re.match(r"\s*(\w+)\s*,", after)) and _fixed_fstring(lines, j, v.group(1)))
     return False
 
 
@@ -764,7 +815,8 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
         # generated code, and examples and docs samples, are checked like a test: only for vendor credentials
         test = (is_test(fid) or is_doc_sample(fid) or is_sample_code(fid)
                 or STORIES.search(fid) is not None  # Storybook stories: demo props, not the product's data
-                or GENERATED.search("\n".join(lines[:12])) is not None)  # fmt: skip
+                or GENERATED.search("\n".join(lines[:12])) is not None
+                or (fid.endswith((".js", ".mjs", ".cjs")) and BUNDLED.search("\n".join(lines[:6])) is not None))  # fmt: skip
         marks = [parse_mark(m.group(2))[0] for ln in lines if (m := MARK.search(ln)) and m.group(1)]
         file_kinds = set().union(*marks) if marks and all(marks) else (set() if marks else None)
 
@@ -793,11 +845,7 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                 if any(p.search(line) and (p not in ONLY_IN or fid.endswith(ONLY_IN[p])) for p in pats) and hit(key, i):
                     if key == "eval" and (
                         re.search(r"\bfunction\s+eval\s*\(|\bdef\s+eval\s*\(|['\"][^'\"]*\beval\(\)[^'\"]*['\"]", line)
-                        or re.match(
-                            r"\s*(?:(?:public|private|protected|static|async|override)\s+)*eval\s*\([^)]*\)\s*"
-                            r"(?::\s*[\w<>\[\]| .]+[{;]|\{)",
-                            line,
-                        )
+                        or _method_named_eval(lines, i)
                     ):
                         continue  # a method named eval (a parser node's, a Redis client's), or "eval()'d code" in a string
                     if key == "eval" and _fixed_code(line, text):
@@ -858,6 +906,14 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                             continue
                     if key in ("weak_hash", "weak_random") and _keyed_not_secured(lines, i):
                         continue  # a hash for a rate-limit bucket, a cache or refresh key: an identifier, not protection
+                    if key == "weak_hash" and re.search(r"(?i)pwned\s*passwords|haveibeenpwned|\bhibp\b", text):
+                        continue  # the Pwned Passwords range API takes a SHA-1 prefix (k-anonymity): the protocol, not a choice
+                    if key == "cors_any" and (_in_outbound_request(lines, i) or "configureServer" in text):
+                        continue  # a header sent *to* another API (opsgenie), or Vite's dev-server middleware
+                    if key == "sensitive_storage" and re.search(STORED_NOTHING, line):
+                        continue  # setItem("jwt", ""): clearing it, or a timestamp beside it; nothing secret is stored
+                    if key == "weak_cipher" and re.search(r"(?i)\bRSA/ECB/", line):
+                        continue  # JCA's "RSA/ECB/…" names no block mode: RSA encrypts one block, ECB is a placeholder
                     if key == "secret" and (
                         re.search(r"(?:^|/)\.?gitleaks(?:ignore|\.toml)$|(?:^|/)(?:__)?mocks?(?:__)?(?:/|\.[jt]sx?$)", fid)
                         or (_comment_line(line) and not any(p.search(line) for p in VENDOR_PATTERNS))
@@ -1055,6 +1111,14 @@ def _python_deps(pyproject: str) -> list[str]:
 
 
 PUBLIC_ENV = r"(?i)(?:VITE_|NEXT_PUBLIC_|REACT_APP_|EXPO_PUBLIC_|GATSBY_|NUXT_PUBLIC_|PUBLIC_|\w*PUBLIC_KEY\b)"
+# a library's own build copied in, read from its first lines rather than its path: a webpack runtime
+# (`webpackJsonp`, `__webpack_require__`), or the version banner a library's build keeps (`/*! Vue.js v2.7.14`,
+# `@license React v16.13.1`). A project's own copyright header has no version number.
+BUNDLED = re.compile(
+    r"(?m)webpackJsonp|__webpack_require__|webpackBootstrap|^/\*{6}/|"
+    r"^\s*(?:/\*!|\*|/\*\*?)\s*(?:@license\s+)?[A-Za-z][\w.@/ -]{1,40}?\s+(?:v\d+\.\d+(?:\.\d+)?|\d+\.\d+\.\d+)\b"
+    r"(?=[\s\S]*(?:/\*!|@license|\(c\)|Copyright|Licen[cs]e))"
+)
 # a generated file's own header says so (emscripten output, protobuf, `go generate`): its patterns are the generator's
 GENERATED = re.compile(r"@generated|Code generated .* DO NOT EDIT|\bDO NOT EDIT\b|auto-?generated|\bemscripten\b", re.I)
 

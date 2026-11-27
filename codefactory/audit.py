@@ -13,7 +13,7 @@ import subprocess
 from pathlib import Path
 
 from .checks import ANY, PATTERNS, PLACEHOLDER, VENDOR_SECRETS, Check, Evidence, redact
-from .paths import drop_ignored, is_dev_setup, is_test, links_outside, walk
+from .paths import drop_ignored, is_dev_setup, is_test, is_vendored, links_outside, walk
 from .suppress import MARK
 
 # GitHub Actions
@@ -107,6 +107,31 @@ def _script_lines(lines: list[str]) -> list[int]:
 DROP_ROOT = re.compile(r"\b(?:su-exec|gosu|setpriv|runuser|s6-setuidgid|chpst\s+-u|setuidgid)\b")
 
 
+# official images whose program doesn't run as root. The database images start as root and their entrypoint switches
+# to the database's own user, but only to run the database: a Dockerfile that replaces the ENTRYPOINT or CMD runs its
+# own program as root. These others set a non-root USER in the image itself, which a CMD doesn't undo.
+DB_ENTRYPOINT_DROPS = re.compile(
+    r"^FROM\s+(?:--platform=\S+\s+)?(?:docker\.io/)?(?:library/)?"
+    r"(?:postgres|postgis/postgis|mysql|mariadb|mongo|redis|rabbitmq|couchdb)(?::\S+)?(?:\s|$)",
+    re.I,
+)
+USER_IN_IMAGE = re.compile(
+    r"^FROM\s+(?:--platform=\S+\s+)?(?:docker\.io/)?"
+    r"(?:bitnami/[\w.-]+|grafana/grafana[\w-]*|jenkins/jenkins|sonarqube|(?:docker\.elastic\.co/elasticsearch/)?elasticsearch|"
+    r"opensearchproject/opensearch|quay\.io/keycloak/keycloak|keycloak/keycloak)(?::\S+)?(?:\s|$)",
+    re.I,
+)
+
+
+def _base_drops_root(final: str, text: str) -> bool:
+    """The final stage builds on an official image whose program runs as its own user, and doesn't swap the
+    program out from under a database image's entrypoint."""
+    stage = text[text.rfind(final) :]
+    if USER_IN_IMAGE.match(final.strip()):
+        return True
+    return DB_ENTRYPOINT_DROPS.match(final.strip()) is not None and not re.search(r"^\s*(?:ENTRYPOINT|CMD)\b", stage, re.M | re.I)
+
+
 def _drops_root(root: Path, dockerfile: Path, text: str) -> bool:
     """Starts as root only to switch user before the program runs: `su-exec`/`gosu` in the Dockerfile or in the
     entrypoint script it copies in (syncthing's docker-entrypoint.sh)."""
@@ -172,7 +197,7 @@ def dockerfiles(root: Path, files: list[Path], out: dict[str, Check]) -> None:
         nonroot = re.search(r"nonroot|distroless|chainguard|rootless|unprivileged", final, re.I)
         # a base image other Dockerfiles build on (`Dockerfile.base`, `images/n8n-base/`): the shipped one sets USER
         base = re.search(r"(?:^|/)Dockerfile\.base$|(?:^|/)base\.Dockerfile$|(?:^|[/_-])base/Dockerfile(?:\.[\w-]+)?$", rel, re.I)
-        exempt = dev or nonroot or base or _drops_root(root, path, text)
+        exempt = dev or nonroot or base or is_vendored(rel) or _base_drops_root(final, text) or _drops_root(root, path, text)
         if (not users or users[-1] in ("root", "0", "0:0")) and not exempt:
             out["docker_root"].hits.append(Evidence(rel, _line(text, froms[-1].start()), f"no USER after {froms[-1].group(1)}"))
         for m in froms:
