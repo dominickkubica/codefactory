@@ -306,8 +306,8 @@
   "check": "Shell commands built at runtime",
   "severity": "Medium",
   "location": "`packages/ci-actions/bin/release-notes-generate.mjs:269` await exec(`yarn exec oxfmt ${blogPath} ${releasesPath}`, {  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "blogPath includes a slug derived from the VERSION env var, interpolated into a promisified child_process.exec shell string.",
   "round": 2
  },
  "actualbudget/actual|Shell commands built at runtime|packages/ci-actions/bin/release-notes-generate.mjs:92": {
@@ -323,8 +323,8 @@
   "check": "Shell commands built at runtime",
   "severity": "Medium",
   "location": "`packages/ci-actions/bin/release-notes-generate.mjs:93` await exec(`git config user.email '${botEmail}'`);  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "botEmail is a hardcoded string constant defined two lines above.",
   "round": 2
  },
  "actualbudget/actual|Shell commands built at runtime|packages/ci-actions/bin/release-notes-generate.mjs:99": {
@@ -619,8 +619,8 @@
   "check": "Raw HTML injected into pages",
   "severity": "Low",
   "location": "`superset-frontend/plugins/preset-chart-deckgl/src/utilities/HandlebarsRenderer.tsx:82` dangerouslySetInnerHTML={{ __html: htmlContent }}  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "htmlContent is passed through sanitizeHtml by default; sanitization is off only when HTML_SANITIZATION config is disabled.",
   "round": 2
  },
  "apache/superset|Raw HTML injected into pages|superset-frontend/src/dashboard/util/injectCustomCss.ts:45": {
@@ -1069,8 +1069,8 @@
   "check": "SQL assembled from strings",
   "severity": "High",
   "location": "`packages/usage/src/Adapter/ClickHouse.php:1315` $this->query(\"ALTER TABLE {$table} ADD COLUMN IF NOT EXISTS `ingestId` String DEFAULT '' CODEC(ZSTD(3))\");  (interpolates: table)  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "table comes from buildTableReference, which backtick-escapes both identifiers via escapeIdentifier before interpolation.",
   "round": 2
  },
  "appwrite/appwrite|SQL assembled from strings|packages/usage/src/Adapter/ClickHouse.php:1549": {
@@ -1094,8 +1094,8 @@
   "check": "SQL assembled from strings",
   "severity": "High",
   "location": "`src/Appwrite/Execution/Store.php:134` $this->query(\"CREATE DATABASE IF NOT EXISTS {$database}\");  (interpolates: database)  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "database passes through identifier(), which rejects anything not matching ^[A-Za-z_][A-Za-z0-9_]*$ and quotes it.",
   "round": 2
  },
  "appwrite/appwrite|Tokens or passwords in unencrypted storage|app/views/install/installer/js/modules/progress.js:38": {
@@ -1530,8 +1530,8 @@
   "check": "Shell commands built at runtime",
   "severity": "Medium",
   "location": "`apps/web/scripts/create-sentry-release.js:19` execSync(`sentry-cli releases new ${release}`, { stdio: \"inherit\" });  (no endpoint reaches it) *(script)*",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "release comes from git rev-parse output and is interpolated into an execSync shell command.",
   "round": 2
  },
  "calcom/cal.com|Shell commands built at runtime|apps/web/scripts/create-sentry-release.js:22": {
@@ -1662,8 +1662,8 @@
   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
   "severity": "Medium",
   "location": "`celery/utils/serialization.py:132` exc_args, lambda v: pickle.loads(pickle.dumps(v))",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "pickle.loads only reads bytes just produced by pickle.dumps on the same line; an in-memory serializability/copy check, no external data.",
   "round": 2
  },
  "celery/celery|Dynamic code execution (eval / exec / pickle / unsafe YAML)|celery/worker/state.py:364": {
@@ -1671,8 +1671,8 @@
   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
   "severity": "Medium",
   "location": "`celery/worker/state.py:364` self._merge_revoked_v1(pickle.loads(self.decompress(zrevoked)))",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "pickle.loads deserializes zrevoked data read from the persistent worker state file, a non-constant value.",
   "round": 2
  },
  "celery/celery|TLS certificate checks turned off|celery/backends/arangodb.py:48": {
@@ -2067,8 +2067,8 @@
   "check": "SQL assembled from strings",
   "severity": "High",
   "location": "`api/src/database/helpers/fn/dialects/postgres.ts:25` return this.knex.raw(`EXTRACT(WEEK FROM ??.??${parseLocaltime(options?.type)})`, [table, column]);  (interpolates: parseLocaltime(options?.type))  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "parseLocaltime returns only a fixed literal or empty string; table/column are bound via ?? placeholders.",
   "round": 2
  },
  "directus/directus|SQL assembled from strings|api/src/database/helpers/fn/dialects/postgres.ts:29": {
@@ -2084,8 +2084,8 @@
   "check": "SQL assembled from strings",
   "severity": "High",
   "location": "`api/src/database/helpers/fn/dialects/postgres.ts:41` return this.knex.raw(`EXTRACT(MINUTE FROM ??.??${parseLocaltime(options?.type)})`, [table, column]);  (interpolates: parseLocaltime(options?.type))  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "parseLocaltime returns only a fixed literal or empty string; table/column are bound via ?? placeholders.",
   "round": 2
  },
  "directus/directus|SQL assembled from strings|api/src/database/helpers/schema/dialects/cockroachdb.ts:102": {
@@ -2133,8 +2133,8 @@
   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
   "severity": "Medium",
   "location": "`django/core/management/commands/shell.py:89` exec(compile(pythonrc_code, pythonrc, \"exec\"), imported_objects)  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "exec runs code read from the PYTHONSTARTUP / ~/.pythonrc.py file, a non-constant value.",
   "round": 2
  },
  "django/django|Dynamic code execution (eval / exec / pickle / unsafe YAML)|django/db/migrations/questioner.py:168": {
@@ -2142,8 +2142,8 @@
   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
   "severity": "Medium",
   "location": "`django/db/migrations/questioner.py:168` return eval(code, {}, {\"datetime\": datetime, \"timezone\": timezone})  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "eval runs Python code typed by the user at the interactive prompt.",
   "round": 2
  },
  "django/django|Dynamic code execution (eval / exec / pickle / unsafe YAML)|django/template/defaulttags.py:923": {
@@ -2240,8 +2240,8 @@
   "check": "Raw HTML injected into pages",
   "severity": "High",
   "location": "`django/forms/utils.py:55` return mark_safe(renderer.render(template, context))  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "mark_safe wraps output of the template renderer, which autoescapes context values; no raw unescaped value reaches the sink.",
   "round": 2
  },
  "django/django|Raw HTML injected into pages|django/template/base.py:1080": {
@@ -2265,8 +2265,8 @@
   "check": "Raw HTML injected into pages",
   "severity": "High",
   "location": "`django/utils/html.py:146` return mark_safe(format_string.format(*args_safe, **kwargs_safe))  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "All args and kwargs pass through conditional_escape before formatting; this is Django's escaping helper itself.",
   "round": 2
  },
  "django/django|Raw HTML injected into pages|django/utils/numberformat.py:29": {
@@ -2709,8 +2709,8 @@
   "check": "SQL assembled from strings",
   "severity": "High",
   "location": "`modelmigration/v1_16/v195.go:39` if _, err := sess.Exec(\"INSERT INTO commit_status_index (repo_id, sha, max_index) \" +  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "The SQL is a concatenation of string literals only; nothing non-constant is interpolated.",
   "round": 2
  },
  "go-gitea/gitea|SQL assembled from strings|models/db/index.go:29": {
@@ -2718,8 +2718,8 @@
   "check": "SQL assembled from strings",
   "severity": "High",
   "location": "`models/db/index.go:29` res, err := e.Exec(fmt.Sprintf(\"UPDATE %s SET max_index=? WHERE group_id=? AND max_index<?\", tableName), maxIndex, groupID, maxIndex)  (interpolates:  \t\treturn err \t)  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "tableName parameter is interpolated into SQL with fmt.Sprintf without escaping (current caller passes a constant).",
   "round": 2
  },
  "go-gitea/gitea|SQL assembled from strings|models/db/sequence.go:64": {
@@ -3438,8 +3438,8 @@
   "check": "Shell `eval` of a variable",
   "severity": "Medium",
   "location": "`shell/completion.bash:687` eval \"$REPLY\"",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "eval runs REPLY, built by printf from a saved original completion spec variable, a non-constant string.",
   "round": 2
  },
  "junegunn/fzf|Shell `eval` of a variable|shell/completion.zsh:475": {
@@ -3455,8 +3455,8 @@
   "check": "Shell `eval` of a variable",
   "severity": "Medium",
   "location": "`shell/key-bindings.zsh:201` eval $__fzf_key_bindings_options",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "eval runs a variable built at runtime from the user's current shell options to restore them.",
   "round": 2
  },
  "karpathy/nanoGPT|Dynamic code execution (eval / exec / pickle / unsafe YAML)|configurator.py:28": {
@@ -3823,8 +3823,8 @@
   "check": "Shell commands built at runtime",
   "severity": "Medium",
   "location": "`extra/rebase-pr.js:37` execSync(`git rebase --onto ${latestCommitID} ${originalParentCommitID}`);  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Commit IDs from git/gh command output are interpolated into an execSync shell string.",
   "round": 2
  },
  "louislam/uptime-kuma|Shell commands built at runtime|extra/release/generate-changelog.mjs:306": {
@@ -3832,8 +3832,8 @@
   "check": "Shell commands built at runtime",
   "severity": "Medium",
   "location": "`extra/release/generate-changelog.mjs:306` .execSync(`git log -1 --format=%cd --date=iso8601-strict ${previousVersion}`)  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "previousVersion function parameter is interpolated unquoted into an execSync shell command.",
   "round": 2
  },
  "louislam/uptime-kuma|Shell commands built at runtime|extra/release/prepare-release.mjs:66": {
@@ -3905,8 +3905,8 @@
   "check": "Raw HTML injected into pages",
   "severity": "Medium",
   "location": "`packages/desktop/src/renderer/src/assets/symbolIcon/index.js:63` div.innerHTML = svgSprite",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "svgSprite is a hardcoded constant SVG string defined at the top of the file.",
   "round": 2
  },
  "marktext/marktext|Raw HTML injected into pages|packages/desktop/src/renderer/src/services/printService.ts:23": {
@@ -3922,8 +3922,8 @@
   "check": "Raw HTML injected into pages",
   "severity": "Medium",
   "location": "`packages/desktop/src/renderer/src/util/pdf.ts:133` template.innerHTML = contentHtml",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Parsed into an inert template element, then images/classes stripped and DOMPurify sanitize applied before use.",
   "round": 2
  },
  "marktext/marktext|Raw HTML injected into pages|packages/desktop/src/renderer/src/util/theme.ts:144": {
@@ -3947,8 +3947,8 @@
   "check": "Shell commands built at runtime",
   "severity": "High",
   "location": "`scripts/postinstall.ts:120` zipPath = execSync(`find \"${cacheRoot}\" -name \"${zipName}\" 2>/dev/null | head -1`) *(script)*",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "cacheRoot (from env var or homedir) and zipName are interpolated into a find shell pipeline via execSync.",
   "round": 2
  },
  "mastodon/mastodon|Any website may call this API (CORS *)|streaming/index.js:177": {
@@ -4537,8 +4537,8 @@
   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
   "severity": "Critical",
   "location": "`packages/@n8n/task-runner-python/src/task_executor.py:378` exec(compiled_code, globals)  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "exec runs compiled user-supplied workflow code; filtered builtins are not a sanitizer of the code itself.",
   "round": 2
  },
  "n8n-io/n8n|Dynamic code execution (eval / exec / pickle / unsafe YAML)|packages/@n8n/task-runner/src/js-task-runner/js-task-runner.ts:695": {
@@ -4554,8 +4554,8 @@
   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
   "severity": "Critical",
   "location": "`packages/@n8n/tournament/src/FunctionEvaluator.ts:13` const func = new Function('E', code + ';');  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "new Function builds code generated from the expression string passed to evaluate, a non-constant value.",
   "round": 2
  },
  "n8n-io/n8n|Dynamic code execution (eval / exec / pickle / unsafe YAML)|packages/cli/src/modules/agents/integrations/esm-loader.ts:17": {
@@ -4909,8 +4909,8 @@
   "check": "SQL assembled from strings",
   "severity": "High",
   "location": "`packages/@n8n/db/src/repositories/workflow-review-inbox.repository.ts:60` .where(`${alias}.workflowReviewRequestId = review.id`)  (interpolates: alias)  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "alias parameter is interpolated into the where clause text unescaped; callers happen to pass literals.",
   "round": 2
  },
  "n8n-io/n8n|SQL assembled from strings|packages/@n8n/typeorm/src/driver/postgres/PostgresQueryRunner.ts:2104": {
@@ -4926,8 +4926,8 @@
   "check": "SQL assembled from strings",
   "severity": "High",
   "location": "`packages/@n8n/typeorm/src/driver/postgres/PostgresQueryRunner.ts:2134` new Query(`ALTER TABLE ${this.escapePath(table)} DROP CONSTRAINT \"${pkName}\"`),  (interpolates: pkName)  ← reached from `GET /healthz → GitHubSkillSourceClient.head → AbstractRepository.repository → Entity → DataSource.synchronize → DataSource.dropDatabase → PostgresQueryRunner.clearDatabase → PostgresQueryRunner.query → PostgresQueryRunner.connect → PostgresDriver.obtainSlaveConnection → PostgresDriver.connect → PostgresDriver.createPool → RdbmsSchemaBuilder.log → RdbmsSchemaBuilder.executeSchemaSyncOperationsInProperOrder → RdbmsSchemaBuilder.updatePrimaryKeys → PostgresQueryRunner.updatePrimaryKeys`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "pkName from metadata/naming strategy is interpolated into DDL inside quotes without escaping.",
   "round": 2
  },
  "n8n-io/n8n|SQL assembled from strings|packages/@n8n/typeorm/src/driver/postgres/PostgresQueryRunner.ts:2560": {
@@ -4943,8 +4943,8 @@
   "check": "Shell commands built at runtime",
   "severity": "Critical",
   "location": "`packages/@n8n/mcp-browser-extension/scripts/bundle.mjs:14` execSync(`zip -r ../${output} . -x \"*.map\"`, {  (no endpoint reaches it) *(script)*",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "output is the constant 'n8n-browser-use.zip'; nothing non-constant reaches the shell string.",
   "round": 2
  },
  "n8n-io/n8n|Shell commands built at runtime|packages/quality/environments/containers/helm-stack.ts:173": {
@@ -5575,8 +5575,8 @@
   "check": "Raw HTML injected into pages",
   "severity": "Low",
   "location": "`apps/mdim_simulator/simulator.js:1577` picker.innerHTML = `<option value=\"\">No group</option>` + dim.groups.map((g) => `<option>${esc(g)}</option>`).join(\"\");  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Every interpolated group name passes through esc() before reaching innerHTML.",
   "round": 2
  },
  "owid/etl|Shell commands built at runtime|apps/wizard/app_pages/servers_dashboard/utils.py:400": {
@@ -5600,8 +5600,8 @@
   "check": "Shell commands built at runtime",
   "severity": "Medium",
   "location": "`apps/wizard/etl_steps/data.py:90` result = subprocess.run(bash_cmd, shell=True, capture_output=True, text=True)  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Only interpolated value is SNAPSHOTS_DIR, a module-level constant path from etl.paths.",
   "round": 2
  },
  "owid/etl|Shell commands built at runtime|etl/scripts/faostat/update_custom_metadata.py:146": {
@@ -5675,8 +5675,8 @@
   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
   "severity": "Medium",
   "location": "`src/flask/config.py:209` exec(compile(config_file.read(), filename, \"exec\"), d.__dict__)  (no endpoint reaches it)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "exec runs contents of a config file whose name is a parameter, a non-constant value.",
   "round": 2
  },
  "phoenixframework/phoenix|Copied logic in N group (~N lines)|assets/js/phoenix/socket.js:686": {
@@ -6408,8 +6408,8 @@
   "check": "Raw HTML injected into pages",
   "severity": "Medium",
   "location": "`frontend/lib/src/components/widgets/BidiComponent/hooks/useHandleHtmlAndCssContent.ts:50` container.innerHTML = html",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Component-provided html string is assigned to innerHTML without sanitization, as the doc comment acknowledges.",
   "round": 2
  },
  "streamlit/streamlit|Request data reaches dangerous calls (N proven flow)|lib/streamlit/web/server/starlette/starlette_routes.py:1223": {
@@ -7221,8 +7221,8 @@
   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
   "severity": "High",
   "location": "`packages/vue-compat/src/index.ts:98` __GLOBAL__ ? new Function(code)() : new Function('Vue', code)(runtimeDom)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "new Function runs code compiled from a runtime template string, a non-constant value.",
   "round": 2
  },
  "vuejs/core|Import loops (N)|packages/runtime-dom/src/apiCustomElement.ts": {
@@ -7279,8 +7279,8 @@
   "check": "Raw HTML injected into pages",
   "severity": "Medium",
   "location": "`packages/runtime-dom/src/nodeOps.ts:113` templateContainer.innerHTML = unsafeToTrustedHTML(",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Non-constant content parameter is assigned to innerHTML without escaping (static content insertion).",
   "round": 2
  },
  "vuejs/core|Third-party scripts without integrity hashes|packages-private/template-explorer/index.html:13": {
@@ -7410,8 +7410,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`wagtail/admin/views/generic/workflow.py:157` WorkflowAction.post: self.request.POST → WorkflowAction.post → redirect() — `return redirect(self.redirect_url)`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "redirect_url comes from get_valid_next_url_from_request, which validates with url_has_allowed_host_and_scheme, or reverse().",
   "round": 2
  },
  "wagtail/wagtail|Request data reaches dangerous calls (N proven flow)|wagtail/api/v2/views.py:144": {
