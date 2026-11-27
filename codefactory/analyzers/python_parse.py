@@ -484,10 +484,14 @@ def mock_targets(tree: ast.Module, ctx: _Ctx) -> list:
             d = dotted(n.value.func) or ""
             if MOCKS.match(d.rsplit(".", 1)[-1]):
                 out += [["e", e] for t in n.targets if isinstance(t, ast.Attribute) and (e := ctx.expr(t))]
-        elif isinstance(n, ast.Attribute) and MOCK_ATTRS.match(n.attr) and isinstance(n.value, ast.Attribute):
-            if e := ctx.expr(n.value):  # Obj.fn.return_value = …, Obj.fn.assert_called_once()
-                out.append(["e", e])
-                ctx.mocked.add(id(n.value))
+        elif (
+            isinstance(n, ast.Attribute)
+            and MOCK_ATTRS.match(n.attr)
+            and isinstance(n.value, ast.Attribute)
+            and (e := ctx.expr(n.value))  # Obj.fn.return_value = …, Obj.fn.assert_called_once()
+        ):
+            out.append(["e", e])
+            ctx.mocked.add(id(n.value))
     return out
 
 

@@ -45,8 +45,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`CTFd/admin/__init__.py:95` plugin: parameter `plugin` of ROUTE /admin/plugins/<plugin> → plugin → open() — `config_html = open(`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "plugin is only used if it is in config_html_plugins, a list built from os.listdir of the plugins dir (allow-list).",
   "round": 6
  },
  "CTFd/CTFd|Request data reaches dangerous calls (N proven flow)|CTFd/admin/__init__.py:98": {
@@ -54,8 +54,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`CTFd/admin/__init__.py:98` plugin: parameter `plugin` of ROUTE /admin/plugins/<plugin> → plugin → render_template_string() — `return render_template_string(config_html)`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "render_template_string gets file contents of an allow-listed plugin's config.html, not request data.",
   "round": 6
  },
  "CTFd/CTFd|Request data reaches dangerous calls (N proven flow)|CTFd/auth.py:490": {
@@ -63,8 +63,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`CTFd/auth.py:490` login: request.args.get('next') → login → redirect() — `return redirect(request.args.get(\"next\"))`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "redirect only after validators.is_safe_url(next) on the line above.",
   "round": 6
  },
  "LoopKit/Loop|Possible retain cycles: closures kept by self that capture self strongly|Loop/Managers/LoopDataManager.swift:230": {
@@ -181,8 +181,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`src/controllers/admin/uploads.js:95` getFilesInFolder: req.query.dir → get → getFilesInFolder() → fs.promises.readdir() — `const dirents = await fs.promises.readdir(folder, { withFileTypes: true });`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "caller get() rejects dir unless file.isPathInside(upload_path, currentFolder), then checkSymLinks.",
   "round": 6
  },
  "NodeBB/NodeBB|Request data reaches dangerous calls (N proven flow)|src/controllers/groups.js:76": {
@@ -190,8 +190,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`src/controllers/groups.js:76`: req.params.slug → details → res.redirect() — ``return res.redirect(`${nconf.get('relative_path')}/groups/${lowercaseSlug}`);``",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "redirect target is relative_path + '/groups/' + slug: fixed same-site prefix, no open redirect.",
   "round": 6
  },
  "NodeBB/NodeBB|Request data reaches dangerous calls (N proven flow)|src/middleware/user.js:272": {
@@ -199,8 +199,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`src/middleware/user.js:272`: req.params.userslug → buildAccountData → res.redirect() — ``return res.redirect(`${nconf.get('relative_path')}${newPath}`);``",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "redirect is relative_path + req.path of a /user/:userslug route with case changed: same-site path only.",
   "round": 6
  },
  "actualbudget/actual|Any website may call this API (CORS *)|packages/sync-server/src/app-cors-proxy.js:127": {
@@ -2369,8 +2369,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`packages/features/webhooks/lib/sendPayload.ts:312` _sendPayload: input in a tRPC procedure → testTriggerHandler → sendPayload() → _sendPayload() → fetch() — `const response = await fetch(subscriberUrl, {`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "testTriggerHandler runs validateUrlForSSRFSync(url) and returns 400 before sendPayload.",
   "round": 6
  },
  "calcom/cal.com|SQL assembled from strings|packages/trpc/server/routers/viewer/bookings/get.handler.ts:1096": {
@@ -3727,8 +3727,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`server/src/routes/webhook.ts:364`: req.body in POST /test → axios.post() — `const response = await axios.post(webhook.url, testPayload, {`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "POST /test calls validateWebhookUrl(webhook.url) and returns 400 if unsafe before axios.post.",
   "round": 6
  },
  "getredash/redash|Request data reaches dangerous calls (N proven flow)|redash/authentication/ldap_auth.py:43": {
@@ -3736,8 +3736,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`redash/authentication/ldap_auth.py:43` login: request.args.get('next', index_url) → login → redirect() — `return redirect(next_path)`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "next passes through get_next_path, which keeps only safe relative paths.",
   "round": 6
  },
  "getredash/redash|Request data reaches dangerous calls (N proven flow)|redash/authentication/oidc.py:172": {
@@ -3745,8 +3745,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`redash/authentication/oidc.py:172` create_oidc_blueprint: request.args.get('next', url_for('redash.index', org_slug=_s → create_oidc_blueprint → redirect() — `return redirect(next_path)`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "next_url from session is sanitized by get_next_path before redirect.",
   "round": 6
  },
  "getredash/redash|Request data reaches dangerous calls (N proven flow)|redash/authentication/remote_user_auth.py:51": {
@@ -3754,8 +3754,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`redash/authentication/remote_user_auth.py:51` login: request.args.get('next') → login → redirect() — `return redirect(next_path or url_for(\"redash.index\", org_slug=org_slug), code=302)`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "next_path = get_next_path(request.args['next']) at top of login.",
   "round": 6
  },
  "getsentry/sentry-python|Copied logic in N group (~N lines)|sentry_sdk/integrations/openai.py:1005": {
@@ -5257,8 +5257,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`apps/web/pages/api/v1/getFavicon/index.ts:13` fetchImage: req.query.url in ROUTE /api/v1/getFavicon → handler → fetchImage() → fetch() — `const r = await fetch(src, {`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "fetch goes only to fixed hosts (t2.gstatic.com, icons.duckduckgo.com); user origin is an encoded query/path part.",
   "round": 6
  },
  "linkwarden/linkwarden|Request data reaches dangerous calls (N proven flow)|apps/worker/lib/ssrfProxy.ts:101": {
@@ -5266,8 +5266,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`apps/worker/lib/ssrfProxy.ts:101` handleRequest: req.headers → handleRequest → http.request() — `const proxyReq = http.request(`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "localhost-only proxy that connects only to an IP validated by resolveHostnameForServerSideFetch (SSRF allow-list).",
   "round": 6
  },
  "linkwarden/linkwarden|Request data reaches dangerous calls (N proven flow)|packages/filesystem/readFile.ts:109": {
@@ -5275,8 +5275,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`packages/filesystem/readFile.ts:109` readFile: req.query.token in ROUTE /api/v1/preserved/view → handler → readFile() → fs.readFileSync() — `const file = fs.readFileSync(creationPath);`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "filePath comes from a server-signed preserved-format token (decode with secret + scope/exp check), not raw request text.",
   "round": 6
  },
  "localsend/localsend|App allows unencrypted HTTP|app/android/app/src/main/AndroidManifest.xml:32": {
@@ -5610,8 +5610,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`apps/landing/src/i18n/middleware.ts:53` i18nMiddleware: req.headers → i18nMiddleware → NextResponse.redirect() — `return NextResponse.redirect(newUrl);`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "redirect only rewrites pathname of the same-origin nextUrl; header unused on this branch.",
   "round": 6
  },
  "lukevella/rallly|Request data reaches dangerous calls (N proven flow)|apps/landing/src/i18n/middleware.ts:61": {
@@ -5619,8 +5619,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`apps/landing/src/i18n/middleware.ts:61` i18nMiddleware: req.headers → i18nMiddleware → NextResponse.redirect() — `return NextResponse.redirect(newUrl);`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "preferredLocale is matched against supportedLngs (allow-list) and only prefixes the same-origin path.",
   "round": 6
  },
  "marktext/marktext|Array searches inside loops over loaded data (N)|packages/desktop/src/main/windows/projectRoots.ts:148": {
@@ -6120,8 +6120,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`mealie/routes/media/media_recipe.py:29` get_recipe_img: parameter `recipe_id` of GET /{recipe_id}/images/{file_name} → get_recipe_img → FileResponse() — `return FileResponse(recipe_image, media_type=\"image/webp\")`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "recipe_id typed UUID4 and file_name an enum of three fixed names.",
   "round": 6
  },
  "mealie-recipes/mealie|Request data reaches dangerous calls (N proven flow)|mealie/routes/media/media_user.py:22": {
@@ -6129,8 +6129,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`mealie/routes/media/media_user.py:22` get_user_image: parameter `user_id` of GET /{user_id}/{file_name} → get_user_image → FileResponse() — `return FileResponse(recipe_image, media_type=\"image/webp\")`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "user_id is UUID4 and resolved path is checked with is_relative_to(user_dir) before FileResponse.",
   "round": 6
  },
  "mealie-recipes/mealie|Request data reaches dangerous calls (N proven flow)|mealie/routes/recipe/exports.py:39": {
@@ -6138,8 +6138,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`mealie/routes/recipe/exports.py:39` RecipeExportController.get_recipe_as_format: parameter `slug` of GET /{slug}/exports → RecipeExportController.get_recipe_as_format → FileResponse() — `return FileResponse(file, background=BackgroundTask(rmtree, temp_path))`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "slug only looks up a DB recipe; file is written in a temp dir and template_name must be in the template list.",
   "round": 6
  },
  "meilisearch/meilisearch|Container runs as root|Dockerfile:21": {
@@ -7179,8 +7179,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`packages/cli/src/oauth/oauth.service.ts:1717` OauthService.getOAuth1AccessToken: req.query → handleCallback → getOAuth1AccessToken() → this.http.request() — `const response = await this.http.request({`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "URL is the stored credential's accessTokenUrl; query values only go into the signed body/header.",
   "round": 6
  },
  "n8n-io/n8n|Request data reaches dangerous calls (N proven flow)|scripts/cloud-session-opencode-proxy.mjs:28": {
@@ -7484,8 +7484,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`netbox/account/views.py:161` LoginView.redirect_to_next: request.GET → LoginView.redirect_to_next → HttpResponseRedirect() — `return HttpResponseRedirect(redirect_url)`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "next is used only if safe_for_redirect(), else reverse('home').",
   "round": 6
  },
  "netbox-community/netbox|Request data reaches dangerous calls (N proven flow)|netbox/dcim/views.py:5387": {
@@ -7493,8 +7493,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`netbox/dcim/views.py:5387` VirtualChassisAddMemberView.post: request.POST → VirtualChassisAddMemberView.post → redirect() — `return redirect(self.get_return_url(request, device))`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "get_return_url uses return_url only if safe_for_redirect(), else object/reversed URL.",
   "round": 6
  },
  "netbox-community/netbox|Request data reaches dangerous calls (N proven flow)|netbox/utilities/templatetags/builtins/filters.py:198": {
@@ -7502,8 +7502,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`netbox/utilities/templatetags/builtins/filters.py:198` render_markdown: request.POST → RenderMarkdownView.post → render_markdown(value) → mark_safe() — `return mark_safe(html)`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "markdown output is sanitized by clean_html(html, schemes) before mark_safe.",
   "round": 6
  },
  "openstatusHQ/openstatus|Request data reaches dangerous calls (N proven flow)|apps/web/src/app/api/callback/pagerduty/route.ts:21": {
@@ -7511,8 +7511,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`apps/web/src/app/api/callback/pagerduty/route.ts:21` GET: searchParams.get(\"workspace\") in GET /api/callback/pagerduty → GET → redirect() — `redirect(DASHBOARD_V2 ? APP_URL : WWW_URL);`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "redirect host is fixed (app.openstatus.dev); request params only in the query string.",
   "round": 6
  },
  "outline/outline|Any website may call this API (CORS *)|plugins/storage/server/api/files.ts:145": {
@@ -8393,8 +8393,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`src/Routers/IAPValidationRouter.js:28` validateWithAppStore: req.body?.receipt → handleRequest → validateWithAppStore() → request() — `return request({`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "url is a fixed Apple constant; receipt only goes in the JSON body.",
   "round": 6
  },
  "parse-community/parse-server|Request data reaches dangerous calls (N proven flow)|src/Routers/PagesRouter.js:507": {
@@ -8402,8 +8402,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`src/Routers/PagesRouter.js:507` PagesRouter.readFile: req.params['resource'][0] → staticRoute → fileResponse() → readFile() → fs.readFile() — `return await fs.readFile(normalizedPath, 'utf-8');`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "path.normalize then rejects anything not starting with pagesPath + sep.",
   "round": 6
  },
  "phoenixframework/phoenix|Copied logic in N group (~N lines)|assets/js/phoenix/socket.js:686": {
@@ -8496,8 +8496,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "Critical",
   "location": "`src/pretix/control/views/orders.py:963` OrderRefundProcess.post: self.request.GET.get('next') → OrderRefundProcess.post → redirect() — `return redirect(self.request.GET.get(\"next\"))`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "redirect only if url_has_allowed_host_and_scheme(next) passes.",
   "round": 6
  },
  "pretix/pretix|Request data reaches dangerous calls (N proven flow)|src/pretix/plugins/paypal2/views.py:300": {
@@ -8505,8 +8505,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "Critical",
   "location": "`src/pretix/plugins/paypal2/views.py:300` success: request.GET.get('PayerID') → success → redirect() — `return redirect(eventreverse(request.event, 'presale:event.checkout', kwargs=urlkwargs))`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "redirect is eventreverse(...) of a fixed route; PayerID only stored in session.",
   "round": 6
  },
  "pretix/pretix|Request data reaches dangerous calls (N proven flow)|src/pretix/presale/views/customer.py:269": {
@@ -8514,8 +8514,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "Critical",
   "location": "`src/pretix/presale/views/customer.py:269` SetPasswordView.dispatch: self.request.GET.get('id') → SetPasswordView.dispatch → HttpResponseRedirect() — `return HttpResponseRedirect(self.get_success_url())`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "get_success_url is a fixed eventreverse; id is only an ORM lookup.",
   "round": 6
  },
  "prometheus/prometheus|Any website may call this API (CORS *)|util/httputil/cors.go:41": {
@@ -8702,8 +8702,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`backend/controllers/blocks.ts:42` routes: req.params['*'] in GET /* → routes → reply.sendFile() — `return reply.sendFile(filePath, builtInRoot, { maxAge: '1h' })`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "reply.sendFile(path, root) via @fastify/send confines the path to builtInRoot (rejects ..).",
   "round": 6
  },
  "requarks/wiki|Request data reaches dangerous calls (N proven flow)|backend/controllers/blocks.ts:51": {
@@ -8711,8 +8711,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "High",
   "location": "`backend/controllers/blocks.ts:51` routes: req.params['*'] in GET /* → routes → reply.sendFile() — `return reply.sendFile(filePath, customRoot, { cacheControl: false })`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "reply.sendFile confines to customRoot (send rejects traversal); block key regex-checked.",
   "round": 6
  },
  "saleor/saleor|Container runs as root|Dockerfile:21": {
@@ -9710,8 +9710,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "Critical",
   "location": "`apps/nestjs-backend/src/features/ai/util.ts:119` instanceAdminProviderFetch: parameter `testApiKeyRo` of POST /api/admin/setting/test-api-key → testApiKey → testApiKey() → testRealtimeTranscriptionKey() → instanceAdminProviderFetch() → fetch() — `return fetch(input, init);`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "raw fetch only when the operator disables SSRF protection by env; otherwise createSsrfSafeFetch guards it.",
   "round": 6
  },
  "teableio/teable|Request data reaches dangerous calls (N proven flow)|apps/nestjs-backend/src/features/attachments/attachments.service.ts:564": {
@@ -9719,8 +9719,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "Critical",
   "location": "`apps/nestjs-backend/src/features/attachments/attachments.service.ts:564` AttachmentsService.getFileInfo: parameter `fileUrl` of POST /api/table/:tableId/record/:recordId/:fieldId/uploadAttachment → uploadAttachment → uploadAttachment() → uploadFromUrl() → getFileInfo() → axios.head() — `const headResponse = await axios.head(fileUrl, getSafeAxiosAgents());`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "axios.head uses getSafeAxiosAgents() request-filtering agents (SSRF guard, off only via env).",
   "round": 6
  },
  "teableio/teable|Request data reaches dangerous calls (N proven flow)|apps/nestjs-backend/src/features/space/space.service.ts:591": {
@@ -9728,8 +9728,8 @@
   "check": "Request data reaches dangerous calls (N proven flow)",
   "severity": "Critical",
   "location": "`apps/nestjs-backend/src/features/space/space.service.ts:591` SpaceService.search: parameter `query` of GET /api/space/:spaceId/search → search → search() → await this.prismaService.$queryRawUnsafe() — `const rows = await this.prismaService.$queryRawUnsafe<ISearchResultRow[]>(dataQuery.toQuery());`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "query is a knex binding (orWhere ilike value) escaped by knex toQuery, not concatenated SQL.",
   "round": 6
  },
  "tldraw/tldraw|Any website may call this API (CORS *)|apps/bemo-worker/src/worker.ts:18": {
