@@ -237,9 +237,14 @@ def markdown(doc: dict) -> str:
             out += [_task_md(t) for t in f["fixes"]]
         out.append("")
     if doc.get("hints"):
-        out += ["## Hints", "", "Not findings: checks that are right less than half the time on real code, because the "
-                "answer depends on what the code doesn't show (how big a list gets, whether a file deploys). Glance, don't "
-                "triage.", ""]
+        out += [
+            "## Hints",
+            "",
+            "Not findings: checks that are right less than half the time on real code, because the "
+            "answer depends on what the code doesn't show (how big a list gets, whether a file deploys). Glance, don't "
+            "triage.",
+            "",
+        ]
         out += [f"- **{h['title']}**: " + "; ".join(h["locations"][:5]) for h in doc["hints"]] + [""]
     if doc["other_fixes"]:
         out += ["## Other ready-made fixes", ""] + [_task_md(t) for t in doc["other_fixes"]] + [""]

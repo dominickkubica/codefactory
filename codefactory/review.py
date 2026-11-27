@@ -212,9 +212,15 @@ class Review:
                 and stem(f["file"], False) in tested_stems}  # fmt: skip
         # a function a test calls by a distinctive name (`clean_dist(tmp)`): imported through a package path or a
         # test helper the call graph didn't link
-        plain = {n for n in re.findall(r"(?<![\w.])([A-Za-z_]\w{7,})\s*\(", blob) if "_" in n.strip("_") or re.search(r"[a-z][A-Z]", n)}
-        out |= {fid for fid, f in self.v.fn.items() if f["kind"] == "function" and (f["name"] in plain or (
-                f["name"] in called and len(f["name"]) >= 8)) and not is_test(f["file"])}  # (`crud.create_item(…)`)
+        names = re.findall(r"(?<![\w.])([A-Za-z_]\w{7,})\s*\(", blob)
+        plain = {n for n in names if "_" in n.strip("_") or re.search(r"[a-z][A-Z]", n)}
+        out |= {
+            fid
+            for fid, f in self.v.fn.items()
+            if f["kind"] == "function"
+            and (f["name"] in plain or (f["name"] in called and len(f["name"]) >= 8))
+            and not is_test(f["file"])
+        }  # (`crud.create_item(…)`)
         # migrations: a test run builds its database by applying them (pytest-django, Rails, Laravel)
         out |= {fid for fid, f in self.v.fn.items() if re.search(r"(?:^|/)(?:migrations|db/migrate)/", f["file"])}
         return out
@@ -1224,8 +1230,13 @@ class Review:
                     )
                 out.append("")
         if getattr(self, "hints", None):
-            out += ["### Hints", "", "Not counted as findings: these checks are right less than half the time on real code "
-                    "(docs/ACCURACY.md), because the answer depends on what the code doesn't show. Worth a glance.", ""]
+            out += [
+                "### Hints",
+                "",
+                "Not counted as findings: these checks are right less than half the time on real code "
+                "(docs/ACCURACY.md), because the answer depends on what the code doesn't show. Worth a glance.",
+                "",
+            ]
             for f in self.hints:
                 out += [f"- **{f.title}**: " + "; ".join(f.evidence[:3]) + (f" … and {len(f.evidence) - 3 + f.more} more"
                                                                           if len(f.evidence) > 3 or f.more else "")]  # fmt: skip
@@ -1367,8 +1378,10 @@ class Review:
         files = [w["file"] for w in task["where"]]
         if "identical" in task["title"] and len(files) >= 3 and _variants(files):
             return False  # the same file under each of several sibling folders (a registry's per-theme copies)
-        if all(re.search(r"(?:^|\.)(\w+)\.\1$|\.(?:constructor|__init__|init)$", w.get("qualname", w.get("name", "")))
-               for w in task["where"]):
+        if all(
+            re.search(r"(?:^|\.)(\w+)\.\1$|\.(?:constructor|__init__|init)$", w.get("qualname", w.get("name", "")))
+            for w in task["where"]
+        ):
             return False  # constructors that only assign what they're given: the shape matches, not the logic
         m = re.search(r"(\d+)% similar", task["title"])
         lines = re.search(r"~(\d+) lines", task["title"])
