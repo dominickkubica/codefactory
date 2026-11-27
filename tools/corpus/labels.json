@@ -273,8 +273,8 @@
   "check": "Queries or requests inside loops (N) in N place",
   "severity": "Medium",
   "location": "`packages/loot-core/src/server/db/index.ts:870` moveAccountGroup: moveAccountGroup calls update() inside a loop (line 870), and that reaches globalThis.fetch() — `await update('account_groups', info);`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Inside batchMessages, update() only queues messages in _BATCHED, and they're sent once after the loop.",
   "round": 2
  },
  "actualbudget/actual|Queries or requests inside loops (N) in N place|packages/loot-core/src/server/importers/ynab5.ts:515": {
@@ -610,8 +610,8 @@
   "check": "Queries or requests inside loops (N) in N place",
   "severity": "Medium",
   "location": "`superset/mcp_service/dashboard/tool/generate_dashboard.py:280` generate_dashboard: generate_dashboard calls check_chart_data_access() inside a loop (line 280), and that reaches db.session.query() — `validation = check_chart_data_access(chart)`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "check_chart_data_access calls validate_chart_dataset, which runs DatasetDAO.find_by_id once per chart in the user's chart list.",
   "round": 2
  },
  "apache/superset|Raw HTML injected into pages|superset-frontend/plugins/preset-chart-deckgl/src/utilities/HandlebarsRenderer.tsx:82": {
@@ -749,8 +749,8 @@
   "check": "Array searches inside loops over loaded data (N)",
   "severity": "Low",
   "location": "`apps/console/src/server/api-reference/cloud-oauth2.ts:121` withCloudOAuth2 — `const granted = (Array.isArray(label) ? label : [label ?? ''])`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Maps over a constant two-item namespace list and checks a Set with has(); no linear search over loaded data.",
   "round": 2
  },
  "appwrite/appwrite|Array searches inside loops over loaded data (N)|apps/console/src/server/api-reference/cloud-oauth2.ts:134": {
@@ -1161,8 +1161,8 @@
   "check": "Writes inside loops in N place",
   "severity": "Low",
   "location": "`src/Appwrite/GraphQL/Schema.php:242` Schema.collections — `'resolve' => Resolvers::documentUpdate(`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Resolvers::documentUpdate only builds a resolver closure for the schema; nothing is written while the loop runs.",
   "round": 2
  },
  "appwrite/appwrite|Writes inside loops in N place|src/Appwrite/Platform/Modules/VCS/Http/Gitea/Events/Create.php:274": {
@@ -1170,8 +1170,8 @@
   "check": "Writes inside loops in N place",
   "severity": "Low",
   "location": "`src/Appwrite/Platform/Modules/VCS/Http/Gitea/Events/Create.php:274` Create.handlePullRequestEvent — `...array_filter(array_column($prFiles, 'previous_filename')),`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "array_filter/array_column build an in-memory list of file names; that isn't a write.",
   "round": 2
  },
  "caddyserver/caddy|HTTP servers without timeouts (Go)|caddyconfig/httpcaddyfile/httptype.go:617": {
@@ -1203,8 +1203,8 @@
   "check": "Array searches inside loops over loaded data (N)",
   "severity": "Low",
   "location": "`packages/app-store/_utils/getConnectedApps.ts:160` getConnectedApps — `const team = userTeams.find((team) => team.id === c.teamId);`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "userTeams.find runs per credential inside a map over enabled apps; both arrays come from the DB.",
   "round": 2
  },
  "calcom/cal.com|Array searches inside loops over loaded data (N)|packages/features/bookings/lib/service/RegularBookingService.ts:1248": {
@@ -1228,8 +1228,8 @@
   "check": "Array searches inside loops over loaded data (N)",
   "severity": "Low",
   "location": "`packages/features/webhooks/lib/scheduleTrigger.ts:495` updateTriggerForExistingBookings — `(trigger) => !updatedEventTriggers.includes(trigger) && NO_SHOW_TRIGGERS.includes(trigger)`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Trigger lists are capped by a small enum and NO_SHOW_TRIGGERS is a constant, so nothing grows with data.",
   "round": 2
  },
  "calcom/cal.com|Array searches inside loops over loaded data (N)|packages/trpc/server/routers/viewer/me/updateProfile.handler.ts:201": {
@@ -1383,8 +1383,8 @@
   "check": "Network calls without a timeout",
   "severity": "Medium",
   "location": "`packages/lib/domainManager/deploymentServices/cloudflare.ts:186` const response = await fetch(url, {",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "A plain fetch to the Cloudflare API with no signal or timeout, and no wrapper adds one.",
   "round": 2
  },
  "calcom/cal.com|Passwords written into docker-compose|docker-compose.yml:21": {
@@ -1843,8 +1843,8 @@
   "check": "Writes inside loops in N place",
   "severity": "Low",
   "location": "`src/db/models/cipher.rs:635` Cipher.purge_trash — `cipher.delete(conn).await.ok();`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "purge_trash calls cipher.delete (several DB deletes) for each trashed cipher instead of one bulk delete.",
   "round": 2
  },
  "directus/directus|Any website may call this API (CORS *)|api/src/controllers/mcp/oauth.ts:182": {
@@ -1868,8 +1868,8 @@
   "check": "Array searches inside loops over loaded data (N)",
   "severity": "Low",
   "location": "`api/src/database/migrations/20210805B-change-image-metadata-structure.ts:69` down — `if (Object.keys(prevMetadata).filter((key) => key !== 'icc' && key !== 'iptc').length > 0) {`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Filters one row's own metadata keys against two constants; it doesn't search the loaded collection.",
   "round": 2
  },
  "directus/directus|Databases published on every interface (docker-compose)|docker-compose.yml:107": {
@@ -2009,8 +2009,8 @@
   "check": "Queries or requests inside loops (N) in N place",
   "severity": "Medium",
   "location": "`api/src/permissions/modules/process-payload/process-payload.ts:88` processPayload: processPayload calls fetchDynamicVariableData() inside a loop (line 88), and that reaches fetch() — `? await fetchDynamicVariableData(`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "For each schema field with dynamic-variable validation, fetchDynamicVariableData runs service readOne/readMany DB reads (cached only if caching is enabled).",
   "round": 2
  },
  "directus/directus|Queries or requests inside loops (N) in N place|api/src/services/collections.ts:607": {
@@ -2026,8 +2026,8 @@
   "check": "Queries or requests inside loops (N) in N place",
   "severity": "Medium",
   "location": "`api/src/services/meta.ts:30` MetaService.getMetaForQuery: MetaService.getMetaForQuery calls MetaService.filterCount() inside a loop (line 30), and that reaches fetch() — `if (metaVal === 'filter_count') return this.filterCount(collection, query);`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "query.meta holds at most the two meta kinds (total_count, filter_count), a fixed few rather than a data-driven count.",
   "round": 2
  },
  "directus/directus|Queries or requests inside loops (N) in N place|api/src/services/payload.ts:914": {
@@ -2183,8 +2183,8 @@
   "check": "File or program operations inside loops in N place",
   "severity": "Low",
   "location": "`django/utils/autoreload.py:289` restart_with_reloader — `p = subprocess.run(args, env=new_environ, close_fds=False)`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "A restart loop: it reruns the child process only when that process exits with code 3; nothing can be grouped.",
   "round": 2
  },
  "django/django|File or program operations inside loops in N place|docs/_ext/github_links.py:42": {
@@ -2767,8 +2767,8 @@
   "check": "Writes inside loops in N place",
   "severity": "Low",
   "location": "`routers/web/repo/release.go:172` getReleaseInfos — `if err := calReleaseNumCommitsBehind(ctx, ctx.Repo, r, countCache); err != nil {`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "calReleaseNumCommitsBehind only reads a cached commit count and sets struct fields; it writes nothing.",
   "round": 2
  },
  "go-gitea/gitea|Writes inside loops in N place|services/mirror/mirror_pull.go:385": {
@@ -2776,8 +2776,8 @@
   "check": "Writes inside loops in N place",
   "severity": "Low",
   "location": "`services/mirror/mirror_pull.go:385` SyncPullMirror — `theCommits.HeadCommit = repo_module.CommitToPushCommit(newCommit)`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "CommitToPushCommit is a pure in-memory struct conversion, not a write.",
   "round": 2
  },
  "go-gitea/gitea|Writes inside loops in N place|services/pull/merge_queue.go:212": {
@@ -2857,8 +2857,8 @@
   "check": "Network calls without a timeout",
   "severity": "Medium",
   "location": "`ui/src/application/AppStore.ts:102` const response = await axios.post(`${config.get('url')}application`, {",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "axios.post with no timeout option, and the UI never sets axios.defaults.timeout (only an interceptor exists).",
   "round": 2
  },
  "healthchecks/healthchecks|MD5 / SHA-1 used for security|hc/api/models.py:1490": {
@@ -3006,8 +3006,8 @@
   "check": "Network calls without a timeout",
   "severity": "Medium",
   "location": "`packages/hoppscotch-common/src/platform/std/kernel-interceptors/agent/store.ts:346` await axios.post(",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Uses the default axios with only an Authorization header; no timeout or signal is set anywhere in the file.",
   "round": 2
  },
  "hoppscotch/hoppscotch|Passwords written into docker-compose|docker-compose.deploy.yml:10": {
@@ -3357,8 +3357,8 @@
   "check": "Dependency loops (N)",
   "severity": "Medium",
   "location": "Emby.Server.Implementations/AppBase/BaseApplicationPaths.cs → Emby.Server.Implementations/Configuration/ServerConfigurationManager.cs → Emby.Server.Implementations/AppBase/BaseApplicationPaths.cs (32 files in the loop)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "BaseApplicationPaths never refers to ServerConfigurationManager, so the first edge of the reported loop doesn't exist.",
   "round": 2
  },
  "jellyfin/jellyfin|Dependency loops (N)|Emby.Server.Implementations/Session/SessionManager.cs": {
@@ -3552,8 +3552,8 @@
   "check": "Import loops (N)",
   "severity": "High",
   "location": "src/Illuminate/Foundation/Cloud/JsonFormatter.php → src/Illuminate/Log/Formatters/JsonFormatter.php → src/Illuminate/Foundation/Cloud/JsonFormatter.php",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Neither JsonFormatter refers to the other; both extend Monolog's JsonFormatter, so the loop comes from a name collision.",
   "round": 2
  },
  "laravel/framework|Passwords for CI services written into workflows|.github/workflows/databases.yml:408": {
@@ -3755,8 +3755,8 @@
   "check": "Network calls without a timeout",
   "severity": "Medium",
   "location": "`server/notification-providers/360messenger.js:113` return axios.post(\"https://api.360messenger.com/v2/sendMessage\", data, config);",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "The server sets axios.defaults.timeout = 300s in the UptimeKumaServer constructor, so this call has a client default.",
   "round": 2
  },
  "louislam/uptime-kuma|Network calls without a timeout|server/notification-providers/discord.js:91": {
@@ -3764,8 +3764,8 @@
   "check": "Network calls without a timeout",
   "severity": "Medium",
   "location": "`server/notification-providers/discord.js:91` await axios.post(webhookUrl.toString(), payload, config);",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "The global axios.defaults.timeout of 300 seconds set in uptime-kuma-server.ts applies to this call.",
   "round": 2
  },
  "louislam/uptime-kuma|Personal data written to logs|extra/reset-password.mts:48": {
@@ -3798,8 +3798,8 @@
   "check": "Queries or requests inside loops (N) in N place",
   "severity": "Medium",
   "location": "`extra/push-examples/python/index.py:8`: top-level code in index.py calls urllib.request.urlopen() inside a loop (line 8) — `urllib.request.urlopen(push_url)`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "An example heartbeat loop that pushes every 60 seconds by design, i.e. a poll loop.",
   "round": 2
  },
  "louislam/uptime-kuma|SQL assembled from strings|server/database.js:375": {
@@ -4111,8 +4111,8 @@
   "check": "Queries or requests inside loops (N) in N place",
   "severity": "Medium",
   "location": "`app/lib/activitypub/activity/create.rb:229` Create.process_tags: Create.process_tags calls Create.process_emoji() inside a loop (line 229), and that reaches CustomEmoji.find_by() — `process_emoji tag`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "process_emoji runs CustomEmoji.find_by (and possibly save) once per emoji tag in the incoming activity.",
   "round": 2
  },
  "mastodon/mastodon|Queries or requests inside loops (N) in N place|app/services/update_account_service.rb:27": {
@@ -4290,8 +4290,8 @@
   "check": "File or program operations inside loops in N place",
   "severity": "Low",
   "location": "`docs/build.py:11` — `out = subprocess.check_output(`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "A docs build runs each of about four separate generator scripts once; separate programs can't be grouped.",
   "round": 2
  },
  "mitmproxy/mitmproxy|File or program operations inside loops in N place|docs/build.py:15": {
@@ -4613,8 +4613,8 @@
   "check": "Import loops (N)",
   "severity": "High",
   "location": "packages/@n8n/agents/eslint.config.mjs → packages/@n8n/module-cli/src/backend.mjs → packages/@n8n/vitest-config/node.ts → packages/@n8n/cli/src/commands/execution/retry.ts → packages/cli/src/commands/base-command.ts → packages/@n8n/backend-services/src/events/relays/event-relay.ts → packages/@n8n/agents/src/types/runtime/event.ts → packages/@n8n/agents/src/sdk/agent.ts → packages/@n8n/instance-ai/src/skills/skills.ts → packages/@n8n/agents/eslint.config.mjs (599 files in the loop)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "eslint.config.mjs imports @n8n/eslint-config/backend, not module-cli/backend.mjs; the edges come from bad module resolution.",
   "round": 2
  },
  "n8n-io/n8n|Import loops (N)|packages/@n8n/crdt/src/awareness/yjs-awareness.ts": {
@@ -5066,8 +5066,8 @@
   "check": "Dependency loops (N)",
   "severity": "Medium",
   "location": "packages/common/index.ts → packages/common/pipes/index.ts → packages/common/pipes/parse-enum.pipe.ts → packages/common/index.ts (4 files in the loop)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "parse-enum.pipe.ts imports the runtime value HttpStatus from '../index.js', which re-exports pipes/index.js, which re-exports parse-enum.pipe.",
   "round": 2
  },
  "nestjs/nest|Import loops (N)|integration/injector/src/circular-modules/circular.module.ts": {
@@ -5358,8 +5358,8 @@
   "check": "File or program operations inside loops in N place",
   "severity": "Low",
   "location": "`etl/steps/data/open_numbers/open_numbers/latest/gapminder__co2_emission.py:143` load_and_combine — `with open((path / resource.path).as_posix(), \"rb\") as istream:`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Opens each resource file once to join them; each distinct file must be read, so there's nothing to group.",
   "round": 2
  },
  "owid/etl|File or program operations inside loops in N place|etl/steps/data/open_numbers/open_numbers/latest/sodertornsmodellen.py:143": {
@@ -5375,8 +5375,8 @@
   "check": "File or program operations inside loops in N place",
   "severity": "Low",
   "location": "`snapshots/un/2024-07-11/un_wpp.py:294` download_data — `_download_file(url, output_path)`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Loops over a hard-coded constant list of 14 URLs, a fixed count set in code.",
   "round": 2
  },
  "owid/etl|File or program operations inside loops in N place|vscode_extensions/compare-previous-version/src/versionDiff.ts:414": {
@@ -5459,8 +5459,8 @@
   "check": "Network calls without a timeout",
   "severity": "Medium",
   "location": "`etl/steps/data/grapher/un/2023-08-16/un_sdg.py:250` url_check_b = requests.head(url_b)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "requests.head(url_b) without a timeout argument; requests waits forever by default.",
   "round": 2
  },
  "owid/etl|Network calls without a timeout|snapshots/climate/2024-05-20/climate_change_impacts.py:110": {
@@ -5476,8 +5476,8 @@
   "check": "Network calls without a timeout",
   "severity": "Medium",
   "location": "`snapshots/climate/2024-07-23/climate_change_impacts.py:150` response = requests.get(url)  # ty: ignore[invalid-argument-type]",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "requests.get(url) to a remote download URL with no timeout argument.",
   "round": 2
  },
  "owid/etl|Network calls without a timeout|snapshots/un/2026-07-31/un_sdg.py:358": {
@@ -5733,8 +5733,8 @@
   "check": "Queries or requests inside loops (N) in N place",
   "severity": "Medium",
   "location": "`core/record_model.go:1605` deleteRefRecords: deleteRefRecords calls BaseApp.FindRecordById() inside a loop (line 1605), and that reaches db.Select() — `refRecord, err := app.FindRecordById(refCollection, refId)`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "FindRecordById runs one SELECT per referencing record id; the ids could be loaded in a single query.",
   "round": 2
  },
  "pocketbase/pocketbase|Unused code (N function)|ui/src/records/recordUpsertModal.js:97": {
@@ -5911,8 +5911,8 @@
   "check": "Import loops (N)",
   "severity": "High",
   "location": "saleor/graphql/app/dataloaders/__init__.py → saleor/graphql/app/dataloaders/apps.py → saleor/graphql/webhook/dataloaders/models.py → saleor/graphql/app/dataloaders/__init__.py",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "All three imports are top-level: __init__ imports apps, apps imports webhook.dataloaders.models, and models imports app.dataloaders.",
   "round": 2
  },
  "saleor/saleor|Import loops (N)|saleor/graphql/product/filters/product.py": {
@@ -5920,8 +5920,8 @@
   "check": "Import loops (N)",
   "severity": "High",
   "location": "saleor/graphql/product/filters/product.py → saleor/graphql/product/filters/product_helpers.py → saleor/graphql/product/types/__init__.py → saleor/graphql/product/types/categories.py → saleor/graphql/product/filters/product.py (7 files in the loop)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Every edge is a top-level import: product to product_helpers to types to categories, and categories back to filters.product.",
   "round": 2
  },
  "saleor/saleor|Important code no test reaches (N function)|saleor/app/migrations/0001_initial.py:11": {
@@ -6082,8 +6082,8 @@
   "check": "Array searches inside loops over loaded data (N)",
   "severity": "Low",
   "location": "`packages/shadcn/src/utils/registries.ts:32` ensureRegistriesInConfig — `!Object.keys(BUILTIN_REGISTRIES).includes(registry)`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "The includes target is the keys of the constant BUILTIN_REGISTRIES map, a fixed tiny list.",
   "round": 2
  },
  "shadcn-ui/ui|Copied logic in N group (~N lines)|apps/v4/examples/aria/textarea-field.tsx:8": {
@@ -6262,8 +6262,8 @@
   "check": "Dependency loops (N)",
   "severity": "Medium",
   "location": "mockwebserver-junit5/src/main/kotlin/mockwebserver3/junit5/StartStop.kt → mockwebserver-junit5/src/main/kotlin/mockwebserver3/junit5/internal/StartStopExtension.kt → mockwebserver-junit5/src/main/kotlin/mockwebserver3/junit5/StartStop.kt",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "StartStop names StartStopExtension::class in @ExtendWith, and StartStopExtension imports and uses StartStop::class.java.",
   "round": 2
  },
  "square/okhttp|Dependency loops (N)|okcurl/src/main/kotlin/okhttp3/curl/Main.kt": {
@@ -6287,8 +6287,8 @@
   "check": "Dependency loops (N)",
   "severity": "Medium",
   "location": "okhttp-tls/src/main/kotlin/okhttp3/tls/HandshakeCertificates.kt → okhttp-tls/src/main/kotlin/okhttp3/tls/internal/TlsUtil.kt → okhttp-tls/src/main/kotlin/okhttp3/tls/HandshakeCertificates.kt",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "HandshakeCertificates imports TlsUtil.newKeyManager/newTrustManager, and TlsUtil imports and builds HandshakeCertificates.",
   "round": 2
  },
  "square/okhttp|Dependency loops (N)|okhttp/src/androidMain/kotlin/okhttp3/internal/platform/AndroidPlatform.kt": {
@@ -6441,8 +6441,8 @@
   "check": "Writes inside loops in N place",
   "severity": "Low",
   "location": "`frontend/lib/src/components/elements/ArrowVegaLiteChart/useVegaEmbed.ts:448` useVegaEmbed.createView — `await createdView.resize().runAsync()`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Re-renders the Vega view until pending data settles; that's not a storage write or file I/O.",
   "round": 2
  },
  "sveltejs/svelte|Import loops (N)|packages/svelte/src/compiler/phases/3-transform/client/visitors/RegularElement.js": {
@@ -6450,8 +6450,8 @@
   "check": "Import loops (N)",
   "severity": "High",
   "location": "packages/svelte/src/compiler/phases/3-transform/client/visitors/RegularElement.js → packages/svelte/src/compiler/phases/3-transform/client/visitors/shared/element.js → packages/svelte/src/compiler/phases/3-transform/client/visitors/RegularElement.js",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "RegularElement.js imports from shared/element.js, which imports the build_*_directives_object functions back from RegularElement.js.",
   "round": 2
  },
  "sveltejs/svelte|Raw HTML injected into pages|packages/svelte/src/internal/client/dom/elements/customizable-select.js:18": {
@@ -6686,8 +6686,8 @@
   "check": "Writes inside loops in N place",
   "severity": "Low",
   "location": "`lib/model/model.go:1457` model.ccHandleFolders — `if err := m.ccCheckEncryption(cfg, folderDevice, ccDeviceInfos[folder.ID], deviceCfg.Untrusted); err != nil {`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Writes each encrypted folder's token file at most once (then cached), each in its own folder, so nothing can be grouped.",
   "round": 2
  },
  "tldraw/tldraw|Any website may call this API (CORS *)|apps/bemo-worker/src/worker.ts:18": {
@@ -6802,8 +6802,8 @@
   "check": "Import loops (N)",
   "severity": "High",
   "location": "apps/dotcom/sync-worker/src/routes/tla/initUser.ts → apps/dotcom/sync-worker/src/utils/tla/getAuth.ts → apps/dotcom/sync-worker/src/routes/tla/initUser.ts",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "initUser imports runtime functions from getAuth, and getAuth imports ensureMcpUserRows from initUser.",
   "round": 2
  },
  "tldraw/tldraw|Import loops (N)|apps/examples/src/examples/shapes/tools/speech-bubble/SpeechBubble/SpeechBubbleUtil.tsx": {
@@ -6819,8 +6819,8 @@
   "check": "Import loops (N)",
   "severity": "High",
   "location": "templates/branching-chat/client/connection/ConnectionBindingUtil.tsx → templates/branching-chat/client/nodes/nodePorts.tsx → templates/branching-chat/client/connection/ConnectionBindingUtil.tsx (5 files in the loop)",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "ConnectionBindingUtil imports getNodePorts, and nodePorts imports getConnectionBindings back; both are value imports.",
   "round": 2
  },
  "tldraw/tldraw|Important code no test reaches (N function)|templates/workflow/src/nodes/nodePorts.tsx:36": {
@@ -6868,8 +6868,8 @@
   "check": "Network calls without a timeout",
   "severity": "Medium",
   "location": "`packages/editor/src/lib/utils/assets.ts:12` const res = await fetch(url)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "dataUrlToFile fetches a data: URL to decode it locally; this isn't a network request.",
   "round": 2
  },
  "tldraw/tldraw|Network calls without a timeout|packages/sync/src/useSyncDemo.ts:189": {
@@ -6984,8 +6984,8 @@
   "check": "Queries or requests inside loops (N) in N place",
   "severity": "Medium",
   "location": "`axum/src/serve/mod.rs:1276` test_hyper_header_read_timeout_is_enabled: test_hyper_header_read_timeout_is_enabled calls client.read_to_end() inside a loop (line 1276) — `client.read_to_end(&mut Vec::new()),`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "A test loop over two literal requests that reads an in-memory duplex stream; no query or network request.",
   "round": 2
  },
  "tokio-rs/axum|Unused code (N function)|axum-extra/src/extract/json_deserializer.rs:379": {
@@ -7009,8 +7009,8 @@
   "check": "Writes inside loops in N place",
   "severity": "Low",
   "location": "`axum/src/serve/mod.rs:1267` test_hyper_header_read_timeout_is_enabled — `client.write_all(req.as_bytes()).await.unwrap();`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "A test loop over two fixed literal requests that writes to an in-memory duplex stream.",
   "round": 2
  },
  "traefik/traefik|Container runs as root|webui/buildx.Dockerfile:2": {
@@ -7066,8 +7066,8 @@
   "check": "Array searches inside loops over loaded data (N)",
   "severity": "Low",
   "location": "`packages/vite/src/node/server/hmr.ts:578` handleHMRUpdate — `ssrHotUpdateOptions.modules = ssrHotUpdateOptions.modules.filter(`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "filteredModules.some runs inside a filter over the module list: a nested O(n*m) search by id over data arrays.",
   "round": 2
  },
  "vitejs/vite|Array searches inside loops over loaded data (N)|packages/vite/src/node/server/hmr.ts:586": {
@@ -7107,8 +7107,8 @@
   "check": "File or program operations inside loops in N place",
   "severity": "Low",
   "location": "`packages/vite/src/node/plugins/resolve.ts:1007` resolvePackageEntry — `const resolvedEntryPoint = tryFsResolve(`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Loops over one entry or three fixed fallback names and returns on the first that resolves.",
   "round": 2
  },
  "vitejs/vite|File or program operations inside loops in N place|packages/vite/src/node/server/index.ts:1523": {
@@ -7124,8 +7124,8 @@
   "check": "File or program operations inside loops in N place",
   "severity": "Low",
   "location": "`packages/vite/src/node/utils.ts:685` copyDir — `const stat = fs.statSync(srcFile)`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Calls statSync once per directory entry, which readdirSync withFileTypes could avoid; the count depends on the directory's contents.",
   "round": 2
  },
  "vitejs/vite|Module-level mutable state (N place)|packages/vite/src/module-runner/importMetaResolver.ts:39": {
@@ -7230,8 +7230,8 @@
   "check": "Import loops (N)",
   "severity": "High",
   "location": "packages/runtime-dom/src/apiCustomElement.ts → packages/runtime-dom/src/index.ts → packages/runtime-dom/src/apiCustomElement.ts",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "apiCustomElement imports createApp/render as values from '.', and index.ts re-exports from './apiCustomElement'.",
   "round": 2
  },
  "vuejs/core|Module-level mutable state (N place)|packages/runtime-core/src/devtools.ts:40": {
@@ -7475,8 +7475,8 @@
   "check": "Array searches inside loops over loaded data (N)",
   "severity": "Low",
   "location": "`packages/astro/src/content/types-generator.ts:510` writeContentFiles — `if (settings.injectedTypes.some((t) => t.filename === CONTENT_TYPES_FILE)) {`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Each pass of the collection loop scans injectedTypes, which grows inside the same loop; the check never changes between passes.",
   "round": 2
  },
  "withastro/astro|Array searches inside loops over loaded data (N)|packages/astro/src/core/routing/create-manifest.ts:724": {
@@ -7484,8 +7484,8 @@
   "check": "Array searches inside loops over loaded data (N)",
   "severity": "Low",
   "location": "`packages/astro/src/core/routing/create-manifest.ts:724` createRoutesList — `const isRedirect = redirectRoutes.findIndex((rd) => rd.route === fileBasedRoute.route);`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "redirectRoutes.findIndex runs once per file-based route; both lists grow with the project's routes.",
   "round": 2
  },
  "withastro/astro|Container runs as root|examples/basics/.codesandbox/Dockerfile:1": {
@@ -7525,8 +7525,8 @@
   "check": "File or program operations inside loops in N place",
   "severity": "Low",
   "location": "`packages/astro/src/content/data-store-writer.ts:232` ChunkedWriter.#writeCollection — `await writeChunk();`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "This is the chunking writer: it writes only once a fixed-size chunk fills, so the writes are already grouped.",
   "round": 2
  },
  "withastro/astro|File or program operations inside loops in N place|packages/astro/src/core/fs/index.ts:122": {
@@ -7550,8 +7550,8 @@
   "check": "File or program operations inside loops in N place",
   "severity": "Low",
   "location": "`packages/integrations/markdoc/src/content-entry-type.ts:201` resolvePartials — `partialContents = await fs.promises.readFile(partialPath, 'utf-8');`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Awaits a readFile for every partial tag in the AST, one after another and with no cache, so a repeated partial is read again.",
   "round": 2
  },
  "withastro/astro|Import loops (N)|packages/astro/src/core/environment/index.ts": {
