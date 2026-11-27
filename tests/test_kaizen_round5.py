@@ -2,8 +2,10 @@
 
 import unittest
 
+from codefactory.analyzers.generic import available
 from codefactory.audit import scan_config
 from codefactory.checks import scan_sources
+from codefactory.cli import build
 from tests.test_large_repo import repo
 
 
@@ -50,6 +52,14 @@ class Round5Test(unittest.TestCase):
             "__tests__/decode.spec.ts": "import { decodeHtmlBrowser } from '../src/decode'\ndecodeHtmlBrowser(' abc ')\n",
         })  # fmt: skip
         self.assertEqual(hits(found, "raw_html"), ["src/decode.ts"])
+
+    @unittest.skipUnless(available(), "Ruby needs the language pack")
+    def test_a_ruby_block_select_is_enumerable_not_a_query(self):
+        root = repo({"lib/renderer.rb": (  # jekyll: site.converters.select { |c| … }
+            "class Renderer\n  def converters\n    items.each do |i|\n      site.converters.select { |c| c.matches(i) }\n"
+            "    end\n  end\n\n  def users\n    ids.each do |i|\n      User.where(id: i).first\n    end\n  end\nend\n")})  # fmt: skip
+        sites = {s.detail for s in build(root, cache=False).sites if s.kind == "loop_io"}
+        self.assertEqual(sites, {"User.where"})
 
     def test_base_images_and_entrypoints_that_drop_root(self):
         root = repo({

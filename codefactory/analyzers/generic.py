@@ -313,7 +313,7 @@ def analyze_generic(root: Path, ignore: list[str], include_js: bool = False, cac
         INCOMPLETE.extend(sorted(missing))  # not cached: the next run tries again
         found = [(rel, lang) for rel, lang in found if lang not in missing]
     items = [(rel, (str(root / rel), rel, lang)) for rel, lang in found]
-    parsed = parallel.run(root, "generic", items, parse_file, tool="treewalk-5", cache=cache)
+    parsed = parallel.run(root, "generic", items, parse_file, tool="treewalk-6", cache=cache)
     if dropped := [rel for rel, _ in found if rel not in parsed]:  # (the review's limits count them too)
         print(f"codefactory: {len(dropped)} files aren't analyzed: over 1 MB, binary or not parseable "
               f"({', '.join(dropped[:3])}{' …' if len(dropped) > 3 else ''}).", file=sys.stderr)  # fmt: skip

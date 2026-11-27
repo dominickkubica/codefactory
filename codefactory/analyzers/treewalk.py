@@ -161,9 +161,20 @@ def _callee_text(node) -> str:
         fn = node.child_by_field_name("function") or node.child_by_field_name("method")
         fn = fn or (node.named_children[0] if node.named_children else None)
         text = (fn or node).text.decode("utf-8", "replace")
-    return re.sub(r"\s+", "", text.split("(")[0])[:80]
+    text = re.sub(r"\s+", "", text.split("(")[0])[:80]
+    if (
+        node.type == "call"
+        and node.child_by_field_name("block") is not None
+        and node.child_by_field_name("arguments") is None
+        and method is not None
+        and method.text in ENUMERABLE
+    ):
+        text += "{}"  # Ruby's `converters.select { |c| … }`: a block and no arguments is Enumerable, not a query
+    return text
 
 
+ENUMERABLE = {b"select", b"find", b"detect", b"count", b"sum", b"reject", b"filter", b"min_by", b"max_by", b"sort_by",
+              b"group_by", b"partition", b"find_all", b"filter_map"}  # fmt: skip
 BODY = {"block", "body", "compound_statement", "body_statement", "function_body", "statement_block", "do_block"}
 
 
