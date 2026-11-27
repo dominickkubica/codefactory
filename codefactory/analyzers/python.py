@@ -350,5 +350,4 @@ def _not_parsed(g: Graph, failed: dict[str, dict]) -> None:
               file=sys.stderr)  # fmt: skip
     if lost:
         shown = "; ".join(f"{rel} {failed[rel]['error']}" for rel in lost[:3]) + (" …" if len(lost) > 3 else "")
-        print(f"codefactory: {len(lost)} Python files aren't analyzed: {version} can't parse them ({shown}).",
-              file=sys.stderr)
+        print(f"codefactory: {len(lost)} Python files aren't analyzed: {version} can't parse them ({shown}).", file=sys.stderr)
