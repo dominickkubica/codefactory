@@ -3942,8 +3942,8 @@
   "check": "SQL assembled from strings",
   "severity": "High",
   "location": "`models/db/index.go:29` res, err := e.Exec(fmt.Sprintf(\"UPDATE %s SET max_index=? WHERE group_id=? AND max_index<?\", tableName), maxIndex, groupID, maxIndex)  (interpolates:  \t\treturn err \t)  (no endpoint reaches it)",
-  "label": "true",
-  "why": "tableName parameter is interpolated into SQL with fmt.Sprintf without escaping (current caller passes a constant).",
+  "label": "false",
+  "why": "Relabeled for consistency with round 4 (index.go:70): tableName is a string literal at every caller, so nothing outside reaches the interpolation.",
   "round": 2
  },
  "go-gitea/gitea|SQL assembled from strings|models/db/index.go:39": {
@@ -6066,8 +6066,8 @@
   "check": "Container runs as root",
   "severity": "Medium",
   "location": "`release/docker/Dockerfile:6` no USER after python:3.15-slim-trixie — `FROM python:3.15-slim-trixie`",
-  "label": "true",
-  "why": "Shipped image has no USER; the container starts as root and the entrypoint only drops to mitmproxy via gosu.",
+  "label": "false",
+  "why": "Relabeled for consistency with round 5: the entrypoint drops to the mitmproxy user with gosu before the program runs (the official-image pattern), so the program doesn't run as root.",
   "round": 2
  },
  "mitmproxy/mitmproxy|Credentials committed in source|mitmproxy/certs.py:78": {

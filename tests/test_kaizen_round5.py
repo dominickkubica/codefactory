@@ -42,8 +42,11 @@ class Round5Test(unittest.TestCase):
                           'ENTRYPOINT ["/bin/entrypoint.sh"]\n',
             "script/docker-entrypoint.sh": "#!/bin/sh\nexec su-exec 1000:1000 \"$@\"\n",
             "server/Dockerfile": "FROM python:3.13\nCMD [\"python\", \"app.py\"]\n",
+            # gitea: installs su-exec, but s6 runs as root
+            "gitea/Dockerfile": "FROM alpine\nRUN apk add --no-cache \\\n    s6 \\\n    su-exec \\\n    git\n"
+                                'ENTRYPOINT ["/usr/bin/entrypoint"]\n',
         })  # fmt: skip
-        self.assertEqual(hits(scan_config(root), "docker_root"), ["server/Dockerfile"])
+        self.assertEqual(sorted(hits(scan_config(root), "docker_root")), ["gitea/Dockerfile", "server/Dockerfile"])
 
 
 if __name__ == "__main__":

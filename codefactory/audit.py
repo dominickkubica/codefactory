@@ -110,11 +110,15 @@ DROP_ROOT = re.compile(r"\b(?:su-exec|gosu|setpriv|runuser|s6-setuidgid|chpst\s+
 def _drops_root(root: Path, dockerfile: Path, text: str) -> bool:
     """Starts as root only to switch user before the program runs: `su-exec`/`gosu` in the Dockerfile or in the
     entrypoint script it copies in (syncthing's docker-entrypoint.sh)."""
-    if DROP_ROOT.search(text):
+    # (in the Dockerfile itself, a use, not the line installing it: gitea installs su-exec and still runs s6 as root)
+    if any(DROP_ROOT.search(ln) and not re.search(r"\b(?:apk|apt-get|apt|yum|dnf)\b|^\s*\\?\s*[\w.-]+\s*\\\s*$", ln)
+           for ln in text.splitlines()):
         return True
     for script in set(re.findall(r"[\w./-]+\.sh\b", text)):
-        for base in (dockerfile.parent, root):
-            p = (base / script.lstrip("/")).resolve()
+        parts = script.strip("/").split("/")
+        # (`/src/script/docker-entrypoint.sh` is a build stage's path: try each tail of it in the repository)
+        for base, tail in ((b, "/".join(parts[i:])) for b in (dockerfile.parent, root) for i in range(len(parts))):
+            p = (base / tail).resolve()
             if p.is_file() and p.is_relative_to(root.resolve()):
                 try:
                     if DROP_ROOT.search(p.read_text(encoding="utf-8", errors="replace")[:200_000]):
