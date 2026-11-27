@@ -61,6 +61,14 @@ class Round5Test(unittest.TestCase):
         sites = {s.detail for s in build(root, cache=False).sites if s.kind == "loop_io"}
         self.assertEqual(sites, {"User.where"})
 
+    def test_a_bundlers_hashed_chunk_is_build_output(self):
+        from codefactory.paths import BUILD_OUTPUT
+
+        for f in ("mitmproxy/tools/web/static/index-DA3bdZbQ.js", "web/assets/vendor.4f9a2c1b.js"):
+            self.assertTrue(BUILD_OUTPUT.search(f), f)
+        for f in ("src/static/use-debounce.js", "static/js/app-settings.js", "assets/main.js"):
+            self.assertFalse(BUILD_OUTPUT.search(f), f)
+
     def test_base_images_and_entrypoints_that_drop_root(self):
         root = repo({
             "Dockerfile.base": "FROM node:22 AS deps\nRUN npm ci\n",

@@ -485,7 +485,7 @@ def _template_lines(lines: list[str]) -> set[int]:
             out.add(n)
             if "`" in ln.replace("\\`", ""):
                 inside = False
-        elif re.search(r"(?:^|[=(,:]|return)\s*`\s*(?:<[^`]*)?$", ln):
+        elif re.search(r"(?:[=(,:]|return)\s*(?:/\*.*?\*/\s*)?`\s*(?:<[^`]*)?$", ln):  # (`= /* js */ \``)
             inside = True
     return out
 

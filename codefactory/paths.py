@@ -299,7 +299,12 @@ def is_dev_setup(path: str) -> bool:
 
 
 VERSION_PART = re.compile(r"(?<![^/_-])(?:\d{4}-\d{2}-\d{2}|\d{8})(?![^/_.-])")  # dated: frozen on purpose
-BUILD_OUTPUT = re.compile(r"(?:^|/)(?:priv/static|dist|build|out|public/build|static/dist)/|\.(?:min|bundle)\.[cm]?js$", re.I)
+BUILD_OUTPUT = re.compile(
+    r"(?:^|/)(?:priv/static|dist|build|out|public/build|static/dist)/|\.(?:min|bundle)\.[cm]?js$|"
+    # a bundler's hashed chunk: `static/index-DA3bdZbQ.js`, `assets/vendor.4f9a2c1b.js`
+    r"(?:^|/)(?:static|assets)/(?:[\w.-]+/)*[\w.-]+[-.](?-i:(?=[a-z_]*[A-Z0-9])[A-Za-z0-9_]{8})\.[cm]?js$",
+    re.I,
+)
 
 
 def deliberate_copies(files: list[str]) -> bool:

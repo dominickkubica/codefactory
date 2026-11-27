@@ -24,7 +24,7 @@ from .config import load_config
 from .coverage import measured
 from .e2e import JS, pages_reached
 from .infra import scan as infra_scan
-from .paths import deliberate_copies, is_doc_sample, is_example_code, is_script, is_test, walk
+from .paths import BUILD_OUTPUT, deliberate_copies, is_doc_sample, is_example_code, is_script, is_test, walk
 from .plan import make_plan
 from .privacy import scan as privacy_scan
 from .profile import detect as detect_profile
@@ -1186,7 +1186,8 @@ class Review:
 
     def _script(self, flag: dict) -> bool:
         fn = self.v.fn.get(flag["target"])  # (a Rust test written next to the code counts as test code too)
-        return is_script(self._file(flag)) or bool(fn and self._rust_test(fn["file"], fn["line"]))
+        file = self._file(flag)  # (a bundler's output is the build's code, not the project's)
+        return is_script(file) or BUILD_OUTPUT.search(file) is not None or bool(fn and self._rust_test(fn["file"], fn["line"]))
 
     def _tracked(self, names: list[str]) -> list[str]:
         if not names:
