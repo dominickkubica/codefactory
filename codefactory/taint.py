@@ -5,7 +5,9 @@ Per function, the analysis finds which parameters (and which sources inside it) 
 return value. Those summaries are combined across the call graph to a fixed point, so a request parameter handed to a
 helper that builds SQL is followed into the helper. A value passed through a sanitizer (int(), uuid.UUID(),
 shlex.quote, secure_filename, html.escape…) stops being tainted; SQL with bound parameters is never a sink, because
-its query text is a constant.
+its query text is a constant. A value checked before the sink (a safe-URL validator, path containment, allow-list
+membership) reads as clean inside the `if` that checked it, or after an `if` whose failure branch replaces it or
+leaves.
 
 Within a function it's flow-insensitive (a variable tainted anywhere is tainted everywhere) and an unknown call with
 a tainted argument returns a tainted value: generous on purpose, because the sinks are specific.
@@ -67,7 +69,10 @@ STATEMENT = {"insert", "update", "delete", "select", "values", "where", "filter"
              "on_conflict_do_update", "on_conflict_do_nothing", "join", "group_by", "limit", "offset", "having"}  # fmt: skip
 # A request parameter declared with one of these types is converted and validated before the handler runs (FastAPI,
 # Django path converters): it can't carry attacker text.
-SAFE_TYPES = {"int", "float", "bool", "UUID", "date", "datetime", "time", "Decimal", "conint", "confloat", "PositiveInt",
+# helpers whose name says they hand back a cleaned value: clean_html(html), get_next_path(next), safe_url_for(x)
+CLEANS = re.compile(r"^clean_|_clean$|^sanitize|^get_next_path$|safe\w*_(?:url|redirect|path)|(?:url|redirect)\w*_safe")
+SAFE_TYPES = {"int", "float", "bool", "UUID", "UUID1", "UUID3", "UUID4", "UUID5",  # (pydantic's UUID4…)
+              "date", "datetime", "time", "Decimal", "conint", "confloat", "PositiveInt",
               "NonNegativeInt", "Literal"}  # fmt: skip
 # request *data*, not any mention of "request" (urllib.request, request objects passed around in an HTTP library)
 SOURCE_HINT = re.compile(
@@ -89,6 +94,15 @@ class Summary:
     returns: set[int] = field(default_factory=set)  # params that reach the return value
     source_sinks: list[tuple] = field(default_factory=list)  # (source text, kind, line, call, via, sink fn id)
     source_returns: str = ""  # a source the function returns, if any
+
+
+def _cleans(name: str) -> bool:
+    """A call that converts, escapes or checks its argument: what it returns isn't the request's text."""
+    return name in SANITIZERS or bool(LOOKUP.search(name)) or bool(CLEANS.search(name))
+
+
+def _local(name: str) -> bool:
+    return name in LOCAL_URL or name.endswith("reverse")  # eventreverse(event, "presale:checkout")
 
 
 def _name(func: ast.AST) -> str:
@@ -162,20 +176,74 @@ LOCAL_URL = {
 }
 
 
-def _guards(func) -> dict[int, set[str]]:
-    """For each call, the names an enclosing `if` checked with a validator: `if x and _allow_redirect(x): call(x)`."""
-    out: dict[int, set[str]] = {}
+FIXED_HOST = re.compile(r"^[a-z][a-z0-9+.-]*://[^/?#@{}\0]+[/?#]", re.I)
+# a failed check that ends with one of these leaves the function: `if not ok(x): abort(400)`
+LEAVES = re.compile(r"^abort$|not_found|forbid|bad_request|permission_denied|^raise_|^http_?4\d\d", re.I)
+# path containment on the value itself: `p.resolve().is_relative_to(base)`, `full.startswith(base_dir)`
+CONTAINED = {"is_relative_to", "startswith"}
+
+
+def _key(e: ast.AST) -> str:
+    return e.id if isinstance(e, ast.Name) else ast.unparse(e)
+
+
+def _checks(test: ast.AST) -> tuple[set[str], set[str]]:
+    """The expressions a test vouches for when it's true, and when it's false: a validator's arguments
+    (`is_safe(x)`, `url_has_allowed_host_and_scheme(url=x)`), allow-list membership (`x in ALLOWED`), containment
+    (`p.is_relative_to(base)`, `os.path.commonpath([base, p]) == base`). `not` and `not in` swap the two."""
+    if isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not):
+        yes, no = _checks(test.operand)
+        return no, yes
+    if isinstance(test, ast.BoolOp):
+        yes, no = set(), set()
+        for v in test.values:
+            y, n = _checks(v)
+            yes |= y
+            no |= n
+        return yes, no
+    if isinstance(test, ast.Compare) and len(test.ops) == 1:
+        op, left, right = test.ops[0], test.left, test.comparators[0]
+        if isinstance(op, (ast.In, ast.NotIn)) and not isinstance(left, ast.Constant):
+            if isinstance(right, ast.Constant) and isinstance(right.value, str):
+                return set(), set()  # a substring test says nothing about the rest of the value
+            return ({_key(left)}, set()) if isinstance(op, ast.In) else (set(), {_key(left)})
+        if isinstance(op, (ast.Eq, ast.NotEq)):
+            inner = next((c for c in (left, right) if isinstance(c, ast.Call) and _name(c.func) == "commonpath"), None)
+            if inner is not None:
+                keys = {_key(x) for a in inner.args for x in (a.elts if isinstance(a, (ast.List, ast.Tuple)) else [a])}
+                return (keys, set()) if isinstance(op, ast.Eq) else (set(), keys)
+        return set(), set()
+    if isinstance(test, ast.Call):
+        name, f = _name(test.func), test.func
+        if name in CONTAINED and isinstance(f, ast.Attribute) and test.args:
+            if name == "startswith" and isinstance(test.args[0], ast.Constant):
+                return set(), set()  # `x.startswith("/")` isn't a base directory ("//evil.com", "/etc/passwd")
+            keys = {_key(f.value)}
+            if isinstance(f.value, ast.Call) and isinstance(f.value.func, ast.Attribute):  # p.resolve().is_relative_to
+                keys.add(_key(f.value.func.value))
+            return keys, set()
+        if VALIDATOR.search(name):
+            return {_key(a) for a in [*test.args, *(k.value for k in test.keywords)]}, set()
+    return set(), set()
+
+
+def _guards(func) -> dict[int, frozenset[str]]:
+    """For each node, the expressions an enclosing `if` checked: `if x and _allow_redirect(x): call(x)`, and in the
+    `else` of `if x not in ALLOWED:`."""
+    out: dict[int, frozenset[str]] = {}
 
     def visit(node, checked: frozenset):
-        if isinstance(node, ast.If):
-            names = _validated(node.test)
-            for child in node.body:
-                visit(child, checked | names)
-            for child in node.orelse:
-                visit(child, checked)
+        out[id(node)] = checked
+        if isinstance(node, (ast.If, ast.IfExp)):
+            yes, no = _checks(node.test)
+            visit(node.test, checked)
+            body = node.body if isinstance(node.body, list) else [node.body]
+            orelse = node.orelse if isinstance(node.orelse, list) else [node.orelse]
+            for child in body:
+                visit(child, checked | yes)
+            for child in orelse:
+                visit(child, checked | no)
             return
-        if isinstance(node, ast.Call):
-            out[id(node)] = set(checked)
         for child in ast.iter_child_nodes(node):
             visit(child, checked)
 
@@ -183,35 +251,47 @@ def _guards(func) -> dict[int, set[str]]:
     return out
 
 
-def _validated(test: ast.AST) -> set[str]:
-    """Names a validator call in a test checks: `is_safe(x)`, `url_has_allowed_host_and_scheme(url=x, …)`."""
-    return {
-        a.id
-        for c in ast.walk(test)
-        if isinstance(c, ast.Call) and VALIDATOR.search(_name(c.func))
-        for a in [*c.args, *(k.value for k in c.keywords)]
-        if isinstance(a, ast.Name)
-    }
+def _leaves(block: list) -> bool:
+    last = block[-1] if block else None
+    if isinstance(last, (ast.Return, ast.Raise, ast.Continue, ast.Break)):
+        return True
+    call = last.value if isinstance(last, ast.Expr) else None
+    return isinstance(call, ast.Call) and bool(LEAVES.search(_name(call.func)))
 
 
-def _replaced_unless_valid(func) -> dict[str, int]:
-    """Names that are checked and, when the check fails, replaced or abandoned: `if not is_safe(x): x = "/"` (or
-    return / raise). From the end of that `if` on, the name holds either a value that passed or the replacement:
-    {name: the line the check ends on}."""
-    out: dict[str, int] = {}
-    for node in ast.walk(func):
-        if not isinstance(node, ast.If):
-            continue
-        negated = [n.operand for n in ast.walk(node.test) if isinstance(n, ast.UnaryOp) and isinstance(n.op, ast.Not)]
-        names = set().union(*(_validated(n) for n in negated)) if negated else set()
-        for name in names:
-            assigned = any(
-                isinstance(t, ast.Name) and t.id == name for n in ast.walk(node) if isinstance(n, ast.Assign) for t in n.targets
-            )
-            leaves = bool(node.body) and isinstance(node.body[-1], (ast.Return, ast.Raise))
-            if assigned or leaves:
-                end = getattr(node, "end_lineno", node.lineno)
-                out[name] = min(out.get(name, end), end)
+def _assigns(block: list, key: str) -> bool:
+    return any(isinstance(t, ast.Name) and t.id == key
+               for s in block for n in ast.walk(s) if isinstance(n, ast.Assign) for t in n.targets)  # fmt: skip
+
+
+def _cleaned(func) -> dict[str, list[tuple[int, int]]]:
+    """Expressions that read as clean over a range of lines {key: [(after line, through line)]}: past a check that,
+    when it fails, replaces the value or leaves (`if not is_safe(x): x = "/"`, `… return`, `if x not in ALLOWED:
+    abort(404)`, `if is_safe(x): … else: x = reverse("home")`, `assert ok(x)`), or past `x = sanitizer(x)`. The
+    range is the rest of the block holding the check, so a sibling branch isn't covered."""
+    out: dict[str, list[tuple[int, int]]] = {}
+
+    def walk(block: list):
+        end = getattr(block[-1], "end_lineno", 0) if block else 0
+        for stmt in block:
+            keys: set[str] = set()
+            if isinstance(stmt, ast.If):
+                yes, no = _checks(stmt.test)
+                keys = {k for k in no if _leaves(stmt.body) or _assigns(stmt.body, k)}
+                keys |= {k for k in yes if stmt.orelse and (_leaves(stmt.orelse) or _assigns(stmt.orelse, k))}
+            elif isinstance(stmt, ast.Assert):
+                keys = _checks(stmt.test)[0]
+            elif isinstance(stmt, ast.Assign) and isinstance(stmt.value, ast.Call) and _cleans(_name(stmt.value.func)):
+                args = {_key(a) for a in stmt.value.args}
+                keys = {t.id for t in stmt.targets if isinstance(t, ast.Name) and t.id in args}
+            for k in keys:
+                out.setdefault(k, []).append((getattr(stmt, "end_lineno", stmt.lineno), end))
+            for field_ in ("body", "orelse", "finalbody", "handlers"):
+                sub = getattr(stmt, field_, None)
+                if isinstance(sub, list) and sub and isinstance(sub[0], (ast.stmt, ast.excepthandler)):
+                    walk(sub)
+
+    walk(func.body)
     return out
 
 
@@ -226,7 +306,7 @@ def _local_url(expr: ast.AST, body: list) -> bool:
     one of those (later `url += "?…"` keeps the prefix)."""
 
     def local(e, depth: int = 0) -> bool:
-        if isinstance(e, ast.Call) and _name(e.func) in LOCAL_URL:
+        if isinstance(e, ast.Call) and _local(_name(e.func)):
             return True
         if isinstance(e, ast.Attribute) and e.attr in ("path", "path_info") and _root(e) == "request":
             return True  # this request's own path: the redirect stays on the site
@@ -265,27 +345,40 @@ class _Function:
     def __init__(self, node, callees: dict[str, Summary], fid: str = ""):
         self.node, self.callees, self.fid = node, callees, fid
         self.params = [a.arg for a in node.args.posonlyargs + node.args.args + node.args.kwonlyargs]
-        # names checked and replaced when the check fails, and the line from which they read as clean
-        self.clean_after = _replaced_unless_valid(node)
+        # what's checked and replaced (or abandoned) when the check fails, and the lines where it reads as clean
+        self.cleaned = _cleaned(node)
+        self.guards = _guards(node)
         self.line: int | None = None  # the statement being evaluated
+        self.guard: frozenset[str] = frozenset()  # what the enclosing `if`s checked
+
+    def _checked(self, expr: ast.AST) -> bool:
+        if not self.guard and not self.cleaned:
+            return False
+        key = _key(expr)
+        if key in self.guard:
+            return True
+        line = self.line or 0
+        return any(after < line <= end for after, end in self.cleaned.get(key, ()))
 
     def origins(self, expr: ast.AST, env: dict[str, set]) -> set:
         """The taint labels an expression carries: ("param", i) or ("source", text)."""
+        if isinstance(expr, (ast.Name, ast.Attribute, ast.Subscript, ast.Call)) and self._checked(expr):
+            return set()  # inside `if is_safe(x):`, after `if not is_safe(x): x = "/"`, and anything built from it
         if isinstance(expr, ast.Name):
-            if self.line is not None and self.line > self.clean_after.get(expr.id, self.line):
-                return set()  # after `if not is_safe(x): x = "/"`, and anything built from it
             return set(env.get(expr.id, ()))
+        if isinstance(expr, ast.Attribute) and (held := env.get(ast.unparse(expr))):
+            return set(held)  # `self.next = request.GET["next"]` … `redirect(self.next)`
         if src := _source(expr):
             return {("source", src)}
         if isinstance(expr, ast.Call):
             name = _name(expr.func)
-            if name in SANITIZERS or name in SQL or name in DB_RESULTS or LOOKUP.search(name) or name in LOCAL_URL:
+            if _cleans(name) or name in SQL or name in DB_RESULTS or _local(name):
                 return set()  # converted, checked, or read back from a database (second-order injection is out of scope)
             out = set()
             summary = self.callees.get(name)
             parts = list(expr.args) + [k.value for k in expr.keywords]
             if summary is not None:
-                for i, a in enumerate(expr.args):
+                for i, a in enumerate(expr.args, _bound(expr, summary)):
                     if i in summary.returns:
                         out |= self.origins(a, env)
                 if summary.source_returns:
@@ -314,9 +407,35 @@ class _Function:
                 return False
         return False
 
+    def _fixed_host(self, url: ast.AST, env: dict[str, set]) -> bool:
+        """The URL starts with a scheme and host the code fixes (a literal, or a value not from the request such as
+        `settings.API_URL` followed by "/"), and request data only fills what comes after."""
+        if isinstance(url, ast.Call) and _name(url.func) == "format" and isinstance(url.func, ast.Attribute):
+            url = url.func.value  # "https://x/{}".format(q)
+        elif isinstance(url, ast.BinOp) and isinstance(url.op, ast.Mod):
+            url = url.left  # "https://x/%s" % q
+        parts: list[ast.AST] = []
+        while isinstance(url, ast.BinOp) and isinstance(url.op, ast.Add):
+            parts.insert(0, url.right)
+            url = url.left
+        parts = [url, *parts]
+        if len(parts) == 1 and isinstance(url, ast.JoinedStr):
+            parts = list(url.values)
+        text = ""
+        for part in parts:
+            if isinstance(part, ast.Constant) and isinstance(part.value, str):
+                text += part.value
+                if FIXED_HOST.match(text) or (text.startswith("\0") and "/" in text.replace("://", "")):
+                    return True
+            elif self.origins(part, env):
+                return False
+            else:
+                text += "\0"
+        return False
+
     def run(self, tainted_params: set[int]) -> tuple[dict, list, set]:
         env: dict[str, set] = {p: {("param", i)} for i, p in enumerate(self.params) if i in tainted_params}
-        body = _body(self.node)
+        body, nested = _body(self.node), _nested(self.node)
         for _ in range(4):  # assignments to a fixed point (flow-insensitive)
             changed = False
             for n in body:
@@ -329,23 +448,22 @@ class _Function:
                     targets, value = [n.target], n.iter
                 elif isinstance(n, ast.withitem) and n.optional_vars is not None:
                     targets, value = [n.optional_vars], n.context_expr
-                if value is None:
+                if value is None or id(n) in nested:
                     continue
-                self.line = getattr(n, "lineno", None)
+                self.line, self.guard = getattr(n, "lineno", None), self.guards.get(id(n), frozenset())
                 labels = self.origins(value, env)
                 if not labels:
                     continue
                 for t in targets:
-                    for name in (x.id for x in ast.walk(t) if isinstance(x, ast.Name)):
+                    for name in _target_keys(t):
                         if not labels <= env.get(name, set()):
                             env[name] = env.get(name, set()) | labels
                             changed = True
             if not changed:
                 break
         hits, calls, returns = [], [], set()
-        guards = _guards(self.node)
         for n in body:
-            self.line = getattr(n, "lineno", None)
+            self.line, self.guard = getattr(n, "lineno", None), self.guards.get(id(n), frozenset())
             if isinstance(n, ast.Call):
                 sink = _sink(n)
                 if sink:
@@ -353,8 +471,8 @@ class _Function:
                     for a in args:
                         if isinstance(a, ast.Constant):
                             continue  # a constant query or command: bound parameters, nothing to inject
-                        if isinstance(a, ast.Name) and a.id in guards.get(id(n), ()):
-                            continue  # inside `if is_safe(x):` / `if _allow_redirect(x):`: checked first
+                        if kind == "ssrf" and self._fixed_host(a, env):
+                            continue  # `f"https://api.x.com/v1?q={q}"`: the request picks a path, not the host
                         if kind == "redirect" and isinstance(a, ast.JoinedStr) and self._query_only(a, env):
                             continue  # request data only after the `?`: it can't change where the redirect goes
                         if kind == "redirect" and _local_url(a, body):
@@ -363,7 +481,7 @@ class _Function:
                             hits.append((label, kind, n.lineno, ast.unparse(n.func)[:50], "", self.fid))
                 summary = self.callees.get(_name(n.func))
                 if summary is not None and _name(n.func) not in SANITIZERS:  # (inside an escaper is its own business)
-                    for i, a in enumerate(n.args):
+                    for i, a in enumerate(n.args, _bound(n, summary)):
                         for flow in summary.sinks.get(i, []):
                             for label in self.origins(a, env):
                                 via = f"{_name(n.func)}({summary.params[i] if i < len(summary.params) else '…'})"
@@ -371,9 +489,31 @@ class _Function:
                                     (label, flow[0], flow[1], flow[2], via + (" → " + flow[3] if flow[3] else ""), flow[4])
                                 )
                     calls.append(n)
-            if isinstance(n, ast.Return) and n.value is not None:
+            if isinstance(n, ast.Return) and n.value is not None and id(n) not in nested:
                 returns |= self.origins(n.value, env)
         return hits, calls, returns
+
+
+def _bound(call: ast.Call, summary: Summary) -> int:
+    """`self.perform_refund(comment)`: the first argument fills the method's second parameter."""
+    method = isinstance(call.func, ast.Attribute) and summary.params[:1] in (["self"], ["cls"])
+    return 1 if method else 0
+
+
+def _target_keys(t: ast.AST) -> list[str]:
+    """What an assignment taints: `x` for `x = …` and `x[k] = …`, the text `self.next` for `self.next = …` (not
+    `self`, or every `self.method()` would read as request data), `request.session` for `request.session[k] = …`."""
+    if isinstance(t, (ast.Tuple, ast.List)):
+        return [k for e in t.elts for k in _target_keys(e)]
+    if isinstance(t, ast.Starred):
+        return _target_keys(t.value)
+    if isinstance(t, ast.Name):
+        return [t.id]
+    if isinstance(t, ast.Attribute):
+        return [ast.unparse(t)]
+    if isinstance(t, ast.Subscript):
+        return [] if isinstance(t.value, ast.Name) and t.value.id == "self" else _target_keys(t.value)
+    return []
 
 
 def _closure(start: set[str], edges: dict[str, list[str]], keep: dict) -> set[str]:
@@ -392,6 +532,17 @@ def _body(node) -> list[ast.AST]:
     if cached is None:
         cached = [n for n in ast.walk(node) if n is not node]
         node._cf_body = cached
+    return cached
+
+
+def _nested(node) -> set[int]:
+    """Nodes inside a function defined within this one: its locals and its returns are its own (a blueprint factory's
+    `login` and `authorized` each assign their own `next_path`). Cached like _body."""
+    cached = getattr(node, "_cf_nested", None)
+    if cached is None:
+        defs = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
+        cached = {id(x) for d in _body(node) if isinstance(d, defs) for x in ast.walk(d) if x is not d}
+        node._cf_nested = cached
     return cached
 
 
@@ -431,6 +582,15 @@ def taint_flags(g: Graph, root: Path) -> list[Flag]:
     for e in g.edges:
         if e.kind == "call":
             callees_of.setdefault(e.src, []).append(e.dst)
+    # `self.get_return_url(...)` from a mixin in another file is only a "ref" edge, matched by name: trusted to say
+    # what the helper's return value keeps (less than an unknown call), never to add sinks or sources
+    refs_of: dict[str, list[str]] = {}
+    used_by: dict[str, list[str]] = {}
+    for e in g.edges:
+        if e.kind in ("call", "ref"):
+            if e.kind == "ref":
+                refs_of.setdefault(e.src, []).append(e.dst)
+            used_by.setdefault(e.dst, []).append(e.src)
     by_id = {f.id: f for f in fns}
     lines_of: dict[str, list[str]] = {}
     for file in {f.file for f in fns}:
@@ -454,10 +614,12 @@ def taint_flags(g: Graph, root: Path) -> list[Flag]:
     forward = _closure(sources, callees_of, by_id)
     backward = _closure(sinks, callers_of, by_id)
     relevant = forward & backward
-    relevant |= {c for fid in list(relevant) for c in callees_of.get(fid, ()) if c in sources}  # request-data helpers
+    helpers = {c for fid in relevant for c in callees_of.get(fid, []) + refs_of.get(fid, []) if c in sources}
+    relevant |= helpers  # request-data helpers
     if not relevant:
         return []
     nodes: dict[str, ast.AST] = {}
+    enums: set[str] = set()  # `class Size(str, Enum)`: a parameter of that type is one of its fixed values
     for file in sorted({by_id[fid].file for fid in relevant}):
         try:
             tree = ast.parse("\n".join(lines_of[file]))
@@ -467,6 +629,8 @@ def taint_flags(g: Graph, root: Path) -> list[Flag]:
         for n in ast.walk(tree):
             if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and (n.lineno, n.name) in wanted:
                 nodes[wanted[(n.lineno, n.name)]] = n
+            elif isinstance(n, ast.ClassDef) and any(_name(b).endswith("Enum") for b in n.bases):
+                enums.add(n.name)
     relevant &= set(nodes)
     summaries: dict[str, Summary] = {}
     work = deque(sorted(relevant, key=lambda f: -len(callees_of.get(f, ()))))  # leaves last: callees settle first
@@ -479,7 +643,9 @@ def taint_flags(g: Graph, root: Path) -> list[Flag]:
         redone[fid] = redone.get(fid, 0) + 1
         if redone[fid] > 6:  # recursion and long call cycles: enough rounds to settle what matters
             continue
-        callees = {by_id[c].name: summaries[c] for c in callees_of.get(fid, []) if c in summaries}
+        callees = {by_id[c].name: Summary(summaries[c].params, returns=summaries[c].returns)
+                   for c in refs_of.get(fid, []) if c in summaries and not summaries[c].source_returns}  # fmt: skip
+        callees.update({by_id[c].name: summaries[c] for c in callees_of.get(fid, []) if c in summaries})
         s = summarize(nodes[fid], callees, fid)
         old = summaries.get(fid)
         if old is None or (s.sinks, s.returns, s.source_sinks, s.source_returns) != (
@@ -489,7 +655,7 @@ def taint_flags(g: Graph, root: Path) -> list[Flag]:
             old.source_returns,
         ):
             summaries[fid] = s
-            for caller in callers_of.get(fid, ()):
+            for caller in used_by.get(fid, ()):
                 if caller in relevant and caller not in queued:
                     work.append(caller)
                     queued.add(caller)
@@ -500,7 +666,7 @@ def taint_flags(g: Graph, root: Path) -> list[Flag]:
         flows = list(s.source_sinks)
         if route:  # a handler's parameters come from the request (FastAPI path, query and body parameters)
             deps = {a.arg for a, d in _defaults(node) if isinstance(d, ast.Call) and _name(d.func) in ("Depends", "Security")}
-            typed = {a.arg for a in node.args.args + node.args.kwonlyargs if _safe_annotation(a.annotation)}
+            typed = {a.arg for a in node.args.args + node.args.kwonlyargs if _safe_annotation(a.annotation, enums)}
             for i, flows_i in s.sinks.items():
                 pname = s.params[i] if i < len(s.params) else "?"
                 if (
@@ -524,7 +690,7 @@ def taint_flags(g: Graph, root: Path) -> list[Flag]:
     return out
 
 
-def _safe_annotation(ann: ast.AST | None) -> bool:
+def _safe_annotation(ann: ast.AST | None, enums: set[str] = frozenset()) -> bool:
     """`int`, `uuid.UUID`, `Annotated[int, Path(...)]`, `Literal["a", "b"]`, an Enum-looking name…"""
     if ann is None:
         return False
@@ -534,9 +700,8 @@ def _safe_annotation(ann: ast.AST | None) -> bool:
     }
     names.discard("Annotated")
     names.discard("Optional")
-    return bool(names) and (
-        names <= SAFE_TYPES | {"None", "Path", "Query"} or any(n.endswith(("Enum", "Kind", "Type")) for n in names)
-    )
+    known = SAFE_TYPES | enums | {"None", "Path", "Query"}
+    return bool(names) and (names <= known or any(n.endswith(("Enum", "Kind", "Type")) for n in names))
 
 
 def _defaults(node) -> list[tuple]:
