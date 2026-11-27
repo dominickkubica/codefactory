@@ -160,8 +160,8 @@
   "check": "Container runs as root",
   "severity": "Medium",
   "location": "`sync-server.Dockerfile:54` no USER after node:24.22.1-bookworm-slim — `FROM node:24.22.1-bookworm-slim AS prod`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Final prod stage creates an 'actual' user but never switches with USER, so it runs as root.",
   "round": 2
  },
  "actualbudget/actual|Copied logic in N group (~N lines)|packages/loot-core/src/platform/server/sqlite/storage/idb-memory.ts:256": {
@@ -585,8 +585,8 @@
   "check": "Plain-HTTP URLs in code",
   "severity": "Low",
   "location": "`superset/db_engine_specs/vertica.py:53` \"docs_url\": \"http://www.vertica.com/\",",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "docs_url is a documentation link in engine metadata and is never requested by the code.",
   "round": 2
  },
  "apache/superset|Privileged containers or the host's network (docker-compose)|docker-compose.yml:296": {
@@ -724,8 +724,8 @@
   "check": "Any website may call this API (CORS *)",
   "severity": "Medium",
   "location": "`apps/console/src/lib/seo/security-txt.ts:52` 'Access-Control-Allow-Origin': '*',",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Shipping console response for security.txt unconditionally sets Access-Control-Allow-Origin *.",
   "round": 2
  },
  "appwrite/appwrite|Array searches inside loops over loaded data (N)|apps/console/src/lib/smtp/bird-api.ts:144": {
@@ -839,8 +839,8 @@
   "check": "Databases published on every interface (docker-compose)",
   "severity": "Medium",
   "location": "`packages/query/docker-compose.yml:20` - \"13307:3306\"  (MySQL on every interface)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Development, test or CI compose (relabeled to the rubric's development-only rule, as round 1 applied it): Test compose publishes MariaDB as 13307:3306 with no host IP, so it binds on all interfaces.",
   "round": 2
  },
  "appwrite/appwrite|Databases published on every interface (docker-compose)|packages/query/docker-compose.yml:65": {
@@ -848,8 +848,8 @@
   "check": "Databases published on every interface (docker-compose)",
   "severity": "Medium",
   "location": "`packages/query/docker-compose.yml:65` - \"17017:27017\"  (MongoDB on every interface)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Development, test or CI compose (relabeled to the rubric's development-only rule, as round 1 applied it): Compose publishes MongoDB as 17017:27017 without a host IP, so it binds on all interfaces.",
   "round": 2
  },
  "appwrite/appwrite|Dynamic code execution (eval / exec / pickle / unsafe YAML)|apps/console/src/lib/cli-shell/wasm/runtime.ts:165": {
@@ -1245,8 +1245,8 @@
   "check": "Container runs as root",
   "severity": "Medium",
   "location": "`Dockerfile:77` no USER after node:22 — `FROM node:22 AS runner`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Final runner stage on node:22 has no USER directive; the shipped image runs as root.",
   "round": 2
  },
  "calcom/cal.com|Container runs as root|apps/api/v2/Dockerfile:1": {
@@ -1571,8 +1571,8 @@
   "check": "Third-party scripts without integrity hashes",
   "severity": "Medium",
   "location": "`packages/embeds/embed-react/element-click.html:3` <script src=…unpkg.com…> without integrity= — `<script src=\"https://unpkg.com/react@17/umd/react.development.js\" crossorigin></script>`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Vite dev playground page loading development React builds; not built or published, since package files are only dist.",
   "round": 2
  },
  "calcom/cal.com|Third-party scripts without integrity hashes|packages/embeds/embed-react/element-click.html:4": {
@@ -1604,8 +1604,8 @@
   "check": "Third-party scripts without integrity hashes",
   "severity": "Medium",
   "location": "`packages/embeds/embed-react/inline.html:5` <script src=…unpkg.com…> without integrity= — `<script src=\"https://unpkg.com/react-dom@17/umd/react-dom.development.js\" crossorigin></script>`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Vite dev playground page loading development React builds; not built or published, since package files are only dist.",
   "round": 2
  },
  "calcom/cal.com|Unused code (N function)|packages/app-store/utils.ts:114": {
@@ -1696,8 +1696,8 @@
   "check": "TLS certificate checks turned off",
   "severity": "High",
   "location": "`celery/backends/redis.py:600` 'none': CERT_NONE}",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "CERT_NONE only applies when the user configures ssl_cert_reqs=none; a missing value raises an error.",
   "round": 2
  },
  "celery/celery|TLS certificate checks turned off|celery/backends/redis.py:608": {
@@ -1705,8 +1705,8 @@
   "check": "TLS certificate checks turned off",
   "severity": "High",
   "location": "`celery/backends/redis.py:608` elif ssl_cert_reqs == CERT_NONE:",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "This branch only logs a warning when the user explicitly chose CERT_NONE; verification isn't off by default.",
   "round": 2
  },
  "celery/celery|TLS certificate checks turned off|celery/backends/redis.py:69": {
@@ -1786,8 +1786,8 @@
   "check": "Container runs as root",
   "severity": "Medium",
   "location": "`docker/Dockerfile.alpine:130` no USER after --platform=$TARGETPLATFORM — `FROM --platform=$TARGETPLATFORM docker.io/library/alpine:3.24`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Final alpine runtime stage has no USER directive and runs /start.sh as root.",
   "round": 2
  },
  "dani-garcia/vaultwarden|Container runs as root|playwright/compose/warden/Dockerfile:17": {
@@ -1885,8 +1885,8 @@
   "check": "Databases published on every interface (docker-compose)",
   "severity": "Medium",
   "location": "`docker-compose.yml:128` - 5105:6379  (Redis on every interface)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Development, test or CI compose (relabeled to the rubric's development-only rule, as round 1 applied it): Dev compose publishes Redis as 5105:6379 without a host IP, exposed on every interface.",
   "round": 2
  },
  "directus/directus|Databases published on every interface (docker-compose)|docker-compose.yml:81": {
@@ -1894,8 +1894,8 @@
   "check": "Databases published on every interface (docker-compose)",
   "severity": "Medium",
   "location": "`docker-compose.yml:81` - 5100:5432  (PostgreSQL on every interface)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Development, test or CI compose (relabeled to the rubric's development-only rule, as round 1 applied it): Dev compose publishes Postgres as 5100:5432 without a host IP, exposed on every interface.",
   "round": 2
  },
  "directus/directus|Databases published on every interface (docker-compose)|docker-compose.yml:90": {
@@ -2370,8 +2370,8 @@
   "check": "App allows unencrypted HTTP",
   "severity": "Medium",
   "location": "`src/HybridApp/Platforms/Android/AndroidManifest.xml:3` usesCleartextTraffic=\"true — `<application android:allowBackup=\"true\" android:icon=\"@mipmap/appicon\" android:roundIcon=\"@mipmap/appicon_round\" android:supportsRtl=\"true\" android:usesClear…`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "networkSecurityConfig overrides usesCleartextTraffic and permits cleartext only to 10.0.2.2, the emulator's host loopback.",
   "round": 2
  },
  "dotnet/eShop|App allows unencrypted HTTP|src/HybridApp/Platforms/MacCatalyst/Info.plist:37": {
@@ -2612,8 +2612,8 @@
   "check": "Container runs as root",
   "severity": "Medium",
   "location": "`Dockerfile:51` no USER after docker.io/library/alpine:3.24 — `FROM docker.io/library/alpine:3.24 AS gitea`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Final rootful gitea stage has no USER; entrypoint and s6 run as root (the rootless image is separate).",
   "round": 2
  },
  "go-gitea/gitea|Copied logic in N group (~N lines)|routers/api/v1/repo/issue_tracked_time.go:23": {
@@ -2890,8 +2890,8 @@
   "check": "MD5 / SHA-1 used for security",
   "severity": "Medium",
   "location": "`hc/api/models.py:1533` hashed = hashlib.sha1(salted_encoded).hexdigest()",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "SHA-1 only derives a rate-limit TokenBucket key from the pushover user key; not a password, token or signature.",
   "round": 2
  },
  "healthchecks/healthchecks|MD5 / SHA-1 used for security|hc/api/models.py:1541": {
@@ -2899,8 +2899,8 @@
   "check": "MD5 / SHA-1 used for security",
   "severity": "Medium",
   "location": "`hc/api/models.py:1541` hashed = hashlib.sha1(salted_encoded).hexdigest()",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "SHA-1 only derives a rate-limit TokenBucket key for an ntfy topic; it's a non-security bucket identifier.",
   "round": 2
  },
  "healthchecks/healthchecks|Unused code (N function)|hc/logs/__init__.py:12": {
@@ -2924,8 +2924,8 @@
   "check": "Container runs as root",
   "severity": "Medium",
   "location": "`packages/hoppscotch-sh-admin/Dockerfile:16` no USER after caddy:2-alpine — `FROM caddy:2-alpine`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Final caddy:2-alpine stage ships without USER; the caddy base image runs as root.",
   "round": 2
  },
  "hoppscotch/hoppscotch|Container runs as root|prod.Dockerfile:314": {
@@ -3706,8 +3706,8 @@
   "check": "Container runs as root",
   "severity": "Medium",
   "location": "`docker/debian-base.dockerfile:68` no USER after louislam/uptime-kuma:base3-slim — `FROM louislam/uptime-kuma:base3-slim AS base3`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Published base3 image has no USER, and the default release stage built on it doesn't set one either, so it runs as root.",
   "round": 2
  },
  "louislam/uptime-kuma|Endpoints that change data without an auth check (N)|server/routers/better-auth-router.ts:41": {
@@ -4094,8 +4094,8 @@
   "check": "Plain-HTTP URLs in code",
   "severity": "Low",
   "location": "`config/initializers/json_ld_security.rb:5` add_preloaded(\"http://w3id.org/security/v1\") do",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "JSON-LD context identifier preloaded locally so it's never fetched; a namespace, not a request.",
   "round": 2
  },
  "mastodon/mastodon|Queries or requests inside loops (N) in N place|app/controllers/api/v1/admin/accounts_controller.rb:125": {
@@ -4257,8 +4257,8 @@
   "check": "Container runs as root",
   "severity": "Medium",
   "location": "`release/docker/Dockerfile:6` no USER after python:3.15-slim-trixie — `FROM python:3.15-slim-trixie`",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Shipped image has no USER; the container starts as root and the entrypoint only drops to mitmproxy via gosu.",
   "round": 2
  },
  "mitmproxy/mitmproxy|Credentials committed in source|mitmproxy/certs.py:78": {
@@ -4387,8 +4387,8 @@
   "check": "Any website may call this API (CORS *)",
   "severity": "Medium",
   "location": "`packages/cli/src/modules/mcp/mcp.controller.ts:50` res.header('Access-Control-Allow-Origin', '*');",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "MCP controller in production code always sets ACAO * (with credentials header) on its endpoints.",
   "round": 2
  },
  "n8n-io/n8n|Any website may call this API (CORS *)|packages/cli/src/modules/oauth-server/oauth.controller.ts:236": {
@@ -4396,8 +4396,8 @@
   "check": "Any website may call this API (CORS *)",
   "severity": "Medium",
   "location": "`packages/cli/src/modules/oauth-server/oauth.controller.ts:236` res.header('Access-Control-Allow-Origin', '*');",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "OAuth discovery endpoints in shipping server unconditionally send Access-Control-Allow-Origin *.",
   "round": 2
  },
  "n8n-io/n8n|Any website may call this API (CORS *)|packages/cli/src/public-api/index.ts:148": {
@@ -4421,8 +4421,8 @@
   "check": "Container runs as root",
   "severity": "Medium",
   "location": "`docker/images/n8n-base/Dockerfile:5` no USER after ${DHI_REF} — `FROM ${DHI_REF}`",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "This is the n8nio/base runtime base; the shipped n8n image built on it sets USER node.",
   "round": 2
  },
  "n8n-io/n8n|Copied logic in N group (~N lines)|packages/cli/src/modules/type-availability-policies/credential-type-policy-instance.controller.ts:51": {
@@ -4454,8 +4454,8 @@
   "check": "Credentials committed in source",
   "severity": "Critical",
   "location": "`packages/@n8n/task-runner-python/src/constants.py:64` ENV_GRANT_TOKEN = \"N8N_…\"",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Value is the environment variable name N8N_RUNNERS_GRANT_TOKEN, not a secret.",
   "round": 2
  },
  "n8n-io/n8n|Credentials committed in source|packages/cli/src/modules/instance-ai/eval/__tests__/request-sanitizer.test.ts:30": {
@@ -4471,8 +4471,8 @@
   "check": "Credentials committed in source",
   "severity": "Critical",
   "location": "`scripts/codespace-preview/preview-labels.mjs:16` const LICENSE_KEY_SECRET = 'N8N_…'; *(script)*",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Value is the secret's name N8N_LICENSE_ACTIVATION_KEY, used to look it up; no key value is committed.",
   "round": 2
  },
  "n8n-io/n8n|Databases published on every interface (docker-compose)|.github/docker-compose.yml:10": {
@@ -4480,8 +4480,8 @@
   "check": "Databases published on every interface (docker-compose)",
   "severity": "Medium",
   "location": "`.github/docker-compose.yml:10` - 5432:5432  (PostgreSQL on every interface)",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Development, test or CI compose (relabeled to the rubric's development-only rule, as round 1 applied it): CI compose publishes Postgres as 5432:5432 without a host IP, so it binds on all interfaces.",
   "round": 2
  },
  "n8n-io/n8n|Databases published on every interface (docker-compose)|packages/quality/efficiency/scale/benchmark/scripts/n8n-setups/engine-v2/docker-compose.yml:13": {
@@ -4819,8 +4819,8 @@
   "check": "Plain-HTTP URLs in code",
   "severity": "Low",
   "location": "`packages/@n8n/expression-runtime/src/extensions/string-extensions.ts:739` examples: [{ example: '\"Check out http://n8n.io\".extractUrl()', evaluated: \"'http://n8n.io'\" }],",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "URL appears only inside a documentation example string for extractUrl.",
   "round": 2
  },
  "n8n-io/n8n|Plain-HTTP URLs in code|packages/cli/src/modules/sso-saml/schema/ws-federation.xsd.ts:33": {
@@ -4852,8 +4852,8 @@
   "check": "Plain-HTTP URLs in code",
   "severity": "Low",
   "location": "`packages/workflow/src/extensions/string-extensions.ts:776` examples: [{ example: '\"Check out http://n8n.io\".extractUrl()', evaluated: \"'http://n8n.io'\" }],",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "URL appears only inside a documentation example string for extractUrl.",
   "round": 2
  },
  "n8n-io/n8n|Plain-HTTP URLs in configuration (Pkl, TOML, Terraform…)|packages/quality/efficiency/scale/benchmark/scripts/n8n-setups/engine-v2/nginx.conf:17": {
@@ -4976,8 +4976,8 @@
   "check": "TLS certificate checks turned off",
   "severity": "High",
   "location": "`packages/@n8n/engine/src/tls/engine-tls.ts:228` rejectUnauthorized: false,",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Server checks client certs per request via socket.authorized and returns 401 otherwise; verification is done another way.",
   "round": 2
  },
  "n8n-io/n8n|TLS certificate checks turned off|packages/nodes-base/nodes/EmailSend/v1/EmailSendV1.node.ts:183": {
@@ -5001,8 +5001,8 @@
   "check": "TLS certificate checks turned off",
   "severity": "High",
   "location": "`packages/nodes-base/nodes/QuestDb/QuestDb.node.ts:46` if (skipVerification) return { rejectUnauthorized: false };",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "rejectUnauthorized:false only when the user enables the allowUnauthorizedCerts credential option.",
   "round": 2
  },
  "n8n-io/n8n|TLS certificate checks turned off|packages/quality/environments/containers/services/proxy.ts:44": {
@@ -5107,8 +5107,8 @@
   "check": "Any website may call this API (CORS *)",
   "severity": "Medium",
   "location": "`server/routes/assets.ts:24` res.setHeader(\"Access-Control-Allow-Origin\", \"*\");",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Production static asset route always sets Access-Control-Allow-Origin * on served files.",
   "round": 2
  },
  "outline/outline|Any website may call this API (CORS *)|server/routes/assets.ts:54": {
@@ -5517,8 +5517,8 @@
   "check": "Plain-HTTP URLs in code",
   "severity": "Low",
   "location": "`etl/scripts/faostat/shared.py:19` FAO_DATA_URL = \"http://www.fao.org/faostat/en/#data\" *(script)*",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Comment states FAO_DATA_URL is metadata for manual access and not used to retrieve data.",
   "round": 2
  },
  "owid/etl|Plain-HTTP URLs in code|snapshots/animal_welfare/2024-06-04/bullfighting_laws.py:150": {
@@ -5526,8 +5526,8 @@
   "check": "Plain-HTTP URLs in code",
   "severity": "Low",
   "location": "`snapshots/animal_welfare/2024-06-04/bullfighting_laws.py:150` \"http://www.portaltaurino.net/enciclopedia/doku.php/guatemala\",",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Source citation URL stored as data in a table, never requested.",
   "round": 2
  },
  "owid/etl|Plain-HTTP URLs in code|snapshots/animal_welfare/2024-06-04/bullfighting_laws.py:94": {
@@ -6483,8 +6483,8 @@
   "check": "Any website may call this API (CORS *)",
   "severity": "Medium",
   "location": "`cmd/infra/strelaypoolsrv/main.go:320` rw.Header().Set(\"Access-Control-Allow-Origin\", \"*\")",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Production relay pool server endpoint unconditionally sets ACAO *.",
   "round": 2
  },
  "syncthing/syncthing|Any website may call this API (CORS *)|cmd/infra/strelaypoolsrv/main.go:337": {
@@ -6492,8 +6492,8 @@
   "check": "Any website may call this API (CORS *)",
   "severity": "Medium",
   "location": "`cmd/infra/strelaypoolsrv/main.go:337` rw.Header().Set(\"Access-Control-Allow-Origin\", \"*\")",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Production relay pool server short endpoint unconditionally sets ACAO *.",
   "round": 2
  },
  "syncthing/syncthing|Any website may call this API (CORS *)|cmd/infra/stupgrades/main.go:154": {
@@ -6613,8 +6613,8 @@
   "check": "TLS certificate checks turned off",
   "severity": "High",
   "location": "`cmd/strelaysrv/main.go:178` InsecureSkipVerify:     true,",
-  "label": null,
-  "why": "",
+  "label": "false",
+  "why": "Config is for a TLS server listener where InsecureSkipVerify has no effect; peers are identified by certificate device ID.",
   "round": 2
  },
  "syncthing/syncthing|TLS certificate checks turned off|cmd/syncthing/cli/client.go:61": {
@@ -6703,8 +6703,8 @@
   "check": "Any website may call this API (CORS *)",
   "severity": "Medium",
   "location": "`apps/dotcom/client/scripts/build.ts:271` 'Access-Control-Allow-Origin': '*', *(script)*",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Build script emits shipped Vercel route config setting ACAO * on the api-catalog path.",
   "round": 2
  },
  "tldraw/tldraw|Any website may call this API (CORS *)|apps/dotcom/client/scripts/build.ts:285": {
@@ -6712,8 +6712,8 @@
   "check": "Any website may call this API (CORS *)",
   "severity": "Medium",
   "location": "`apps/dotcom/client/scripts/build.ts:285` headers: { 'Access-Control-Allow-Origin': '*' }, *(script)*",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Build script emits shipped Vercel route config setting ACAO * on ai-catalog.json.",
   "round": 2
  },
  "tldraw/tldraw|Any website may call this API (CORS *)|templates/agent/worker/do/AgentDurableObject.ts:79": {
@@ -7376,8 +7376,8 @@
   "check": "Plain-HTTP URLs in code",
   "severity": "Low",
   "location": "`wagtail/embeds/oembed_providers.py:526` \"endpoint\": \"http://www.23hq.com/23/oembed\",",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "23hq oEmbed endpoint is in all_providers and OEmbedFinder requests it over plain HTTP.",
   "round": 2
  },
  "wagtail/wagtail|Plain-HTTP URLs in code|wagtail/embeds/oembed_providers.py:76": {
@@ -7385,8 +7385,8 @@
   "check": "Plain-HTTP URLs in code",
   "severity": "Low",
   "location": "`wagtail/embeds/oembed_providers.py:76` \"endpoint\": \"http://crowdranking.com/api/oembed.{format}\",",
-  "label": null,
-  "why": "",
+  "label": "true",
+  "why": "Crowdranking oEmbed endpoint is in all_providers and OEmbedFinder requests it over plain HTTP.",
   "round": 2
  },
  "wagtail/wagtail|Queries or requests inside loops (N) in N place|wagtail/query.py:682": {
