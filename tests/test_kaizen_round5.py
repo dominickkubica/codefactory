@@ -191,3 +191,22 @@ class StateAndRegistryTest(unittest.TestCase):
         self.assertEqual(sorted({e.file for e in found["module_state"].hits}), ["b.ts"])
         self.assertTrue(deliberate_copies(["v4/registry/bases/aria/ui/chart.tsx", "v4/registry/bases/radix/ui/chart.tsx"]))
         self.assertFalse(deliberate_copies(["src/a/chart.tsx", "src/b/chart.tsx"]))
+
+
+class CredentialNoiseTest(unittest.TestCase):
+    def test_allowlists_mocks_placeholders_alphabets_flags_and_comments(self):
+        real = "Zq9xW2vK7pL3mN8rT5bY"
+        files = {
+            ".gitleaks.toml": "[allowlist]\nregexes = [\n  \"AIza" + "SyBguqVfwriVWjnSqRg50XPfZZH5r1VumNM\",\n]\n",
+            "src/__mocks__/keys.ts": f'export const apiSecret = "{real}";\n',
+            "ci.yml": 'env:\n  NEXTAUTH_SECRET: "e2e-test-secret-for-ci-only"\n',
+            "garage.toml": 'rpc_secret = "0000000000000000000000000000000000000000000000000000000000000000"\n',
+            "Scrub.cs": 'private const string PasswordCharacters = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";\n',
+            "Constants.cs": 'public const string PM37165_RotateUserApiKeyCommand = "pm-37165-rotate-user-api-key-command";\n',
+            "paypal.js": f'// facilitatorAccessToken: "{real}",\n',
+            "xor.ts": f'const XOR_SECRET_KEY = "{real}"; // not a secret: only mixes link keys\n',
+            "TokenExplanation.story.tsx": f'const token = "{real}";\n',
+            "config.py": f'API_SECRET = "{real}"\n',
+        }  # fmt: skip
+        found = scan_sources(repo(files), list(files))
+        self.assertEqual([e.file for e in found["secret"].hits], ["config.py"])

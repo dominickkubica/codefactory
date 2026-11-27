@@ -175,7 +175,10 @@ ONLY_IN = {
 }
 COMMENT_LINE = re.compile(r"\s*(?:#|//|\*|/\*|<!--|--\s)")
 # words that say a credential-looking value isn't real ("xoxb-not-a-real-token", "sk_test_fake…", "<your key>")
-PLACEHOLDER = r"(?i)example|placeholder|dummy|xxxx|your[_-]|changeme|<|not[-_ ]?a[-_ ]?real|fake|redacted|sample|mock"
+PLACEHOLDER = (
+    r"(?i)example|placeholder|dummy|xxxx|your[_-]|changeme|<|not[-_ ]?a[-_ ]?real|fake|redacted|sample|mock|"
+    r"['\"](?:e2e|test)[-_]|['\"]0{8,}|['\"]abcd(?:ef)?[0-9]*(?:abcd|1234)"  # `e2e-test-secret`, all zeros, `abcd…1234`
+)
 # Checks for built-ins only some languages have: Go's eval() or Java's exec() are ordinary functions.
 LANG_ONLY = {
     "eval": (".py", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".rb", ".php"),
@@ -346,6 +349,8 @@ def _named_not_secret(fid: str, lines: list[str], i: int) -> bool:
         return True  # an enum whose value is its own name (`JWT_SECRET = 'JWT_SECRET'`)
     if re.fullmatch(r"[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+", value):
         return True  # the name of an environment variable that holds it (`ENV_GRANT_TOKEN = "N8N_RUNNERS_GRANT_TOKEN"`)
+    if re.search(r"(?:characters|chars|alphabet|charset)$", name.strip(), re.I):
+        return True  # the alphabet a password is drawn from (`PasswordCharacters = "abc…XYZ0123…"`)
     if re.search(r"(?:client|app|application|project|tenant|account)_?id$", name.strip(), re.I):
         return True  # an OAuth client ID or an app ID identifies; it doesn't authenticate
     if re.search(
@@ -362,7 +367,7 @@ def _named_not_secret(fid: str, lines: list[str], i: int) -> bool:
         if "".join(parts) != value or len(words) < 2 or sum(p.isdigit() for p in parts) > 1 or short * 3 > len(value):
             return False  # random characters split into fragments, not words
     return len(parts) >= 2 and all(
-        re.fullmatch(r"[a-z]{1,15}\d?|[A-Z][a-z]{0,14}\d?|[A-Z]{1,15}\d?|v\d+|\d{1,4}", p) for p in parts
+        re.fullmatch(r"[a-z]{1,15}\d?|[A-Z][a-z]{0,14}\d?|[A-Z]{1,15}\d?|v\d+|\d{1,6}", p) for p in parts
     )
 
 
@@ -508,7 +513,11 @@ def _template_lines(lines: list[str]) -> set[int]:
     return out
 
 
-STORIES = re.compile(r"\.stories\.(?:[cm]?[jt]sx?|mdx|svelte|vue)$")
+STORIES = re.compile(r"\.stor(?:y|ies)\.(?:[cm]?[jt]sx?|mdx|svelte|vue)$")
+
+
+def _comment_line(line: str) -> bool:
+    return re.match(r"\s*(?://|#|\*|/\*|--|<!--)", line) is not None
 
 
 def _in_comment(lines: list[str], i: int) -> bool:
@@ -848,6 +857,12 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
                             continue
                     if key in ("weak_hash", "weak_random") and _keyed_not_secured(lines, i):
                         continue  # a hash for a rate-limit bucket, a cache or refresh key: an identifier, not protection
+                    if key == "secret" and (
+                        re.search(r"(?:^|/)\.?gitleaks(?:ignore|\.toml)$|(?:^|/)(?:__)?mocks?(?:__)?(?:/|\.[jt]sx?$)", fid)
+                        or (_comment_line(line) and not any(p.search(line) for p in VENDOR_PATTERNS))
+                        or re.search(r"(?i)\bnot (?:a |really )?secret\b", line)
+                    ):
+                        continue  # a scanner's allowlist, a mock, an example in a comment, a value its line calls public
                     if key == "secret" and re.search(PLACEHOLDER, line):
                         continue
                     if key == "secret" and _not_a_working_key(lines, i):
