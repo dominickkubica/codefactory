@@ -3,7 +3,12 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
-## Unreleased
+## 0.23.0 · 2026-11-27
+
+Precision measured on real code, round after round: a corpus of 126 public repositories, held-out samples labeled
+after each round's fixes (docs/ACCURACY.md). Checks right less than half the time on those samples are hints, listed
+but not counted. Data flow for JavaScript and TypeScript, confidence tiers within a check, faster whole-repository
+analysis (n8n 677 s → 284 s) with deterministic output, and many fewer false findings, each pinned by a test.
 
 ### Measured precision on real code
 
