@@ -111,8 +111,10 @@ def _drops_root(root: Path, dockerfile: Path, text: str) -> bool:
     """Starts as root only to switch user before the program runs: `su-exec`/`gosu` in the Dockerfile or in the
     entrypoint script it copies in (syncthing's docker-entrypoint.sh)."""
     # (in the Dockerfile itself, a use, not the line installing it: gitea installs su-exec and still runs s6 as root)
-    if any(DROP_ROOT.search(ln) and not re.search(r"\b(?:apk|apt-get|apt|yum|dnf)\b|^\s*\\?\s*[\w.-]+\s*\\\s*$", ln)
-           for ln in text.splitlines()):
+    if any(
+        DROP_ROOT.search(ln) and not re.search(r"\b(?:apk|apt-get|apt|yum|dnf)\b|^\s*\\?\s*[\w.-]+\s*\\\s*$", ln)
+        for ln in text.splitlines()
+    ):
         return True
     for script in set(re.findall(r"[\w./-]+\.sh\b", text)):
         parts = script.strip("/").split("/")
