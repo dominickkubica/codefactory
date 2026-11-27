@@ -335,7 +335,7 @@ def _utopia_entries(file: str, lines: list[str], text: str, module, fns: list[di
     def entry(m: re.Match, verb: str, path: str) -> None:
         line = text.count("\n", 0, m.start()) + 1
         chain = text[m.end() : m.end() + 1500].split(";", 1)[0]  # the rest of this route's builder chain
-        scope = re.search(r"->label\(\s*['\"]scope['\"]\s*,\s*['\"]([^'\"]+)['\"]", chain)
+        scope = re.search(r"->label\(\s*['\"]scope['\"]\s*,\s*\[?\s*['\"]([^'\"]+)['\"]", chain)  # a scope or a list
         auth = f"scope {scope.group(1)}" if scope and scope.group(1) != "public" else ""
         target = next((f for f in fns if f["kind"] != "module" and f["line"] <= line <= f["end"]), module)
         out.append(Entry(target["id"], verb.upper(), path, "Utopia", file, line, auth))

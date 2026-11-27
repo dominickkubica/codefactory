@@ -294,10 +294,15 @@ class EndpointTest(unittest.TestCase):
                                                 "    $this->setHttpMethod(Action::HTTP_REQUEST_METHOD_POST)\n"
                                                 "      ->setHttpPath('/v1/databases/:id/documents')\n"
                                                 "      ->label('scope', 'documents.write');\n  }\n}\n",
+            "src/Modules/Policies/Update.php": "<?php\nclass Update extends Action {\n  public function __construct() {\n"
+                                               "    $this->setHttpMethod(Action::HTTP_REQUEST_METHOD_PATCH)\n"
+                                               "      ->setHttpPath('/v1/project/policies/:id')\n"
+                                               "      ->label('scope', ['policies.write', 'project.policies.write']);\n  }\n}\n",
         })  # fmt: skip
         g = build(root, cache=False).to_dict()
         found = {(e.method, e.path, e.auth) for e in surface(root, g, View(g)).entries if e.framework == "Utopia"}
-        self.assertEqual(found, {("GET", "/v1/ping", ""), ("POST", "/v1/databases/:id/documents", "scope documents.write")})
+        self.assertEqual(found, {("GET", "/v1/ping", ""), ("POST", "/v1/databases/:id/documents", "scope documents.write"),
+                                 ("PATCH", "/v1/project/policies/:id", "scope policies.write")})
 
     def entries(self, files):
         from codefactory.brief import View

@@ -200,6 +200,27 @@ def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
     return (c - r) / d, (c + r) / d
 
 
+def check(args) -> int:
+    """The quick loop after one fix: re-analyze just these repositories, then list every labeled location in them
+    whose fate changed: a wrong one no longer reported (fixed), a right one no longer reported (lost: a regression)."""
+    import subprocess
+
+    before = reported()
+    names = args.repos.split(",")
+    if not args.no_run:
+        subprocess.run([sys.executable, str(ROOT / "tools" / "corpus.py"), "run", "--only", ",".join(names)], check=False)
+    now = reported()
+    labels = {k: v for k, v in load().items() if v["repo"] in names and v["label"] in ("true", "false")}
+    fixed = [v for k, v in labels.items() if v["label"] == "false" and k in before and k not in now]
+    lost = [v for k, v in labels.items() if v["label"] == "true" and k in before and k not in now]
+    still = [v for k, v in labels.items() if v["label"] == "false" and k in now]
+    for title, rows in (("fixed (wrong, now gone)", fixed), ("LOST (right, now gone)", lost), ("still wrong", still)):
+        print(f"\n{title}: {len(rows)}")
+        for v in rows:
+            print(f"  r{v.get('round', 1)} {v['check'][:40]:40} {v['location'][:90]}")
+    return 1 if lost else 0
+
+
 def score(_args=None, quiet: bool = False, round_: int | None = None) -> list[dict]:
     labels, now = load(), reported()
     if round_ is None and _args is not None:
@@ -312,8 +333,11 @@ def main(argv: list[str] | None = None) -> int:
     sc = sub.add_parser("score")
     sc.add_argument("--round", type=int, default=None)
     sub.add_parser("report")
+    c = sub.add_parser("check", help="re-run some repositories and show which labeled locations changed")
+    c.add_argument("repos", help="owner/repo,owner/repo")
+    c.add_argument("--no-run", action="store_true")
     args = p.parse_args(argv)
-    return {"sample": sample, "batch": batch, "merge": merge, "score": lambda a: (score(a), 0)[1], "report": report}[args.cmd](
+    return {"check": check, "sample": sample, "batch": batch, "merge": merge, "score": lambda a: (score(a), 0)[1], "report": report}[args.cmd](
         args
     )
 
