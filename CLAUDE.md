@@ -12,6 +12,7 @@ Read `CONTRIBUTING.md` before changing anything: its **Cardinal rules** section 
 - Fixes come from the labeled rounds; held-out rounds are frozen and measured before/after (`tools/heldout.py`).
 - Labels are blind and never changed after the score is seen.
 - Nothing under `codefactory/` changes while a corpus run is going.
+- Slow is a bug: a timeout or a run over its budget (`tools/speed.py`) is fixed before other work.
 - Ask before a version bump (it publishes to PyPI). No secret-shaped strings in tests: split them (`"sk_" + "live_"`).
 
 Where things are: `CONTRIBUTING.md` ("Where things live"); how precision is measured: `docs/ACCURACY.md`.
