@@ -54,8 +54,30 @@ def export_with(code: Path, repo_path: Path, out: Path, prof: Path, timeout: flo
              f"{str(Path(code).resolve())!r}), codefactory.__file__\n")  # fmt: skip
     env = {**os.environ, "PYTHONPATH": str(code)}
     with tempfile.TemporaryDirectory() as empty:
-        return subprocess.run([sys.executable, "-c", check + EXPORT, str(repo_path), str(out), str(prof)],
-                              capture_output=True, text=True, timeout=timeout, env=env, cwd=empty)  # fmt: skip
+        # its own process group, so a timeout ends the TypeScript analyzer's Node processes too: killing only Python
+        # left them running for half an hour, holding a core and gigabytes each (invoiceninja, round 9)
+        proc = subprocess.Popen([sys.executable, "-c", check + EXPORT, str(repo_path), str(out), str(prof)],
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env, cwd=empty,
+                                start_new_session=os.name != "nt")  # fmt: skip
+        try:
+            stdout, stderr = proc.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            _kill_group(proc)
+            raise
+        return subprocess.CompletedProcess(proc.args, proc.returncode, stdout, stderr)
+
+
+def _kill_group(proc: subprocess.Popen) -> None:
+    import signal
+
+    try:
+        if os.name != "nt":
+            os.killpg(proc.pid, signal.SIGKILL)
+        else:
+            proc.kill()
+    except (ProcessLookupError, PermissionError):
+        pass
+    proc.communicate()
 
 
 def repos() -> list[str]:
