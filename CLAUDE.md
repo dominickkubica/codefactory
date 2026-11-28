@@ -8,7 +8,7 @@ Read `CONTRIBUTING.md` before changing anything: its **Cardinal rules** section 
 
 - `python tools/gate.py` before anything reaches `main` (golden diff, right findings kept, CI); add `--corpus` for a
   graph check (loops, unused/untested code). Work in progress goes to a branch.
-- A rule states a fact about a language or protocol, never one repository's habit, and ships with a test pair.
+- A rule states a fact about a language or protocol, never one repository's habit, and ships with at least a test pair.
 - Fixes come from the labeled rounds; held-out rounds are frozen and measured before/after (`tools/heldout.py`).
 - Labels are blind and never changed after the score is seen.
 - Nothing under `codefactory/` changes while a corpus run is going.

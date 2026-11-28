@@ -87,7 +87,8 @@ through.
 4. **Fix from the labeled rounds; measure on held-out ones.** A held-out round's repositories are frozen before its
    fixes start and aren't read while making them (`tools/heldout.py`). The before/after on them is the number that
    counts; the tuned rounds only show the patterns are gone.
-5. **Every fix comes with a test pair:** the false case it removes and a true look-alike that must stay reported.
+5. **Every fix comes with at least a test pair:** at least one false case it removes and one true look-alike that
+   must stay reported (more where the fix covers several shapes or languages).
    When a gate catches a right finding a fix dropped, that case becomes a test too.
 6. **Labels are blind and final.** Whoever labels doesn't know which version reported a location or what the fixes
    were, and a label isn't changed after the score is seen. A disagreement about the rubric is settled in
