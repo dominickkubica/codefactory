@@ -20,6 +20,9 @@ from .. import __version__
 
 MIN_PARALLEL = 64  # files; below this, one process is faster
 CHUNK = 16
+# (root, name, tool) -> relative path -> [stamp, result]: this process's own results, for a run that asks for them
+# again (the source checks, done while the graph is built and then by the review), whether or not a disk cache exists
+_MEMO: dict[tuple[str, str, str], dict[str, list]] = {}
 
 
 def workers() -> int:
@@ -75,11 +78,18 @@ def run(
     work: Callable[..., dict | None],
     tool: str = "",
     cache: bool = True,
+    memo: bool = False,
+    jobs: int | None = None,
+    nice: int = 0,
 ) -> dict[str, dict]:
     """items: (relative path, arguments for work). Returns relative path -> result (None results are left out).
-    `tool` identifies the analyzer's version: a different one ignores the cache."""
+    `tool` identifies the analyzer's version: a different one ignores the cache. `memo`: also keep the results in this
+    process, for a second call (see _MEMO). `jobs`: processes at most (default: workers()); `nice`: their priority,
+    lowered by that much (background work that mustn't slow what runs alongside it)."""
     tool = f"{__version__}|{tool}|{_tool_hash()}"
     old = _load(root, name, tool) if cache else {}
+    held = _MEMO.get((str(root), name, tool), {}) if memo else {}
+    old = {**old, **held} if held else old
     out: dict[str, dict] = {}
     stamps: dict[str, str] = {}
     todo: list[tuple[str, tuple]] = []
@@ -95,9 +105,11 @@ def run(
                 out[rel] = hit[1]
         else:
             todo.append((rel, args))
-    if len(todo) >= MIN_PARALLEL and workers() > 1:
+    n = min(jobs or workers(), workers())
+    if len(todo) >= MIN_PARALLEL and n > 1:
         try:
-            with ProcessPoolExecutor(max_workers=workers()) as pool:
+            lower = {"initializer": os.nice, "initargs": (nice,)} if nice and hasattr(os, "nice") else {}
+            with ProcessPoolExecutor(max_workers=n, **lower) as pool:
                 results = list(pool.map(_call, [(work, a) for _, a in todo], chunksize=CHUNK))
         except (OSError, RuntimeError, ImportError):  # no process support here (some sandboxes): do it in-process
             results = [work(*a) for _, a in todo]
@@ -110,6 +122,8 @@ def run(
             out[rel] = res
     if cache:
         _save(root, name, tool, new)
+    if memo:
+        _MEMO.setdefault((str(root), name, tool), {}).update(new)
     return out
 
 

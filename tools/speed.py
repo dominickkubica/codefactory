@@ -50,7 +50,7 @@ from codefactory.cli import load_graph
 from codefactory.export import audit
 from codefactory.timing import report
 start = time.perf_counter()
-doc, review = audit(load_graph(Path(sys.argv[1]), cache=False), Path(sys.argv[1]).resolve())
+doc, review = audit(load_graph(Path(sys.argv[1]), cache=False, review=True), Path(sys.argv[1]).resolve())
 seconds = time.perf_counter() - start
 peak = max(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss, resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss)
 print(json.dumps({"seconds": round(seconds, 1), "phases": report(), "peak_mb": peak // 1024}))

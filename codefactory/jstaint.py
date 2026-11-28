@@ -1126,27 +1126,67 @@ def summarize(fn: _Function) -> Summary:
     return s
 
 
+# root -> file -> (its bytes, source hint, sink hint, (tree, imports, units) or None): read ahead (see prepare)
+_READY: dict[str, dict[str, tuple]] = {}
+
+
+def _wanted_file(f: str) -> bool:
+    from .paths import is_doc_sample, is_example_code, is_test
+
+    return Path(f).suffix in EXT_LANG and not f.endswith(".d.ts") and not (is_test(f) or is_doc_sample(f) or is_example_code(f))
+
+
+def _read(root: Path, f: str) -> bytes | None:
+    try:
+        data = (root / f).read_bytes()
+    except OSError:
+        return None
+    return None if len(data) > 400_000 or b"\x00" in data[:2000] else data  # bundles and generated files
+
+
+def _hints(data: bytes) -> tuple[bool, bool]:
+    text = data.decode("utf-8", "replace")
+    return bool(SOURCE_HINT.search(text)), bool(SINK_HINT.search(text))
+
+
+def _parse(f: str, data: bytes) -> tuple:
+    from tree_sitter_language_pack import get_parser
+
+    tree = get_parser(EXT_LANG[Path(f).suffix]).parse(data)
+    return tree, _imports(tree, data), units_of(f, tree, data)
+
+
+def prepare(root: Path, files: list[str]) -> None:
+    """Read, filter and parse these files before js_taint_flags asks (warm.py: while the type checker runs). Every
+    file with a hint of a source or a sink is parsed: those the flows can pass through are among them."""
+    if not available():
+        return
+    out: dict[str, tuple] = {}
+    for f in files:
+        if _wanted_file(f) and (data := _read(root, f)) is not None:
+            source, sink = _hints(data)
+            out[f] = (data, source, sink, _parse(f, data) if source or sink else None)
+    _READY[str(root.resolve())] = out
+
+
 def js_taint_flags(g: Graph, root: Path) -> list[Flag]:
     """Proven flows from request data to a sink in JavaScript and TypeScript, one finding per sink line."""
     if not available():
         return []
-    from tree_sitter_language_pack import get_parser
+    from . import warm
 
-    from .paths import is_doc_sample, is_example_code, is_test
-
-    files = [f.id for f in g.files if Path(f.id).suffix in EXT_LANG and not f.id.endswith(".d.ts")]
-    files = [f for f in files if not (is_test(f) or is_doc_sample(f) or is_example_code(f))]
+    warm.wait(root, "jstaint")
+    # what prepare() read is used where the file's bytes are still what it read
+    ready = _READY.pop(str(Path(root).resolve()), {})
     texts: dict[str, bytes] = {}
-    for f in files:
-        try:
-            data = (root / f).read_bytes()
-        except OSError:
-            continue
-        if len(data) > 400_000 or b"\x00" in data[:2000]:
-            continue  # bundles and generated files
-        texts[f] = data
-    with_source = {f for f, t in texts.items() if SOURCE_HINT.search(t.decode("utf-8", "replace"))}
-    with_sink = {f for f, t in texts.items() if SINK_HINT.search(t.decode("utf-8", "replace"))}
+    hints: dict[str, tuple[bool, bool]] = {}
+    for f in (f.id for f in g.files):
+        if _wanted_file(f) and (data := _read(root, f)) is not None:
+            texts[f] = data
+            r = ready.get(f)
+            hints[f] = (r[1], r[2]) if r is not None and r[0] == data else _hints(data)
+    with_source = {f for f in texts if hints[f][0]}
+    with_sink = {f for f in texts if hints[f][1]}
     if not with_source or not with_sink:
         return []
     # files on a path from a source to a sink: the source files, and the files they reach (by import) that hold sinks
@@ -1170,14 +1210,18 @@ def js_taint_flags(g: Graph, root: Path) -> list[Flag]:
     unloadable: dict[str, str] = {}
     for f in wanted:
         lang = EXT_LANG[Path(f).suffix]
-        try:
-            tree = get_parser(lang).parse(texts[f])
-        except Exception as e:  # a grammar that can't load (offline on first use): leave the file out, and say so
-            unloadable.setdefault(lang, f"{type(e).__name__}: {str(e)[:120]}")
-            continue
-        trees[f] = (tree, _imports(tree, texts[f]))
+        r = ready.get(f)
+        if r is not None and r[0] == texts[f] and r[3] is not None:
+            tree, imported, file_units = r[3]
+        else:
+            try:
+                tree, imported, file_units = _parse(f, texts[f])
+            except Exception as e:  # a grammar that can't load (offline on first use): leave the file out, and say so
+                unloadable.setdefault(lang, f"{type(e).__name__}: {str(e)[:120]}")
+                continue
+        trees[f] = (tree, imported)
         base = len(units)
-        for u in units_of(f, tree, texts[f]):
+        for u in file_units:
             u.parent = base + u.parent if u.parent >= 0 else -1
             units.append(u)
     if unloadable:
