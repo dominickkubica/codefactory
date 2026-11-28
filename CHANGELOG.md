@@ -3,9 +3,24 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
-## Unreleased
+## 0.24.0 · 2026-11-28
 
-Faster first runs on large TypeScript projects, with the same results (teable, a 66 MB monorepo: 170 s → 115 s).
+Two held-out rounds of fixes measured on 60 repositories nobody tuned against (counted precision about 68% → 70%,
+docs/ACCURACY.md), and much faster runs with no timeouts: teable 170 s → 115 s, gymlift 27 s → 11 s, invoiceninja and
+open-webui (past the 15-minute limit before) about 40 s and 30 s, round 9's 30 repositories 21 → 11 minutes.
+
+### Fewer false findings (rounds 8 and 9)
+
+- Loops in seven languages: what a for-each loop iterates, and the receiver of `.map`/`.each`/`.forEach`, run once,
+  not per item (Ruby, Go, Java, Kotlin, PHP, Rust, C#); loops over a few written-out items aren't "inside loops".
+- Unused code: vendored libraries, Rust tests under stacked attributes, handlers passed as `handler::<T>`, Stimulus
+  lifecycle methods, and module-local JavaScript helpers used in their own file.
+- Containers: images whose base or entrypoint drops root (postgres, mysql, uWSGI `uid`, `su`/`gosu`), and dev images.
+- Source checks: a method named `eval`, bundled libraries, fixed shell values and f-strings, typed catches, SHA-1 a
+  protocol requires, RSA/ECB, CORS on outbound requests, placeholder keys typed as a sequence, raw HTML only in web
+  files.
+
+### Speed
 
 - **TypeScript in two slices**: when the heap holds two copies of the program, two processes each build it and walk
   half the files, merged in order (the walk was 78 of 104 s on teable).
@@ -18,6 +33,14 @@ Faster first runs on large TypeScript projects, with the same results (teable, a
 - **Faster data flow** (JavaScript/TypeScript): functions and the statements each one reads come from one tree-sitter
   query per file instead of a walk in Python (teable: 38 s → 23 s, the same flows on 279,000 functions).
 - **Routes reached by tests**: an index of quoted URLs instead of searching all test code per route (7.6 s → 0.15 s).
+- Files over 1 MB are skipped by every analyzer; installed packages and `@types` aren't read by the type checker; a
+  too-big TypeScript repository's groups run side by side; TypeScript starts alongside Python; output in a fixed order.
+- Per-phase timings (`CODEFACTORY_TIMINGS=1`).
+
+### Process
+- Golden snapshots of 22 pinned repositories (`tools/golden.py`), held-out rounds (`tools/heldout.py`), speed budgets
+  (`tools/speed.py`, two minutes per repository at most) and one gate before every push (`tools/gate.py`); the
+  cardinal rules in CONTRIBUTING.md.
 - Tools: speed runs are fully cold (the per-file caches were still read); the gate keeps the old version's corpus
   results per commit, so each later gate analyzes only with the new code, and names a failed test or analysis at once.
 
