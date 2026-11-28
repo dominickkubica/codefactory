@@ -62,12 +62,12 @@ def export_with(code: Path, repo_path: Path, out: Path, prof: Path, timeout: flo
         try:
             stdout, stderr = proc.communicate(timeout=timeout)
         except subprocess.TimeoutExpired:
-            _kill_group(proc)
+            kill_group(proc)
             raise
         return subprocess.CompletedProcess(proc.args, proc.returncode, stdout, stderr)
 
 
-def _kill_group(proc: subprocess.Popen) -> None:
+def kill_group(proc: subprocess.Popen) -> None:
     import signal
 
     try:

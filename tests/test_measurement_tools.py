@@ -52,7 +52,7 @@ class TimeoutTest(unittest.TestCase):
         # a Python process that starts a long-lived child of its own, like the analyzer starting Node
         import subprocess
 
-        from corpus import _kill_group
+        from corpus import kill_group
 
         starts_child = ("import subprocess, sys, time\n"
                         "p = subprocess.Popen(['sleep', '60'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)\n"
@@ -67,7 +67,7 @@ class TimeoutTest(unittest.TestCase):
                 time.sleep(0.05)
             child = int(pid_file.read_text())
             try:
-                _kill_group(proc)
+                kill_group(proc)
                 time.sleep(0.2)
                 self.assertFalse(_running(child))
             finally:

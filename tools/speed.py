@@ -27,7 +27,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-from corpus import checkout, share_memory  # noqa: E402
+from corpus import checkout, kill_group, share_memory  # noqa: E402
 
 HERE = ROOT / "tools" / "speed"
 BASELINE = HERE / "baseline.json"
@@ -68,11 +68,15 @@ def local_repos() -> dict[str, Path]:
 def time_one(path: Path) -> dict:
     env = {**os.environ, "PYTHONPATH": str(ROOT)}
     with tempfile.TemporaryDirectory() as empty:  # (from an empty folder: `python -c` imports from where it runs)
+        # (its own process group: a timeout ends the Node analyzer and the worker pool too, not just Python)
+        proc = subprocess.Popen([sys.executable, "-c", RUN, str(path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                text=True, env=env, cwd=empty, start_new_session=os.name != "nt")  # fmt: skip
         try:
-            done = subprocess.run([sys.executable, "-c", RUN, str(path)], capture_output=True, text=True, env=env,
-                                  cwd=empty, timeout=CEILING * 3)  # fmt: skip
+            stdout, stderr = proc.communicate(timeout=CEILING * 3)
         except subprocess.TimeoutExpired:
+            kill_group(proc)
             return {"seconds": CEILING * 3, "phases": {}, "peak_mb": 0, "error": "timeout"}
+        done = subprocess.CompletedProcess(proc.args, proc.returncode, stdout, stderr)
     if done.returncode != 0:
         return {"seconds": 0, "phases": {}, "peak_mb": 0, "error": done.stderr[-300:]}
     return json.loads(done.stdout.strip().splitlines()[-1])
