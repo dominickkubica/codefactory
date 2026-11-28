@@ -39,7 +39,8 @@ function walkDir(dir, out) {
 
 // Program: the repo's tsconfig when there is one (its paths and settings), plus any other source files found.
 // codefactory: ignore module_state — a one-shot script: one run, one program, no importers
-let options = { allowJs: true, jsx: ts.JsxEmit.Preserve, noEmit: true, skipLibCheck: true, esModuleInterop: true };
+// (`types: []`: no @types/* packages loaded globally either; a fresh checkout has none)
+let options = { allowJs: true, jsx: ts.JsxEmit.Preserve, noEmit: true, skipLibCheck: true, esModuleInterop: true, types: [] };
 let fileNames = []; // codefactory: ignore module_state — the same one run
 const cfgPath = ts.findConfigFile(root, ts.sys.fileExists, "tsconfig.json");
 // (TypeScript reports paths with "/", Node on Windows with "\\": compare both resolved.)
@@ -47,7 +48,7 @@ if (cfgPath && path.resolve(path.dirname(cfgPath)) === path.resolve(root)) {
   const cfg = ts.readConfigFile(cfgPath, ts.sys.readFile);
   if (!cfg.error) {
     const parsed = ts.parseJsonConfigFileContent(cfg.config, ts.sys, path.dirname(cfgPath));
-    options = { ...parsed.options, allowJs: true, noEmit: true, skipLibCheck: true };
+    options = { ...parsed.options, allowJs: true, noEmit: true, skipLibCheck: true, types: [] };
     fileNames = parsed.fileNames;
   }
 }
@@ -306,10 +307,16 @@ function settingsOf(from) {
   settingsOfFile.set(file, s || null);
   return s || null;
 }
+// Installed packages aren't read: a library's own types (1,689 files from node_modules for gymlift, 40% of the run)
+// barely change what the project's functions call, and a fresh checkout, where every measured result comes from,
+// has none. So a run with node_modules installed sees what the measured runs saw, and is faster for it.
+const external = (r) => r.resolvedModule && (r.resolvedModule.isExternalLibraryImport ||
+  /[\\/]node_modules[\\/]/.test(r.resolvedModule.resolvedFileName));
 function resolveFull(spec, from, mode, redirected) {
   const s = settingsOf(from);
-  const r = s ? ts.resolveModuleName(spec, from, s.options, host, s.cache, redirected, mode)
+  let r = s ? ts.resolveModuleName(spec, from, s.options, host, s.cache, redirected, mode)
     : ts.resolveModuleName(spec, from, options, host, resolutionCache, redirected, mode);
+  if (external(r)) r = { resolvedModule: undefined };
   if (r.resolvedModule) return r;
   const f = workspaceFile(spec);
   if (!f) return r;

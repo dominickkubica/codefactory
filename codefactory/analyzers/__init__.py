@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 from ..graph import Graph
+from ..timing import phase
 from .generic import analyze_generic
 from .python import analyze_python
 from .typescript import TypeScriptUnavailable, analyze_typescript
@@ -30,10 +31,12 @@ def analyze(root: Path, ignore: list[str], languages: list[str] | None = None, c
     js_fallback = False
     for lang in wanted:
         if lang == "python":
-            part = analyze_python(root, ignore, cache=cache)
+            with phase("build.python"):
+                part = analyze_python(root, ignore, cache=cache)
         elif lang == "typescript":
             try:
-                part = analyze_typescript(root, ignore, cache=cache)
+                with phase("build.typescript"):
+                    part = analyze_typescript(root, ignore, cache=cache)
             except TypeScriptUnavailable as e:
                 if languages and "other" not in languages:  # asked for explicitly: that's an error
                     raise SystemExit(f"codefactory: {e}") from None
@@ -48,7 +51,8 @@ def analyze(root: Path, ignore: list[str], languages: list[str] | None = None, c
                 js_fallback = True
                 continue
         elif lang == "other":
-            part = analyze_generic(root, ignore, include_js=js_fallback, cache=cache)
+            with phase("build.other_languages"):
+                part = analyze_generic(root, ignore, include_js=js_fallback, cache=cache)
         else:
             raise ValueError(f"unknown language {lang!r} (choose from {', '.join(LANGUAGES)})")
         if part.files:

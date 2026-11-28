@@ -30,6 +30,7 @@ from .privacy import scan as privacy_scan
 from .profile import detect as detect_profile
 from .profile import markdown as profile_markdown
 from .security import SINK_KINDS, function_at, surface, writes
+from .timing import phase
 
 SEV = ["Critical", "High", "Medium", "Low"]
 POINTS = {"Critical": 30, "High": 10, "Medium": 3, "Low": 1}
@@ -269,25 +270,33 @@ class Review:
             history = pool.submit(hotspots.analyze, root, g)
             sources = source_files(root, g)  # parsed or not: line checks need no parser
             self.sources = sources
-            self.scan = scan_sources(root, sources)
-            extra, self.history_note = audit_scan(root, current_secrets(self.scan["secret"], root))
+            with phase("review.scan_sources"):
+                self.scan = scan_sources(root, sources)
+            with phase("review.config_and_history"):
+                extra, self.history_note = audit_scan(root, current_secrets(self.scan["secret"], root))
             self.scan.update(extra)  # CI, Docker, mobile config and git history: same shape, same silencing
-            self.scan.update(privacy_scan(root, sources))  # personal data, Apple privacy rules
-            self.scan.update(apple_scan(root, sources))  # Swift crashes, cycles, main-thread I/O
-            self.scan.update(infra_scan(root, set(load_config(root).ignore)))  # shell, Make, YAML, HTML, Pkl, patches
+            with phase("review.privacy"):
+                self.scan.update(privacy_scan(root, sources))  # personal data, Apple privacy rules
+            with phase("review.apple"):
+                self.scan.update(apple_scan(root, sources))  # Swift crashes, cycles, main-thread I/O
+            with phase("review.infra"):
+                self.scan.update(infra_scan(root, set(load_config(root).ignore)))  # shell, Make, YAML, HTML, Pkl, patches
             self.online, self.vulns, self.deps_note = online, [], ""
             self._apply_silence(load_config(root).silence)
-            self.surface = surface(root, g, self.v)
-            # what kind of project: findings are ranked for it
-            self.profile = detect_profile(root, g, self.surface, sources=sources)
-            self.history = history.result()  # where change happens: findings there are worth fixing first
+            with phase("review.surface"):
+                self.surface = surface(root, g, self.v)
+            with phase("review.profile"):  # what kind of project: findings are ranked for it
+                self.profile = detect_profile(root, g, self.surface, sources=sources)
+            with phase("review.git_history_wait"):
+                self.history = history.result()  # where change happens: findings there are worth fixing first
         finally:  # a failed check doesn't leave git running (and the interpreter waiting for it at exit)
             pool.shutdown(wait=False, cancel_futures=True)
         self.hot = self.history.by_path()
         self.rank_changes: list[rerank.Change] = []
         self.writers = writes(self.v)
         # (with tests left out of the results, what they reach was kept: coverage still counts them)
-        static = set(g["tests"]["reached"]) if g.get("tests") else test_reach(self.v, self._tested_unlinked())
+        with phase("review.test_reach"):
+            static = set(g["tests"]["reached"]) if g.get("tests") else test_reach(self.v, self._tested_unlinked())
         self.coverage = measured(root, g["functions"])
         if self.coverage:  # what ran, where the report knows; the static estimate for files it doesn't cover
             seen = self.coverage.seen
@@ -1306,6 +1315,10 @@ class Review:
 
     # ---- report ------------------------------------------------------------------------------------------------
     def run(self) -> None:
+        with phase("review.checks"):
+            self._run()
+
+    def _run(self) -> None:
         self.test_pct = None
         self.security()
         self.reliability()

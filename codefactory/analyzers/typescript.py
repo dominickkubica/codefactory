@@ -192,7 +192,16 @@ def _run_helper(root: Path, ignore: list[str], saved: Path | None = None, source
                                         f"{oom['heap']} MB) on the last run, with these same files.")  # fmt: skip
     try:
         proc = subprocess.run(
-            [node, f"--max-old-space-size={heap}", str(helper), str(root), ts_path, json.dumps(ignore)],
+            # (a 64 MB young generation: the compiler allocates fast, and the default collected it constantly)
+            [
+                node,
+                f"--max-old-space-size={heap}",
+                "--max-semi-space-size=64",
+                str(helper),
+                str(root),
+                ts_path,
+                json.dumps(ignore),
+            ],
             capture_output=True,
             text=True,
             encoding="utf-8",

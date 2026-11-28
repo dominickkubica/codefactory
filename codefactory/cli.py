@@ -31,6 +31,7 @@ from .skill import SOURCE as SKILL_SOURCE
 from .skill import install_hook, install_skill, refresh_skill, skill_outdated, update
 from .sqlgraph import query_flags, run_query, to_sqlite
 from .suppress import apply_suppressions
+from .timing import phase
 from .trace import find_function, shortest_path, trace
 from .viewer import render_html
 
@@ -39,15 +40,18 @@ def build(root: Path, languages: list[str] | None = None, cache: bool = True) ->
     cfg = load_config(root)
     g = analyze(root, cfg.ignore, languages, cache)
     assign_layers(g, cfg)
-    run_flags(g, cfg)
+    with phase("build.flags"):
+        run_flags(g, cfg)
     if any(f.id.endswith(".py") for f in g.files):
         from .taint import taint_flags
 
-        g.flags += taint_flags(g, root)
+        with phase("build.taint_python"):
+            g.flags += taint_flags(g, root)
     if any(f.id.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts")) for f in g.files):
         from .jstaint import js_taint_flags
 
-        g.flags += js_taint_flags(g, root)
+        with phase("build.taint_js"):
+            g.flags += js_taint_flags(g, root)
     if cfg.rules:
         from .rules import custom_flags
 
@@ -69,11 +73,13 @@ def load_graph(path: Path, languages: list[str] | None = None, cache: bool = Tru
     ignore = load_config(root).ignore
     stamp, recent = "", []
     if cache and not languages:
-        stamp = fingerprint(root, ignore, recent)  # before analysis: what's analyzed is at least this new
-        hit = load_cached(root, ignore, stamp)
+        with phase("load.fingerprint_and_cache"):
+            stamp = fingerprint(root, ignore, recent)  # before analysis: what's analyzed is at least this new
+            hit = load_cached(root, ignore, stamp)
         if hit is not None:
             return _scoped(hit, root)
-    graph = build(root, languages, cache).to_dict()
+    with phase("build"):
+        graph = build(root, languages, cache).to_dict()
     from .analyzers import INCOMPLETE
 
     if cache and not languages and not INCOMPLETE:  # (a result missing a language isn't kept: see analyzers)
@@ -878,7 +884,12 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
     try:
-        return COMMANDS[a.cmd][0](a)
+        try:
+            return COMMANDS[a.cmd][0](a)
+        finally:
+            from .timing import print_if_asked
+
+            print_if_asked()
     except KeyboardInterrupt:
         print("codefactory: stopped.", file=sys.stderr)
         return 130
