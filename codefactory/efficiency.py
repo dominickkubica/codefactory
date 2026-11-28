@@ -96,7 +96,7 @@ def kind_of(sink: str) -> str:
     # a write only when the call says so (an INSERT, save, commit, put, set…): an I/O-looking call that says neither
     # (`resolve_attribute`, `add_line`, `preg_match` reached by a name match) was the source of most wrong "writes
     # inside loops" on the corpus
-    return "write" if WRITE_SQL.search(sink) or WRITE_CALL.search(sink) else "other"
+    return "write" if says_write(sink) or WRITE_CALL.search(sink) else "other"
 
 
 WRITE_CALL = re.compile(
@@ -109,7 +109,17 @@ WRITE_NAME = re.compile(
     r"(?:^|[._])(?:insert|update|upsert|save|delete|destroy|remove|create|persist|commit|mark|restore|write|store|put|Insert|Update|Upsert|Save|Delete|Destroy|Remove|Create|Persist|Commit|Mark|Restore|Write|Store|Put)"
     r"|(?<=[a-z])(?:Insert|Update|Upsert|Save|Delete|Destroy|Remove|Create|Persist|Commit|Mark|Restore|Write|Store|Put)"
 )
-WRITE_SQL = re.compile(r"INSERT|UPDATE|DELETE|REPLACE|UPSERT|commit|save|put|set|write|create|add|remove|delete", re.I)
+# the words of the call and its SQL (camelCase and snake_case split): `bulk_update`, `WriteMessage`, an `INSERT`, but
+# never a part of a word (`getInputStream` holds "put", `settings` "set": round 9's wrong "writes" in kestra)
+WRITE_WORDS = {"insert", "update", "delete", "replace", "upsert", "commit", "save", "put", "set", "write", "create", "add",
+               "remove"}  # fmt: skip
+WORD_PART = re.compile(r"[A-Z]+(?![a-z])|[A-Z]?[a-z]+")
+
+
+def says_write(text: str) -> bool:
+    return any(w.lower() in WRITE_WORDS for w in WORD_PART.findall(text))
+
+
 READ_NAME = re.compile(r"^_?(read|get|load|fetch|list|find|count|select|query|lookup|latest|recent|stored)", re.I)
 
 
@@ -117,7 +127,7 @@ def kind_through(sink: str, path: list[str]) -> str:
     """kind_of, using the names of the functions on the way as a hint when the call itself doesn't say: a
     `conn.execute(sql)` reached through `read_snapshots` is a read, not a write."""
     kind = kind_of(sink)
-    if kind == "write" and not WRITE_SQL.search(sink) and any(READ_NAME.match(n) for n in path):
+    if kind == "write" and not says_write(sink) and any(READ_NAME.match(n) for n in path):
         return "read"
     if kind == "other" and any(WRITE_NAME.search(n) for n in path):
         return "write"  # cipher.delete(), MarkAsMerged(), UpdatePortVisibility(): the functions on the way say so

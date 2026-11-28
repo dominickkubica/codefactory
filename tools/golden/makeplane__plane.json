@@ -4616,12 +4616,6 @@
    "tier": "hints",
    "location": "`apps/api/plane/bgtasks/issue_automation_task.py:72` archive_old_issues — `Issue.objects.bulk_update(issues_to_update, [\"archived_at\"], batch_size=100)`"
   },
-  "Writes inside loops in N place|apps/api/plane/bgtasks/work_item_link_task.py:195": {
-   "check": "Writes inside loops in N place",
-   "severity": "Low",
-   "tier": "hints",
-   "location": "`apps/api/plane/bgtasks/work_item_link_task.py:195` find_favicon_url — `validate_url_ip(favicon_href)`"
-  },
   "Writes inside loops in N place|apps/api/plane/bgtasks/workspace_seed_task.py:116": {
    "check": "Writes inside loops in N place",
    "severity": "Low",
