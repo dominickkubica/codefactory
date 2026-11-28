@@ -135,6 +135,21 @@ def _last_ident(node, depth: int = 0) -> str:
 BATCHED = re.compile(r"(?i)\b(?:batch|chunk|page)\w*\b|\+=\s*(?:\w*(?:size|Size|limit|Limit|max|Max)\w*|\d{2,})")
 
 
+def _iterable(loop) -> tuple:
+    """The children of a for-each loop that are evaluated once, before it starts: what it iterates over (`repo.findAll()`
+    in `for (User u : repo.findAll())`, Go's `range db.Users()`, PHP's `foreach ($repo->all() as $u)`). The body runs per
+    item; so does a while loop's condition, which is why only for-each loops have these."""
+    kids = loop.children
+    out = []
+    for i, c in enumerate(kids):
+        field = loop.field_name_for_child(i)
+        before = kids[i - 1].type if i else ""
+        after = kids[i + 1].type if i + 1 < len(kids) else ""
+        if field in ("value", "right") or c.type == "range_clause" or (before == "in" and after == ")") or after == "as":
+            out.append(c)
+    return tuple(out)
+
+
 def _batched(loop) -> bool:
     """`for _, batch := range batches`, `for i := 0; i < n; i += 1000`: a loop over batches is the batching, one
     call per batch is what the fix for one call per item looks like."""
@@ -332,19 +347,18 @@ def walk(source: bytes, parser, rel: str) -> dict:
             continue
         if fn is not None and (BRANCH.search(t) or t in ("&&", "||", "and", "or", "??", "orelse", "andalso")):
             fn["branches"] += 1
-        in_loop = loops
+        in_loop, per_item, once = loops, [], ()
         if LOOP.search(t) and not NOT_LOOP.search(t) and node.named_children and not _batched(node):
-            in_loop = loops + 1
+            in_loop, once = loops + 1, _iterable(node)
         if CALL.match(t):
             name = _name(node, call=True)
             if name in REQUIRE and fn is None:  # Ruby, Lua, PHP, Elixir: imports are calls
                 out["imports"] += [s for s in _import_sources(node)[:1] if s != name]
             elif name:
                 owner["calls"].append([name, node.start_point[0] + 1, loops > 0, _callee_text(node), _route_call(node)])
-            if name in ITER:  # the closure it's given runs per item
-                for c in node.named_children:
-                    if CLOSURE.search(c.type) or any(CLOSURE.search(g.type) for g in c.named_children):
-                        in_loop = loops + 1
+            if name in ITER:  # the closure it's given runs per item; its receiver and other arguments run once
+                per_item = [c for c in node.named_children
+                            if CLOSURE.search(c.type) or any(CLOSURE.search(g.type) for g in c.named_children)]  # fmt: skip
         if IDENT.search(t) and not node.named_children:
             parent = node.parent
             if (
@@ -371,8 +385,8 @@ def walk(source: bytes, parser, rel: str) -> dict:
                 fn["tokens"] += [f"S:{w}" for w in text.strip("'\"`").split()[:24]]
             else:
                 fn["tokens"].append(t)
-        for c in reversed(node.children):
-            stack.append((c, fn, classes, in_loop, depth + 1))
+        for c in reversed(node.children):  # (`filter(xs).map(&:id)`: filter runs once, the block per item)
+            stack.append((c, fn, classes, loops + 1 if c in per_item else loops if c in once else in_loop, depth + 1))
     out["top"]["refs"] = sorted(out["top"]["refs"])
     text = source.decode("utf-8", "replace")
     out["types"] = declared_types(text)

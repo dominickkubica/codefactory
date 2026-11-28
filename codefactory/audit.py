@@ -143,17 +143,42 @@ def _drops_root(root: Path, dockerfile: Path, text: str) -> bool:
         for ln in text.splitlines()
     ):
         return True
+    if _uwsgi_drops(root, dockerfile, text):
+        return True
     for script in set(re.findall(r"[\w./-]+\.sh\b", text)):
-        parts = script.strip("/").split("/")
-        # (`/src/script/docker-entrypoint.sh` is a build stage's path: try each tail of it in the repository)
-        for base, tail in ((b, "/".join(parts[i:])) for b in (dockerfile.parent, root) for i in range(len(parts))):
-            p = (base / tail).resolve()
-            if p.is_file() and p.is_relative_to(root.resolve()):
-                try:
-                    if DROP_ROOT.search(p.read_text(encoding="utf-8", errors="replace")[:200_000]):
-                        return True
-                except OSError:
-                    pass
+        body = _read_in_repo(root, dockerfile, script)
+        # (in the entrypoint, `exec su app -c "…"` switches user at run time; in a RUN line it would be build time)
+        if body and (DROP_ROOT.search(body) or SU_RUN.search(body) or _uwsgi_drops(root, dockerfile, body)):
+            return True
+    return False
+
+
+SU_RUN = re.compile(r"\bsu\s+(?:-[\w-]+\s+)*[\"'$\w{}-]+\s+-c\b|\bexec\s+su\b")
+
+
+def _read_in_repo(root: Path, dockerfile: Path, name: str) -> str:
+    """A file a Dockerfile or script names, found in the repository: `/src/script/docker-entrypoint.sh` is a build
+    stage's path, so each tail of it is tried from the Dockerfile's folder and the root."""
+    parts = name.strip("/").split("/")
+    for base, tail in ((b, "/".join(parts[i:])) for b in (dockerfile.parent, root) for i in range(len(parts))):
+        p = (base / tail).resolve()
+        if p.is_file() and p.is_relative_to(root.resolve()):
+            try:
+                return p.read_text(encoding="utf-8", errors="replace")[:200_000]
+            except OSError:
+                return ""
+    return ""
+
+
+def _uwsgi_drops(root: Path, dockerfile: Path, text: str) -> bool:
+    """uWSGI started with a non-root `uid`: `--uid app` on its command line, or `uid = www-data` in the .ini it's
+    given (linkding's `exec uwsgi … uwsgi.ini`). uWSGI switches to that user before it runs the application."""
+    for m in re.finditer(r"\buwsgi\b[^\n]*", text):
+        if re.search(r"--uid[\s=]+(?!root\b|0\b)\S", m.group(0)):
+            return True
+        for ini in re.findall(r"[\w./-]+\.ini\b", m.group(0)):
+            if re.search(r"(?m)^\s*uid\s*=\s*(?!root\b|0\b)\S", _read_in_repo(root, dockerfile, ini)):
+                return True
     return False
 
 
@@ -192,7 +217,12 @@ def dockerfiles(root: Path, files: list[Path], out: dict[str, Check]) -> None:
         users = [u.group(1) for u in USER.finditer(text)]
         final = text[froms[-1].start() :].split("\n", 1)[0]  # the whole line: `FROM node:22 AS dev`
         tests_image = re.search(r"^\s*COPY\s+[^\n]*\b(?:tests?|phpunit[\w.]*|pytest[\w.]*|jest\.config\w*)\b", text, re.M | re.I)
-        dev = is_dev_setup(rel) or tests_image or re.search(r"\bAS\s+(?:dev|develop\w*|test\w*|ci)\s*$", final, re.I)  # (a final
+        dev = (
+            is_dev_setup(rel)
+            or tests_image
+            or re.search(r"\bAS\s+(?:dev|develop\w*|test\w*|ci)\s*$", final, re.I)
+            or re.search(r"^FROM\s+\S+:(?:dev|development)\b", final.strip(), re.I)
+        )  # (on `app:development`; a final
         # stage named `build` still ships: cal.com's API image)
         nonroot = re.search(r"nonroot|distroless|chainguard|rootless|unprivileged", final, re.I)
         # a base image other Dockerfiles build on (`Dockerfile.base`, `images/n8n-base/`): the shipped one sets USER

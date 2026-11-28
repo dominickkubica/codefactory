@@ -2,18 +2,6 @@
  "repo": "sissbruecker/linkding",
  "commit": "27b7303baf41bb28babc610ac8eaa486e1ddfab5",
  "locations": {
-  "Container runs as root|docker/alpine.Dockerfile:100": {
-   "check": "Container runs as root",
-   "severity": "Medium",
-   "tier": "findings",
-   "location": "`docker/alpine.Dockerfile:100` no USER after linkding — `FROM linkding AS linkding-plus`"
-  },
-  "Container runs as root|docker/default.Dockerfile:95": {
-   "check": "Container runs as root",
-   "severity": "Medium",
-   "tier": "findings",
-   "location": "`docker/default.Dockerfile:95` no USER after linkding — `FROM linkding AS linkding-plus`"
-  },
   "Copied logic in N group (~N lines)|bookmarks/services/bookmarks.py:109": {
    "check": "Copied logic in N group (~N lines)",
    "severity": "Low",

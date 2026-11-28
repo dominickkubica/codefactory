@@ -530,12 +530,6 @@
    "tier": "findings",
    "location": "`app/models/entry.rb:92` Entry.bulk_update!: Entry.bulk_update! calls EntryableResource.entryable() inside a loop (line 92), and that reaches Current.family.accounts.find_by() — `entry.entryable.lock_attr!(:tag_ids) if entry.transaction? && entry.transaction.tags.any?`"
   },
-  "Queries or requests inside loops (N) in N place|app/models/family/auto_categorizer.rb:55": {
-   "check": "Queries or requests inside loops (N) in N place",
-   "severity": "Medium",
-   "tier": "findings",
-   "location": "`app/models/family/auto_categorizer.rb:55` AutoCategorizer.user_categories_input: AutoCategorizer.user_categories_input calls IncomeStatement.categories() inside a loop (line 55), and that reaches PERIODS[key].fetch() — `family.categories.map do |category|`"
-  },
   "Queries or requests inside loops (N) in N place|app/models/family/auto_transfer_matchable.rb:68": {
    "check": "Queries or requests inside loops (N) in N place",
    "severity": "Medium",
@@ -578,12 +572,6 @@
    "tier": "findings",
    "location": "`app/models/holding/portfolio_cache.rb:97` PortfolioCache.load_prices: PortfolioCache.load_prices calls EntryableResource.entryable() inside a loop (line 97 and 2 more), and that reaches Current.family.accounts.find_by() — `.select { |t| t.entryable.security_id == security.id }`"
   },
-  "Queries or requests inside loops (N) in N place|app/models/holding/portfolio_snapshot.rb:25": {
-   "check": "Queries or requests inside loops (N) in N place",
-   "severity": "Medium",
-   "tier": "findings",
-   "location": "`app/models/holding/portfolio_snapshot.rb:25` PortfolioSnapshot.build_portfolio: PortfolioSnapshot.build_portfolio calls account.holdings.select() inside a loop (line 25)"
-  },
   "Queries or requests inside loops (N) in N place|app/models/holding/reverse_calculator.rb:33": {
    "check": "Queries or requests inside loops (N) in N place",
    "severity": "Medium",
@@ -613,18 +601,6 @@
    "severity": "Medium",
    "tier": "findings",
    "location": "`app/models/import.rb:163` Import.sync_mappings: Import.sync_mappings calls MappingsController.mappable() inside a loop (line 163), and that reaches mappable_class.find_by() — `mapping.mappable = mappable`"
-  },
-  "Queries or requests inside loops (N) in N place|app/models/import/category_mapping.rb:12": {
-   "check": "Queries or requests inside loops (N) in N place",
-   "severity": "Medium",
-   "tier": "findings",
-   "location": "`app/models/import/category_mapping.rb:12` CategoryMapping.selectable_values: CategoryMapping.selectable_values calls IncomeStatement.categories() inside a loop (line 12), and that reaches PERIODS[key].fetch() — `family_categories = import.family.categories.alphabetically.map { |category| [ category.name, category.id ] }`"
-  },
-  "Queries or requests inside loops (N) in N place|app/models/income_statement.rb:65": {
-   "check": "Queries or requests inside loops (N) in N place",
-   "severity": "Medium",
-   "tier": "findings",
-   "location": "`app/models/income_statement.rb:65` IncomeStatement.build_period_total: IncomeStatement.build_period_total calls IncomeStatement.totals_query() inside a loop (line 65), and that reaches Rails.cache.fetch() — `totals = totals_query(transactions_scope: family.transactions.visible.in_period(period)).select { |t| t.classification == classification }`"
   },
   "Queries or requests inside loops (N) in N place|app/models/income_statement.rb:95": {
    "check": "Queries or requests inside loops (N) in N place",

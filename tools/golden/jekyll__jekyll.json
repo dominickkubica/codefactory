@@ -56,12 +56,6 @@
    "tier": "hints",
    "location": "`benchmark/find-filter-vs-where-first-filters.rb:29` — `[:reset, :read, :generate].each { |phase| SITE.send(phase) }`"
   },
-  "Writes inside loops in N place|lib/jekyll/cleaner.rb:46": {
-   "check": "Writes inside loops in N place",
-   "severity": "Low",
-   "tier": "hints",
-   "location": "`lib/jekyll/cleaner.rb:46` Jekyll.Cleaner.existing_files — `Utils.safe_glob(site.in_dest_dir, [\"**\", \"*\"], File::FNM_DOTMATCH).each do |file|`"
-  },
   "Writes inside loops in N place|lib/jekyll/cleaner.rb:97": {
    "check": "Writes inside loops in N place",
    "severity": "Low",
@@ -79,12 +73,6 @@
    "severity": "Low",
    "tier": "hints",
    "location": "`lib/jekyll/collection.rb:65` Jekyll.Collection.read — `read_static_file(file_path, full_path)`"
-  },
-  "Writes inside loops in N place|lib/jekyll/collection.rb:97": {
-   "check": "Writes inside loops in N place",
-   "severity": "Low",
-   "tier": "hints",
-   "location": "`lib/jekyll/collection.rb:97` Jekyll.Collection.filtered_entries — `entry_filter.filter(entries).reject do |f|`"
   },
   "Writes inside loops in N place|lib/jekyll/collection.rb:98": {
    "check": "Writes inside loops in N place",
@@ -140,24 +128,6 @@
    "tier": "hints",
    "location": "`lib/jekyll/frontmatter_defaults.rb:202` Jekyll.FrontmatterDefaults.matching_sets — `!set.key?(\"scope\") || applies?(set[\"scope\"], path, type)`"
   },
-  "Writes inside loops in N place|lib/jekyll/frontmatter_defaults.rb:63": {
-   "check": "Writes inside loops in N place",
-   "severity": "Low",
-   "tier": "hints",
-   "location": "`lib/jekyll/frontmatter_defaults.rb:63` Jekyll.FrontmatterDefaults.find — `matching_sets(path, type).each do |set|`"
-  },
-  "Writes inside loops in N place|lib/jekyll/frontmatter_defaults.rb:81": {
-   "check": "Writes inside loops in N place",
-   "severity": "Low",
-   "tier": "hints",
-   "location": "`lib/jekyll/frontmatter_defaults.rb:81` Jekyll.FrontmatterDefaults.all — `matching_sets(path, type).each do |set|`"
-  },
-  "Writes inside loops in N place|lib/jekyll/plugin_manager.rb:108": {
-   "check": "Writes inside loops in N place",
-   "severity": "Low",
-   "tier": "hints",
-   "location": "`lib/jekyll/plugin_manager.rb:108` Jekyll.PluginManager.plugins_path — `Array(site.config[\"plugins_dir\"]).map { |d| File.expand_path(d) }`"
-  },
   "Writes inside loops in N place|lib/jekyll/profiler.rb:39": {
    "check": "Writes inside loops in N place",
    "severity": "Low",
@@ -200,23 +170,11 @@
    "tier": "hints",
    "location": "`lib/jekyll/readers/data_reader.rb:49` Jekyll.DataReader.read_data_to — `data[key] = read_data_file(path)`"
   },
-  "Writes inside loops in N place|lib/jekyll/readers/data_reader.rb:62": {
-   "check": "Writes inside loops in N place",
-   "severity": "Low",
-   "tier": "hints",
-   "location": "`lib/jekyll/readers/data_reader.rb:62` Jekyll.DataReader.read_data_file — `CSV.read(path, **csv_config).map { |row| convert_row(row) }`"
-  },
   "Writes inside loops in N place|lib/jekyll/readers/post_reader.rb:38": {
    "check": "Writes inside loops in N place",
    "severity": "Low",
    "tier": "hints",
    "location": "`lib/jekyll/readers/post_reader.rb:38` Jekyll.PostReader.read_publishable — `read_content(dir, magic_dir, matcher)`"
-  },
-  "Writes inside loops in N place|lib/jekyll/readers/post_reader.rb:53": {
-   "check": "Writes inside loops in N place",
-   "severity": "Low",
-   "tier": "hints",
-   "location": "`lib/jekyll/readers/post_reader.rb:53` Jekyll.PostReader.read_content — `@site.reader.get_entries(dir, magic_dir).map do |entry|`"
   },
   "Writes inside loops in N place|lib/jekyll/readers/post_reader.rb:56": {
    "check": "Writes inside loops in N place",

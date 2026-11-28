@@ -704,12 +704,6 @@
    "tier": "findings",
    "location": "`crates/atuin-ai/src/resume_tui/worker.rs:315` details: details calls requests.recv() inside a loop (line 315) — `match requests.recv().await {`"
   },
-  "Queries or requests inside loops (N) in N place|crates/atuin-common/src/harnesstools/sync/grok.rs:109": {
-   "check": "Queries or requests inside loops (N) in N place",
-   "severity": "Medium",
-   "tier": "findings",
-   "location": "`crates/atuin-common/src/harnesstools/sync/grok.rs:109` Transcript.read: Transcript.read calls compacted_beside() inside a loop (line 109), and that reaches requests.sort_by() — `for lines in compacted_beside(path) {`"
-  },
   "Unused code (N function)|crates/atuin-ai/src/commands/resume.rs:1003": {
    "check": "Unused code (N function)",
    "severity": "Low",
@@ -1418,12 +1412,6 @@
    "tier": "hints",
    "location": "`crates/atuin-client/src/settings/watcher.rs:224` SettingsWatcher.debounce_loop — `if tx.send(Arc::new(settings)).is_err() {`"
   },
-  "Writes inside loops in N place|crates/atuin-common/src/fs/tree_watcher/stat.rs:32": {
-   "check": "Writes inside loops in N place",
-   "severity": "Low",
-   "tier": "hints",
-   "location": "`crates/atuin-common/src/fs/tree_watcher/stat.rs:32` StatPoller.poll — `for (path, fingerprint) in self.stat(hot).await {`"
-  },
   "Writes inside loops in N place|crates/atuin-common/src/harnesstools/opencode/session.rs:1621": {
    "check": "Writes inside loops in N place",
    "severity": "Low",
@@ -1453,12 +1441,6 @@
    "severity": "Low",
    "tier": "hints",
    "location": "`crates/atuin-daemon/src/components/search.rs:363` SearchGrpcService.search — `if tx`"
-  },
-  "Writes inside loops in N place|crates/atuin-daemon/src/components/search.rs:448": {
-   "check": "Writes inside loops in N place",
-   "severity": "Low",
-   "tier": "hints",
-   "location": "`crates/atuin-daemon/src/components/search.rs:448` SearchGrpcService.search_command_output — `let matches = self`"
   },
   "Writes inside loops in N place|crates/atuin-daemon/src/octavo/client/active/engine.rs:271": {
    "check": "Writes inside loops in N place",
@@ -1501,12 +1483,6 @@
    "severity": "Low",
    "tier": "hints",
    "location": "`crates/atuin-daemon/src/output_capture/persistence/blob/fjall/mod.rs:308` Flusher.spawn — `tokio::task::spawn_blocking(move || db.persist(PersistMode::SyncAll))`"
-  },
-  "Writes inside loops in N place|crates/atuin-daemon/src/session_capture/tools.rs:547": {
-   "check": "Writes inside loops in N place",
-   "severity": "Low",
-   "tier": "hints",
-   "location": "`crates/atuin-daemon/src/session_capture/tools.rs:547` withhold_written — `text.lines().filter(|line| line.trim_start().starts_with(\"*** \")).collect();`"
   },
   "Writes inside loops in N place|crates/atuin-kv/src/store.rs:156": {
    "check": "Writes inside loops in N place",

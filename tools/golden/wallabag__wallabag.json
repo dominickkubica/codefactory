@@ -620,12 +620,6 @@
    "tier": "findings",
    "location": "`src/Helper/EntriesExport.php:258` EntriesExport.produceEpub: EntriesExport.produceEpub calls EpubContentCleaner.clean() inside a loop (line 258), and that reaches $xpath.query() — `$chapter = $content_start . $this->contentCleaner->clean($book, $entry->getContent()) . $bookEnd;`"
   },
-  "Queries or requests inside loops (N) in N place|src/Helper/EpubContentCleaner.php:29": {
-   "check": "Queries or requests inside loops (N) in N place",
-   "severity": "Medium",
-   "tier": "findings",
-   "location": "`src/Helper/EpubContentCleaner.php:29` EpubContentCleaner.clean: EpubContentCleaner.clean calls $xpath.query() inside a loop (line 29 and 1 more) — `foreach (iterator_to_array($xpath->query('.//comment()', $body)) as $comment) {`"
-  },
   "Unused code (N function)|assets/controllers/annotations_controller.js:56": {
    "check": "Unused code (N function)",
    "severity": "Low",
