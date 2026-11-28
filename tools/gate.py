@@ -131,9 +131,12 @@ def _waiting_rounds() -> set[int]:
 
 
 def _ref_cache(ref: str, repo: str) -> Path:
-    """Where the ref's locations on a repository are kept: a commit's results never change, so the old version runs
-    once per commit and repository, and every gate after that analyzes with the working tree alone (half the time)."""
-    sha = subprocess.run(["git", "-C", str(ROOT), "rev-parse", ref], capture_output=True, text=True, check=True).stdout.strip()
+    """Where the ref's locations on a repository are kept: a version's results never change, so the old version runs
+    once per version of codefactory/ and repository, and every gate after that analyzes with the working tree alone
+    (half the time)."""
+    # (by the analyzer's own code, codefactory/: a commit of docs or tools reuses the results)
+    sha = subprocess.run(["git", "-C", str(ROOT), "rev-parse", f"{ref}:codefactory"], capture_output=True, text=True,
+                         check=True).stdout.strip()  # fmt: skip
     head = subprocess.run(["git", "-C", str(checkout(repo)), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     return CACHE / "gate-ref" / sha / f"{repo.replace('/', '__')}@{head[:12] or 'nogit'}.json"
 

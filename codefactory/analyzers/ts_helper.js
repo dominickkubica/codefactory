@@ -219,7 +219,9 @@ function splitRun(parts) {
 }
 function edgesOf(calls, refs, imports) {
   const edges = [];
-  const edge = (k, kind, count) => { const [src, dst] = k.split("\u0000"); edges.push({ src, dst, kind, count }); };
+  // (never a function to itself: two functions can share an id, `constructor@70` twice on a bundled file's line 70,
+  // and a call between them read as one to itself in one run, and was dropped where groups or slices are merged)
+  const edge = (k, kind, count) => { const [src, dst] = k.split("\u0000"); if (src !== dst) edges.push({ src, dst, kind, count }); };
   for (const [k, count] of calls) edge(k, "call", count);
   for (const [k, count] of refs) if (!calls.has(k)) edge(k, "ref", count);
   for (const k of imports) edge(k, "import", 1);
@@ -239,10 +241,11 @@ function writeJson(out) {
 if (!own && !slice) {
   const sizes = new Map([...all].map((f) => [f, sizeOf(f)]));
   const total = [...sizes.values()].reduce((a, b) => a + b, 0);
-  // slices: each child holds the whole Program and what its walk checks (teable, 66 MB: ~3.5 GB), so only when the
-  // heap holds two of them, and only when the walk saved is worth the Program each builds again. Two: a third saved
-  // 5 s more on teable (74 -> 69 s) for 3 GB more, a fourth was slower (its share of the heap left it collecting)
-  const slices = total > SLICE_FROM ? widthFor(2, Math.max(MIN_GROUP_HEAP_MB, (64 * total) / MB)) : 1;
+  // slices: each child holds the whole Program and what its half of the walk checks (teable, 66 MB: 3.5 GB; twenty,
+  // 134 MB: 5.4 GB; about 1.5 GB + 32x the source), so only when the heap holds two of them, and only when the walk
+  // saved is worth the Program each builds again. Two: a third saved 5 s more on teable (74 -> 69 s) for 3 GB more, a
+  // fourth was slower (its share of the heap left it collecting)
+  const slices = total > SLICE_FROM ? widthFor(2, Math.max(MIN_GROUP_HEAP_MB, 1536 + (32 * total) / MB)) : 1;
   const done = (e) => { process.stderr.write(`${e.message}\n`); process.exitCode = 1; };
   if (total > splitAt) {
     runGroups(groupsOf(sizes)).then((parts) => writeJson(splitRun(parts)), done);
