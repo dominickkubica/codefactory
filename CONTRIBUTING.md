@@ -20,7 +20,12 @@ pip install ruff
 ```bash
 python tools/gate.py          # golden diff, right findings kept, then tools/check.py
 python tools/gate.py --skip-ci  # the first two only, for a quick loop while working
+python tools/gate.py --corpus "labeled:Unused code|Queries or requests"  # a graph check changed: whole-repo analysis
 ```
+
+The default steps compare source-text checks file by file. A change to a graph check (loops, unused or untested code,
+import loops) also needs `--corpus`: every repository with labels for those checks is analyzed with the last release
+and with the working tree, and no location labeled right may disappear.
 
 `tools/check.py`, its last step, runs what CI runs, in parallel, in about a minute: lint and formatting with the pinned ruff, the tests on Python
 3.11 and 3.13 each without the optional language pack and with it, and `codefactory check .`. It skips a Python this

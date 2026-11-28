@@ -756,8 +756,13 @@ class Review:
             except OSError:
                 cache[file] = []
         text = cache[file]
-        if any(re.match(r"\s*#\[(?:[\w:]+::)?test\b|\s*#\[(?:rstest|test_case)\b", ln) for ln in text[max(0, line - 5) : line]):
-            return True
+        indent = len(text[line - 1]) - len(text[line - 1].lstrip()) if 0 < line <= len(text) else 0
+        for ln in reversed(text[max(0, line - 60) : line]):  # its attributes, however many lines (`#[rstest]`, `#[case(…)]`…)
+            code = ln.strip()
+            if re.match(r"#\[(?:[\w:]+::)?test\b|#\[(?:rstest|test_case)\b", code):
+                return True
+            if ln is not text[line - 1] and code.endswith(("}", ";", "{")) and len(ln) - len(ln.lstrip()) <= indent:
+                break  # the item before it ended, or the block it sits in opened
         return any(
             re.match(r"\s*#\[cfg\(test\)\]", ln) and re.match(r"\s*(?:pub(?:\([^)]*\))?\s+)?mod\b", nxt)
             for ln, nxt in zip(text[: line - 1], text[1:line], strict=False)
@@ -1051,7 +1056,9 @@ class Review:
             )
         # functions nothing calls; a method with no callers found is only a hint (an override, an interface's method,
         # a trait impl, a framework hook are called through the base type), never reported as dead
-        unused = [f for f in self.by_kind["unused"] if f["severity"] != "info" and not is_test(self._file(f))]
+        # (not someone else's code copied in, a vendored library's API; nor a Rust test, which the harness calls)
+        unused = [f for f in self.by_kind["unused"] if f["severity"] != "info" and not is_test(self._file(f))
+                  and not is_vendored(self._file(f)) and not self._rust_test(self._file(f), f.get("line") or 0)]  # fmt: skip
         if unused:
             self.add(
                 f"Unused code ({_n(len(unused), 'function')})",

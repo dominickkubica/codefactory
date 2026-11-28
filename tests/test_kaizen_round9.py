@@ -71,5 +71,46 @@ class ContainersTest(unittest.TestCase):
         self.assertEqual(self.root_images(files), ["docker/Dockerfile"])
 
 
+class UnusedTest(unittest.TestCase):
+    def unused(self, files):
+        from codefactory.cli import build
+        from codefactory.review import Review
+
+        root = repo(files)
+        review = Review(build(root, cache=False).to_dict(), root)
+        review.run()
+        found = next((f for f in review.findings if f.title.startswith("Unused code")), None)
+        return sorted(e.split("`")[1].split(":")[0] for e in found.evidence) if found else []
+
+    def test_vendored_code_is_not_unused(self):
+        module = "export function main() {{ return 1; }}\nfunction {name}(x) {{ return x; }}\n"
+        files = {
+            "vendor/lib/bootstrap.js": module.format(name="addAttachmentClass"),
+            "src/app.js": module.format(name="orphan"),
+            "package.json": '{"name": "x", "type": "module"}',
+        }  # fmt: skip
+        self.assertEqual(self.unused(files), ["src/app.js"])
+
+    @unittest.skipUnless(available(), "needs the language pack")
+    def test_rust_tests_and_generic_handlers(self):
+        rs = ("fn main() {\n    let app = App::new().route(web::post().to(finish::<Backend>));\n}\n"
+              "async fn finish<B>(b: B) -> u8 { 1 }\nfn orphan() -> u8 { 2 }\n"
+              "#[cfg(test)]\nmod tests {\n    #[rstest]\n    #[case::a(json!(format!(\n        \"{}\", 1\n    )))]\n"
+              "    #[case::b(2)]\n    fn cut_is_not_kept(#[case] v: Value) {}\n}\n")  # fmt: skip
+        self.assertEqual(self.unused({"src/main.rs": rs, "Cargo.toml": '[package]\nname = "x"\n'}), ["src/main.rs"])
+
+    def test_stimulus_lifecycle_methods(self):
+        cls = "export class {name} {{\n  connect() {{ this.a = 1; }}\n  disconnect() {{ this.a = 0; }}\n}}\n"
+        flags = self.flags({"assets/controllers/collapsible_controller.js": cls.format(name="Collapsible"),
+                            "src/lib/socket.js": cls.format(name="Socket"), "package.json": '{"name": "x"}'})  # fmt: skip
+        hooks = sorted(t.split("::")[-1] for t in flags if "collapsible" in t)
+        self.assertEqual(hooks, [])  # (Stimulus calls connect and disconnect on a controller)
+        self.assertTrue(any("socket.js" in t and t.endswith("disconnect") for t in flags), flags)  # (elsewhere: unused)
+
+    def flags(self, files):
+        from codefactory.cli import build
+
+        return [f.target for f in build(repo(files), cache=False).flags if f.kind == "unused"]
+
 if __name__ == "__main__":
     unittest.main()
