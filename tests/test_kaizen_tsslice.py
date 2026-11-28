@@ -60,5 +60,21 @@ class SliceTest(unittest.TestCase):
             self.assertNotIn(("src/second.ts::pick", "src/models.ts::zap", "call"), found)
 
 
+class SameIdTest(unittest.TestCase):
+    @unittest.skipUnless(available(), "Node.js and the typescript package are needed")
+    def test_two_functions_sharing_an_id_never_call_themselves(self):
+        # three anonymous classes on one bundled line: the 2nd and 3rd constructors are both `constructor@1`, and the
+        # 3rd's `new b()` was a call from that id to itself (kept by one run, dropped where groups were merged)
+        files = {"package.json": '{"name": "b"}',
+                 "bundle.mjs": "const a = class { constructor() {} }, b = class { constructor() { new a(); } }, "
+                               "c = class { constructor() { new b(); } };\nexport { c };\n"}  # fmt: skip
+        g = analyze_typescript(repo(files), list(DEFAULT_IGNORE), cache=False)
+        ids = [f.id for f in g.functions if f.name == "constructor"]
+        self.assertEqual(3, len(ids))
+        self.assertEqual(2, ids.count("bundle.mjs::constructor@1"))  # (the collision this is about)
+        self.assertFalse([e for e in g.edges if e.src == e.dst])
+        self.assertIn(("bundle.mjs::constructor@1", "bundle.mjs::constructor", "call"), {(e.src, e.dst, e.kind) for e in g.edges})
+
+
 if __name__ == "__main__":
     unittest.main()
