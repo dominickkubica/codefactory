@@ -51,7 +51,11 @@ if (cfgPath && path.resolve(path.dirname(cfgPath)) === path.resolve(root)) {
     fileNames = parsed.fileNames;
   }
 }
-const all = new Set([...fileNames, ...walkDir(root, [])].map((f) => path.resolve(f)).filter((f) => !skipped(f)));
+// (a file over 1 MB is generated or data, as for every other language (treewalk.MAX_BYTES): invoiceninja's
+// compiled Flutter builds, public/main.dart.js at 37 MB, took the type checker past 8 GB on their own)
+const MAX_BYTES = 1_000_000;
+const all = new Set([...fileNames, ...walkDir(root, [])].map((f) => path.resolve(f))
+  .filter((f) => !skipped(f) && fs.statSync(f, { throwIfNoEntry: false })?.size <= MAX_BYTES));
 
 // Workspace packages (a monorepo's "@org/ui/components/button"): resolved through node_modules links that a fresh
 // checkout doesn't have. Found by their package.json "name", then its "exports" (or main fields), when TypeScript's

@@ -257,19 +257,28 @@ def fixed_functions(lines: list[str]) -> set[str]:
 LITERAL_VALUE = re.compile(r"""\s*(?:[rbuf]?'[^'{]*'|[rbuf]?"[^"{]*"|`[^`$]*`|-?\d[\d_.]*|True|False|true|false)\s*;?\s*""")
 
 
+CONST_SET = re.compile(r"^\s*(?:export\s+)?(?:const\s+|let\s+|var\s+)?([A-Z][A-Z0-9_]{2,})\s*(?::[^=\n]+)?=(?!=)\s*(.+)$", re.M)
+CONST_IMPORT = re.compile(r"^\s*(?:from\s+\S+\s+import\b(.*)|import\s*\{([^}]*)\})", re.M)
+_CONSTANTS: dict[int, tuple[list[str], set[str]]] = {}
+
+
 def _fixed_constants(lines: list[str]) -> set[str]:
     """UPPER_CASE names this file sets only to literals, or imports and never sets. Not one set from anything else:
-    `PRODUCTION_REF = process.env.PRODUCTION_REF || "origin/master"` is whatever the environment says."""
-    text = "\n".join(lines)
-    out = set()
-    for name in set(re.findall(r"\b([A-Z][A-Z0-9_]{2,})\b", text)):
-        sets = re.findall(rf"^\s*(?:export\s+)?(?:const\s+|let\s+|var\s+)?{name}\s*(?::[^=\n]+)?=(?!=)\s*(.+)$", text, re.M)
-        if sets:
-            if all(LITERAL_VALUE.fullmatch(v) for v in sets):
-                out.add(name)
-        elif re.search(rf"^\s*(?:from\s+\S+\s+import\b.*\b{name}\b|import\s*\{{[^}}]*\b{name}\b)", text, re.M):
-            out.add(name)  # imported, never set here: the other module's constant (`from etl.paths import SNAPSHOTS_DIR`)
-    return out
+    `PRODUCTION_REF = process.env.PRODUCTION_REF || "origin/master"` is whatever the environment says. Once per file
+    (safe_names runs for every hit in it), in one pass over the text."""
+    got = _CONSTANTS.get(id(lines))
+    if got is None or got[0] is not lines:
+        if len(_CONSTANTS) > 64:
+            _CONSTANTS.clear()
+        text = "\n".join(lines)
+        sets: dict[str, list[str]] = {}
+        for m in CONST_SET.finditer(text):
+            sets.setdefault(m.group(1), []).append(m.group(2))
+        out = {name for name, values in sets.items() if all(LITERAL_VALUE.fullmatch(v) for v in values)}
+        for m in CONST_IMPORT.finditer(text):  # imported, never set here: the other module's constant
+            out.update(n for n in re.findall(r"\b([A-Z][A-Z0-9_]{2,})\b", m.group(1) or m.group(2)) if n not in sets)
+        got = _CONSTANTS[id(lines)] = (lines, out)
+    return got[1]
 
 
 def safe_names(lines: list[str], i: int, span: int = 60) -> set[str]:

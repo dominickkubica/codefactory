@@ -113,5 +113,30 @@ class UnusedTest(unittest.TestCase):
         return [f.target for f in build(repo(files), cache=False).flags if f.kind == "unused"]
 
 
+class SizeTest(unittest.TestCase):
+    """Over 1 MB is generated or data for every analyzer (invoiceninja's compiled Flutter builds, 8-37 MB each, ran the
+    TypeScript checker out of memory and stalled the text checks for minutes)."""
+
+    BIG = "function run(code) { return eval(code); }\n" + "var pad = 1;\n" * 90_000  # (~1.2 MB)
+
+    def test_text_checks_skip_a_file_over_1_mb(self):
+        from codefactory.checks import scan_sources
+
+        files = {"public/main.dart.js": self.BIG, "src/app.js": "export function run(code) { return eval(code); }\n"}
+        found = scan_sources(repo(files), list(files))
+        self.assertEqual([e.file for e in found["eval"].hits], ["src/app.js"])
+
+    def test_the_typescript_analyzer_skips_a_file_over_1_mb(self):
+        from tests.test_typescript import available as ts_available
+
+        if not ts_available():
+            self.skipTest("needs Node and TypeScript")
+        from codefactory.cli import build
+
+        files = {"public/main.dart.js": self.BIG, "src/app.ts": "export function run(x: string) { return x; }\n",
+                 "package.json": '{"name": "x"}', "tsconfig.json": '{"compilerOptions": {"allowJs": true}}'}  # fmt: skip
+        self.assertEqual(sorted(f.id for f in build(repo(files), cache=False).files), ["src/app.ts"])
+
+
 if __name__ == "__main__":
     unittest.main()

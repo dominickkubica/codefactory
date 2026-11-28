@@ -216,6 +216,7 @@ class _QuotedTexts:
     def __init__(self, blob: str):
         self.blob = blob
         self.texts = list(dict.fromkeys(re.split(r"[\"'`]", blob)[1:-1]))
+        self._holding: dict[str, str] = {}  # literal part -> the quoted stretches holding it (routes share parts: "api")
 
     def has_url(self, path: str) -> bool:
         params = [bool(self.PARAM.fullmatch(p)) for p in path.split("/")]
@@ -228,7 +229,9 @@ class _QuotedTexts:
             return False
         key = max(literal, key=len, default="") or ("/" if "/" in path else "")
         # joined with no separator: the empty text between two stretches can't match a URL (it needs a character)
-        return bool(url.search("".join(f'"{t}"' for t in self.texts if key in t)))
+        if key not in self._holding:
+            self._holding[key] = "".join(f'"{t}"' for t in self.texts if key in t)
+        return bool(url.search(self._holding[key]))
 
 
 def _few_written_out(lines: list[str], at: int, name: str, span: int = 40) -> bool:

@@ -986,6 +986,9 @@ def _dismissed(key: str, line: str, lines: list[str], i: int, fid: str, text: st
     return key == "secret" and not any(p.search(line) for p in VENDOR_PATTERNS) and _named_not_secret(fid, lines, i)
 
 
+MAX_SOURCE_BYTES = 1_000_000  # the same line as treewalk.MAX_BYTES and the TypeScript helper's
+
+
 def _scan_one(root: str, fid: str) -> dict:
     found = _scan(Path(root), [fid])
     return {k: {"hits": [[e.line, e.text] for e in c.hits], "data": c.data} for k, c in found.items() if c.hits or c.data}
@@ -1006,7 +1009,9 @@ def _scan(root: Path, files: list[str]) -> dict[str, Check]:
     for fid in files:
         if not fid.endswith(SRC_EXT):
             continue
-        try:
+        try:  # (over 1 MB is generated or data, as for the analyzers: a compiled Flutter build, a data table)
+            if (root / fid).stat().st_size > MAX_SOURCE_BYTES:
+                continue
             text = (root / fid).read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue

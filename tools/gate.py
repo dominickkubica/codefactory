@@ -119,10 +119,12 @@ def _waiting_rounds() -> set[int]:
     """Held-out rounds frozen (a base run exists) but not yet measured (no after run)."""
     import heldout
 
-    def has(n: int, version: str) -> bool:
-        return heldout.folder(n, version).exists() and any(heldout.folder(n, version).glob("*.json"))
+    def done(n: int, version: str) -> set[str]:
+        folder = heldout.folder(n, version)
+        return {p.name for p in folder.glob("*.json") if not p.name.endswith(".profile.json")} if folder.exists() else set()
 
-    return {n for n in range(1, 100) if has(n, "base") and not has(n, "after")}
+    # (measured only once the after-run covers every repository the base has: an interrupted one leaves a few)
+    return {n for n in range(1, 100) if done(n, "base") and not done(n, "base") <= done(n, "after")}
 
 
 def corpus_kept(ref: str, repos: list[str], jobs: int) -> bool:
