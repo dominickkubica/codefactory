@@ -52,6 +52,8 @@ def folder(n: int, version: str) -> Path:
 
 def run(args) -> int:
     names = round_repos(args.round)
+    if args.only:  # (one run again: a timeout caused by a busy machine, not by the code)
+        names = [n for n in names if n in args.only.split(",")]
     code, tmp = ROOT, None
     if args.ref:
         tmp = CACHE / "heldout" / f"code-{args.as_}"
@@ -192,6 +194,7 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--as", dest="as_", choices=("base", "after"), required=True)
     r.add_argument("--ref")
     r.add_argument("--jobs", type=int)
+    r.add_argument("--only", help="owner/repo,...: just these of the round")
     s = sub.add_parser("sample")
     s.add_argument("--round", type=int, required=True)
     s.add_argument("--per-check", type=int, default=12)

@@ -114,18 +114,58 @@ function groupsOf(sizes) {
 // module it doesn't import), named by file and name: P_EXPORT a top-level function, P_MODULE every function of the
 // file, P_NAMED every function of that name. The groups' results are merged and these replaced by function ids.
 const P_EXPORT = "\u0001", P_MODULE = "\u0002", P_NAMED = "\u0003", P_SEP = "\u0005";
-function splitRun(groups) {
-  const { spawnSync } = require("child_process");
+// Groups run side by side, in child processes that share this process's heap budget between them (never more than
+// it: the machine's memory was the limit before, and stays it), at least MIN_GROUP_HEAP_MB each, no more of them than
+// cores. Their results are merged in group order, so the output is the same as one at a time.
+const MIN_GROUP_HEAP_MB = 2048;
+function runGroups(groups) {
+  const cores = require("os").availableParallelism?.() ?? require("os").cpus().length;
+  const width = Math.max(1, Math.min(groups.length, cores, Math.floor(heapMb / MIN_GROUP_HEAP_MB),
+    Number(process.env.CODEFACTORY_TS_WIDTH) || Infinity));
+  // a group that runs out of its share is tried again alone, with all of it, once the rest are done
+  return runSome(groups, groups.map((_, i) => i), width).then(async (parts) => {
+    for (const i of groups.map((_, k) => k).filter((k) => parts[k] instanceof Error)) {
+      const again = await runSome(groups, [i], 1);
+      if (again[i] instanceof Error) throw again[i];
+      parts[i] = again[i];
+    }
+    return parts;
+  });
+}
+function runSome(groups, which, width) {
+  const { spawn } = require("child_process");
+  const childHeap = Math.floor(heapMb / width);
+  const flags = [...process.execArgv.filter((a) => !a.startsWith("--max-old-space-size")), `--max-old-space-size=${childHeap}`];
+  const parts = new Array(groups.length);
+  let next = 0, running = 0;
+  return new Promise((resolve) => {
+    const start = () => {
+      if (next >= which.length) { if (!running) resolve(parts); return; }
+      const i = which[next++], g = groups[i];
+      const child = spawn(process.execPath, [...flags, __filename, root, tsPath, ignoreJson || "[]", "--group"]);
+      running++;
+      const out = [], err = [];
+      child.stdout.on("data", (b) => out.push(b));
+      child.stderr.on("data", (b) => err.push(b));
+      child.on("close", (status, signal) => {
+        running--;
+        if (status === 0) {
+          parts[i] = JSON.parse(Buffer.concat(out).toString("utf8"));
+        } else {
+          if (width === 1) process.stderr.write(Buffer.concat(err));
+          parts[i] = new Error(`a group of ${g.length} files failed: ${signal || `exit ${status}`}`);
+        }
+        start();
+      });
+      child.stdin.end(JSON.stringify(g));
+    };
+    for (let k = 0; k < width; k++) start();
+  });
+}
+function splitRun(parts) {
   const files = [], functions = [], calls = new Map(), refs = new Map(), imports = new Set(), sites = [];
   const unresolved = new Set(), mocks = new Map();
-  for (const g of groups) {
-    const args = [...process.execArgv, __filename, root, tsPath, ignoreJson || "[]", "--group"];
-    const r = spawnSync(process.execPath, args, { input: JSON.stringify(g), maxBuffer: 2 ** 30 });
-    if (r.status !== 0) {
-      process.stderr.write(r.stderr || "");
-      throw new Error(`a group of ${g.length} files failed: ${r.error || r.signal || `exit ${r.status}`}`);
-    }
-    const part = JSON.parse(r.stdout.toString("utf8"));
+  for (const part of parts) { // (in group order: the same merge as when they ran one at a time)
     files.push(...part.files);
     functions.push(...part.functions);
     for (const [k, n] of part.calls) calls.set(k, (calls.get(k) || 0) + n);
@@ -193,7 +233,10 @@ function writeJson(out) {
 if (!own) {
   const sizes = new Map([...all].map((f) => [f, sizeOf(f)]));
   if ([...sizes.values()].reduce((a, b) => a + b, 0) > splitAt) {
-    writeJson(splitRun(groupsOf(sizes)));
+    runGroups(groupsOf(sizes)).then((parts) => writeJson(splitRun(parts)), (e) => {
+      process.stderr.write(`${e.message}\n`);
+      process.exitCode = 1;
+    });
     return; // (the module's own function: the rest is one Program's run)
   }
 }

@@ -32,8 +32,10 @@ FILES = {
 }  # fmt: skip
 
 
-def graph(split: bool) -> dict:
+def graph(split: bool, width: int = 0) -> dict:
     env = {"CODEFACTORY_TS_SPLIT_MB": "0.000001", "CODEFACTORY_TS_GROUP_MB": "0.000001"} if split else {}
+    if width:
+        env["CODEFACTORY_TS_WIDTH"] = str(width)
     with mock.patch.dict(os.environ, env):
         if not split:
             for k in ("CODEFACTORY_TS_SPLIT_MB", "CODEFACTORY_TS_GROUP_MB"):
@@ -62,6 +64,10 @@ class SplitProgramTest(unittest.TestCase):
         mocked = ["packages/b/src/mocked.ts::<module>", "packages/b/src/mocked.ts::fetchAll"]
         self.assertEqual({"packages/a/src/a.test.ts::<module>": mocked}, mocks)
         self.assertEqual(one, split)
+
+    def test_groups_side_by_side_give_what_they_give_one_at_a_time(self):
+        # (groups run in parallel, sharing the heap: their results are merged in group order all the same)
+        self.assertEqual(graph(True, width=1), graph(True, width=4))
 
 
 if __name__ == "__main__":
