@@ -362,6 +362,16 @@ the reader. Per check:
 | Module-level mutable state | the module-level value is reassigned or mutated after import | it's never changed after it's set up, or it's a type or constant |
 | Import loops | every edge of the loop is an import that runs when the module loads | an edge is type-only (`import type`, `TYPE_CHECKING`) or inside a function, or the loop doesn't exist |
 | Unused code | nothing calls or refers to the function | it's called, exported as public API of a library, invoked by a framework (route, hook, override, decorator, reflection) or used by a test |
+
+Settled after round 8, before round 9 was labeled (labelers asked; the answer applies from round 9 on):
+
+- **Vendored and bundled code** (a library copied into `vendor/`, a bundled build): wrong, for every check that asks the
+  project to change code. It isn't the project's to fix; a credential leaked in it is still right.
+- **A number in SQL** (`-item.id`, a value parsed as an integer): wrong. It can't carry SQL.
+- **A container that switches user before its program runs** (gosu, su-exec, `su user -c`, uwsgi `uid`, supervisord
+  `user=`, or a base image that sets a non-root USER): wrong.
+- **Loops:** a dependency loop (Java, Kotlin, C#) is right when the classes reference each other; an import loop is
+  right only when every edge runs when the module loads (not a type-only `use` or `import type`).
 | Important code no test reaches | no test calls it directly or through its callers | a test reaches it |
 | Copied logic | the bodies are the same logic and could share one function | the similarity is only shape (boilerplate, generated code, different behavior) |
 | Endpoints that change data without an auth check | the endpoint changes data and no authentication applies to it | auth applies (middleware, guard, decorator, base class), or it's public by design and checks something else (sign-in, a signed webhook) |
