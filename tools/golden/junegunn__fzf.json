@@ -1,0 +1,156 @@
+{
+ "repo": "junegunn/fzf",
+ "commit": "ed173e71e44b2a5fa6264ecf232a153dee6994d0",
+ "locations": {
+  "Container runs as root|Dockerfile:1": {
+   "check": "Container runs as root",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Dockerfile:1` no USER after rubylang/ruby:3.4.1-noble — `FROM rubylang/ruby:3.4.1-noble`"
+  },
+  "Copied logic in N group (~N lines)|shell/common.sh:9": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "Merge 3 copies of __fzf_exec_awk (identical, ~32 lines): `shell/common.sh:9`, `shell/completion.bash:44`, `shell/key-bindings.bash:32`"
+  },
+  "Queries or requests inside loops (N) in N place|shell/completion.bash:378": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`shell/completion.bash:378` __fzf_generic_path_completion: __fzf_generic_path_completion calls __fzf_comprun() inside a loop (line 378 and 1 more), and that reaches File.read() — `eval \"$1 $(builtin printf %q \"$dir\")\" | __fzf_comprun \"$4\" -q \"$leftover\" \"${rest[@]}\"`"
+  },
+  "Shell `eval` of a variable|shell/completion.bash:338": {
+   "check": "Shell `eval` of a variable",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`shell/completion.bash:338` eval \"${orig_complete/ -F / -o nospace -F }\""
+  },
+  "Shell `eval` of a variable|shell/completion.bash:340": {
+   "check": "Shell `eval` of a variable",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`shell/completion.bash:340` eval \"$orig_complete\""
+  },
+  "Shell `eval` of a variable|shell/completion.bash:687": {
+   "check": "Shell `eval` of a variable",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`shell/completion.bash:687` eval \"$REPLY\""
+  },
+  "Shell `eval` of a variable|shell/completion.zsh:475": {
+   "check": "Shell `eval` of a variable",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`shell/completion.zsh:475` eval $__fzf_completion_options"
+  },
+  "Shell `eval` of a variable|shell/key-bindings.zsh:201": {
+   "check": "Shell `eval` of a variable",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`shell/key-bindings.zsh:201` eval $__fzf_key_bindings_options"
+  },
+  "Unused code (N function)|shell/completion.bash:115": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`shell/completion.bash:115` _fzf_opts_completion — `_fzf_opts_completion() {`"
+  },
+  "Unused code (N function)|shell/completion.bash:469": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`shell/completion.bash:469` _fzf_file_completion — `_fzf_file_completion() {`"
+  },
+  "Unused code (N function)|shell/completion.bash:473": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`shell/completion.bash:473` _fzf_dir_completion — `_fzf_dir_completion() {`"
+  },
+  "Unused code (N function)|shell/completion.bash:477": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`shell/completion.bash:477` _fzf_complete_kill — `_fzf_complete_kill() {`"
+  },
+  "Unused code (N function)|shell/completion.bash:515": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`shell/completion.bash:515` _fzf_proc_completion_post — `_fzf_proc_completion_post() {`"
+  },
+  "Unused code (N function)|shell/completion.bash:584": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`shell/completion.bash:584` _fzf_host_completion — `_fzf_host_completion() {`"
+  },
+  "Unused code (N function)|shell/completion.bash:593": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`shell/completion.bash:593` _fzf_complete_ssh — `_fzf_complete_ssh() {`"
+  },
+  "Unused code (N function)|shell/completion.bash:606": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`shell/completion.bash:606` _fzf_var_completion — `_fzf_var_completion() {`"
+  },
+  "Unused code (N function)|shell/completion.bash:612": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`shell/completion.bash:612` _fzf_alias_completion — `_fzf_alias_completion() {`"
+  },
+  "Unused code (N function)|shell/key-bindings.bash:64": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`shell/key-bindings.bash:64` fzf-file-widget — `fzf-file-widget() {`"
+  },
+  "Writes inside loops in N place|src/terminal.go:6753": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/terminal.go:6753` Terminal.Loop — `t.printAll()`"
+  },
+  "Writes inside loops in N place|src/terminal.go:6787": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/terminal.go:6787` Terminal.Loop — `t.fullRedraw()`"
+  },
+  "Writes inside loops in N place|src/terminal.go:6842": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/terminal.go:6842` Terminal.Loop — `if (info || header || footer) && !t.resizeIfNeeded() {`"
+  },
+  "Writes inside loops in N place|src/terminal.go:6844": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/terminal.go:6844` Terminal.Loop — `t.printInfo()`"
+  },
+  "Writes inside loops in N place|src/terminal.go:7139": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/terminal.go:7139` Terminal.Loop — `callback(t.captureLine(a.a))`"
+  },
+  "Writes inside loops in N place|src/terminal.go:7141": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/terminal.go:7141` Terminal.Loop — `callback(t.captureLines(a.a))`"
+  },
+  "Writes inside loops in N place|src/terminal.go:7223": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/terminal.go:7223` Terminal.Loop — `t.executeCommand(a.a, false, a.t == actExecuteSilent, false, false, \"\")`"
+  }
+ }
+}

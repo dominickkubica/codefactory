@@ -18,10 +18,11 @@ pip install ruff
 ## Before every push
 
 ```bash
-python tools/check.py
+python tools/gate.py          # golden diff, right findings kept, then tools/check.py
+python tools/gate.py --skip-ci  # the first two only, for a quick loop while working
 ```
 
-It runs what CI runs, in parallel, in about a minute: lint and formatting with the pinned ruff, the tests on Python
+`tools/check.py`, its last step, runs what CI runs, in parallel, in about a minute: lint and formatting with the pinned ruff, the tests on Python
 3.11 and 3.13 each without the optional language pack and with it, and `codefactory check .`. It skips a Python this
 machine doesn't have. Most failed pushes were a configuration nobody ran locally: a test that passed with the language
 pack installed and failed without it.
@@ -65,6 +66,34 @@ before pushing a change to a check: it turns "did this help here and hurt elsewh
 If a change alters findings on purpose, `tests/test_golden.py` fails: run
 `CODEFACTORY_UPDATE_GOLDEN=1 python -m unittest tests.test_golden` and check the diff in `tests/golden/` before
 committing it. An unexpected line there is a bug caught early.
+
+## Cardinal rules
+
+These hold for every change, by a person or an agent. Each one is here because breaking it once let something
+through.
+
+1. **`python tools/gate.py` passes before anything reaches `main`:** the golden diff, every right finding the last
+   release reports still reported, then `tools/check.py`. Work in progress goes to a branch, never to `main`.
+2. **Test the test.** A new gate, check or verification script is run once against a planted failure and must fail.
+   (`tools/gate.py` first compared the working tree with itself: `python -c` imports from the current folder.)
+3. **A rule states a fact about a language, protocol, framework or file format,** never a repository's name, path or
+   habit: "a method named `eval` is defined, not called", not "teable's formula folder". It has to match the same
+   mistake in at least two repositories, or be a documented fact of the language.
+4. **Fix from the labeled rounds; measure on held-out ones.** A held-out round's repositories are frozen before its
+   fixes start and aren't read while making them (`tools/heldout.py`). The before/after on them is the number that
+   counts; the tuned rounds only show the patterns are gone.
+5. **Every fix comes with a test pair:** the false case it removes and a true look-alike that must stay reported.
+   When a gate catches a right finding a fix dropped, that case becomes a test too.
+6. **Labels are blind and final.** Whoever labels doesn't know which version reported a location or what the fixes
+   were, and a label isn't changed after the score is seen. A disagreement about the rubric is settled in
+   `docs/ACCURACY.md` before the next round, not by relabeling this one.
+7. **Measure on frozen code.** Nothing under `codefactory/` changes while a corpus or held-out run is going: a run
+   that mixes two versions measures neither. Restart it instead.
+8. **A refactor proves it changes nothing:** identical output on the whole corpus (not only the tests) before it ships.
+9. **One logical change per commit, and every commit stands alone:** whatever a file imports goes in the same commit,
+   and nothing half-written by a running job (`results.json` mid-run) is committed.
+10. **Nothing from a private repository lands here.** Local golden repositories (`golden.py pin`) keep their
+    snapshots in the gitignored `tools/golden/local/`; findings from them are described, never pasted.
 
 ## Standards
 

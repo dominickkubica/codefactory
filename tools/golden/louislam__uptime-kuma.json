@@ -1,0 +1,648 @@
+{
+ "repo": "louislam/uptime-kuma",
+ "commit": "df494b4549a0e0550ac027ddacb9bc78ed4e7b77",
+ "locations": {
+  "Any website may call this API (CORS *)|server/util.ts:519": {
+   "check": "Any website may call this API (CORS *)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/util.ts:519` res.header(\"Access-Control-Allow-Origin\", \"*\");"
+  },
+  "Broken encryption mode or cipher (ECB, DES, RC4)|server/modules/axios-ntlm/lib/hash.js:58": {
+   "check": "Broken encryption mode or cipher (ECB, DES, RC4)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`server/modules/axios-ntlm/lib/hash.js:58` var des = crypto.createCipheriv(\"DES-ECB\", desKey, \"\");"
+  },
+  "Container runs as root|docker/debian-base.dockerfile:68": {
+   "check": "Container runs as root",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`docker/debian-base.dockerfile:68` no USER after louislam/uptime-kuma:base3-slim — `FROM louislam/uptime-kuma:base3-slim AS base3`"
+  },
+  "Container runs as root|extra/docker-latest-warning/Dockerfile.latest-warning:4": {
+   "check": "Container runs as root",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/docker-latest-warning/Dockerfile.latest-warning:4` no USER after louislam/uptime-kuma:1.23.17-debian — `FROM louislam/uptime-kuma:1.23.17-debian`"
+  },
+  "Copied logic in N group (~N lines)|server/analytics/plausible-analytics.js:11": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge getPlausibleAnalyticsScript, getRybbitAnalyticsScript, getUmamiAnalyticsScript (86% similar, ~44 lines): `server/analytics/plausible-analytics.js:11`, `server/analytics/rybbit-analytics.js:11`, `server/analytics/umami-analytics.js:11`"
+  },
+  "Copied logic in N group (~N lines)|server/model/monitor.js:1469": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between isImportantBeat, isImportantForNotification (92% similar, ~24 lines): `server/model/monitor.js:1469`, `server/model/monitor.js:1504`"
+  },
+  "Copied logic in N group (~N lines)|server/model/status_page.js:438": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge StatusPage.toJSON, StatusPage.toPublicJSON (91% similar, ~21 lines): `server/model/status_page.js:438`, `server/model/status_page.js:467`"
+  },
+  "Copied logic in N group (~N lines)|server/modules/axios-ntlm/lib/hash.js:20": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between createLMResponse, createNTLMResponse (identical, ~9 lines): `server/modules/axios-ntlm/lib/hash.js:20`, `server/modules/axios-ntlm/lib/hash.js:61`"
+  },
+  "Copied logic in N group (~N lines)|server/monitor-types/mssql.js:19": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge MssqlMonitorType.check, MysqlMonitorType.check, OracleDbMonitorType.check (91% similar, ~85 lines): `server/monitor-types/mssql.js:19`, `server/monitor-types/mysql.js:19`, `server/monitor-types/oracledb.js:19`"
+  },
+  "Copied logic in N group (~N lines)|server/notification-providers/aliyun-sms.js:134": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge AliyunSMS.statusToString, DingDing.statusToString (identical, ~10 lines): `server/notification-providers/aliyun-sms.js:134`, `server/notification-providers/dingding.js:100`"
+  },
+  "Copied logic in N group (~N lines)|server/notification-providers/discord.js:269": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge Discord.formatDuration, Fluxer.formatDuration (identical, ~19 lines): `server/notification-providers/discord.js:269`, `server/notification-providers/fluxer.js:228`"
+  },
+  "Copied logic in N group (~N lines)|server/notification-providers/pagerduty.js:13": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge PagerDuty.send, Splunk.send (85% similar, ~24 lines): `server/notification-providers/pagerduty.js:13`, `server/notification-providers/splunk.js:13`"
+  },
+  "Copied logic in N group (~N lines)|server/notification-providers/pushplus.js:45": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge PushPlus.checkStatus, ServerChan.checkStatus, WPush.checkStatus, WxPusher.checkStatus (identical, ~30 lines): `server/notification-providers/pushplus.js:45`, `server/notification-providers/serverchan.js:44`, `server/notification-providers/wpush.js:39`, `server/notification-providers/wxpusher.js:61`"
+  },
+  "Endpoints that change data without an auth check (N)|server/routers/better-auth-router.ts:24": {
+   "check": "Endpoints that change data without an auth check (N)",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`ALL /api/auth/*` (`server/routers/better-auth-router.ts:24`) → changes data in `Database.writeDBConfig` (`fs.writeFileSync`)"
+  },
+  "File or program operations inside loops in N place|extra/check-lang-json.js:16": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`extra/check-lang-json.js:16` — `let originalContent = fs.readFileSync(jsonPath, \"utf8\");`"
+  },
+  "File or program operations inside loops in N place|extra/coverage-report.mjs:37": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`extra/coverage-report.mjs:37` readNodeCoverage — `const data = JSON.parse(fs.readFileSync(path.join(dir, file), \"utf8\"));`"
+  },
+  "File or program operations inside loops in N place|extra/remove-empty-lang-keys.js:16": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`extra/remove-empty-lang-keys.js:16` — `let langData = JSON.parse(fs.readFileSync(jsonPath, \"utf8\"));`"
+  },
+  "File or program operations inside loops in N place|extra/remove-empty-lang-keys.js:24": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`extra/remove-empty-lang-keys.js:24` — `fs.writeFileSync(jsonPath, JSON.stringify(langData, null, 4) + \"\\n\");`"
+  },
+  "File or program operations inside loops in N place|server/database.js:621": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/database.js:621` Database.patchSqlite — `await Database.importSQLFile(sqlFile);`"
+  },
+  "File or program operations inside loops in N place|server/database.js:663": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/database.js:663` Database.patchSqlite2 — `await this.patch2Recursion(sqlFilename, databasePatchedFiles);`"
+  },
+  "File or program operations inside loops in N place|server/model/monitor.js:1715": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/model/monitor.js:1715` Monitor.isUnderMaintenance — `const maintenance = await UptimeKumaServer.getInstance().getMaintenance(maintenanceID);`"
+  },
+  "File or program operations inside loops in N place|server/model/monitor.js:1716": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/model/monitor.js:1716` Monitor.isUnderMaintenance — `if (maintenance && (await maintenance.isUnderMaintenance())) {`"
+  },
+  "File or program operations inside loops in N place|server/model/monitor.js:2011": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/model/monitor.js:2011` Monitor.preparePreloadData — `maintenance ? await maintenance.isUnderMaintenance() : false`"
+  },
+  "File or program operations inside loops in N place|server/model/monitor.js:2055": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/model/monitor.js:2055` Monitor.preparePreloadData — `maintenanceStatusMap.set(monitor.id, await Monitor.isUnderMaintenance(monitor.id, maintenanceSnapshot));`"
+  },
+  "File or program operations inside loops in N place|server/model/status_page.js:577": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/model/status_page.js:577` StatusPage.getMaintenanceList — `let maintenance = UptimeKumaServer.getInstance().getMaintenance(maintenanceID);`"
+  },
+  "File or program operations inside loops in N place|server/model/status_page.js:578": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/model/status_page.js:578` StatusPage.getMaintenanceList — `if (maintenance && (await maintenance.isUnderMaintenance())) {`"
+  },
+  "File or program operations inside loops in N place|server/model/status_page.js:579": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/model/status_page.js:579` StatusPage.getMaintenanceList — `publicMaintenanceList.push(await maintenance.toPublicJSON());`"
+  },
+  "File or program operations inside loops in N place|server/modules/ping/lib/encoding.js:39": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/modules/ping/lib/encoding.js:39` detectWindowsCodepage — `var match = /(\\d+)/.exec(cp.execSync(commands[i], { encoding: 'utf8' }));`"
+  },
+  "File or program operations inside loops in N place|server/server.js:872": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/server.js:872` — `await Monitor.deleteMonitorRecursively(child.id);`"
+  },
+  "File or program operations inside loops in N place|server/socket-handlers/general-socket-handler.js:138": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/socket-handlers/general-socket-handler.js:138` — `code: await fsAsync.readFile(path.join(dir, file), \"utf8\"),`"
+  },
+  "File or program operations inside loops in N place|server/uptime-kuma-server.ts:349": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/uptime-kuma-server.ts:349` UptimeKumaServer.getMaintenanceJSONList — `result[maintenanceID] = await this.maintenanceList[maintenanceID].toJSON();`"
+  },
+  "Import loops (N)|server/auth.ts": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "server/auth.ts → server/better-auth.ts → server/auth.ts (5 files in the loop)"
+  },
+  "Import loops (N)|server/model/monitor.js": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "server/model/monitor.js → server/uptime-kuma-server.ts → server/model/monitor.js (4 files in the loop)"
+  },
+  "Import loops (N)|src/auth-client.ts": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "src/auth-client.ts → src/mixins/socket.js → src/auth-client.ts (3 files in the loop)"
+  },
+  "Important code no test reaches (N function)|extra/coverage-report.mjs:31": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/coverage-report.mjs:31` readNodeCoverage: does I/O (fs.readFileSync, fs.readdirSync) — `function readNodeCoverage(dir) {`"
+  },
+  "Important code no test reaches (N function)|extra/healthcheck.go:18": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/healthcheck.go:18` main: does I/O (client.Get) — `func main() {`"
+  },
+  "Important code no test reaches (N function)|extra/precompile-server.js:18": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/precompile-server.js:18` collectTypeScript: does I/O (fs.readdirSync) — `function collectTypeScript(dir, found = []) {`"
+  },
+  "Important code no test reaches (N function)|extra/precompile-server.js:56": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/precompile-server.js:56` compileEsmEntries: does I/O (fs.readFileSync, fs.writeFileSync) — `async function compileEsmEntries() {`"
+  },
+  "Important code no test reaches (N function)|extra/push-examples/csharp/index.cs:14": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/push-examples/csharp/index.cs:14` Index.Main: does I/O (client.DownloadString) — `static void Main(string[] args)`"
+  },
+  "Important code no test reaches (N function)|extra/push-examples/go/index.go:9": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/push-examples/go/index.go:9` main: does I/O (http.Get) — `func main() {`"
+  },
+  "Important code no test reaches (N function)|extra/push-examples/java/index.java:13": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/push-examples/java/index.java:13` Index.main: does I/O (con.getResponseCode) — `public static void main(String[] args) {`"
+  },
+  "Important code no test reaches (N function)|extra/push-examples/javascript-fetch/index.js:5": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/push-examples/javascript-fetch/index.js:5` push: does I/O (fetch), called from 2 files — `const push = async () => {`"
+  },
+  "Important code no test reaches (N function)|extra/push-examples/typescript-fetch/index.ts:5": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/push-examples/typescript-fetch/index.ts:5` push: does I/O (fetch) — `const push = async () => {`"
+  },
+  "Important code no test reaches (N function)|extra/rebase-pr.js:7": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/rebase-pr.js:7` main: does I/O (execSync) — `async function main() {`"
+  },
+  "Important code no test reaches (N function)|extra/release/build-and-upload-assets.mjs:27": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/build-and-upload-assets.mjs:27` runBuildAndUploadAssets: does I/O (childProcess.execSync), called from 2 files — `export async function runBuildAndUploadAssets() {`"
+  },
+  "Important code no test reaches (N function)|extra/release/generate-changelog.mjs:197": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/generate-changelog.mjs:197` generateChangelogAI: does I/O (promises.readFile), called from 2 files — `export async function generateChangelogAI(previousVersion) {`"
+  },
+  "Important code no test reaches (N function)|extra/release/generate-changelog.mjs:303": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/generate-changelog.mjs:303` getPullRequestList: does I/O (childProcess.execSync) — `export async function getPullRequestList(previousVersion, removeAuthor = fals… {`"
+  },
+  "Important code no test reaches (N function)|extra/release/lib.mjs:104": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/lib.mjs:104` buildDist: does I/O (childProcess.execSync), called from 2 files — `export function buildDist() {`"
+  },
+  "Important code no test reaches (N function)|extra/release/lib.mjs:167": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/lib.mjs:167` verifyGhcrTags: does I/O (fetch) — `export async function verifyGhcrTags(repoNames, tags) {`"
+  },
+  "Important code no test reaches (N function)|extra/release/lib.mjs:18": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/lib.mjs:18` getVersionFromEnv, called from 8 files — `export function getVersionFromEnv() {`"
+  },
+  "Important code no test reaches (N function)|extra/release/lib.mjs:225": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/lib.mjs:225` checkTagExistsSingle: does I/O (fetch) — `export async function checkTagExistsSingle(repoName, version) {`"
+  },
+  "Important code no test reaches (N function)|extra/release/lib.mjs:35": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/lib.mjs:35` savePrNumber: does I/O (fs.writeFileSync), called from 2 files — `export function savePrNumber(prNumber) {`"
+  },
+  "Important code no test reaches (N function)|extra/release/lib.mjs:48": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/lib.mjs:48` saveMergeSha: does I/O (fs.writeFileSync) — `export function saveMergeSha(sha) {`"
+  },
+  "Important code no test reaches (N function)|extra/release/lib.mjs:60": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/lib.mjs:60` readMergeSha: does I/O (fs.readFileSync) — `export function readMergeSha() {`"
+  },
+  "Important code no test reaches (N function)|extra/release/lib.mjs:79": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/lib.mjs:79` checkDocker: does I/O (childProcess.execSync), called from 3 files — `export function checkDocker() {`"
+  },
+  "Important code no test reaches (N function)|extra/release/merge-pr.mjs:32": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/merge-pr.mjs:32` resolvePrNumber: does I/O (fs.readFileSync) — `async function resolvePrNumber() {`"
+  },
+  "Important code no test reaches (N function)|extra/release/merge-pr.mjs:51": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/merge-pr.mjs:51` runMergePR: does I/O (childProcess.execSync), called from 2 files — `export async function runMergePR() {`"
+  },
+  "Important code no test reaches (N function)|extra/release/update-wiki.mjs:33": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/update-wiki.mjs:33` runUpdateWiki: does I/O (fs.readFileSync, fs.writeFileSync), called from 2 files — `export async function runUpdateWiki() {`"
+  },
+  "Important code no test reaches (N function)|extra/uptime-kuma-push/uptime-kuma-push.go:10": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/uptime-kuma-push/uptime-kuma-push.go:10` main: does I/O (http.Get) — `func main() {`"
+  },
+  "Important code no test reaches (N function)|server/database.js:876": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/database.js:876` Database.getSize: does I/O (fsAsync.stat) — `static async getSize() {`"
+  },
+  "Important code no test reaches (N function)|server/image-data-uri.js:57": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/image-data-uri.js:57` outputFile: does I/O (fs.writeFile) — `function outputFile(dataURI, filePath) {`"
+  },
+  "N error silently swallowed|extra/reset-password.mts:23": {
+   "check": "N error silently swallowed",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/reset-password.mts:23` } catch {}"
+  },
+  "N error silently swallowed|server/model/monitor.js:1358": {
+   "check": "N error silently swallowed",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/model/monitor.js:1358` } catch (e) {}"
+  },
+  "N error silently swallowed|server/model/monitor.js:1459": {
+   "check": "N error silently swallowed",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/model/monitor.js:1459` } catch (e) {}"
+  },
+  "N error silently swallowed|server/monitor-types/globalping.js:478": {
+   "check": "N error silently swallowed",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/monitor-types/globalping.js:478` } catch (e) {}"
+  },
+  "N error silently swallowed|server/socket-handlers/general-socket-handler.js:143": {
+   "check": "N error silently swallowed",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/socket-handlers/general-socket-handler.js:143` } catch (e) {}"
+  },
+  "N error silently swallowed|server/uptime-kuma-server.ts:596": {
+   "check": "N error silently swallowed",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/uptime-kuma-server.ts:596` } catch (e) {}"
+  },
+  "Network calls without a timeout|extra/release/lib.mjs:179": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/lib.mjs:179` const response = await fetch(`https://ghcr.io/v2/${repoPath}/manifests/${tag}`, {"
+  },
+  "Network calls without a timeout|extra/uptime-kuma-push/uptime-kuma-push.go:34": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/uptime-kuma-push/uptime-kuma-push.go:34` _, err := http.Get(pushURL)"
+  },
+  "Network calls without a timeout|server/model/domain_expiry.js:54": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/model/domain_expiry.js:54` const response = await fetch(\"https://data.iana.org/rdap/dns.json\");"
+  },
+  "Personal data written to logs|extra/reset-password.mts:48": {
+   "check": "Personal data written to logs",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/reset-password.mts:48` console.log(\"Found user: \" + (user.name || user.email));"
+  },
+  "Personal data written to logs|server/server.js:414": {
+   "check": "Personal data written to logs",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/server.js:414` log.debug(\"auth\", `Session active:`, session.session.ipAddress, session.user.username);"
+  },
+  "Plain-HTTP URLs in code|server/notification-providers/aliyun-sms.js:72": {
+   "check": "Plain-HTTP URLs in code",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/notification-providers/aliyun-sms.js:72` url: \"http://dysmsapi.aliyuncs.com/\","
+  },
+  "Queries or requests inside loops (N) in N place|extra/release/lib.mjs:179": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/lib.mjs:179` verifyGhcrTags: verifyGhcrTags calls fetch() inside a loop (line 179) — ``const response = await fetch(`https://ghcr.io/v2/${repoPath}/manifests/${tag}`, {``"
+  },
+  "Queries or requests inside loops (N) in N place|extra/release/lib.mjs:215": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/lib.mjs:215` checkTagExists: checkTagExists calls checkTagExistsSingle() inside a loop (line 215), and that reaches fetch() — `await checkTagExistsSingle(repoName, version);`"
+  },
+  "Queries or requests inside loops (N) in N place|server/monitor-types/rabbitmq.js:31": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/monitor-types/rabbitmq.js:31` RabbitMqMonitorType.check: RabbitMqMonitorType.check calls RabbitMqMonitorType.checkSingleNode() inside a loop (line 31), and that reaches axios.isCancel() — ``await this.checkSingleNode(monitor, baseUrl, `${nodeIndex}/${baseUrls.length}`);``"
+  },
+  "Queries or requests inside loops (N) in N place|server/notification-providers/360messenger.js:76": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/notification-providers/360messenger.js:76` Whatsapp360messenger.send: Whatsapp360messenger.send calls axios.post() inside a loop (line 76 and 3 more) — `return axios.post(\"https://api.360messenger.com/v2/sendMessage\", recipientData, config);`"
+  },
+  "Queries or requests inside loops (N) in N place|server/notification-providers/amootsms.js:215": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/notification-providers/amootsms.js:215` AmootSMS.sendWithPattern: AmootSMS.sendWithPattern calls axios.post() inside a loop (line 215) — `const response = await axios.post(`"
+  },
+  "Queries or requests inside loops (N) in N place|server/notification-providers/amootsms.js:269": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/notification-providers/amootsms.js:269` AmootSMS.sendWithPatternOwn: AmootSMS.sendWithPatternOwn calls axios.post() inside a loop (line 269) — `const response = await axios.post(`"
+  },
+  "Queries or requests inside loops (N) in N place|server/notification-providers/google-chat.js:21": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/notification-providers/google-chat.js:21` GoogleChat.send.post: GoogleChat.send.post calls axios.post() inside a loop (line 21) — `await axios.post(url, data, config);`"
+  },
+  "Queries or requests inside loops (N) in N place|server/notification-providers/kwtsms.js:48": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/notification-providers/kwtsms.js:48` Kwtsms.send: Kwtsms.send calls axios.post() inside a loop (line 48) — `const resp = await axios.post(url, data, config);`"
+  },
+  "Queries or requests inside loops (N) in N place|server/notification-providers/ooredoo.js:50": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/notification-providers/ooredoo.js:50` Ooredoo.send: Ooredoo.send calls axios.post() inside a loop (line 50) — `const resp = await axios.post(url, data.toString(), config);`"
+  },
+  "Queries or requests inside loops (N) in N place|server/notification-providers/openwa.js:43": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/notification-providers/openwa.js:43` OpenWa.send: OpenWa.send calls axios.post() inside a loop (line 43) — `await axios.post(`"
+  },
+  "Queries or requests inside loops (N) in N place|server/notification-providers/sms-gateway.js:28": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/notification-providers/sms-gateway.js:28` SMSGateway.send: SMSGateway.send calls axios.post() inside a loop (line 28) — `const result = await axios.post(`"
+  },
+  "Queries or requests inside loops (N) in N place|server/notification-providers/smsir.js:50": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/notification-providers/smsir.js:50` SMSIR.send: SMSIR.send calls axios.post() inside a loop (line 50)"
+  },
+  "Queries or requests inside loops (N) in N place|server/notification-providers/wxpusher.js:39": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/notification-providers/wxpusher.js:39` WxPusher.send: WxPusher.send calls axios.post() inside a loop (line 39) — `const result = await axios.post(`"
+  },
+  "Shell commands built at runtime|extra/rebase-pr.js:15": {
+   "check": "Shell commands built at runtime",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/rebase-pr.js:15` const prCommits = JSON.parse(execSync(`gh pr view ${currentBranchPRID} --json commits`).toString().trim()).commits;  (no endpoint reaches it)"
+  },
+  "Shell commands built at runtime|extra/rebase-pr.js:29": {
+   "check": "Shell commands built at runtime",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/rebase-pr.js:29` const latestCommitID = execSync(`git rev-parse origin/${branch}`).toString().trim();  (no endpoint reaches it)"
+  },
+  "Shell commands built at runtime|extra/rebase-pr.js:37": {
+   "check": "Shell commands built at runtime",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/rebase-pr.js:37` execSync(`git rebase --onto ${latestCommitID} ${originalParentCommitID}`);  (no endpoint reaches it)"
+  },
+  "Shell commands built at runtime|extra/release/generate-changelog.mjs:306": {
+   "check": "Shell commands built at runtime",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/generate-changelog.mjs:306` .execSync(`git log -1 --format=%cd --date=iso8601-strict ${previousVersion}`)  (no endpoint reaches it)"
+  },
+  "Shell commands built at runtime|extra/release/prepare-release.mjs:65": {
+   "check": "Shell commands built at runtime",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/prepare-release.mjs:65` exec(`git push origin --delete \"${branchName}\"`, true);  (no endpoint reaches it)"
+  },
+  "Shell commands built at runtime|extra/release/prepare-release.mjs:66": {
+   "check": "Shell commands built at runtime",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/prepare-release.mjs:66` exec(`git branch -D \"${branchName}\"`, true);  (no endpoint reaches it)"
+  },
+  "Shell commands built at runtime|extra/release/prepare-release.mjs:67": {
+   "check": "Shell commands built at runtime",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`extra/release/prepare-release.mjs:67` exec(`git checkout -b \"${branchName}\"`);  (no endpoint reaches it)"
+  },
+  "TLS certificate checks turned off|extra/healthcheck.go:27": {
+   "check": "TLS certificate checks turned off",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`extra/healthcheck.go:27` InsecureSkipVerify: true,"
+  },
+  "Unused code (N function)|extra/release/lib.mjs:477": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`extra/release/lib.mjs:477` pressAnyKey — `export function pressAnyKey() {`"
+  },
+  "Unused code (N function)|extra/release/lib.mjs:555": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`extra/release/lib.mjs:555` execSync — `export function execSync(cmd) {`"
+  },
+  "Unused code (N function)|extra/release/lib.mjs:698": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`extra/release/lib.mjs:698` createRelease — `export async function createRelease(version, changelog, isBeta = false, distTarGz = undefined) {`"
+  },
+  "Unused code (N function)|server/auth.ts:159": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`server/auth.ts:159` basicAuth — `export async function basicAuth(req: express.Request, res: express.Response, next: express.NextFunction) {`"
+  },
+  "Unused code (N function)|server/util.ts:712": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`server/util.ts:712` timeObjectToUTC — `export function timeObjectToUTC(obj: object, timezone: string = undefined): object {`"
+  },
+  "Unused code (N function)|server/util.ts:722": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`server/util.ts:722` timeObjectToLocal — `export function timeObjectToLocal(obj: object, timezone: string = undefined): object {`"
+  },
+  "Unused code (N function)|src/auth-client.ts:18": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/auth-client.ts:18` isLoggedIn — `export async function isLoggedIn() {`"
+  },
+  "Unused code (N function)|src/util.ts:183": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/util.ts:183` ucfirst — `export function ucfirst(str: string) {`"
+  },
+  "Unused code (N function)|src/util.ts:426": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/util.ts:426` getRandomArbitrary — `export function getRandomArbitrary(min: number, max: number) {`"
+  },
+  "Unused code (N function)|src/util.ts:598": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/util.ts:598` isoToUTCDateTime — `export function isoToUTCDateTime(input: string) {`"
+  },
+  "Unused code (N function)|src/util.ts:606": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/util.ts:606` utcToISODateTime — `export function utcToISODateTime(input: string) {`"
+  },
+  "Unused code (N function)|src/util.ts:616": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/util.ts:616` utcToLocal — `export function utcToLocal(input: string, format = SQL_DATETIME_FORMAT): string {`"
+  },
+  "Unused code (N function)|src/util.ts:626": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`src/util.ts:626` localToUTC — `export function localToUTC(input: string, format = SQL_DATETIME_FORMAT) {`"
+  }
+ }
+}

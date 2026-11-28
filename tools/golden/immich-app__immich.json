@@ -1,0 +1,648 @@
+{
+ "repo": "immich-app/immich",
+ "commit": "a51a43856df89b83266fc312b822cadd7afb6fcf",
+ "locations": {
+  "App allows unencrypted HTTP|mobile/android/app/src/main/AndroidManifest.xml:28": {
+   "check": "App allows unencrypted HTTP",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`mobile/android/app/src/main/AndroidManifest.xml:28` usesCleartextTraffic=\"true — `<application android:label=\"@string/app_name\" android:name=\".ImmichApp\" android:usesCleartextTraffic=\"true\"`"
+  },
+  "App allows unencrypted HTTP|mobile/ios/Runner/Info.plist:123": {
+   "check": "App allows unencrypted HTTP",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`mobile/ios/Runner/Info.plist:123` NSAllowsArbitraryLoads</key>\n      <true /> — `<key>NSAllowsArbitraryLoads</key>`"
+  },
+  "App allows unencrypted HTTP|mobile/ios/WidgetExtension/Info.plist:9": {
+   "check": "App allows unencrypted HTTP",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`mobile/ios/WidgetExtension/Info.plist:9` NSAllowsArbitraryLoads</key>\n\t\t<true/> — `<key>NSAllowsArbitraryLoads</key>`"
+  },
+  "Container runs as root|machine-learning/Dockerfile:152": {
+   "check": "Container runs as root",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`machine-learning/Dockerfile:152` no USER after prod-${DEVICE} — `FROM prod-${DEVICE} AS prod`"
+  },
+  "Container runs as root|packages/cli/Dockerfile:1": {
+   "check": "Container runs as root",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`packages/cli/Dockerfile:1` no USER after node:26.13.1-trixie-slim@sha256:e6bedef217677b276c591795e169840edd9096dbf13f29df8ef8d1856b8820bc — `FROM node:26.13.1-trixie-slim@sha256:e6bedef217677b276c591795e169840edd9096dbf13f29df8ef8d1856b8820bc AS core`"
+  },
+  "Container runs as root|server/Dockerfile:120": {
+   "check": "Container runs as root",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/Dockerfile:120` no USER after ghcr.io/immich-app/base-server-prod:202611101105@sha256:282c05976d233c7a601199b9be79f6c8260352b37b1d808e96b16fb76cc63270 — `FROM ghcr.io/immich-app/base-server-prod:202611101105@sha256:282c05976d233c7a601199b9be79f6c8260352b37b1d808e96b16fb76cc63270`"
+  },
+  "Copied logic in N group (~N lines)|mobile/android/app/src/main/kotlin/app/alextran/immich/widget/MemoryReceiver.kt:49": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge MemoryReceiver.onDeleted, RandomReceiver.onDeleted (identical, ~8 lines): `mobile/android/app/src/main/kotlin/app/alextran/immich/widget/MemoryReceiver.kt:49`, `mobile/android/app/src/main/kotlin/app/alextran/immich/widget/RandomReceiver.kt:49`"
+  },
+  "Copied logic in N group (~N lines)|packages/sdk/src/fetch-client.ts:4654": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between addAssetsToAlbum, addMemoryAssets, addSharedLinkAssets, removeAssetFromAlbum, removeMemoryAssets, removeSharedLinkAssets, tagAssets, untagAssets (85% similar, ~91 lines): `packages/sdk/src/fetch-client.ts:4670`, `packages/sdk/src/fetch-client.ts:6070`, `packages/sdk/src/fetch-client.ts:7400`, `packages/sdk/src/fetch-client.ts:4654`, `packages/sdk/src/fetch-client.ts:6054`, `packages/sdk/src/fetch-client.ts:7384`, `packages/sdk/src/fetch-client.ts:7762`, `packages/sdk/src/fetch-client.ts:7746`"
+  },
+  "Copied logic in N group (~N lines)|packages/sdk/src/fetch-client.ts:5175": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between downloadAsset, playAssetVideo, viewAsset (86% similar, ~32 lines): `packages/sdk/src/fetch-client.ts:5175`, `packages/sdk/src/fetch-client.ts:5217`, `packages/sdk/src/fetch-client.ts:5195`"
+  },
+  "Copied logic in N group (~N lines)|server/src/emails/album-invite.email.tsx:8": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge AlbumInviteEmail, AlbumUpdateEmail (91% similar, ~67 lines): `server/src/emails/album-invite.email.tsx:8`, `server/src/emails/album-update.email.tsx:8`"
+  },
+  "Copied logic in N group (~N lines)|server/src/maintenance/maintenance-worker.service.ts:105": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge BaseService.configRepos, MaintenanceWorkerService.configRepos (identical, ~7 lines): `server/src/maintenance/maintenance-worker.service.ts:105`, `server/src/services/base.service.ts:297`"
+  },
+  "Copied logic in N group (~N lines)|server/src/repositories/access.repository.ts:419": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between checkPartnerAccess, checkUpdateAccess (identical, ~15 lines): `server/src/repositories/access.repository.ts:625`, `server/src/repositories/access.repository.ts:419`"
+  },
+  "Copied logic in N group (~N lines)|server/src/repositories/sync.repository.ts:110": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between auditQuery, backfillQuery, upsertQuery (90% similar, ~22 lines): `server/src/repositories/sync.repository.ts:126`, `server/src/repositories/sync.repository.ts:110`, `server/src/repositories/sync.repository.ts:147`"
+  },
+  "Copied logic in N group (~N lines)|server/src/services/notification-admin.service.ts:27": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge NotificationAdminService.sendTestEmail, NotificationService.sendTestEmail (identical, ~33 lines): `server/src/services/notification-admin.service.ts:27`, `server/src/services/notification.service.ts:282`"
+  },
+  "Copied logic in N group (~N lines)|web/src/lib/utils/album-utils.ts:143": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge getCollapsedAlbumGroups, getCollapsedPlacesGroups (identical, ~6 lines): `web/src/lib/utils/album-utils.ts:143`, `web/src/lib/utils/places-utils.ts:21`"
+  },
+  "Databases published on every interface (docker-compose)|docker/docker-compose.prod.yml:77": {
+   "check": "Databases published on every interface (docker-compose)",
+   "severity": "Medium",
+   "tier": "hints",
+   "location": "`docker/docker-compose.prod.yml:77` - 5432:5432  (PostgreSQL on every interface)"
+  },
+  "Dynamic code execution (eval / exec / pickle / unsafe YAML)|machine-learning/immich_ml/sessions/prepare.py:19": {
+   "check": "Dynamic code execution (eval / exec / pickle / unsafe YAML)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`machine-learning/immich_ml/sessions/prepare.py:19` spec: GraphSpec = pickle.loads(sys.stdin.buffer.read())  (no endpoint reaches it)"
+  },
+  "File or program operations inside loops in N place|machine-learning/ann/export/run.py:152": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`machine-learning/ann/export/run.py:152` main — `export(model)`"
+  },
+  "File or program operations inside loops in N place|machine-learning/immich_ml/models/ocr/recognition.py:97": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`machine-learning/immich_ml/models/ocr/recognition.py:97` TextRecognizer._predict — `self.decoder = self._decoder(session)`"
+  },
+  "File or program operations inside loops in N place|machine-learning/immich_ml/sessions/ort.py:339": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`machine-learning/immich_ml/sessions/ort.py:339` OrtSession.warm — `graph = self.for_shape(shape)`"
+  },
+  "File or program operations inside loops in N place|packages/cli/src/commands/asset.ts:190": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`packages/cli/src/commands/asset.ts:190` checkForDuplicates — `const stats = await stat(filepath);`"
+  },
+  "File or program operations inside loops in N place|packages/cli/src/commands/asset.ts:325": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`packages/cli/src/commands/asset.ts:325` uploadFiles — `const stats = await stat(filepath);`"
+  },
+  "File or program operations inside loops in N place|packages/cli/src/utils.ts:173": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`packages/cli/src/utils.ts:173` crawl — `const stats = await stat(absolutePath);`"
+  },
+  "File or program operations inside loops in N place|server/src/bin/metadata-fixtures.ts:123": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/src/bin/metadata-fixtures.ts:123` getDatasetImages — `captureType: await getCaptureType(join(datasetDir, getInfoPath(entry))),`"
+  },
+  "File or program operations inside loops in N place|server/src/bin/metadata-fixtures.ts:89": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/src/bin/metadata-fixtures.ts:89` main — ``for (const { image, tags } of await readRawTags(batch, `${outputPath}.args`)) {``"
+  },
+  "File or program operations inside loops in N place|server/src/bin/sync-sql.ts:191": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/src/bin/sync-sql.ts:191` SqlGenerator.write — `await writeFile(file, data.join('\\n\\n') + '\\n');`"
+  },
+  "File or program operations inside loops in N place|server/src/main.ts:32": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/src/main.ts:32` Workers.bootstrap — `this.startWorker(worker);`"
+  },
+  "File or program operations inside loops in N place|server/src/services/database-backup.service.ts:327": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/src/services/database-backup.service.ts:327` DatabaseBackupService.listBackups — `const stats = await this.storageRepository.stat(path.join(backupsFolder, filename));`"
+  },
+  "File or program operations inside loops in N place|server/src/services/duplicate.service.ts:105": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/src/services/duplicate.service.ts:105` DuplicateService.resolve — `results.push(await this.resolveGroup(auth, group));`"
+  },
+  "File or program operations inside loops in N place|server/src/services/integrity.service.ts:346": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/src/services/integrity.service.ts:346` IntegrityService.handleUntrackedRefresh — `await this.storageRepository.stat(path);`"
+  },
+  "File or program operations inside loops in N place|server/src/services/integrity.service.ts:419": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/src/services/integrity.service.ts:419` IntegrityService.handleMissingFiles — `await this.storageRepository.stat(item.path);`"
+  },
+  "File or program operations inside loops in N place|server/src/services/integrity.service.ts:458": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/src/services/integrity.service.ts:458` IntegrityService.handleMissingRefresh — `await this.storageRepository.stat(path);`"
+  },
+  "File or program operations inside loops in N place|server/src/services/library.service.ts:373": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/src/services/library.service.ts:373` LibraryService.handleSyncFiles — `const asset = await this.processEntity(path, library.ownerId, job.libraryId);`"
+  },
+  "File or program operations inside loops in N place|server/src/services/library.service.ts:439": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/src/services/library.service.ts:439` LibraryService.validate — `(dto.importPaths || []).map((importPath) => this.validateImportPath(importPath)),`"
+  },
+  "File or program operations inside loops in N place|server/src/services/library.service.ts:590": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/src/services/library.service.ts:590` LibraryService.handleQueueSyncFiles — `const validation = await this.validateImportPath(importPath);`"
+  },
+  "File or program operations inside loops in N place|server/src/services/workflow-execution.service.ts:138": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/src/services/workflow-execution.service.ts:138` WorkflowExecutionService.onPluginLoad — `await this.pluginRepository.load({ key, label, wasmBytes }, { runInWorker: false, functions: stubs });`"
+  },
+  "File or program operations inside loops in N place|server/src/services/workflow-execution.service.ts:214": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/src/services/workflow-execution.service.ts:214` WorkflowExecutionService.importFolders — `await this.importFolder(join(installFolder, entry.name));`"
+  },
+  "Import loops (N)|server/src/cores/storage.core.ts": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "server/src/cores/storage.core.ts → server/src/utils/asset.util.ts → server/src/cores/storage.core.ts"
+  },
+  "Import loops (N)|server/src/schema/tables/asset.table.ts": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "server/src/schema/tables/asset.table.ts → server/src/schema/tables/stack.table.ts → server/src/schema/tables/asset.table.ts"
+  },
+  "Import loops (N)|web/src/lib/managers/AssetCacheManager.svelte.ts": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "web/src/lib/managers/AssetCacheManager.svelte.ts → web/src/lib/managers/auth-manager.svelte.ts → web/src/lib/utils/navigation.ts → web/src/lib/managers/AssetCacheManager.svelte.ts"
+  },
+  "Import loops (N)|web/src/lib/managers/cast-manager.svelte.ts": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "web/src/lib/managers/cast-manager.svelte.ts → web/src/lib/utils/cast/gcast-destination.svelte.ts → web/src/lib/managers/cast-manager.svelte.ts"
+  },
+  "Import loops (N)|web/src/lib/utils.ts": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "web/src/lib/utils.ts → web/src/lib/utils/asset-utils.ts → web/src/lib/utils.ts (3 files in the loop)"
+  },
+  "Important code no test reaches (N function)|docs/src/components/version-switcher.tsx:14": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`docs/src/components/version-switcher.tsx:14` VersionSwitcher.getVersions: does I/O (fetch) — `async function getVersions() {`"
+  },
+  "Important code no test reaches (N function)|machine-learning/ann/export/run.py:98": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`machine-learning/ann/export/run.py:98` export: does I/O (subprocess.run) — `def export(model: ExportBase) -> None:`"
+  },
+  "Important code no test reaches (N function)|machine-learning/conftest.py:21": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`machine-learning/conftest.py:21` asset: does I/O (read_bytes) — `def asset() -> Callable[[str], bytes]:`"
+  },
+  "Important code no test reaches (N function)|machine-learning/conftest.py:37": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`machine-learning/conftest.py:37` responses: does I/O (open) — `def responses() -> dict[str, Any]:`"
+  },
+  "Important code no test reaches (N function)|mobile/android/app/src/main/kotlin/app/alextran/immich/sync/MessagesImplBase.kt:359": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mobile/android/app/src/main/kotlin/app/alextran/immich/sync/MessagesImplBase.kt:359` NativeSyncApiImplBase.getAssetIdsForAlbum: does I/O (cursor.getColumnIndexOrThrow, cursor.getLong) — `private fun getAssetIdsForAlbum(albumId: String): List<String> {`"
+  },
+  "Important code no test reaches (N function)|mobile/android/app/src/main/kotlin/app/alextran/immich/widget/configure/RandomConfigure.kt:61": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mobile/android/app/src/main/kotlin/app/alextran/immich/widget/configure/RandomConfigure.kt:61` RandomConfiguration: does I/O (api.fetchAlbums) — `@OptIn(ExperimentalMaterial3Api::class)`"
+  },
+  "Important code no test reaches (N function)|mobile/ios/Runner/Core/NetworkApiImpl.swift:131": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mobile/ios/Runner/Core/NetworkApiImpl.swift:131` CertImporter.documentPicker: does I/O (URLSessionManager.shared.session.flush) — `func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {`"
+  },
+  "Important code no test reaches (N function)|mobile/ios/Runner/Images/RemoteImagesImpl.swift:47": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`mobile/ios/Runner/Images/RemoteImagesImpl.swift:47` RemoteImageApiImpl.requestImage: does I/O (URLSessionManager.shared.session.dataTask) — `func requestImage(url: String, requestId: Int64, preferEncoded: Bool, width: Int64?, height: Int64?, completion: @escaping (Result<[String : Int64]?, any Err…`"
+  },
+  "Important code no test reaches (N function)|native/crates/codecs/src/jxl.rs:58": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`native/crates/codecs/src/jxl.rs:58` Cancellable.run_ordered: does I/O (self.pool.run_ordered) — `fn run_ordered(`"
+  },
+  "Important code no test reaches (N function)|server/src/bin/metadata-fixtures.ts:109": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/bin/metadata-fixtures.ts:109` getDatasetImages: does I/O (readdir) — `const getDatasetImages = async (datasetDir: string) => {`"
+  },
+  "Important code no test reaches (N function)|server/src/bin/metadata-fixtures.ts:134": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/bin/metadata-fixtures.ts:134` getCaptureType: does I/O (readFile) — `const getCaptureType = async (infoPath: string) => {`"
+  },
+  "Important code no test reaches (N function)|server/src/bin/metadata-fixtures.ts:139": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/bin/metadata-fixtures.ts:139` readRawTags: does I/O (writeFile) — `const readRawTags = async (images: DatasetImage[], argsFile: string) => {`"
+  },
+  "Important code no test reaches (N function)|server/src/bin/metadata-fixtures.ts:74": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/bin/metadata-fixtures.ts:74` main: does I/O (writeFile) — `const main = async () => {`"
+  },
+  "Important code no test reaches (N function)|server/src/decorators.ts:21": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/decorators.ts:21` PrimaryGeneratedUuidV7Column, called from 17 files — `export const PrimaryGeneratedUuidV7Column = () => GeneratedUuidV7Column({ primary: true });`"
+  },
+  "Important code no test reaches (N function)|server/src/services/api.service.ts:39": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/services/api.service.ts:39` ApiService.ssr: does I/O (readFileSync) — `ssr(excludePaths: string[]) {`"
+  },
+  "Important code no test reaches (N function)|web/src/service-worker/request.ts:14": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`web/src/service-worker/request.ts:14` handleFetch: does I/O (fetch) — `export const handleFetch = async (request: URL | Request): Promise<Response> => {`"
+  },
+  "Module-level mutable state (N place)|machine-learning/immich_ml/main.py:127": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`machine-learning/immich_ml/main.py:127` global active_requests, last_called, release"
+  },
+  "Module-level mutable state (N place)|machine-learning/immich_ml/main.py:61": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`machine-learning/immich_ml/main.py:61` global thread_pool"
+  },
+  "Module-level mutable state (N place)|machine-learning/locustfile.py:31": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`machine-learning/locustfile.py:31` global byte_image"
+  },
+  "Module-level mutable state (N place)|packages/cli/src/utils.ts:47": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`packages/cli/src/utils.ts:47` let _apiKey: ApiKeyResponseDto; — `let _apiKey: ApiK…;`"
+  },
+  "Module-level mutable state (N place)|server/src/cores/storage.core.ts:48": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/cores/storage.core.ts:48` let instance: StorageCore | null;"
+  },
+  "Module-level mutable state (N place)|server/src/cores/storage.core.ts:50": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/cores/storage.core.ts:50` let mediaLocation: string | undefined;"
+  },
+  "Module-level mutable state (N place)|server/src/repositories/config.repository.ts:404": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/repositories/config.repository.ts:404` let cached: EnvData | undefined;"
+  },
+  "Module-level mutable state (N place)|server/src/repositories/database.repository.ts:35": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/repositories/database.repository.ts:35` export let cachedVectorExtension: VectorExtension | undefined;"
+  },
+  "Module-level mutable state (N place)|server/src/repositories/logging.repository.ts:22": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/repositories/logging.repository.ts:22` let appName: string | undefined;"
+  },
+  "Module-level mutable state (N place)|server/src/repositories/logging.repository.ts:23": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/repositories/logging.repository.ts:23` let logLevels: LogLevel[] = [LogLevel.Log, LogLevel.Warn, LogLevel.Error, LogLevel.Fatal];"
+  },
+  "Module-level mutable state (N place)|server/src/repositories/telemetry.repository.ts:58": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/repositories/telemetry.repository.ts:58` let instance: NodeSDK | undefined;"
+  },
+  "Module-level mutable state (N place)|server/src/repositories/telemetry.repository.ts:59": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/repositories/telemetry.repository.ts:59` let metricsServer: Server | undefined;"
+  },
+  "Module-level mutable state (N place)|server/src/utils/config.ts:19": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/utils/config.ts:19` let config: SystemConfig | null = null;"
+  },
+  "Module-level mutable state (N place)|server/src/utils/config.ts:20": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/utils/config.ts:20` let lastUpdated: number | null = null;"
+  },
+  "Module-level mutable state (N place)|web/src/lib/managers/cast-manager.svelte.ts:158": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`web/src/lib/managers/cast-manager.svelte.ts:158` let castManager: CastManager;"
+  },
+  "Module-level mutable state (N place)|web/src/lib/utils.ts:168": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`web/src/lib/utils.ts:168` let _sharedLink: SharedLinkResponseDto | undefined;"
+  },
+  "Module-level mutable state (N place)|web/src/lib/utils.ts:81": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`web/src/lib/utils.ts:81` let unsubscribeId = 0;"
+  },
+  "Module-level mutable state (N place)|web/src/lib/utils/base-event-manager.svelte.ts:12": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`web/src/lib/utils/base-event-manager.svelte.ts:12` let count = 1;"
+  },
+  "Module-level mutable state (N place)|web/src/lib/utils/focus-util.ts:4": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`web/src/lib/utils/focus-util.ts:4` let defaultOpts: TabbableOpts = {"
+  },
+  "Module-level mutable state (N place)|web/src/lib/utils/ocr-utils.ts:81": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`web/src/lib/utils/ocr-utils.ts:81` let sharedCanvasContext: CanvasRenderingContext2D | null = null;"
+  },
+  "Module-level mutable state (N place)|web/src/lib/utils/ocr-utils.ts:82": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`web/src/lib/utils/ocr-utils.ts:82` let resolvedFont: string | undefined;"
+  },
+  "Module-level mutable state (N place)|web/src/lib/utils/wakelock.svelte.ts:6": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`web/src/lib/utils/wakelock.svelte.ts:6` let sentinel: WakeLockSentinel | undefined;"
+  },
+  "Module-level mutable state (N place)|web/src/lib/utils/wakelock.svelte.ts:7": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`web/src/lib/utils/wakelock.svelte.ts:7` let acquiring = false;"
+  },
+  "Network calls without a timeout|packages/cli/src/commands/asset.ts:434": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`packages/cli/src/commands/asset.ts:434` const response = await fetch(`${baseUrl}/assets`, {"
+  },
+  "Network calls without a timeout|packages/cli/src/utils.ts:82": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`packages/cli/src/utils.ts:82` const wellKnown = (await fetch(wellKnownUrl).then((response) => response.json())) as { api: { endpoint: string } };"
+  },
+  "Network calls without a timeout|server/src/repositories/server-info.repository.ts:73": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/repositories/server-info.repository.ts:73` const response = await fetch(url);"
+  },
+  "Network calls without a timeout|server/src/services/workflow-execution.service.ts:101": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/services/workflow-execution.service.ts:101` const res = await fetch(...args);"
+  },
+  "Network calls without a timeout|web/src/lib/utils/license-utils.ts:25": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`web/src/lib/utils/license-utils.ts:25` const response = await fetch(new URL(`/api/v1/activate/${licenseKey}`, PUBLIC_IMMICH_PAY_HOST).href);"
+  },
+  "Personal data written to logs|server/src/repositories/map.repository.ts:155": {
+   "check": "Personal data written to logs",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/repositories/map.repository.ts:155` this.logger.debug(`Request: ${point.latitude},${point.longitude}`);"
+  },
+  "Personal data written to logs|server/src/services/auth.service.ts:416": {
+   "check": "Personal data written to logs",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/services/auth.service.ts:416` this.logger.log(`Registering new user: ${profile.sub}/${profile.email}`);"
+  },
+  "Personal data written to logs|server/src/services/auth.service.ts:484": {
+   "check": "Personal data written to logs",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/services/auth.service.ts:484` this.logger.warn(`OAuth link account failed: sub is already linked to another user (${duplicate.email}).`);"
+  },
+  "Personal data written to logs|server/src/services/auth.service.ts:78": {
+   "check": "Personal data written to logs",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/services/auth.service.ts:78` this.logger.warn(`Failed login attempt for user ${dto.email} from ip address ${details.clientIp}`);"
+  },
+  "Queries or requests inside loops (N) in N place|server/src/repositories/machine-learning.repository.ts:126": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/repositories/machine-learning.repository.ts:126` MachineLearningRepository.tick: MachineLearningRepository.tick calls MachineLearningRepository.check() inside a loop (line 126), and that reaches fetch() — `void this.check(url);`"
+  },
+  "Raw HTML injected into pages|server/src/emails/album-invite.email.tsx:45": {
+   "check": "Raw HTML injected into pages",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`server/src/emails/album-invite.email.tsx:45` <div dangerouslySetInnerHTML={{ __html: emailContent }}></div>  ← reached from `POST /admin/notifications/test-email → NotificationAdminController.sendTestEmailAdmin → NotificationAdminService.sendTestEmail → EmailRepository.renderEmail → EmailRepository.render → AlbumInviteEmail`"
+  },
+  "Raw HTML injected into pages|server/src/emails/album-update.email.tsx:48": {
+   "check": "Raw HTML injected into pages",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`server/src/emails/album-update.email.tsx:48` <div dangerouslySetInnerHTML={{ __html: emailContent }}></div>  ← reached from `POST /admin/notifications/test-email → NotificationAdminController.sendTestEmailAdmin → NotificationAdminService.sendTestEmail → EmailRepository.renderEmail → EmailRepository.render → AlbumUpdateEmail`"
+  },
+  "Raw HTML injected into pages|server/src/emails/welcome.email.tsx:48": {
+   "check": "Raw HTML injected into pages",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`server/src/emails/welcome.email.tsx:48` <div dangerouslySetInnerHTML={{ __html: emailContent }}></div>  ← reached from `POST /admin/notifications/test-email → NotificationAdminController.sendTestEmailAdmin → NotificationAdminService.sendTestEmail → EmailRepository.renderEmail → EmailRepository.render → WelcomeEmail`"
+  },
+  "Required-reason API without a privacy manifest|mobile/ios/Runner/Core/NetworkApiImpl.swift:98": {
+   "check": "Required-reason API without a privacy manifest",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`mobile/ios/Runner/Core/NetworkApiImpl.swift:98` UserDefaults API without a privacy manifest: if headers != UserDefaults.group.dictionary(forKey: HEADERS_KEY) as? [String: String] {"
+  },
+  "Session cookies without Secure / HttpOnly|server/src/utils/response.ts:58": {
+   "check": "Session cookies without Secure / HttpOnly",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`server/src/utils/response.ts:58` [ImmichCookie.IsAuthenticated]: { ...defaults, httpOnly: false },"
+  },
+  "Shell commands built at runtime|packages/scripts/src/commands/release.ts:55": {
+   "check": "Shell commands built at runtime",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`packages/scripts/src/commands/release.ts:55` execSync(`mise exec -- uv version ${newVersionRaw}`, {  (no endpoint reaches it) *(script)*"
+  },
+  "Unused code (N function)|machine-learning/immich_ml/config.py:171": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`machine-learning/immich_ml/config.py:171` CustomUvicornWorker._serve — `async def _serve(self) -> None:`"
+  },
+  "Unused code (N function)|machine-learning/immich_ml/gunicorn_conf.py:15": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`machine-learning/immich_ml/gunicorn_conf.py:15` pre_fork — `def pre_fork(arbiter: Arbiter, _: Worker) -> None:`"
+  },
+  "Unused code (N function)|server/src/decorators.ts:43": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`server/src/decorators.ts:43` chunks — `function chunks<T>(collection: Set<T>, size: number): Array<Set<T>>;`"
+  },
+  "Unused code (N function)|server/src/decorators.ts:44": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`server/src/decorators.ts:44` chunks — `function chunks<T>(collection: Array<T> | Set<T>, size: number): Array<Array<T>> | Array<Set<T>> {`"
+  },
+  "Unused code (N function)|web/src/lib/utils.ts:128": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`web/src/lib/utils.ts:128` downloadRequest — `export const downloadRequest = <TBody = unknown>(options: DownloadRequestOptions<TBody> | string) => {`"
+  },
+  "Unused code (N function)|web/src/lib/utils.ts:356": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`web/src/lib/utils.ts:356` asyncTimeout — `export const asyncTimeout = (ms: number) => {`"
+  },
+  "Unused code (N function)|web/src/lib/utils/navigation.ts:136": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`web/src/lib/utils/navigation.ts:136` clearQueryParam — `export const clearQueryParam = async (queryParam: string, url: URL) => {`"
+  },
+  "Writes inside loops in N place|server/src/repositories/database.repository.ts:178": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`server/src/repositories/database.repository.ts:178` DatabaseRepository.reindexVectorsIfNeeded — `promises.push(this.reindexVectors(indexName));`"
+  },
+  "`try!` / `as!` that crash on failure (Swift)|mobile/ios/Runner/Core/URLSessionManager.swift:258": {
+   "check": "`try!` / `as!` that crash on failure (Swift)",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mobile/ios/Runner/Core/URLSessionManager.swift:258` let credential = URLCredential(identity: identity as! SecIdentity, — `let credential = URLC… identity as! SecIdentity,`"
+  },
+  "`try!` / `as!` that crash on failure (Swift)|mobile/ios/Runner/Images/LocalImagesImpl.swift:140": {
+   "check": "`try!` / `as!` that crash on failure (Swift)",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`mobile/ios/Runner/Images/LocalImagesImpl.swift:140` let exactOptions = Self.requestOptions.copy() as! PHImageRequestOptions"
+  }
+ }
+}

@@ -66,8 +66,8 @@ def main() -> int:
     CACHE.mkdir(parents=True, exist_ok=True)
     jobs: list[tuple[str, list[str]]] = []
     lint = venv("lint", find_python("3.13") or [sys.executable], ".github/ci-requirements.txt")
-    jobs.append(("lint (pinned ruff)", [str(lint), "-m", "ruff", "check", "codefactory", "tests"]))
-    jobs.append(("format (pinned ruff)", [str(lint), "-m", "ruff", "format", "--check", "codefactory", "tests"]))
+    jobs.append(("lint (pinned ruff)", [str(lint), "-m", "ruff", "check", "codefactory", "tests", "tools"]))
+    jobs.append(("format (pinned ruff)", [str(lint), "-m", "ruff", "format", "--check", "codefactory", "tests", "tools"]))
     missing = []
     for version in PYTHONS:
         python = find_python(version)

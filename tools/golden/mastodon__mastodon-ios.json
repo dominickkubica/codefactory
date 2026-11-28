@@ -1,0 +1,1116 @@
+{
+ "repo": "mastodon/mastodon-ios",
+ "commit": "f3dc8d37ad81a8aaa5607f0086bd78d3e41430fb",
+ "locations": {
+  "Copied logic in N group (~N lines)|Mastodon/Scene/Onboarding/Share/OnboardingViewControllerAppearance.swift:73": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge OnboardingViewControllerAppearance.setupNavigationBarBackgroundView, ReportViewControllerAppearance.setupNavigationBarBackgroundView (92% similar, ~16 lines): `Mastodon/Scene/Onboarding/Share/OnboardingViewControllerAppearance.swift:73`, `Mastodon/Scene/Report/Share/ReportViewControllerAppearance.swift:48`"
+  },
+  "Copied logic in N group (~N lines)|Mastodon/Scene/Report/ReportReason/ReportReasonViewController.swift:44": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge ReportReasonViewController.viewDidLoad, ReportServerRulesViewController.viewDidLoad (86% similar, ~39 lines): `Mastodon/Scene/Report/ReportReason/ReportReasonViewController.swift:44`, `Mastodon/Scene/Report/ReportServerRules/ReportServerRulesViewController.swift:46`"
+  },
+  "Copied logic in N group (~N lines)|Mastodon/Scene/Report/ReportStatus/ReportStatusViewModel+State.swift:104": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge State.Fail.isValidNextState, State.Idle.isValidNextState (identical, ~8 lines): `Mastodon/Scene/Report/ReportStatus/ReportStatusViewModel+State.swift:104`, `MastodonSDK/Sources/MastodonUI/Scene/ComposeContent/AutoComplete/AutoCompleteViewModel+State.swift:176`"
+  },
+  "Copied logic in N group (~N lines)|MastodonSDK/Sources/MastodonCore/LegacyPersistence/FileManager+Timeline.swift:55": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of FileManager.cache (86% similar, ~19 lines): `MastodonSDK/Sources/MastodonCore/LegacyPersistence/FileManager+Timeline.swift:55`, `MastodonSDK/Sources/MastodonCore/LegacyPersistence/PersistenceManager.swift:100`"
+  },
+  "Copied logic in N group (~N lines)|MastodonSDK/Sources/MastodonCore/Service/API/APIService+Bookmark.swift:77": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge APIService.bookmark, APIService.favourite, APIService.unbookmark, APIService.unfavourite (88% similar, ~63 lines): `MastodonSDK/Sources/MastodonCore/Service/API/APIService+Bookmark.swift:77`, `MastodonSDK/Sources/MastodonCore/Service/API/APIService+Bookmark.swift:99`, `MastodonSDK/Sources/MastodonCore/Service/API/APIService+Favorite.swift:55`, `MastodonSDK/Sources/MastodonCore/Service/API/APIService+Favorite.swift:78`"
+  },
+  "Copied logic in N group (~N lines)|MastodonSDK/Sources/MastodonCore/Service/API/APIService+DomainBlock.swift:34": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between blockDomain, unblockDomain (85% similar, ~19 lines): `MastodonSDK/Sources/MastodonCore/Service/API/APIService+DomainBlock.swift:34`, `MastodonSDK/Sources/MastodonCore/Service/API/APIService+DomainBlock.swift:54`"
+  },
+  "Copied logic in N group (~N lines)|MastodonSDK/Sources/MastodonCore/Service/API/APIService+Follower.swift:14": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge APIService.featuredAccounts, APIService.followers, APIService.following (87% similar, ~45 lines): `MastodonSDK/Sources/MastodonCore/Service/API/APIService+Follower.swift:14`, `MastodonSDK/Sources/MastodonCore/Service/API/APIService+Following.swift:38`, `MastodonSDK/Sources/MastodonCore/Service/API/APIService+Following.swift:14`"
+  },
+  "Copied logic in N group (~N lines)|MastodonSDK/Sources/MastodonCore/Service/PhotoLibraryService.swift:36": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between copy, save (89% similar, ~28 lines): `MastodonSDK/Sources/MastodonCore/Service/PhotoLibraryService.swift:69`, `MastodonSDK/Sources/MastodonCore/Service/PhotoLibraryService.swift:36`"
+  },
+  "Copied logic in N group (~N lines)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Credentials.swift:109": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge Account.verifyCredentials, App.verifyCredentials (90% similar, ~18 lines): `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Credentials.swift:109`, `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+App.swift:67`"
+  },
+  "Copied logic in N group (~N lines)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+FollowRequest.swift:112": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between acceptFollowRequest, rejectFollowRequest (86% similar, ~19 lines): `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+FollowRequest.swift:79`, `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+FollowRequest.swift:112`"
+  },
+  "Copied logic in N group (~N lines)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Followers.swift:34": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge Account.featuredAccounts, Account.followers, Account.following (85% similar, ~40 lines): `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Followers.swift:34`, `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Following.swift:76`, `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Following.swift:41`"
+  },
+  "Copied logic in N group (~N lines)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:119": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between block, follow, mute, unblock, unfollow, unmute (85% similar, ~95 lines): `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:384`, `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:119`, `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:498`, `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:429`, `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:175`, `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:543`"
+  },
+  "Copied logic in N group (~N lines)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Media.swift:33": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of Media.uploadMedia (93% similar, ~36 lines): `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Media.swift:33`, `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+V2+Media.swift:32`"
+  },
+  "Copied logic in N group (~N lines)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Suggestions.swift:30": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of Suggestions.accounts (87% similar, ~19 lines): `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Suggestions.swift:30`, `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+V2+Suggestions.swift:23`"
+  },
+  "Copied logic in N group (~N lines)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Tags.swift:100": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between followTag, getTagInformation, unfollowTag (86% similar, ~39 lines): `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Tags.swift:65`, `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Tags.swift:31`, `MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Tags.swift:100`"
+  },
+  "Copied logic in N group (~N lines)|MastodonSDK/Sources/MastodonUI/Scene/ComposeContent/ComposeContentViewModel+UITextViewDelegate.swift:148": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge ComposeContentViewModel.scanAutoCompleteInfo, MetaTextInputFieldViewModel.scanAutoCompleteInfo (identical, ~53 lines): `Mastodon/In Progress New Layout and Datamodel/Common Components/Views/MetaTextInputField.swift:261`, `MastodonSDK/Sources/MastodonUI/Scene/ComposeContent/ComposeContentViewModel+UITextViewDelegate.swift:148`"
+  },
+  "Credentials committed in source|MastodonSDK/Sources/MastodonCore/AppSecret.swift:18": {
+   "check": "Credentials committed in source",
+   "severity": "Critical",
+   "tier": "hints",
+   "location": "`MastodonSDK/Sources/MastodonCore/AppSecret.swift:18` static let notificationAuthName = \"noti…\""
+  },
+  "Important code no test reaches (N function)|Mastodon/Scene/Onboarding/PickServer/MastodonPickServerViewController.swift:194": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/Scene/Onboarding/PickServer/MastodonPickServerViewController.swift:194` MastodonPickServerViewController.viewWillAppear: does I/O (viewModel.viewWillAppear.send) — `override func viewWillAppear(_ animated: Bool) {`"
+  },
+  "Important code no test reaches (N function)|Mastodon/Scene/Onboarding/PickServer/MastodonPickServerViewController.swift:200": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/Scene/Onboarding/PickServer/MastodonPickServerViewController.swift:200` MastodonPickServerViewController.viewDidAppear: does I/O (viewModel.viewDidAppear.send) — `override func viewDidAppear(_ animated: Bool) {`"
+  },
+  "Important code no test reaches (N function)|Mastodon/Scene/Onboarding/PickServer/MastodonPickServerViewController.swift:232": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/Scene/Onboarding/PickServer/MastodonPickServerViewController.swift:232` MastodonPickServerViewController.tableView: does I/O (viewModel.selectedServer.send) — `func tableView(_ tableView: UITableView, willSelectRowAt indexPath: IndexPath) -> IndexPath? {`"
+  },
+  "Important code no test reaches (N function)|Mastodon/Scene/Onboarding/PickServer/MastodonPickServerViewController.swift:246": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/Scene/Onboarding/PickServer/MastodonPickServerViewController.swift:246` MastodonPickServerViewController.tableView: does I/O (viewModel.selectedServer.send) — `func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {`"
+  },
+  "Important code no test reaches (N function)|Mastodon/Scene/Onboarding/PickServer/MastodonPickServerViewController.swift:261": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/Scene/Onboarding/PickServer/MastodonPickServerViewController.swift:261` MastodonPickServerViewController.tableView: does I/O (viewModel.selectedServer.send) — `func tableView(_ tableView: UITableView, didDeselectRowAt indexPath: IndexPath) {`"
+  },
+  "Important code no test reaches (N function)|Mastodon/Scene/Onboarding/PickServer/MastodonPickServerViewController.swift:318": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/Scene/Onboarding/PickServer/MastodonPickServerViewController.swift:318` MastodonPickServerViewController.updateSearchResults: does I/O (viewModel.searchText.send) — `func updateSearchResults(for searchController: UISearchController) {`"
+  },
+  "Important code no test reaches (N function)|Mastodon/Scene/Onboarding/PickServer/MastodonPickServerViewModel+Diffable.swift:14": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/Scene/Onboarding/PickServer/MastodonPickServerViewModel+Diffable.swift:14` MastodonPickServerViewModel.setupDiffableDataSource: does I/O (self.selectedServer.send) — `func setupDiffableDataSource(`"
+  },
+  "Important code no test reaches (N function)|Mastodon/Scene/Onboarding/PickServer/MastodonPickServerViewModel.swift:87": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/Scene/Onboarding/PickServer/MastodonPickServerViewModel.swift:87` MastodonPickServerViewModel.configure: does I/O (self.unindexedServers.send, self?.scrollToTop.send) — `private func configure() {`"
+  },
+  "Important code no test reaches (N function)|Mastodon/Scene/Onboarding/PickServer/View/PickServerServerSectionTableHeaderView.swift:114": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/Scene/Onboarding/PickServer/View/PickServerServerSectionTableHeaderView.swift:114` PickServerServerSectionTableHeaderView.accessibilityElement, called from 18 files — `override func accessibilityElement(at index: Int) -> Any? {`"
+  },
+  "Important code no test reaches (N function)|Mastodon/Scene/Onboarding/Register/MastodonRegisterViewController.swift:123": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/Scene/Onboarding/Register/MastodonRegisterViewController.swift:123` MastodonRegisterViewController.viewDidAppear: does I/O (viewModel.viewDidAppear.send) — `override func viewDidAppear(_ animated: Bool) {`"
+  },
+  "Important code no test reaches (N function)|Mastodon/Scene/Onboarding/Share/OnboardingViewControllerAppearance.swift:46": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/Scene/Onboarding/Share/OnboardingViewControllerAppearance.swift:46` OnboardingViewControllerAppearance.setupOnboardingAppearance, called from 8 files — `func setupOnboardingAppearance() {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonCore/AuthenticationServiceProvider.swift:110": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonCore/AuthenticationServiceProvider.swift:110` AuthenticationServiceProvider.updating: does I/O (instanceConfigurationUpdates.send) — `@MainActor`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonCore/AuthenticationServiceProvider.swift:225": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonCore/AuthenticationServiceProvider.swift:225` AuthenticationServiceProvider.prepareForUse: does I/O (currentActiveUser.send) — `@MainActor`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonCore/AuthenticationServiceProvider.swift:88": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonCore/AuthenticationServiceProvider.swift:88` AuthenticationServiceProvider.updating: does I/O (instanceConfigurationUpdates.send) — `@MainActor`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonCore/AuthenticationServiceProvider.swift:99": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonCore/AuthenticationServiceProvider.swift:99` AuthenticationServiceProvider.updating: does I/O (instanceConfigurationUpdates.send) — `@MainActor`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonCore/Service/MastodonAttachment/MastodonAttachmentService+UploadState.swift:118": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonCore/Service/MastodonAttachment/MastodonAttachmentService+UploadState.swift:118` UploadState.Processing.didEnter: does I/O (service.error.send) — `public override func didEnter(from previousState: GKState?) {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonCore/Service/MastodonAttachment/MastodonAttachmentService+UploadState.swift:21": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonCore/Service/MastodonAttachment/MastodonAttachmentService+UploadState.swift:21` MastodonAttachmentService.UploadState.didEnter: does I/O (service?.uploadStateMachineSubject.send) — `@MainActor`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonCore/Service/MastodonAttachment/MastodonAttachmentService+UploadState.swift:55": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonCore/Service/MastodonAttachment/MastodonAttachmentService+UploadState.swift:55` UploadState.Uploading.didEnter: does I/O (service.error.send) — `@MainActor`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonCore/Service/Notification/NotificationService.swift:209": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonCore/Service/Notification/NotificationService.swift:209` NotificationService.clearNotificationCount: does I/O (applicationIconBadgeNeedsUpdate.send), called from 2 files — `public func clearNotificationCount(for authBox: Mast… {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonCore/Service/PhotoLibraryService.swift:101": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonCore/Service/PhotoLibraryService.swift:101` PhotoLibraryService.fetchImageData: does I/O (AF.request) — `static func fetchImageData(url: URL) -> AnyPublisher<Data, Error> {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonCore/Service/PublisherService/PublisherService.swift:70": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonCore/Service/PublisherService/PublisherService.swift:70` PublisherService.enqueue: does I/O (self.statusPublishResult.send) — `@MainActor`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonExtension/NSLayoutConstraint.swift:11": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonExtension/NSLayoutConstraint.swift:11` NSLayoutConstraint.priority, called from 9 files — `public func priority(_ priority: UILayoutPriority) -> Self {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonExtension/UIView.swift:27": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonExtension/UIView.swift:27` UIView.pinToParent, called from 21 files — `@discardableResult`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastdoon+API+Lists.swift:103": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastdoon+API+Lists.swift:103` Lists.addAccountToList: does I/O (session.dataTaskPublisher) — `public static func addAccountToList(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastdoon+API+Lists.swift:121": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastdoon+API+Lists.swift:121` Lists.deleteAccountFromList: does I/O (session.dataTaskPublisher) — `public static func deleteAccountFromList(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastdoon+API+Lists.swift:13": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastdoon+API+Lists.swift:13` Lists.listAccountsEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func listAccountsEndpointURL(domain: String, id: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastdoon+API+Lists.swift:17": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastdoon+API+Lists.swift:17` Lists.getLists: does I/O (session.dataTaskPublisher), called from 2 files — `public static func getLists(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastdoon+API+Lists.swift:36": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastdoon+API+Lists.swift:36` Lists.getList: does I/O (session.dataTaskPublisher) — `public static func getList(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastdoon+API+Lists.swift:5": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastdoon+API+Lists.swift:5` Lists.listsEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func listsEndpointURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastdoon+API+Lists.swift:56": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastdoon+API+Lists.swift:56` Lists.createList: does I/O (session.dataTaskPublisher) — `public static func createList(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastdoon+API+Lists.swift:9": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastdoon+API+Lists.swift:9` Lists.listsEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func listsEndpointURL(domain: String, id: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Credentials.swift:293": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Credentials.swift:293` Account.getLists: does I/O (session.dataTaskPublisher) — `public static func getLists(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Email.swift:11": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Email.swift:11` Account.emailConfirmationsEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func emailConfirmationsEndpointURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Email.swift:22": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Email.swift:22` Account.resendConfirmationEmail: does I/O (session.data) — `public static func resendConfirmationEmail(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+FollowRequest.swift:14": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+FollowRequest.swift:14` Account.pendingFollowRequestEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func pendingFollowRequestEndpointURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+FollowRequest.swift:46": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+FollowRequest.swift:46` Account.pendingFollowRequest: does I/O (session.dataTaskPublisher) — `public static func pendingFollowRequest(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+FollowedTags.swift:13": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+FollowedTags.swift:13` Account.followedTagsEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func followedTagsEndpointURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+FollowedTags.swift:31": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+FollowedTags.swift:31` Account.followedTags: does I/O (session.dataTaskPublisher) — `public static func followedTags(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Following.swift:13": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Following.swift:13` Account.followingEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func followingEndpointURL(domain: String, userID: Mastodon.Entity.Account.ID) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Following.swift:41": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Following.swift:41` Account.following: does I/O (session.dataTaskPublisher) — `public static func following(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:119": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:119` Account.follow: does I/O (session.dataTaskPublisher) — `public static func follow(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:154": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:154` Account.unfollowEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func unfollowEndpointURL(domain: String, accountID: Mastodon.Entity.Account.ID) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:175": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:175` Account.unfollow: does I/O (session.dataTaskPublisher), called from 2 files — `public static func unfollow(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:244": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:244` Account.setPersonalNote: does I/O (session.dataTaskPublisher) — `public static func setPersonalNote(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:567": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:567` Account.mutesEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func mutesEndpointURL(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:590": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:590` Account.mutes: does I/O (session.dataTaskPublisher) — `public static func mutes(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:98": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account+Friendship.swift:98` Account.followEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func followEndpointURL(domain: String, accountID: Mastodon.Entity.Account.ID) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account.swift:111": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account.swift:111` Account.accountStatusesEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func accountStatusesEndpointURL(domain: String, accountID: Mastodon.Entity.Account.ID) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account.swift:129": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account.swift:129` Account.statuses: does I/O (session.dataTaskPublisher) — `public static func statuses(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account.swift:198": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account.swift:198` Account.accountsLookupEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func accountsLookupEndpointURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account.swift:227": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account.swift:227` Account.lookupAccount: does I/O (session.dataTaskPublisher) — `public static func lookupAccount(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account.swift:70": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Account.swift:70` Account.accountsInfo: does I/O (Mastodon.API.endpointURL, session.dataTaskPublisher) — `public static func accountsInfo(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+AsyncRefresh.swift:15": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+AsyncRefresh.swift:15` AsyncRefresh.asyncRefreshUpdateEndpointURL: does I/O (Mastodon.API.endpointV1BetaURL) — `static func asyncRefreshUpdateEndpointURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+AsyncRefresh.swift:34": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+AsyncRefresh.swift:34` AsyncRefresh.updatedAsyncRefresh: does I/O (session.dataTaskPublisher) — `public static func updatedAsyncRefresh(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Bookmarks.swift:13": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Bookmarks.swift:13` Bookmarks.bookmarksStatusesEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func bookmarksStatusesEndpointURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Bookmarks.swift:32": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Bookmarks.swift:32` Bookmarks.bookmarkedStatus: does I/O (session.dataTaskPublisher) — `public static func bookmarkedStatus(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+CustomEmojis.swift:13": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+CustomEmojis.swift:13` CustomEmojis.customEmojisEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func customEmojisEndpointURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+CustomEmojis.swift:31": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+CustomEmojis.swift:31` CustomEmojis.customEmojis: does I/O (session.dataTaskPublisher) — `public static func customEmojis(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Disputes.swift:6": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Disputes.swift:6` API.disputesEndpoint: does I/O (Mastodon.API.webURL) — `public static func disputesEndpoint(domain: String, strikeId: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+DomainBlock.swift:12": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+DomainBlock.swift:12` DomainBlock.domainBlockEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func domainBlockEndpointURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+DomainBlock.swift:26": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+DomainBlock.swift:26` DomainBlock.getDomainblocks: does I/O (session.dataTaskPublisher) — `public static func getDomainblocks(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+DomainBlock.swift:53": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+DomainBlock.swift:53` DomainBlock.blockDomain: does I/O (session.dataTaskPublisher) — `public static func blockDomain(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+DomainBlock.swift:84": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+DomainBlock.swift:84` DomainBlock.unblockDomain: does I/O (session.dataTaskPublisher) — `public static func unblockDomain(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Donation.swift:42": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Donation.swift:42` API.getDonationCampaign: does I/O (session.data) — `public static func getDonationCampaign(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Favorites.swift:13": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Favorites.swift:13` Favorites.favoritesStatusesEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func favoritesStatusesEndpointURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Favorites.swift:147": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Favorites.swift:147` Favorites.favoriteByUserListsEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func favoriteByUserListsEndpointURL(domain: String, statusID: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Favorites.swift:168": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Favorites.swift:168` Favorites.favoriteBy: does I/O (session.dataTaskPublisher) — `public static func favoriteBy(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Favorites.swift:32": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Favorites.swift:32` Favorites.favoritedStatus: does I/O (session.dataTaskPublisher) — `public static func favoritedStatus(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Instance.swift:81": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Instance.swift:81` Instance.extendedDescriptionEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func extendedDescriptionEndpointURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Instance.swift:91": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Instance.swift:91` Instance.extendedDescription: does I/O (session.dataTaskPublisher) — `public static func extendedDescription(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Media.swift:13": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Media.swift:13` Media.uploadMediaEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func uploadMediaEndpointURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Media.swift:138": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Media.swift:138` Media.getMediaEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func getMediaEndpointURL(domain: String, attachmentID: Mastodon.Entity.Attachment.ID) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Media.swift:158": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Media.swift:158` Media.getMedia: does I/O (session.dataTaskPublisher) — `public static func getMedia(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Media.swift:183": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Media.swift:183` Media.updateMediaEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func updateMediaEndpointURL(domain: String, attachmentID: Mastodon.Entity.Attachment.ID) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Media.swift:203": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Media.swift:203` Media.updateMedia: does I/O (session.dataTaskPublisher) — `public static func updateMedia(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Media.swift:33": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Media.swift:33` Media.uploadMedia: does I/O (session.dataTaskPublisher) — `public static func uploadMedia(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Notifications.swift:381": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Notifications.swift:381` Notifications.updateNotificationPolicy: does I/O (session.data) — `public static func updateNotificationPolicy(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Notifications.swift:432": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Notifications.swift:432` Notifications.getNotificationRequests: does I/O (session.data) — `public static func getNotificationRequests(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Notifications.swift:45": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Notifications.swift:45` Notifications.getGroupedNotifications: does I/O (session.data) — `public static func getGroupedNotifications(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Notifications.swift:453": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Notifications.swift:453` Notifications.acceptNotificationRequest: does I/O (session.data) — `public static func acceptNotificationRequest(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Notifications.swift:473": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Notifications.swift:473` Notifications.dismissNotificationRequest: does I/O (session.data) — `public static func dismissNotificationRequest(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Onboarding.swift:115": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Onboarding.swift:115` Onboarding.defaultServers: does I/O (session.dataTaskPublisher) — `public static func defaultServers(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+PaginationLinks.swift:102": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+PaginationLinks.swift:102` Timeline.groupedNotifications: does I/O (session.dataTaskPublisher) — `public static func groupedNotifications(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+PaginationLinks.swift:12": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+PaginationLinks.swift:12` Timeline.statuses: does I/O (session.dataTaskPublisher) — `public static func statuses(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+PaginationLinks.swift:120": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+PaginationLinks.swift:120` Timeline.notificationRequests: does I/O (session.dataTaskPublisher) — `public static func notificationRequests(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+PaginationLinks.swift:138": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+PaginationLinks.swift:138` Timeline.ungroupedNotifications: does I/O (session.dataTaskPublisher) — `public static func ungroupedNotifications(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+PaginationLinks.swift:66": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+PaginationLinks.swift:66` Timeline.links: does I/O (session.dataTaskPublisher) — `public static func links(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+PaginationLinks.swift:84": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+PaginationLinks.swift:84` Timeline.suggestionAccounts: does I/O (session.dataTaskPublisher) — `public static func suggestionAccounts(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Polls.swift:18": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Polls.swift:18` Polls.votePollEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func votePollEndpointURL(domain: String, pollID: Mastodon.Entity.Poll.ID) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Polls.swift:76": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Polls.swift:76` Polls.vote: does I/O (session.dataTaskPublisher) — `public static func vote(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Push.swift:98": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Push.swift:98` Subscriptions.updateSubscription: does I/O (session.dataTaskPublisher) — `public static func updateSubscription(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Reblog.swift:13": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Reblog.swift:13` Reblog.rebloggedByEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func rebloggedByEndpointURL(domain: String, statusID: Mastodon.Entity.Status.ID) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Reblog.swift:34": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Reblog.swift:34` Reblog.rebloggedBy: does I/O (session.dataTaskPublisher) — `public static func rebloggedBy(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Statuses+FavoriteBy.swift:13": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Statuses+FavoriteBy.swift:13` Statuses.favoriteByEndpointURL: does I/O (Mastodon.API.endpointURL) — `private static func favoriteByEndpointURL(domain: String, statusID: Mastodon.Entity.Status.ID) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Statuses+FavoriteBy.swift:36": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Statuses+FavoriteBy.swift:36` Statuses.favoritedBy: does I/O (session.dataTaskPublisher) — `public static func favoritedBy(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Statuses+RebloggedBy.swift:13": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Statuses+RebloggedBy.swift:13` Statuses.rebloggedByEndpointURL: does I/O (Mastodon.API.endpointURL) — `private static func rebloggedByEndpointURL(domain: String, statusID: Mastodon.Entity.Status.ID) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Statuses+RebloggedBy.swift:36": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Statuses+RebloggedBy.swift:36` Statuses.boostedBy: does I/O (session.dataTaskPublisher) — `public static func boostedBy(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Statuses+StatusHistory.swift:56": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Statuses+StatusHistory.swift:56` Statuses.editHistory: does I/O (session.dataTaskPublisher), called from 2 files — `public static func editHistory(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Statuses+StatusHistory.swift:7": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Statuses+StatusHistory.swift:7` Statuses.historyEndpointURL: does I/O (Mastodon.API.endpointURL) — `private static func historyEndpointURL(domain: String, statusID: Mastodon.Entity.Status.ID) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Statuses.swift:293": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Statuses.swift:293` Statuses.updateQuotePolicy: does I/O (session.dataTaskPublisher) — `public static func updateQuotePolicy(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Statuses.swift:345": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Statuses.swift:345` Statuses.statusContextEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func statusContextEndpointURL(domain: String, statusID: Mastodon.Entity.Status.ID) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Statuses.swift:365": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Statuses.swift:365` Statuses.statusContext: does I/O (session.dataTaskPublisher) — `public static func statusContext(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Suggestions.swift:12": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Suggestions.swift:12` Suggestions.suggestionsURL: does I/O (Mastodon.API.endpointURL) — `static func suggestionsURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Suggestions.swift:30": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Suggestions.swift:30` Suggestions.accounts: does I/O (session.dataTaskPublisher) — `public static func accounts(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Tags.swift:100": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Tags.swift:100` Tags.unfollowTag: does I/O (session.dataTaskPublisher) — `public static func unfollowTag(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Tags.swift:12": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Tags.swift:12` Tags.tagsEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func tagsEndpointURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Tags.swift:31": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Tags.swift:31` Tags.getTagInformation: does I/O (session.dataTaskPublisher) — `public static func getTagInformation(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Tags.swift:65": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Tags.swift:65` Tags.followTag: does I/O (session.dataTaskPublisher) — `public static func followTag(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Timeline.swift:13": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Timeline.swift:13` Timeline.publicTimelineEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func publicTimelineEndpointURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Timeline.swift:152": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Timeline.swift:152` Timeline.linkMentions: does I/O (session.data), called from 2 files — `public static func linkMentions(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Timeline.swift:27": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Timeline.swift:27` Timeline.linkMentionsTimelineEndpointURL: does I/O (Mastodon.API.endpointURL) — `static func linkMentionsTimelineEndpointURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Timeline.swift:45": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Timeline.swift:45` Timeline.`public`: does I/O (session.dataTaskPublisher) — ``public static func `public`(``"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Trends.swift:136": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Trends.swift:136` Trends.trendLinksURL: does I/O (Mastodon.API.endpointURL) — `static func trendLinksURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Trends.swift:156": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Trends.swift:156` Trends.links: does I/O (session.dataTaskPublisher) — `public static func links(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Trends.swift:70": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Trends.swift:70` Trends.trendStatusesURL: does I/O (Mastodon.API.endpointURL) — `static func trendStatusesURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Trends.swift:90": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+Trends.swift:90` Trends.statuses: does I/O (session.dataTaskPublisher) — `public static func statuses(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+V2+Media.swift:12": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+V2+Media.swift:12` Media.uploadMediaEndpointURL: does I/O (Mastodon.API.endpointV2URL) — `static func uploadMediaEndpointURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+V2+Media.swift:32": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+V2+Media.swift:32` Media.uploadMedia: does I/O (session.dataTaskPublisher) — `public static func uploadMedia(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+V2+Suggestions.swift:12": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+V2+Suggestions.swift:12` Suggestions.suggestionsURL: does I/O (Mastodon.API.endpointV2URL) — `static func suggestionsURL(domain: String) -> URL {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+V2+Suggestions.swift:23": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/API/Mastodon+API+V2+Suggestions.swift:23` Suggestions.accounts: does I/O (session.dataTaskPublisher) — `public static func accounts(`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonUI/Scene/ComposeContent/AutoComplete/AutoCompleteViewModel+State.swift:91": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonUI/Scene/ComposeContent/AutoComplete/AutoCompleteViewModel+State.swift:91` State.Loading.fetchLocalEmoji: does I/O (viewModel.autoCompleteItems.send) — `private func fetchLocalEmoji(searchText: String) async {`"
+  },
+  "Important code no test reaches (N function)|MastodonSDK/Sources/MastodonUI/View/ImageView/AvatarImageView.swift:96": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonUI/View/ImageView/AvatarImageView.swift:96` AvatarImageView.setImage: does I/O (AF.request), called from 3 files — `public func setImage(`"
+  },
+  "Important code no test reaches (N function)|NotificationService/NotificationService.swift:18": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`NotificationService/NotificationService.swift:18` NotificationService.didReceive: does I/O (ImageDownloader.default.download) — `override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {`"
+  },
+  "Important code no test reaches (N function)|`Mastodon/In Progress New Layout and Datamodel/Common Components/Views/MetaTextInputField.swift:N` AutoCompleteSuggestionViewModel.foundPossibleHashtag: does I/O (autoCompleteViewModel?.inputText.send": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/In Progress New Layout and Datamodel/Common Components/Views/MetaTextInputField.swift:129` AutoCompleteSuggestionViewModel.foundPossibleHashtag: does I/O (autoCompleteViewModel?.inputText.send)"
+  },
+  "Important code no test reaches (N function)|`Mastodon/In Progress New Layout and Datamodel/Common Components/Views/MetaTextInputField.swift:N` MetaTextInputFieldViewModel.setupAutoComplete: does I/O (autoCompleteViewModel?.inputText.send), call": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/In Progress New Layout and Datamodel/Common Components/Views/MetaTextInputField.swift:249` MetaTextInputFieldViewModel.setupAutoComplete: does I/O (autoCompleteViewModel?.inputText.send), called from 2 files"
+  },
+  "Important code no test reaches (N function)|`Mastodon/In Progress New Layout and Datamodel/Common Components/Views/Settings/Privacy and Safety/PrivacySafetyViewModel.swift:N` PrivacySafetyViewModel.dismiss: does I/O (onDismiss.send), called fro": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/In Progress New Layout and Datamodel/Common Components/Views/Settings/Privacy and Safety/PrivacySafetyViewModel.swift:206` PrivacySafetyViewModel.dismiss: does I/O (onDismiss.send), called from 15 files"
+  },
+  "Important code no test reaches (N function)|`Mastodon/Supporting Files/AppDelegate.swift:N` AppDelegate.application: does I/O (NotificationService.shared.registrationStatus.send)": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/Supporting Files/AppDelegate.swift:67` AppDelegate.application: does I/O (NotificationService.shared.registrationStatus.send)"
+  },
+  "Important code no test reaches (N function)|`Mastodon/Supporting Files/AppDelegate.swift:N` AppDelegate.userNotificationCenter: does I/O (NotificationService.shared.applicationIconBadgeNeedsUpdate.send)": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/Supporting Files/AppDelegate.swift:81` AppDelegate.userNotificationCenter: does I/O (NotificationService.shared.applicationIconBadgeNeedsUpdate.send)"
+  },
+  "Important code no test reaches (N function)|`Mastodon/Supporting Files/AppDelegate.swift:N` AppDelegate.userNotificationCenter: does I/O (NotificationService.shared.requestRevealNotificationPublisher.send)": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/Supporting Files/AppDelegate.swift:117` AppDelegate.userNotificationCenter: does I/O (NotificationService.shared.requestRevealNotificationPublisher.send)"
+  },
+  "Important code no test reaches (N function)|`Mastodon/Supporting Files/SceneDelegate.swift:N` SceneDelegate.sceneDidBecomeActive: does I/O (AuthenticationServiceProvider.shared.updateActiveUserAccountPublisher.send, NotificationService.shared.a": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/Supporting Files/SceneDelegate.swift:102` SceneDelegate.sceneDidBecomeActive: does I/O (AuthenticationServiceProvider.shared.updateActiveUserAccountPublisher.send, NotificationService.shared.applicationIconBadgeNeedsUpdate.send)"
+  },
+  "Possible retain cycles: closures kept by self that capture self strongly|Mastodon/Scene/Onboarding/Register/MastodonRegisterViewModel+Diffable.swift:17": {
+   "check": "Possible retain cycles: closures kept by self that capture self strongly",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/Scene/Onboarding/Register/MastodonRegisterViewModel+Diffable.swift:17` .sink { [weak self, weak cell] image in"
+  },
+  "Possible retain cycles: closures kept by self that capture self strongly|Mastodon/Scene/Onboarding/Share/AuthenticationViewModel.swift:355": {
+   "check": "Possible retain cycles: closures kept by self that capture self strongly",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/Scene/Onboarding/Share/AuthenticationViewModel.swift:355` self.authorizeURL = {"
+  },
+  "Possible retain cycles: closures kept by self that capture self strongly|MastodonSDK/Sources/MastodonCore/FetchedResultsController/SettingFetchedResultController.swift:24": {
+   "check": "Possible retain cycles: closures kept by self that capture self strongly",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonCore/FetchedResultsController/SettingFetchedResultController.swift:24` self.fetchedResultsController = {"
+  },
+  "Possible retain cycles: closures kept by self that capture self strongly|MastodonSDK/Sources/MastodonSDK/MastodonPoll.swift:65": {
+   "check": "Possible retain cycles: closures kept by self that capture self strongly",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/MastodonPoll.swift:65` self.isSelected = {"
+  },
+  "Possible retain cycles: closures kept by self that capture self strongly|MastodonSDK/Sources/MastodonSDK/MastodonPoll.swift:70": {
+   "check": "Possible retain cycles: closures kept by self that capture self strongly",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/MastodonPoll.swift:70` self.voted = {"
+  },
+  "Possible retain cycles: closures kept by self that capture self strongly|MastodonSDK/Sources/MastodonSDK/Response/Mastodon+Response+Content.swift:146": {
+   "check": "Possible retain cycles: closures kept by self that capture self strongly",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/Response/Mastodon+Response+Content.swift:146` self.maxID = {"
+  },
+  "Possible retain cycles: closures kept by self that capture self strongly|MastodonSDK/Sources/MastodonSDK/Response/Mastodon+Response+Content.swift:155": {
+   "check": "Possible retain cycles: closures kept by self that capture self strongly",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/Response/Mastodon+Response+Content.swift:155` self.minID = {"
+  },
+  "Possible retain cycles: closures kept by self that capture self strongly|MastodonSDK/Sources/MastodonSDK/Response/Mastodon+Response+Content.swift:164": {
+   "check": "Possible retain cycles: closures kept by self that capture self strongly",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/Response/Mastodon+Response+Content.swift:164` self.offset = {"
+  },
+  "Possible retain cycles: closures kept by self that capture self strongly|MastodonSDK/Sources/MastodonSDK/Response/Mastodon+Response+Content.swift:172": {
+   "check": "Possible retain cycles: closures kept by self that capture self strongly",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/Response/Mastodon+Response+Content.swift:172` self.linkIDs = {"
+  },
+  "Possible retain cycles: closures kept by self that capture self strongly|MastodonSDK/Sources/MastodonSDK/Response/Mastodon+Response+Content.swift:36": {
+   "check": "Possible retain cycles: closures kept by self that capture self strongly",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/Response/Mastodon+Response+Content.swift:36` self.date = {"
+  },
+  "Possible retain cycles: closures kept by self that capture self strongly|MastodonSDK/Sources/MastodonSDK/Response/Mastodon+Response+Content.swift:42": {
+   "check": "Possible retain cycles: closures kept by self that capture self strongly",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/Response/Mastodon+Response+Content.swift:42` self.link = {"
+  },
+  "Possible retain cycles: closures kept by self that capture self strongly|MastodonSDK/Sources/MastodonSDK/Response/Mastodon+Response+Content.swift:47": {
+   "check": "Possible retain cycles: closures kept by self that capture self strongly",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/Response/Mastodon+Response+Content.swift:47` self.asyncRefreshAvaliable = {"
+  },
+  "Possible retain cycles: closures kept by self that capture self strongly|MastodonSDK/Sources/MastodonSDK/Response/Mastodon+Response+Content.swift:52": {
+   "check": "Possible retain cycles: closures kept by self that capture self strongly",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonSDK/Response/Mastodon+Response+Content.swift:52` self.responseTime = {"
+  },
+  "Possible retain cycles: closures kept by self that capture self strongly|MastodonSDK/Sources/MastodonUI/Service/KeyboardResponderService.swift:25": {
+   "check": "Possible retain cycles: closures kept by self that capture self strongly",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonUI/Service/KeyboardResponderService.swift:25` .sink { notification in"
+  },
+  "Possible retain cycles: closures kept by self that capture self strongly|MastodonSDK/Sources/MastodonUI/Service/KeyboardResponderService.swift:32": {
+   "check": "Possible retain cycles: closures kept by self that capture self strongly",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonUI/Service/KeyboardResponderService.swift:32` .sink { notification in"
+  },
+  "Possible retain cycles: closures kept by self that capture self strongly|MastodonSDK/Sources/MastodonUI/Service/KeyboardResponderService.swift:39": {
+   "check": "Possible retain cycles: closures kept by self that capture self strongly",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonUI/Service/KeyboardResponderService.swift:39` .sink { notification in"
+  },
+  "Possible retain cycles: closures kept by self that capture self strongly|MastodonSDK/Sources/MastodonUI/Service/KeyboardResponderService.swift:44": {
+   "check": "Possible retain cycles: closures kept by self that capture self strongly",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonUI/Service/KeyboardResponderService.swift:44` .sink { notification in"
+  },
+  "Possible retain cycles: closures kept by self that capture self strongly|`Mastodon/In Progress New Layout and Datamodel/Profile/ProfileViewModel.swift:N` self.contentDisplayStatus = {": {
+   "check": "Possible retain cycles: closures kept by self that capture self strongly",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Mastodon/In Progress New Layout and Datamodel/Profile/ProfileViewModel.swift:134` self.contentDisplayStatus = {"
+  },
+  "Queries or requests inside loops (N) in N place|MastodonSDK/Sources/MastodonCore/Service/SettingService.swift:43": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`MastodonSDK/Sources/MastodonCore/Service/SettingService.swift:43`: top-level code in SettingService.swift calls CoreData.createOrMergeSetting() inside a loop (line 43), and that reaches context.fetch() — `_ = APIService.CoreData.createOrMergeSetting(`"
+  },
+  "Required-reason API without a privacy manifest|`Mastodon/In Progress New Layout and Datamodel/Common Components/Common Actions on Statuses and Accounts/MastodonMenuAction.swift:N` UserDefaults API without a privacy manifest: isMyCollection && User": {
+   "check": "Required-reason API without a privacy manifest",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`Mastodon/In Progress New Layout and Datamodel/Common Components/Common Actions on Statuses and Accounts/MastodonMenuAction.swift:410` UserDefaults API without a privacy manifest: isMyCollection && UserDefaults.standard.allowCreateCollections && AuthenticationServiceProvider.shar"
+  },
+  "Unused code (N function)|`Mastodon/In Progress New Layout and Datamodel/Common Components/Views/TextViewWithCustomEmoji.swift:N` mapEmojiShortcodeToEmojis": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`Mastodon/In Progress New Layout and Datamodel/Common Components/Views/TextViewWithCustomEmoji.swift:141` mapEmojiShortcodeToEmojis"
+  },
+  "Unused code (N function)|`Mastodon/In Progress New Layout and Datamodel/Common Components/Views/TimelineRowViews/NotificationRowView.swift:N` textComponent": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`Mastodon/In Progress New Layout and Datamodel/Common Components/Views/TimelineRowViews/NotificationRowView.swift:810` textComponent"
+  },
+  "Writes inside loops in N place|Mastodon/Scene/Compose/ComposeViewController.swift:607": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`Mastodon/Scene/Compose/ComposeViewController.swift:607` — `action: #selector(Self.composeKeyCommandHandler(_:)),`"
+  },
+  "Writes inside loops in N place|Mastodon/Scene/Onboarding/Welcome/WelcomeViewController.swift:28": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`Mastodon/Scene/Onboarding/Welcome/WelcomeViewController.swift:28` — `self?.didEnter(authenticationState)`"
+  },
+  "Writes inside loops in N place|MastodonSDK/Sources/MastodonCore/AuthenticationServiceProvider.swift:221": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`MastodonSDK/Sources/MastodonCore/AuthenticationServiceProvider.swift:221` AuthenticationServiceProvider.signOutAllUsers — `try? await cleanUpAfterDeleting(authentication: auth)`"
+  },
+  "Writes inside loops in N place|MastodonSDK/Sources/MastodonCore/AuthenticationServiceProvider.swift:299": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`MastodonSDK/Sources/MastodonCore/AuthenticationServiceProvider.swift:299` AuthenticationServiceProvider.fetchAccountsIfStale — `UserDefaults.shared.setLastSuccessfulAccountFetch(forRawAccessToken: auth…`"
+  },
+  "Writes inside loops in N place|MastodonSDK/Sources/MastodonCore/Service/Notification/NotificationService.swift:337": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`MastodonSDK/Sources/MastodonCore/Service/Notification/NotificationService.swift:337` NotificationService.updatePushNotificationSubscriptions — `try await APIService.shared.subscribeToPushNotifications(`"
+  },
+  "Writes inside loops in N place|MastodonSDK/Sources/MastodonCore/Service/Notification/NotificationService.swift:352": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`MastodonSDK/Sources/MastodonCore/Service/Notification/NotificationService.swift:352` NotificationService.updatePushNotificationSubscriptions — `registrationStatus.send(.errorUpdatingSubscriptions(error, deviceToken: devi…`"
+  },
+  "Writes inside loops in N place|MastodonSDK/Sources/MastodonUI/Scene/ComposeContent/Publisher/MastodonStatusEditPublisher.swift:126": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`MastodonSDK/Sources/MastodonUI/Scene/ComposeContent/Publisher/MastodonStatusEditPublisher.swift:126` MastodonEditStatusPublisher.publish — `_ = try await api.updateMedia(`"
+  },
+  "Writes inside loops in N place|MastodonSDK/Sources/MastodonUI/Scene/ComposeContent/Publisher/MastodonStatusPublisher.swift:129": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`MastodonSDK/Sources/MastodonUI/Scene/ComposeContent/Publisher/MastodonStatusPublisher.swift:129` MastodonStatusPublisher.publish — `_ = try await api.updateMedia(`"
+  },
+  "Writes inside loops in N place|`Mastodon/In Progress New Layout and Datamodel/Common Components/Views/TimelineRowViews/NotificationRowViewModel.swift:N` NotificationRowViewModel.aNyActions": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`Mastodon/In Progress New Layout and Datamodel/Common Components/Views/TimelineRowViews/NotificationRowViewModel.swift:255` NotificationRowViewModel.a11yActions"
+  },
+  "`try!` / `as!` that crash on failure (Swift)|Mastodon/Scene/Onboarding/Login/MastodonLoginViewController.swift:33": {
+   "check": "`try!` / `as!` that crash on failure (Swift)",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`Mastodon/Scene/Onboarding/Login/MastodonLoginViewController.swift:33` view as! MastodonLoginView"
+  },
+  "`try!` / `as!` that crash on failure (Swift)|MastodonSDK/Sources/CoreDataStack/CoreDataStack.swift:114": {
+   "check": "`try!` / `as!` that crash on failure (Swift)",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`MastodonSDK/Sources/CoreDataStack/CoreDataStack.swift:114` try! persistentContainer.persistentStoreCoordinator.destroyPersistentStore(at: oldStoreURL, ofType: NSSQLiteStoreType, options: nil)"
+  },
+  "`try!` / `as!` that crash on failure (Swift)|MastodonSDK/Sources/CoreDataStack/Protocol/Managed.swift:78": {
+   "check": "`try!` / `as!` that crash on failure (Swift)",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`MastodonSDK/Sources/CoreDataStack/Protocol/Managed.swift:78` return try! context.fetch(request)"
+  },
+  "`try!` / `as!` that crash on failure (Swift)|MastodonSDK/Sources/MastodonLocalization/Resources/L10nLookup.swift:316": {
+   "check": "`try!` / `as!` that crash on failure (Swift)",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`MastodonSDK/Sources/MastodonLocalization/Resources/L10nLookup.swift:316` let bracketRegex = try! Regex(\"\\\\[.*?\\\\]\")"
+  },
+  "`try!` / `as!` that crash on failure (Swift)|`Mastodon/In Progress New Layout and Datamodel/GenericMastodonPost and Subclasses/GenericMastodonPost+Subclasses.swift:N` return MastodonBoostPost(id: status.id, metaData: PostMetadata.fromStatus(stat": {
+   "check": "`try!` / `as!` that crash on failure (Swift)",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`Mastodon/In Progress New Layout and Datamodel/GenericMastodonPost and Subclasses/GenericMastodonPost+Subclasses.swift:9` return MastodonBoostPost(id: status.id, metaData: PostMetadata.fromStatus(status, authenticatedDomain: authenticatedDomain), boostedPost: Ge"
+  },
+  "iOS permission used without its usage description|Mastodon/Scene/Compose/ComposeViewController.swift:634": {
+   "check": "iOS permission used without its usage description",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`Mastodon/Scene/Compose/ComposeViewController.swift:634` camera: no NSCameraUsageDescription (guard UIImagePickerController.isSourceTypeAvailable(.camera) else {)"
+  },
+  "iOS permission used without its usage description|MastodonSDK/Sources/MastodonCore/Service/PhotoLibraryService.swift:131": {
+   "check": "iOS permission used without its usage description",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`MastodonSDK/Sources/MastodonCore/Service/PhotoLibraryService.swift:131` photo library: no NSPhotoLibraryUsageDescription (guard PHPhotoLibrary.authorizationStatus(for: .addOnly) != .denied else {)"
+  }
+ }
+}

@@ -1,0 +1,390 @@
+{
+ "repo": "sissbruecker/linkding",
+ "commit": "27b7303baf41bb28babc610ac8eaa486e1ddfab5",
+ "locations": {
+  "Container runs as root|docker/alpine.Dockerfile:100": {
+   "check": "Container runs as root",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`docker/alpine.Dockerfile:100` no USER after linkding — `FROM linkding AS linkding-plus`"
+  },
+  "Container runs as root|docker/default.Dockerfile:95": {
+   "check": "Container runs as root",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`docker/default.Dockerfile:95` no USER after linkding — `FROM linkding AS linkding-plus`"
+  },
+  "Copied logic in N group (~N lines)|bookmarks/services/bookmarks.py:109": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "Share one body between archive_bookmarks, mark_bookmarks_as_read, mark_bookmarks_as_unread, share_bookmarks, unarchive_bookmarks, unshare_bookmarks (identical, ~30 lines): `bookmarks/services/bookmarks.py:94`, `bookmarks/services/bookmarks.py:166`, `bookmarks/services/bookmarks.py:174`, `bookmarks/services/bookmarks.py:182`, `bookmarks/services/bookmarks.py:109`, `bookmarks/services/bookmarks.py:190`"
+  },
+  "Copied logic in N group (~N lines)|bookmarks/services/search_query_parser.py:111": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "Share one body between read_special_keyword, read_tag (identical, ~13 lines): `bookmarks/services/search_query_parser.py:111`, `bookmarks/services/search_query_parser.py:96`"
+  },
+  "Debug mode switched on in code|bookmarks/settings/dev.py:12": {
+   "check": "Debug mode switched on in code",
+   "severity": "Medium",
+   "tier": "hints",
+   "location": "`bookmarks/settings/dev.py:12` DEBUG = True"
+  },
+  "File or program operations inside loops in N place|bookmarks/services/tasks.py:314": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`bookmarks/services/tasks.py:314` _process_html_snapshots_task — `_create_html_snapshot(asset)`"
+  },
+  "Important code no test reaches (N function)|bookmarks/api/routes.py:56": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/api/routes.py:56` BookmarkViewSet.get_queryset: does I/O (User.objects.filter) — `def get_queryset(self):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/api/serializers.py:162": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/api/serializers.py:162` BookmarkSerializer.validate: does I/O (Bookmark.objects.filter) — `def validate(self, attrs):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/context_processors.py:5": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/context_processors.py:5` toasts: does I/O (Toast.objects.filter) — `def toasts(request):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/forms.py:135": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/forms.py:135` TagForm.clean_name: does I/O (Tag.objects.filter) — `def clean_name(self):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/forms.py:169": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/forms.py:169` TagMergeForm.clean_target_tag: does I/O (Tag.objects.get) — `def clean_target_tag(self):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/forms.py:189": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/forms.py:189` TagMergeForm.clean_merge_tags: does I/O (Tag.objects.get) — `def clean_merge_tags(self):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/frontend/api.js:22": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/frontend/api.js:22` Api.getTags: does I/O (fetch) — `getTags(options = { limit: 100, offset: 0 }) {`"
+  },
+  "Important code no test reaches (N function)|bookmarks/models.py:475": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/models.py:475` create_user_profile: does I/O (UserProfile.objects.create) — `def create_user_profile(sender, instance, created, **kwargs):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/services/bundles.py:17": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/services/bundles.py:17` move_bundle: does I/O (BookmarkBundle.objects.bulk_update, BookmarkBundle.objects.filter) — `def move_bundle(bundle_to_move: BookmarkBundle, new_order: int):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/services/bundles.py:31": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/services/bundles.py:31` delete_bundle: does I/O (BookmarkBundle.objects.bulk_update, BookmarkBundle.objects.filter), called from 2 files — `def delete_bundle(bundle: BookmarkBundle):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/signals.py:7": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/signals.py:7` extend_sqlite: does I/O (cursor.execute(\"SELECT …\")) — `def extend_sqlite(connection=None, **kwargs):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/views/access.py:46": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/views/access.py:46` asset_read: does I/O (BookmarkAsset.objects.get) — `def asset_read(request: HttpRequest, asset_id: int | str):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/views/access.py:63": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/views/access.py:63` toast_write: does I/O (Toast.objects.get) — `def toast_write(request: HttpRequest, toast_id: int | str):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/views/access.py:70": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/views/access.py:70` api_token_write: does I/O (ApiToken.objects.get) — `def api_token_write(request: HttpRequest, token_id: int | str):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/views/contexts.py:115": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/views/contexts.py:115` SharedBookmarksContext.get_bookmark_query_set: does I/O (User.objects.filter) — `def get_bookmark_query_set(self, search: BookmarkSearch):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/views/contexts.py:122": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/views/contexts.py:122` SharedBookmarksContext.get_tag_query_set: does I/O (User.objects.filter) — `def get_tag_query_set(self, search: BookmarkSearch):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/views/contexts.py:244": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/views/contexts.py:244` BookmarkListContext.generate_return_url: does I/O (urllib.parse.urlencode) — `def generate_return_url(search: BookmarkSearch, base_url: str, page: int = None):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/views/contexts.py:253": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/views/contexts.py:253` BookmarkListContext.generate_action_url: does I/O (urllib.parse.urlencode) — `def generate_action_url(`"
+  },
+  "Important code no test reaches (N function)|bookmarks/views/contexts.py:530": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/views/contexts.py:530` SharedTagCloudContext.get_selected_tags: does I/O (User.objects.filter) — `def get_selected_tags(self):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/views/settings.py:168": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/views/settings.py:168` integrations: does I/O (FeedToken.objects.get_or_create) — `def integrations(request):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/views/settings.py:278": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/views/settings.py:278` bookmark_export: does I/O (Bookmark.objects.filter) — `def bookmark_export(request: HttpRequest):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/views/tags.py:113": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/views/tags.py:113` tag_merge: does I/O (Bookmark.objects.filter, BookmarkTag.objects.bulk_create) — `def tag_merge(request: HttpRequest):`"
+  },
+  "Important code no test reaches (N function)|bookmarks/views/tags.py:18": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/views/tags.py:18` tags_index: does I/O (Tag.objects.filter) — `def tags_index(request: HttpRequest):`"
+  },
+  "Module-level mutable state (N place)|bookmarks/frontend/components/confirm-dropdown.js:5": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/frontend/components/confirm-dropdown.js:5` let confirmId = 0;"
+  },
+  "Module-level mutable state (N place)|bookmarks/frontend/utils/element.js:32": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/frontend/utils/element.js:32` let isTopFrameVisit = false;"
+  },
+  "Module-level mutable state (N place)|bookmarks/frontend/utils/focus.js:1": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/frontend/utils/focus.js:1` let keyboardActive = false;"
+  },
+  "Module-level mutable state (N place)|bookmarks/frontend/utils/focus.js:61": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/frontend/utils/focus.js:61` let afterPageLoadFocusTarget = [];"
+  },
+  "Module-level mutable state (N place)|bookmarks/frontend/utils/focus.js:62": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/frontend/utils/focus.js:62` let firstPageLoad = true;"
+  },
+  "Module-level mutable state (N place)|bookmarks/static/live-reload.js:3": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/static/live-reload.js:3` let eventSource = null;"
+  },
+  "Module-level mutable state (N place)|bookmarks/static/live-reload.js:4": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/static/live-reload.js:4` let serverId = null;"
+  },
+  "Network calls without a timeout|bookmarks/frontend/api.js:17": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/frontend/api.js:17` return fetch(url)"
+  },
+  "Network calls without a timeout|bookmarks/frontend/components/dev-tool.js:216": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/frontend/components/dev-tool.js:216` await fetch(this.formAction, {"
+  },
+  "Network calls without a timeout|bookmarks/services/favicon_loader.py:76": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/services/favicon_loader.py:76` with requests.get(favicon_url, stream=True) as response:"
+  },
+  "Queries or requests inside loops (N) in N place|bookmarks/forms.py:199": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/forms.py:199` TagMergeForm.clean_merge_tags: TagMergeForm.clean_merge_tags calls Tag.objects.get() inside a loop (line 199) — `tag = Tag.objects.get(name__iexact=tag_name, owner=self.user)`"
+  },
+  "Queries or requests inside loops (N) in N place|bookmarks/frontend/components/dev-tool.js:251": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/frontend/components/dev-tool.js:251` DevTool.render: DevTool.render calls DevTool._renderField() inside a loop (line 251), and that reaches fetch() — `${DevTool.fields.map((field) => this._renderField(field))}`"
+  },
+  "Queries or requests inside loops (N) in N place|bookmarks/models.py:337": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/models.py:337` BookmarkSearch.from_request: BookmarkSearch.from_request calls BookmarkBundle.objects.filter() inside a loop (line 337) — `initial_values[param] = BookmarkBundle.objects.filter(`"
+  },
+  "Queries or requests inside loops (N) in N place|bookmarks/services/bookmarks.py:157": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/services/bookmarks.py:157` untag_bookmarks: untag_bookmarks calls BookmarkToTagRelationShip.objects.filter() inside a loop (line 157)"
+  },
+  "Queries or requests inside loops (N) in N place|bookmarks/services/bookmarks.py:205": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/services/bookmarks.py:205` refresh_bookmarks_metadata: refresh_bookmarks_metadata calls refresh_metadata() inside a loop (line 205), and that reaches Bookmark.objects.get() — `tasks.refresh_metadata(bookmark)`"
+  },
+  "Queries or requests inside loops (N) in N place|bookmarks/services/bookmarks.py:206": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/services/bookmarks.py:206` refresh_bookmarks_metadata: refresh_bookmarks_metadata calls load_preview_image() inside a loop (line 206), and that reaches Bookmark.objects.get() — `tasks.load_preview_image(current_user, bookmark)`"
+  },
+  "Queries or requests inside loops (N) in N place|bookmarks/services/tags.py:14": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/services/tags.py:14` get_or_create_tags: get_or_create_tags calls get_or_create_tag() inside a loop (line 14), and that reaches Tag.objects.filter() — `tags = [get_or_create_tag(tag_name, user) for tag_name in tag_names]`"
+  },
+  "Queries or requests inside loops (N) in N place|bookmarks/services/tasks.py:157": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/services/tasks.py:157` _schedule_bookmarks_without_favicons_task: _schedule_bookmarks_without_favicons_task calls _load_favicon_task() inside a loop (line 157), and that reaches Bookmark.objects.get() — `_load_favicon_task(bookmark.id)`"
+  },
+  "Queries or requests inside loops (N) in N place|bookmarks/services/tasks.py:173": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/services/tasks.py:173` _schedule_refresh_favicons_task: _schedule_refresh_favicons_task calls _load_favicon_task() inside a loop (line 173), and that reaches Bookmark.objects.get() — `_load_favicon_task(bookmark.id)`"
+  },
+  "Queries or requests inside loops (N) in N place|bookmarks/services/tasks.py:216": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/services/tasks.py:216` _schedule_bookmarks_without_previews_task: _schedule_bookmarks_without_previews_task calls _load_preview_image_task() inside a loop (line 216), and that reaches Bookmark.objects.get() — `_load_preview_image_task(bookmark.id)`"
+  },
+  "Queries or requests inside loops (N) in N place|bookmarks/services/tasks.py:313": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/services/tasks.py:313` _process_html_snapshots_task: _process_html_snapshots_task calls _get_next_pending_asset() inside a loop (line 313), and that reaches BookmarkAsset.objects.filter() — `while asset := _get_next_pending_asset():`"
+  },
+  "Raw HTML injected into pages|bookmarks/templatetags/shared.py:126": {
+   "check": "Raw HTML injected into pages",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`bookmarks/templatetags/shared.py:126` return mark_safe(linkified_html)  (no endpoint reaches it)"
+  },
+  "Raw HTML injected into pages|bookmarks/templatetags/shared.py:139": {
+   "check": "Raw HTML injected into pages",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`bookmarks/templatetags/shared.py:139` return mark_safe(  (no endpoint reaches it)"
+  },
+  "Raw HTML injected into pages|bookmarks/widgets.py:83": {
+   "check": "Raw HTML injected into pages",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`bookmarks/widgets.py:83` return mark_safe(html)  (no endpoint reaches it)"
+  },
+  "Request data reaches dangerous calls (N proven flow)|bookmarks/services/assets.py:204": {
+   "check": "Request data reaches dangerous calls (N proven flow)",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`bookmarks/services/assets.py:204` upload_asset: request.POST['upload_asset'] → handle_action → upload_asset(bookmark_id) → upload_asset(bookmark) → open() — `with open(filepath, \"wb\") as f:`"
+  },
+  "Request data reaches dangerous calls (N proven flow)|bookmarks/services/favicon_loader.py:76": {
+   "check": "Request data reaches dangerous calls (N proven flow)",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`bookmarks/services/favicon_loader.py:76` load_favicon: request.POST.get('url') → BookmarkViewSet.singlefile → create_bookmark(bookmark) → load_favicon(bookmark) → _load_favicon_task(bookmark_id) → load_favicon(url) → requests.get() — `with requests.get(favicon_url, stream=True) as response:`"
+  },
+  "Request data reaches dangerous calls (N proven flow)|bookmarks/services/favicon_loader.py:81": {
+   "check": "Request data reaches dangerous calls (N proven flow)",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`bookmarks/services/favicon_loader.py:81` load_favicon: request.POST.get('url') → BookmarkViewSet.singlefile → create_bookmark(bookmark) → load_favicon(bookmark) → _load_favicon_task(bookmark_id) → load_favicon(url) → open() — `with open(favicon_path, \"wb\") as file:`"
+  },
+  "Request data reaches dangerous calls (N proven flow)|bookmarks/services/preview_image_loader.py:78": {
+   "check": "Request data reaches dangerous calls (N proven flow)",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`bookmarks/services/preview_image_loader.py:78` load_preview_image: request.POST.get('url') → BookmarkViewSet.singlefile → create_bookmark(bookmark) → load_preview_image(bookmark) → _load_preview_image_task(bookmark_id) → load_preview_image(url) → open() — `with open(preview_image_path, \"wb\") as file:`"
+  },
+  "Request data reaches dangerous calls (N proven flow)|bookmarks/services/website_loader.py:103": {
+   "check": "Request data reaches dangerous calls (N proven flow)",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`bookmarks/services/website_loader.py:103` load_page: request.POST.get('url') → BookmarkViewSet.singlefile → create_bookmark(bookmark) → load_preview_image(bookmark) → _load_preview_image_task(bookmark_id) → load_preview_image(url) → load_website_metadata(url) → _load_website_metadata_cached(url) → _load_website_metadata(url) → load_page(url) → http_client.get() — `with http_client.get(url, timeout=10, headers=headers, stream=True) as r:`"
+  },
+  "Shell commands built at runtime|bookmarks/services/monolith.py:23": {
+   "check": "Shell commands built at runtime",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`bookmarks/services/monolith.py:23` subprocess.run(command, check=True, shell=True)  (no endpoint reaches it)"
+  },
+  "Signing key written in the code|bookmarks/settings/base.py:25": {
+   "check": "Signing key written in the code",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`bookmarks/settings/base.py:25` SECRET_KEY = \"kgq$h3@!!vbb6*nzfz(dbze=*)zsroqa8gvc0#1gx$3cd8z99^\" — `SECRET_KEY = \"kgq$…\"`"
+  },
+  "Unused code (N function)|bookmarks/queries.py:355": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`bookmarks/queries.py:355` get_user_tags — `def get_user_tags(user: User):`"
+  },
+  "Unused code (N function)|bookmarks/services/http_client.py:233": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`bookmarks/services/http_client.py:233` _GuardedConnectionMixin._new_conn — `def _new_conn(self) -> socket.socket:`"
+  },
+  "Unused code (N function)|bookmarks/services/search_query_parser.py:348": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`bookmarks/services/search_query_parser.py:348` _is_simple_expression — `def _is_simple_expression(expr: SearchExpression) -> bool:`"
+  },
+  "Writes inside loops in N place|bookmarks/services/importer.py:83": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`bookmarks/services/importer.py:83` import_netscape_html — `_import_batch(batch, user, options, tag_cache, result)`"
+  }
+ }
+}

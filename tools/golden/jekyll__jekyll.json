@@ -1,0 +1,252 @@
+{
+ "repo": "jekyll/jekyll",
+ "commit": "97c3bdc822df9d5bea4c269b29a28de5a5e29d70",
+ "locations": {
+  "Credentials in configuration files|docs/_includes/search/script.html:3": {
+   "check": "Credentials in configuration files",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`docs/_includes/search/script.html:3` apiKey = ******** — `apiKey: '50fe…',`"
+  },
+  "Important code no test reaches (N function)|features/support/helpers.rb:104": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`features/support/helpers.rb:104` run_in_shell: does I/O (File.open), called from 2 files — `def run_in_shell(*args)`"
+  },
+  "Important code no test reaches (N function)|lib/jekyll/tags/highlight.rb:58": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`lib/jekyll/tags/highlight.rb:58` Jekyll.Tags.HighlightBlock.parse_options: does I/O (value.delete!) — `def parse_options(input)`"
+  },
+  "Important code no test reaches (N function)|lib/jekyll/utils/platforms.rb:45": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`lib/jekyll/utils/platforms.rb:45` Jekyll.Utils.Platforms.proc_version: does I/O (File.read) — `def proc_version`"
+  },
+  "Plain-HTTP URLs in code|lib/jekyll/commands/serve/live_reload_reactor.rb:93": {
+   "check": "Plain-HTTP URLs in code",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/commands/serve/live_reload_reactor.rb:93` :protocols  => [\"http://livereload.com/protocols/official-7\"],"
+  },
+  "Plain-HTTP URLs in code|lib/jekyll/commands/serve/livereload_assets/livereload.js:552": {
+   "check": "Plain-HTTP URLs in code",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/commands/serve/livereload_assets/livereload.js:552` exports.PROTOCOL_6 = PROTOCOL_6 = 'http://livereload.com/protocols/official-6';"
+  },
+  "Plain-HTTP URLs in code|lib/jekyll/commands/serve/livereload_assets/livereload.js:554": {
+   "check": "Plain-HTTP URLs in code",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/commands/serve/livereload_assets/livereload.js:554` exports.PROTOCOL_7 = PROTOCOL_7 = 'http://livereload.com/protocols/official-7';"
+  },
+  "Third-party scripts without integrity hashes|docs/_includes/search/script.html:1": {
+   "check": "Third-party scripts without integrity hashes",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`docs/_includes/search/script.html:1` <script src=…cdn.jsdelivr.net…> without integrity= — `<script src=\"https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.js\"></script>`"
+  },
+  "Writes inside loops in N place|benchmark/find-filter-vs-where-first-filters.rb:29": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`benchmark/find-filter-vs-where-first-filters.rb:29` — `[:reset, :read, :generate].each { |phase| SITE.send(phase) }`"
+  },
+  "Writes inside loops in N place|lib/jekyll/cleaner.rb:46": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/cleaner.rb:46` Jekyll.Cleaner.existing_files — `Utils.safe_glob(site.in_dest_dir, [\"**\", \"*\"], File::FNM_DOTMATCH).each do |file|`"
+  },
+  "Writes inside loops in N place|lib/jekyll/cleaner.rb:97": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/cleaner.rb:97` Jekyll.Cleaner.keep_dirs — `site.keep_files.flat_map { |file| parent_dirs(site.in_dest_dir(file)) }.to_set`"
+  },
+  "Writes inside loops in N place|lib/jekyll/collection.rb:59": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/collection.rb:59` Jekyll.Collection.read — `full_path = collection_dir(file_path)`"
+  },
+  "Writes inside loops in N place|lib/jekyll/collection.rb:65": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/collection.rb:65` Jekyll.Collection.read — `read_static_file(file_path, full_path)`"
+  },
+  "Writes inside loops in N place|lib/jekyll/collection.rb:97": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/collection.rb:97` Jekyll.Collection.filtered_entries — `entry_filter.filter(entries).reject do |f|`"
+  },
+  "Writes inside loops in N place|lib/jekyll/collection.rb:98": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/collection.rb:98` Jekyll.Collection.filtered_entries — `path = collection_dir(f)`"
+  },
+  "Writes inside loops in N place|lib/jekyll/collection.rb:99": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/collection.rb:99` Jekyll.Collection.filtered_entries — `File.directory?(path) || entry_filter.symlink?(f)`"
+  },
+  "Writes inside loops in N place|lib/jekyll/commands/serve/live_reload_reactor.rb:77": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/commands/serve/live_reload_reactor.rb:77` Jekyll.Commands.Serve.LiveReloadReactor.reload — `@websockets.each { |ws| ws.send(json_message) }`"
+  },
+  "Writes inside loops in N place|lib/jekyll/drops/drop.rb:49": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/drops/drop.rb:49` Jekyll.Drops.Drop.private_delegate_methods — `symbols.each { |symbol| private delegate_method(symbol) }`"
+  },
+  "Writes inside loops in N place|lib/jekyll/drops/drop.rb:57": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/drops/drop.rb:57` Jekyll.Drops.Drop.delegate_methods — `symbols.each { |symbol| delegate_method(symbol) }`"
+  },
+  "Writes inside loops in N place|lib/jekyll/entry_filter.rb:44": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/entry_filter.rb:44` Jekyll.EntryFilter.filter — `next true if symlink?(e)`"
+  },
+  "Writes inside loops in N place|lib/jekyll/filters.rb:512": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/filters.rb:512` Jekyll.Filters.parse_binary_comparison — `condition.send(binary_operator, child_condition)`"
+  },
+  "Writes inside loops in N place|lib/jekyll/frontmatter_defaults.rb:124": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/frontmatter_defaults.rb:124` Jekyll.FrontmatterDefaults.glob_scope — `scope_path = strip_collections_dir(scope_path)`"
+  },
+  "Writes inside loops in N place|lib/jekyll/frontmatter_defaults.rb:202": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/frontmatter_defaults.rb:202` Jekyll.FrontmatterDefaults.matching_sets — `!set.key?(\"scope\") || applies?(set[\"scope\"], path, type)`"
+  },
+  "Writes inside loops in N place|lib/jekyll/frontmatter_defaults.rb:63": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/frontmatter_defaults.rb:63` Jekyll.FrontmatterDefaults.find — `matching_sets(path, type).each do |set|`"
+  },
+  "Writes inside loops in N place|lib/jekyll/frontmatter_defaults.rb:81": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/frontmatter_defaults.rb:81` Jekyll.FrontmatterDefaults.all — `matching_sets(path, type).each do |set|`"
+  },
+  "Writes inside loops in N place|lib/jekyll/plugin_manager.rb:108": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/plugin_manager.rb:108` Jekyll.PluginManager.plugins_path — `Array(site.config[\"plugins_dir\"]).map { |d| File.expand_path(d) }`"
+  },
+  "Writes inside loops in N place|lib/jekyll/profiler.rb:39": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/profiler.rb:39` Jekyll.Profiler.profile_process — `@site.send(method)`"
+  },
+  "Writes inside loops in N place|lib/jekyll/reader.rb:104": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/reader.rb:104` Jekyll.Reader.retrieve_dirs — `dir_path = site.in_source_dir(dir, file)`"
+  },
+  "Writes inside loops in N place|lib/jekyll/reader.rb:184": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/reader.rb:184` Jekyll.Reader.read_included_excludes — `entry_path = site.in_source_dir(entry)`"
+  },
+  "Writes inside loops in N place|lib/jekyll/reader.rb:186": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/reader.rb:186` Jekyll.Reader.read_included_excludes — `next if entry_filter.symlink?(entry_path)`"
+  },
+  "Writes inside loops in N place|lib/jekyll/reader.rb:66": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/reader.rb:66` Jekyll.Reader.read_directories — `file_path = @site.in_source_dir(base, entry)`"
+  },
+  "Writes inside loops in N place|lib/jekyll/readers/data_reader.rb:43": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/readers/data_reader.rb:43` Jekyll.DataReader.read_data_to — `next if @entry_filter.symlink?(path)`"
+  },
+  "Writes inside loops in N place|lib/jekyll/readers/data_reader.rb:49": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/readers/data_reader.rb:49` Jekyll.DataReader.read_data_to — `data[key] = read_data_file(path)`"
+  },
+  "Writes inside loops in N place|lib/jekyll/readers/data_reader.rb:62": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/readers/data_reader.rb:62` Jekyll.DataReader.read_data_file — `CSV.read(path, **csv_config).map { |row| convert_row(row) }`"
+  },
+  "Writes inside loops in N place|lib/jekyll/readers/post_reader.rb:38": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/readers/post_reader.rb:38` Jekyll.PostReader.read_publishable — `read_content(dir, magic_dir, matcher)`"
+  },
+  "Writes inside loops in N place|lib/jekyll/readers/post_reader.rb:53": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/readers/post_reader.rb:53` Jekyll.PostReader.read_content — `@site.reader.get_entries(dir, magic_dir).map do |entry|`"
+  },
+  "Writes inside loops in N place|lib/jekyll/readers/post_reader.rb:56": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/readers/post_reader.rb:56` Jekyll.PostReader.read_content — `path = @site.in_source_dir(File.join(dir, magic_dir, entry))`"
+  },
+  "Writes inside loops in N place|lib/jekyll/renderer.rb:162": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/renderer.rb:162` Jekyll.Renderer.place_in_layouts — `add_regenerator_dependencies(layout)`"
+  },
+  "Writes inside loops in N place|lib/jekyll/site.rb:52": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/site.rb:52` Jekyll.Site.config — `send(:\"#{opt}=\", config[opt])`"
+  },
+  "Writes inside loops in N place|lib/jekyll/site.rb:557": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/site.rb:557` Jekyll.Site.render_docs — `render_regenerated(document, payload)`"
+  },
+  "Writes inside loops in N place|lib/jekyll/site.rb:564": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`lib/jekyll/site.rb:564` Jekyll.Site.render_pages — `render_regenerated(page, payload)`"
+  }
+ }
+}

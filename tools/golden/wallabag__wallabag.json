@@ -1,0 +1,912 @@
+{
+ "repo": "wallabag/wallabag",
+ "commit": "e27604dba09afdebf46ec3cdd3c20fa8c80c8505",
+ "locations": {
+  "Copied logic in N group (~N lines)|migrations/Version20161104073720.php:23": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge Version20161104073720.down, Version20161214094403.down (identical, ~7 lines): `migrations/Version20161104073720.php:23`, `migrations/Version20161214094403.php:23`"
+  },
+  "Copied logic in N group (~N lines)|migrations/Version20240310150000.php:502": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between renameForeignKey, revertRenameForeignKey (89% similar, ~20 lines): `migrations/Version20240310150000.php:502`, `migrations/Version20240310150000.php:523`"
+  },
+  "Copied logic in N group (~N lines)|src/Controller/AbstractController.php:30": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge AbstractController.getUser, AnnotationController.getUser, WallabagRestController.getUser (identical, ~14 lines): `src/Controller/AbstractController.php:30`, `src/Controller/AnnotationController.php:146`, `src/Controller/Api/WallabagRestController.php:116`"
+  },
+  "Copied logic in N group (~N lines)|src/Controller/Import/BrowserController.php:25": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge BrowserController.indexAction, HtmlController.indexAction, WallabagController.indexAction (93% similar, ~105 lines): `src/Controller/Import/BrowserController.php:25`, `src/Controller/Import/HtmlController.php:25`, `src/Controller/Import/WallabagController.php:29`"
+  },
+  "Copied logic in N group (~N lines)|src/Controller/Import/ChromeController.php:16": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge ChromeController.__construct, ElcuratorController.__construct, FirefoxController.__construct, PocketHtmlController.__construct, ShaarliController.__construct, WallabagV1Controller.__construct, WallabagV2Controller.__construct (86% similar, ~60 lines): `src/Controller/Import/ChromeController.php:16`, `src/Controller/Import/ElcuratorController.php:16`, `src/Controller/Import/FirefoxController.php:16`, `src/Controller/Import/PocketHtmlController.php:16`, `src/Controller/Import/ShaarliController.php:16`, `src/Controller/Import/WallabagV1Controller.php:16`, `src/Controller/Import/WallabagV2Controller.php:16`"
+  },
+  "Copied logic in N group (~N lines)|src/Controller/Import/DeliciousController.php:18": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge DeliciousController.__construct, InstapaperController.__construct, OmnivoreController.__construct, PinboardController.__construct, ReadabilityController.__construct, UrlListController.__construct (identical, ~35 lines): `src/Controller/Import/DeliciousController.php:18`, `src/Controller/Import/InstapaperController.php:18`, `src/Controller/Import/OmnivoreController.php:18`, `src/Controller/Import/PinboardController.php:18`, `src/Controller/Import/ReadabilityController.php:18`, `src/Controller/Import/UrlListController.php:18`"
+  },
+  "Copied logic in N group (~N lines)|src/Controller/Import/WallabagV1Controller.php:34": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge WallabagV1Controller.getImportService, WallabagV2Controller.getImportService (identical, ~10 lines): `src/Controller/Import/WallabagV1Controller.php:34`, `src/Controller/Import/WallabagV2Controller.php:34`"
+  },
+  "Copied logic in N group (~N lines)|src/Form/Type/ConfigType.php:102": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge ConfigType.configureOptions, FeedType.configureOptions (identical, ~6 lines): `src/Form/Type/ConfigType.php:102`, `src/Form/Type/FeedType.php:26`"
+  },
+  "Copied logic in N group (~N lines)|src/Form/Type/EditEntryType.php:40": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge EditEntryType.configureOptions, NewEntryType.configureOptions (identical, ~6 lines): `src/Form/Type/EditEntryType.php:40`, `src/Form/Type/NewEntryType.php:24`"
+  },
+  "Copied logic in N group (~N lines)|src/Form/Type/IgnoreOriginInstanceRuleType.php:14": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge IgnoreOriginInstanceRuleType.buildForm, IgnoreOriginUserRuleType.buildForm (identical, ~12 lines): `src/Form/Type/IgnoreOriginInstanceRuleType.php:14`, `src/Form/Type/IgnoreOriginUserRuleType.php:14`"
+  },
+  "Copied logic in N group (~N lines)|src/Form/Type/NewTagType.php:33": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge NewTagType.configureOptions, RenameTagType.configureOptions (identical, ~6 lines): `src/Form/Type/NewTagType.php:33`, `src/Form/Type/RenameTagType.php:25`"
+  },
+  "Copied logic in N group (~N lines)|src/Form/Type/SearchEntryType.php:23": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge SearchEntryType.configureOptions, SearchUserType.configureOptions (identical, ~6 lines): `src/Form/Type/SearchEntryType.php:23`, `src/Form/Type/SearchUserType.php:23`"
+  },
+  "Copied logic in N group (~N lines)|src/Import/BrowserImport.php:137": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge BrowserImport.parseEntries, HtmlImport.parseEntries (89% similar, ~34 lines): `src/Import/BrowserImport.php:137`, `src/Import/HtmlImport.php:118`"
+  },
+  "Copied logic in N group (~N lines)|src/Import/BrowserImport.php:186": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge BrowserImport.parseEntriesForProducer, HtmlImport.parseEntriesForProducer (identical, ~18 lines): `src/Import/BrowserImport.php:186`, `src/Import/HtmlImport.php:163`"
+  },
+  "Copied logic in N group (~N lines)|src/Import/ChromeImport.php:24": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge ChromeImport.validateEntry, DeliciousImport.validateEntry, InstapaperImport.validateEntry, OmnivoreImport.validateEntry, PocketCsvImport.validateEntry, PocketHtmlImport.validateEntry, ShaarliImport.validateEntry, WallabagImport.validateEntry (identical, ~56 lines): `src/Import/ChromeImport.php:24`, `src/Import/DeliciousImport.php:71`, `src/Import/InstapaperImport.php:113`, `src/Import/OmnivoreImport.php:71`, `src/Import/PocketCsvImport.php:33`, `src/Import/PocketHtmlImport.php:26`, `src/Import/ShaarliImport.php:24`, `src/Import/WallabagImport.php:78`"
+  },
+  "Copied logic in N group (~N lines)|src/Import/HtmlImport.php:19": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge HtmlImport.import, PocketHtmlImport.import (88% similar, ~41 lines): `src/Import/HtmlImport.php:19`, `src/Import/PocketHtmlImport.php:35`"
+  },
+  "Copied logic in N group (~N lines)|src/Import/PocketHtmlImport.php:77": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge PocketHtmlImport.prepareEntry, ShaarliImport.prepareEntry (identical, ~18 lines): `src/Import/PocketHtmlImport.php:77`, `src/Import/ShaarliImport.php:33`"
+  },
+  "Copied logic in N group (~N lines)|src/Menu/EntryShareMenuBuilder.php:14": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge EntryShareMenuBuilder.__construct, ExportMenuBuilder.__construct (identical, ~6 lines): `src/Menu/EntryShareMenuBuilder.php:14`, `src/Menu/ExportMenuBuilder.php:14`"
+  },
+  "Copied logic in N group (~N lines)|src/Security/Voter/AnnotationVoter.php:15": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge AnnotationVoter.supports, IgnoreOriginInstanceRuleVoter.supports, IgnoreOriginUserRuleVoter.supports, SiteCredentialVoter.supports, TagVoter.supports, TaggingRuleVoter.supports, UserVoter.supports (87% similar, ~72 lines): `src/Security/Voter/AnnotationVoter.php:15`, `src/Security/Voter/IgnoreOriginInstanceRuleVoter.php:20`, `src/Security/Voter/IgnoreOriginUserRuleVoter.php:15`, `src/Security/Voter/SiteCredentialVoter.php:15`, `src/Security/Voter/TagVoter.php:22`, `src/Security/Voter/TaggingRuleVoter.php:15`, `src/Security/Voter/UserVoter.php:20`"
+  },
+  "Copied logic in N group (~N lines)|src/Security/Voter/AnnotationVoter.php:28": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge AnnotationVoter.voteOnAttribute, IgnoreOriginUserRuleVoter.voteOnAttribute, SiteCredentialVoter.voteOnAttribute, TaggingRuleVoter.voteOnAttribute (91% similar, ~45 lines): `src/Security/Voter/AnnotationVoter.php:28`, `src/Security/Voter/IgnoreOriginUserRuleVoter.php:28`, `src/Security/Voter/SiteCredentialVoter.php:28`, `src/Security/Voter/TaggingRuleVoter.php:28`"
+  },
+  "Environment files committed|`.env`": {
+   "check": "Environment files committed",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`.env`"
+  },
+  "File or program operations inside loops in N place|src/Command/CleanDuplicatesCommand.php:99": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Command/CleanDuplicatesCommand.php:99` CleanDuplicatesCommand.cleanDuplicates — `$this->entityManager->remove($entryToDelete);`"
+  },
+  "File or program operations inside loops in N place|src/Controller/Api/EntryRestController.php:550": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Controller/Api/EntryRestController.php:550` EntryRestController.deleteEntriesListAction — `$this->entityManager->remove($entry);`"
+  },
+  "File or program operations inside loops in N place|src/Controller/Api/TagRestController.php:193": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Controller/Api/TagRestController.php:193` TagRestController.cleanOrphanTag — `$this->entityManager->remove($tag);`"
+  },
+  "File or program operations inside loops in N place|src/Controller/ConfigController.php:805": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Controller/ConfigController.php:805` ConfigController.removeAllTagsByStatusAndUserId — `$this->entityManager->remove($tag);`"
+  },
+  "File or program operations inside loops in N place|src/Controller/ConfigController.php:840": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Controller/ConfigController.php:840` ConfigController.removeAnnotationsForArchivedByUserId — `$this->entityManager->remove($archivedEntriesAnnotation);`"
+  },
+  "File or program operations inside loops in N place|src/Controller/EntryController.php:143": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Controller/EntryController.php:143` EntryController.massAction — `$this->entityManager->remove($entry);`"
+  },
+  "Import loops (N)|src/Entity/Annotation.php": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "src/Entity/Annotation.php → src/Repository/AnnotationRepository.php → src/Entity/Annotation.php"
+  },
+  "Import loops (N)|src/Entity/Api/Client.php": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "src/Entity/Api/Client.php → src/Entity/User.php → src/Entity/Api/Client.php (4 files in the loop)"
+  },
+  "Import loops (N)|src/Entity/Config.php": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "src/Entity/Config.php → src/Repository/ConfigRepository.php → src/Entity/Config.php"
+  },
+  "Import loops (N)|src/Entity/Entry.php": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "src/Entity/Entry.php → src/Repository/EntryRepository.php → src/Entity/Entry.php"
+  },
+  "Import loops (N)|src/Entity/FeedItem.php": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "src/Entity/FeedItem.php → src/Repository/FeedItemRepository.php → src/Entity/FeedItem.php"
+  },
+  "Import loops (N)|src/Entity/FeedUrl.php": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "src/Entity/FeedUrl.php → src/Repository/FeedUrlRepository.php → src/Entity/FeedUrl.php"
+  },
+  "Import loops (N)|src/Entity/IgnoreOriginInstanceRule.php": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "src/Entity/IgnoreOriginInstanceRule.php → src/Repository/IgnoreOriginInstanceRuleRepository.php → src/Entity/IgnoreOriginInstanceRule.php"
+  },
+  "Import loops (N)|src/Entity/IgnoreOriginUserRule.php": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "src/Entity/IgnoreOriginUserRule.php → src/Repository/IgnoreOriginUserRuleRepository.php → src/Entity/IgnoreOriginUserRule.php"
+  },
+  "Import loops (N)|src/Entity/SiteCredential.php": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "src/Entity/SiteCredential.php → src/Repository/SiteCredentialRepository.php → src/Entity/SiteCredential.php"
+  },
+  "Import loops (N)|src/Entity/Tag.php": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "src/Entity/Tag.php → src/Repository/TagRepository.php → src/Entity/Tag.php"
+  },
+  "Import loops (N)|src/Entity/TaggingRule.php": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "src/Entity/TaggingRule.php → src/Repository/TaggingRuleRepository.php → src/Entity/TaggingRule.php"
+  },
+  "Important code no test reaches (N function)|src/Controller/AnnotationController.php:127": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/AnnotationController.php:127` AnnotationController.deleteAnnotationAction: does I/O ($this->entityManager.flush, $this->entityManager.remove) — `#[Route(path: '/annotations/{annotation}.{_format}', name: 'annotations_delete_annotation', methods: ['DELETE'], defaults: ['_format' => 'json'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/AnnotationController.php:58": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/AnnotationController.php:58` AnnotationController.postAnnotationAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/annotations/{entry}.{_format}', name: 'annotations_post_annotation', methods: ['POST'], defaults: ['_format' => 'json'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/AnnotationController.php:92": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/AnnotationController.php:92` AnnotationController.putAnnotationAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/annotations/{annotation}.{_format}', name: 'annotations_put_annotation', methods: ['PUT'], defaults: ['_format' => 'json'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/Api/EntryRestController.php:1025": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/Api/EntryRestController.php:1025` EntryRestController.patchEntriesReloadAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/api/entries/{entry}/reload.{_format}', name: 'api_patch_entries_reload', methods: ['PATCH'], defaults: ['_format' => 'json'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/Api/EntryRestController.php:1079": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/Api/EntryRestController.php:1079` EntryRestController.deleteEntriesAction: does I/O ($this->entityManager.flush, $this->entityManager.remove) — `#[Route(path: '/api/entries/{entry}.{_format}', name: 'api_delete_entries', methods: ['DELETE'], defaults: ['_format' => 'json'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/Api/EntryRestController.php:1173": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/Api/EntryRestController.php:1173` EntryRestController.postEntriesTagsAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/api/entries/{entry}/tags.{_format}', name: 'api_post_entries_tags', methods: ['POST'], defaults: ['_format' => 'json'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/Api/EntryRestController.php:1223": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/Api/EntryRestController.php:1223` EntryRestController.deleteEntriesTagsAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/api/entries/{entry}/tags/{tag}.{_format}', name: 'api_delete_entries_tags', methods: ['DELETE'], defaults: ['_format' => 'json'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/Api/EntryRestController.php:1256": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/Api/EntryRestController.php:1256` EntryRestController.deleteEntriesTagsListAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/api/entries/tags/list.{_format}', name: 'api_delete_entries_tags_list', methods: ['DELETE'], defaults: ['_format' => 'json'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/Api/EntryRestController.php:1322": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/Api/EntryRestController.php:1322` EntryRestController.postEntriesTagsListAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/api/entries/tags/lists.{_format}', name: 'api_post_entries_tags_list', methods: ['POST'], defaults: ['_format' => 'json'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/Api/EntryRestController.php:511": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/Api/EntryRestController.php:511` EntryRestController.deleteEntriesListAction: does I/O ($this->entityManager.flush, $this->entityManager.remove) — `#[Route(path: '/api/entries/list.{_format}', name: 'api_delete_entries_list', methods: ['DELETE'], defaults: ['_format' => 'json'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/Api/EntryRestController.php:587": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/Api/EntryRestController.php:587` EntryRestController.postEntriesListAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/api/entries/lists.{_format}', name: 'api_post_entries_list', methods: ['POST'], defaults: ['_format' => 'json'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/Api/EntryRestController.php:781": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/Api/EntryRestController.php:781` EntryRestController.postEntriesAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/api/entries.{_format}', name: 'api_post_entries', methods: ['POST'], defaults: ['_format' => 'json'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/Api/EntryRestController.php:954": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/Api/EntryRestController.php:954` EntryRestController.patchEntriesAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/api/entries/{entry}.{_format}', name: 'api_patch_entries', methods: ['PATCH'], defaults: ['_format' => 'json'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/Api/TagRestController.php:185": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/Api/TagRestController.php:185` TagRestController.cleanOrphanTag: does I/O ($this->entityManager.flush, $this->entityManager.remove) — `private function cleanOrphanTag($tags): void`"
+  },
+  "Important code no test reaches (N function)|src/Controller/ConfigController.php:282": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/ConfigController.php:282` ConfigController.disableOtpEmailAction: does I/O ($this->entityManager.flush) — `#[Route(path: '/config/otp/email/disable', name: 'disable_otp_email', methods: ['POST'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/ConfigController.php:307": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/ConfigController.php:307` ConfigController.otpEmailAction: does I/O ($this->entityManager.flush) — `#[Route(path: '/config/otp/email', name: 'config_otp_email', methods: ['POST'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/ConfigController.php:335": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/ConfigController.php:335` ConfigController.disableOtpAppAction: does I/O ($this->entityManager.flush) — `#[Route(path: '/config/otp/app/disable', name: 'disable_otp_app', methods: ['POST'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/ConfigController.php:363": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/ConfigController.php:363` ConfigController.otpAppAction: does I/O ($this->entityManager.flush) — `#[Route(path: '/config/otp/app', name: 'config_otp_app', methods: ['POST'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/ConfigController.php:417": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/ConfigController.php:417` ConfigController.otpAppCheckAction: does I/O ($this->entityManager.flush) — `#[Route(path: '/config/otp/app/check', name: 'config_otp_app_check', methods: ['POST'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/ConfigController.php:461": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/ConfigController.php:461` ConfigController.generateTokenAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/generate-token', name: 'generate_token', methods: ['POST'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/ConfigController.php:486": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/ConfigController.php:486` ConfigController.revokeTokenAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/revoke-token', name: 'revoke_token', methods: ['POST'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/ConfigController.php:508": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/ConfigController.php:508` ConfigController.generateMailImportTokenAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/generate-mail-import-token', name: 'generate_mail_import_token', methods: ['POST'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/ConfigController.php:534": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/ConfigController.php:534` ConfigController.revokeMailImportTokenAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/revoke-mail-import-token', name: 'revoke_mail_import_token', methods: ['POST'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/ConfigController.php:561": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/ConfigController.php:561` ConfigController.deleteTaggingRuleAction: does I/O ($this->entityManager.flush, $this->entityManager.remove) — `#[Route(path: '/tagging-rule/delete/{taggingRule}', name: 'delete_tagging_rule', methods: ['POST'], requirements: ['taggingRule' => '\\d+'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/ConfigController.php:597": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/ConfigController.php:597` ConfigController.deleteIgnoreOriginRuleAction: does I/O ($this->entityManager.flush, $this->entityManager.remove) — `#[Route(path: '/ignore-origin-user-rule/delete/{ignoreOriginUserRule}', name: 'delete_ignore_origin_rule', methods: ['POST'], requirements: ['ignoreOriginUse…`"
+  },
+  "Important code no test reaches (N function)|src/Controller/ConfigController.php:633": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/ConfigController.php:633` ConfigController.resetAction: does I/O ($this->entityManager->getConnection, $this->entityManager.getConnection) — `#[Route(path: '/reset/{type}', name: 'config_reset', methods: ['POST'], requirements: ['id' => 'annotations|tags|entries|tagging_rules'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/ConfigController.php:794": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/ConfigController.php:794` ConfigController.removeAllTagsByStatusAndUserId: does I/O ($this->entityManager.flush, $this->entityManager.remove) — `private function removeAllTagsByStatusAndUserId($tags, $userId): void`"
+  },
+  "Important code no test reaches (N function)|src/Controller/ConfigController.php:834": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/ConfigController.php:834` ConfigController.removeAnnotationsForArchivedByUserId: does I/O ($this->entityManager.flush, $this->entityManager.remove) — `private function removeAnnotationsForArchivedByUserId($userId): void`"
+  },
+  "Important code no test reaches (N function)|src/Controller/EntryController.php:188": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/EntryController.php:188` EntryController.addEntryFormAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/new-entry', name: 'new_entry', methods: ['GET', 'POST'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/EntryController.php:266": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/EntryController.php:266` EntryController.editEntryAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/edit/{id}', name: 'edit', methods: ['GET', 'POST'], requirements: ['id' => '\\d+'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/EntryController.php:422": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/EntryController.php:422` EntryController.reloadAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/reload/{id}', name: 'reload_entry', methods: ['POST'], requirements: ['id' => '\\d+'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/EntryController.php:485": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/EntryController.php:485` EntryController.toggleStarAction: does I/O ($this->entityManager.flush) — `#[Route(path: '/star/{id}', name: 'star_entry', methods: ['POST'], requirements: ['id' => '\\d+'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/EntryController.php:562": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/EntryController.php:562` EntryController.shareAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/share/{id}', name: 'share', methods: ['POST'], requirements: ['id' => '\\d+'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/EntryController.php:587": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/EntryController.php:587` EntryController.deleteShareAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/share/delete/{id}', name: 'delete_share', methods: ['POST'], requirements: ['id' => '\\d+'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/FeedItemController.php:73": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/FeedItemController.php:73` FeedItemController.saveItem: does I/O ($this->entityManager.flush) — `#[Route(path: '/atom/item/save/{id}', name: 'save_item', requirements: ['id' => '\\d+'], methods: ['POST'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/FeedSubscriptionController.php:66": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/FeedSubscriptionController.php:66` FeedSubscriptionController.edit: does I/O ($this->entityManager.flush) — `#[Route(path: '/atom/edit/{id}', name: 'edit_feed', requirements: ['id' => '\\d+'], methods: ['GET', 'POST'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/IgnoreOriginInstanceRuleController.php:80": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/IgnoreOriginInstanceRuleController.php:80` IgnoreOriginInstanceRuleController.editAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/ignore-origin-instance-rules/{id}/edit', name: 'ignore_origin_instance_rules_edit', methods: ['GET', 'POST'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/SiteCredentialController.php:92": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/SiteCredentialController.php:92` SiteCredentialController.editAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/site-credentials/{id}/edit', name: 'site_credentials_edit', methods: ['GET', 'POST'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/TagController.php:183": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/TagController.php:183` TagController.renameTagAction: does I/O ($this->entityManager.flush) — `#[Route(path: '/tag/rename/{slug}', name: 'tag_rename', methods: ['POST'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/TagController.php:237": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/TagController.php:237` TagController.tagThisSearchAction: does I/O ($this->entityManager->getUnitOfWork, $this->entityManager.flush) — `#[Route(path: '/tag/search/{filter}', name: 'tag_this_search', methods: ['POST'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/TagController.php:276": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/TagController.php:276` TagController.removeTagAction: does I/O ($this->entityManager.flush, $this->entityManager.remove) — `#[Route(path: '/tag/delete/{slug}', name: 'tag_delete', methods: ['POST'])]`"
+  },
+  "Important code no test reaches (N function)|src/Controller/TagController.php:40": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/TagController.php:40` TagController.addTagFormAction: does I/O ($this->entityManager.flush, $this->entityManager.persist) — `#[Route(path: '/new-tag/{entry}', name: 'new_tag', methods: ['POST'], requirements: ['entry' => '\\d+'])]`"
+  },
+  "Important code no test reaches (N function)|src/Event/Subscriber/DownloadImagesSubscriber.php:34": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Event/Subscriber/DownloadImagesSubscriber.php:34` DownloadImagesSubscriber.onEntrySaved: does I/O ($this->em.flush, $this->em.persist) — `public function onEntrySaved(EntrySavedEvent $event): void`"
+  },
+  "Important code no test reaches (N function)|src/Event/Subscriber/GenerateCustomCSSSubscriber.php:28": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Event/Subscriber/GenerateCustomCSSSubscriber.php:28` GenerateCustomCSSSubscriber.onConfigUpdated: does I/O ($this->em.flush, $this->em.persist) — `public function onConfigUpdated(ConfigUpdatedEvent $event): void`"
+  },
+  "Important code no test reaches (N function)|src/Form/Type/TaggingRuleType.php:15": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Form/Type/TaggingRuleType.php:15` TaggingRuleType.buildForm: does I/O ($builder->create) — `public function buildForm(FormBuilderInterface $builder, array $options): void`"
+  },
+  "Important code no test reaches (N function)|src/Helper/EntriesExport.php:369": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Helper/EntriesExport.php:369` EntriesExport.produceCsv: does I/O (fopen) — `private function produceCsv(): Response`"
+  },
+  "Important code no test reaches (N function)|src/Helper/EntriesExport.php:551": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Helper/EntriesExport.php:551` EntriesExport.getCoverImage: does I/O (file_get_contents) — `private function getCoverImage(?string $previewPicture): ?array`"
+  },
+  "Important code no test reaches (N function)|src/Import/DeliciousImport.php:80": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Import/DeliciousImport.php:80` DeliciousImport.parseEntry: does I/O ($this->em->getUnitOfWork, $this->em.getRepository) — `public function parseEntry(array $importedEntry)`"
+  },
+  "Important code no test reaches (N function)|src/Import/FeedsImport.php:43": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Import/FeedsImport.php:43` FeedsImport.parseEntry: does I/O ($this->em.getRepository, $this->em.persist) — `public function parseEntry(array $importedEntry): ?Entry`"
+  },
+  "Important code no test reaches (N function)|src/Import/OmnivoreImport.php:80": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Import/OmnivoreImport.php:80` OmnivoreImport.parseEntry: does I/O ($this->em->getUnitOfWork, $this->em.getRepository) — `public function parseEntry(array $importedEntry)`"
+  },
+  "Important code no test reaches (N function)|src/Import/PinboardImport.php:80": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Import/PinboardImport.php:80` PinboardImport.parseEntry: does I/O ($this->em->getUnitOfWork, $this->em.getRepository) — `public function parseEntry(array $importedEntry)`"
+  },
+  "Important code no test reaches (N function)|src/Import/WallabagImport.php:87": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Import/WallabagImport.php:87` WallabagImport.parseEntry: does I/O ($this->em->getUnitOfWork, $this->em.getRepository) — `public function parseEntry(array $importedEntry)`"
+  },
+  "Important code no test reaches (N function)|src/Repository/EntryRepository.php:281": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Repository/EntryRepository.php:281` EntryRepository.findEntries: does I/O ($qb.select) — `public function findEntries($userId, $isArchived = null, $isStarred = null, $isPublic = null, $sort = 'created', $order = 'asc', $since = 0, $tags = '', $det…`"
+  },
+  "Important code no test reaches (N function)|src/Repository/EntryRepository.php:584": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Repository/EntryRepository.php:584` EntryRepository.findByUserIdAndBatchHashedUrls: does I/O ($qb->where, $qb.where) — `public function findByUserIdAndBatchHashedUrls($userId, $hashedUrls)`"
+  },
+  "Important code no test reaches (N function)|src/Repository/EntryRepository.php:674": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Repository/EntryRepository.php:674` EntryRepository.findAllEntriesIdByUserIdAndNotParsed: does I/O ($qb->where, $qb.where) — `public function findAllEntriesIdByUserIdAndNotParsed($userId = null)`"
+  },
+  "Important code no test reaches (N function)|src/Repository/EntryRepository.php:692": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Repository/EntryRepository.php:692` EntryRepository.findEmptyEntriesIdByUserId: does I/O ($qb->where, $qb.where) — `public function findEmptyEntriesIdByUserId($userId = null)`"
+  },
+  "Plain-HTTP URLs in code|migrations/Version20170327194233.php:21": {
+   "check": "Plain-HTTP URLs in code",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`migrations/Version20170327194233.php:21` $this->addSql('INSERT INTO ' . $this->getTable('craue_config_setting') . \" (name, value, section) VALUES ('scuttle_url', 'http://scuttle.…"
+  },
+  "Plain-HTTP URLs in code|migrations/Version20190129120000.php:26": {
+   "check": "Plain-HTTP URLs in code",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`migrations/Version20190129120000.php:26` 'value' => 'http://diasporapod.com',"
+  },
+  "Plain-HTTP URLs in code|migrations/Version20190129120000.php:36": {
+   "check": "Plain-HTTP URLs in code",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`migrations/Version20190129120000.php:36` 'value' => 'http://myshaarli.com',"
+  },
+  "Queries or requests inside loops (N) in N place|src/Command/FetchRssCommand.php:49": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Command/FetchRssCommand.php:49` FetchRssCommand.execute: FetchRssCommand.execute calls FeedFetcher.fetch() inside a loop (line 49), and that reaches $this->entityManager.flush() — `$collected = $this->fetcher->fetch($feed);`"
+  },
+  "Queries or requests inside loops (N) in N place|src/Command/Import/MailCommand.php:213": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Command/Import/MailCommand.php:213` MailCommand.importMessage: MailCommand.importMessage calls ContentProxy.updateEntry() inside a loop (line 213), and that reaches $this->ignoreOriginInstanceRuleRepository.findAll() — `$this->contentProxy->updateEntry($entry, $url);`"
+  },
+  "Queries or requests inside loops (N) in N place|src/Command/ReloadEntryCommand.php:96": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Command/ReloadEntryCommand.php:96` ReloadEntryCommand.execute: ReloadEntryCommand.execute calls ContentProxy.updateEntry() inside a loop (line 96), and that reaches $this->ignoreOriginInstanceRuleRepository.findAll() — `$this->contentProxy->updateEntry($entry, $entry->getUrl());`"
+  },
+  "Queries or requests inside loops (N) in N place|src/Controller/Api/EntryRestController.php:629": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/Api/EntryRestController.php:629` EntryRestController.postEntriesListAction: EntryRestController.postEntriesListAction calls ContentProxy.updateEntry() inside a loop (line 629), and that reaches $this->ignoreOriginInstanceRuleRepository.findAll() — `$contentProxy->updateEntry($entry, $url);`"
+  },
+  "Queries or requests inside loops (N) in N place|src/Controller/EntryController.php:123": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Controller/EntryController.php:123` EntryController.massAction: EntryController.massAction calls $this->entryRepository.findById() inside a loop (line 123) — `$entry = $this->entryRepository->findById([(int) $id])[0];`"
+  },
+  "Queries or requests inside loops (N) in N place|src/Helper/EntriesExport.php:258": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Helper/EntriesExport.php:258` EntriesExport.produceEpub: EntriesExport.produceEpub calls EpubContentCleaner.clean() inside a loop (line 258), and that reaches $xpath.query() — `$chapter = $content_start . $this->contentCleaner->clean($book, $entry->getContent()) . $bookEnd;`"
+  },
+  "Queries or requests inside loops (N) in N place|src/Helper/EpubContentCleaner.php:29": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`src/Helper/EpubContentCleaner.php:29` EpubContentCleaner.clean: EpubContentCleaner.clean calls $xpath.query() inside a loop (line 29 and 1 more) — `foreach (iterator_to_array($xpath->query('.//comment()', $body)) as $comment) {`"
+  },
+  "Unused code (N function)|assets/controllers/annotations_controller.js:56": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/annotations_controller.js:56` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|assets/controllers/clipboard_controller.js:13": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/clipboard_controller.js:13` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|assets/controllers/dark_theme_controller.js:12": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/dark_theme_controller.js:12` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|assets/controllers/dark_theme_controller.js:16": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/dark_theme_controller.js:16` useLight — `useLight() {`"
+  },
+  "Unused code (N function)|assets/controllers/dark_theme_controller.js:21": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/dark_theme_controller.js:21` useDark — `useDark() {`"
+  },
+  "Unused code (N function)|assets/controllers/dark_theme_controller.js:26": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/dark_theme_controller.js:26` useAuto — `useAuto() {`"
+  },
+  "Unused code (N function)|assets/controllers/entries_navigation_controller.js:22": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/entries_navigation_controller.js:22` selectRightCard — `selectRightCard() {`"
+  },
+  "Unused code (N function)|assets/controllers/entries_navigation_controller.js:38": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/entries_navigation_controller.js:38` selectLeftCard — `selectLeftCard() {`"
+  },
+  "Unused code (N function)|assets/controllers/entries_navigation_controller.js:54": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/entries_navigation_controller.js:54` selectCurrentCard — `selectCurrentCard() {`"
+  },
+  "Unused code (N function)|assets/controllers/materialize/collapsible_controller.js:29": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/materialize/collapsible_controller.js:29` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|assets/controllers/materialize/dropdown_controller.js:13": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/materialize/dropdown_controller.js:13` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|assets/controllers/materialize/fab_controller.js:12": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/materialize/fab_controller.js:12` autoDisplay — `autoDisplay() {`"
+  },
+  "Unused code (N function)|assets/controllers/materialize/fab_controller.js:28": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/materialize/fab_controller.js:28` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|assets/controllers/materialize/form_select_controller.js:9": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/materialize/form_select_controller.js:9` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|assets/controllers/materialize/range_controller.js:9": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/materialize/range_controller.js:9` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|assets/controllers/materialize/sidenav_controller.js:21": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/materialize/sidenav_controller.js:21` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|assets/controllers/materialize/tabs_controller.js:9": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/materialize/tabs_controller.js:9` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|assets/controllers/materialize/toast_controller.js:9": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/materialize/toast_controller.js:9` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|assets/controllers/materialize/tooltip_controller.js:24": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/materialize/tooltip_controller.js:24` disconnect — `disconnect() {`"
+  },
+  "Unused code (N function)|assets/controllers/shortcuts_controller.js:152": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`assets/controllers/shortcuts_controller.js:152` disconnect — `disconnect() {`"
+  },
+  "Writes inside loops in N place|src/Command/CleanDuplicatesCommand.php:100": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Command/CleanDuplicatesCommand.php:100` CleanDuplicatesCommand.cleanDuplicates — `$this->entityManager->flush(); // Flushing at the end of the loop would require the instance not being online`"
+  },
+  "Writes inside loops in N place|src/Command/CleanDuplicatesCommand.php:72": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Command/CleanDuplicatesCommand.php:72` CleanDuplicatesCommand.execute — `$this->cleanDuplicates($user);`"
+  },
+  "Writes inside loops in N place|src/Command/GenerateUrlHashesCommand.php:61": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Command/GenerateUrlHashesCommand.php:61` GenerateUrlHashesCommand.execute — `$this->generateHashedUrls($user);`"
+  },
+  "Writes inside loops in N place|src/Command/GenerateUrlHashesCommand.php:77": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Command/GenerateUrlHashesCommand.php:77` GenerateUrlHashesCommand.generateHashedUrls — `$this->entityManager->persist($entry);`"
+  },
+  "Writes inside loops in N place|src/Command/GenerateUrlHashesCommand.php:80": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Command/GenerateUrlHashesCommand.php:80` GenerateUrlHashesCommand.generateHashedUrls — `$this->entityManager->flush();`"
+  },
+  "Writes inside loops in N place|src/Command/Import/MailCommand.php:152": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Command/Import/MailCommand.php:152` MailCommand.import — `$imported += $this->importMessage($config, $message);`"
+  },
+  "Writes inside loops in N place|src/Command/Import/MailCommand.php:214": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Command/Import/MailCommand.php:214` MailCommand.importMessage — `$this->entityManager->persist($entry);`"
+  },
+  "Writes inside loops in N place|src/Command/Import/MailCommand.php:215": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Command/Import/MailCommand.php:215` MailCommand.importMessage — `$this->entityManager->flush();`"
+  },
+  "Writes inside loops in N place|src/Command/ReloadEntryCommand.php:97": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Command/ReloadEntryCommand.php:97` ReloadEntryCommand.execute — `$this->entityManager->persist($entry);`"
+  },
+  "Writes inside loops in N place|src/Command/ReloadEntryCommand.php:98": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Command/ReloadEntryCommand.php:98` ReloadEntryCommand.execute — `$this->entityManager->flush();`"
+  },
+  "Writes inside loops in N place|src/Command/TagAllCommand.php:60": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Command/TagAllCommand.php:60` TagAllCommand.execute — `$this->entityManager->persist($entry);`"
+  },
+  "Writes inside loops in N place|src/Command/UpdatePicturesPathCommand.php:61": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Command/UpdatePicturesPathCommand.php:61` UpdatePicturesPathCommand.execute — `$this->entityManager->flush();`"
+  },
+  "Writes inside loops in N place|src/Controller/Api/EntryRestController.php:1293": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Controller/Api/EntryRestController.php:1293` EntryRestController.deleteEntriesTagsListAction — `$this->entityManager->persist($entry);`"
+  },
+  "Writes inside loops in N place|src/Controller/Api/EntryRestController.php:1294": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Controller/Api/EntryRestController.php:1294` EntryRestController.deleteEntriesTagsListAction — `$this->entityManager->flush();`"
+  },
+  "Writes inside loops in N place|src/Controller/Api/EntryRestController.php:1349": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Controller/Api/EntryRestController.php:1349` EntryRestController.postEntriesTagsListAction — `$this->entityManager->persist($entry);`"
+  },
+  "Writes inside loops in N place|src/Controller/Api/EntryRestController.php:1350": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Controller/Api/EntryRestController.php:1350` EntryRestController.postEntriesTagsListAction — `$this->entityManager->flush();`"
+  },
+  "Writes inside loops in N place|src/Controller/Api/EntryRestController.php:551": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Controller/Api/EntryRestController.php:551` EntryRestController.deleteEntriesListAction — `$this->entityManager->flush();`"
+  },
+  "Writes inside loops in N place|src/Controller/Api/EntryRestController.php:632": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Controller/Api/EntryRestController.php:632` EntryRestController.postEntriesListAction — `$this->entityManager->persist($entry);`"
+  },
+  "Writes inside loops in N place|src/Controller/Api/EntryRestController.php:633": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Controller/Api/EntryRestController.php:633` EntryRestController.postEntriesListAction — `$this->entityManager->flush();`"
+  },
+  "Writes inside loops in N place|src/Controller/ConfigController.php:207": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Controller/ConfigController.php:207` ConfigController.indexAction — `$this->entityManager->persist($taggingRule);`"
+  },
+  "Writes inside loops in N place|src/Controller/TagController.php:263": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Controller/TagController.php:263` TagController.tagThisSearchAction — `$this->entityManager->persist($entry);`"
+  },
+  "Writes inside loops in N place|src/Controller/TagController.php:265": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Controller/TagController.php:265` TagController.tagThisSearchAction — `$this->entityManager->flush();`"
+  },
+  "Writes inside loops in N place|src/Helper/FeedFetcher.php:80": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Helper/FeedFetcher.php:80` FeedFetcher.fetch — `$this->entityManager->persist($item);`"
+  },
+  "Writes inside loops in N place|src/Helper/FeedFetcher.php:83": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Helper/FeedFetcher.php:83` FeedFetcher.fetch — `$this->entityManager->flush();`"
+  },
+  "Writes inside loops in N place|src/Import/AbstractImport.php:172": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Import/AbstractImport.php:172` AbstractImport.parseEntries — `$this->em->flush();`"
+  },
+  "Writes inside loops in N place|src/Import/BrowserImport.php:158": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Import/BrowserImport.php:158` BrowserImport.parseEntries — `$this->em->flush();`"
+  },
+  "Writes inside loops in N place|src/Import/HtmlImport.php:135": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`src/Import/HtmlImport.php:135` HtmlImport.parseEntries — `$this->em->flush();`"
+  }
+ }
+}

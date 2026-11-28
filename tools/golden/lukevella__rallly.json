@@ -1,0 +1,996 @@
+{
+ "repo": "lukevella/rallly",
+ "commit": "7b7138d406428e396e2b26f24c7a6571f80736ab",
+ "locations": {
+  "Array searches inside loops over loaded data (N)|apps/web/src/features/conferencing/loaders.ts:31": {
+   "check": "Array searches inside loops over loaded data (N)",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`apps/web/src/features/conferencing/loaders.ts:31` — `available.includes(provider),`"
+  },
+  "Array searches inside loops over loaded data (N)|packages/translations/src/posts.ts:149": {
+   "check": "Array searches inside loops over loaded data (N)",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`packages/translations/src/posts.ts:149` runPosts — `(locale) => !locales || locales.includes(locale),`"
+  },
+  "Array searches inside loops over loaded data (N)|packages/translations/src/posts.ts:242": {
+   "check": "Array searches inside loops over loaded data (N)",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`packages/translations/src/posts.ts:242` runPosts — `for (const slug of orphans.filter(isPlainSlug)) {`"
+  },
+  "Array searches inside loops over loaded data (N)|packages/translations/src/posts.ts:247": {
+   "check": "Array searches inside loops over loaded data (N)",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`packages/translations/src/posts.ts:247` runPosts — `if (translated.has(slug) || adopt.includes(slug)) {`"
+  },
+  "Array searches inside loops over loaded data (N)|packages/translations/src/run.ts:57": {
+   "check": "Array searches inside loops over loaded data (N)",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`packages/translations/src/run.ts:57` listJobs — ``(namespace) => !files || files.includes(`${root.id}/${namespace}`),``"
+  },
+  "Array searches inside loops over loaded data (N)|packages/translations/src/run.ts:60": {
+   "check": "Array searches inside loops over loaded data (N)",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`packages/translations/src/run.ts:60` listJobs — `(locale) => !locales || locales.includes(locale),`"
+  },
+  "Copied logic in N group (~N lines)|apps/landing/src/app/[locale]/(main)/pricing/pricing-controls.tsx:72": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of currencyLabel (identical, ~11 lines): `apps/landing/src/app/[locale]/(main)/pricing/pricing-controls.tsx:72`, `apps/web/src/features/billing/components/pay-wall-dialog.tsx:242`"
+  },
+  "Copied logic in N group (~N lines)|apps/landing/src/components/home/how-it-works/demo-cursor.tsx:36": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of DemoCursor (identical, ~139 lines): `apps/landing/src/components/home/how-it-works/demo-cursor.tsx:36`, `apps/web/src/app/[locale]/invite/[urlId]/components/help/demo-cursor.tsx:30`"
+  },
+  "Copied logic in N group (~N lines)|apps/landing/src/components/home/how-it-works/demo-cursor.tsx:58": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of DemoCursor.measure (identical, ~15 lines): `apps/landing/src/components/home/how-it-works/demo-cursor.tsx:58`, `apps/web/src/app/[locale]/invite/[urlId]/components/help/demo-cursor.tsx:51`"
+  },
+  "Copied logic in N group (~N lines)|apps/landing/src/components/home/how-it-works/press-button.tsx:11": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of PressButton (identical, ~48 lines): `apps/landing/src/components/home/how-it-works/press-button.tsx:11`, `apps/web/src/app/[locale]/invite/[urlId]/components/help/press-button.tsx:11`"
+  },
+  "Copied logic in N group (~N lines)|apps/landing/src/i18n/settings.ts:10": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of getOptions (identical, ~13 lines): `apps/landing/src/i18n/settings.ts:10`, `apps/web/src/i18n/settings.ts:8`"
+  },
+  "Copied logic in N group (~N lines)|apps/web/src/app/[locale]/(space)/(dashboard)/calendar/loading.tsx:4": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of Loading (identical, ~8 lines): `apps/web/src/app/[locale]/(space)/(dashboard)/calendar/loading.tsx:4`, `apps/web/src/app/[locale]/(space)/(dashboard)/polls/[pollId]/loading.tsx:4`"
+  },
+  "Copied logic in N group (~N lines)|apps/web/src/app/[locale]/(space)/(dashboard)/components/space-sidebar-provider.tsx:6": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge ControlPanelSidebarProvider, SpaceSidebarProvider (86% similar, ~17 lines): `apps/web/src/app/[locale]/(space)/(dashboard)/components/space-sidebar-provider.tsx:6`, `apps/web/src/app/[locale]/control-panel/control-panel-sidebar-provider.tsx:6`"
+  },
+  "Copied logic in N group (~N lines)|apps/web/src/app/[locale]/(space)/(dashboard)/home-page.tsx:106": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge EventsPagination, PollsPagination (identical, ~67 lines): `apps/web/src/app/[locale]/(space)/(dashboard)/home-page.tsx:106`, `apps/web/src/app/[locale]/(space)/(dashboard)/polls/polls-page.tsx:91`"
+  },
+  "Copied logic in N group (~N lines)|apps/web/src/app/[locale]/(space)/(dashboard)/home-page.tsx:126": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge EventsPagination.hrefFor, PollsPagination.hrefFor (identical, ~9 lines): `apps/web/src/app/[locale]/(space)/(dashboard)/home-page.tsx:126`, `apps/web/src/app/[locale]/(space)/(dashboard)/polls/polls-page.tsx:111`"
+  },
+  "Copied logic in N group (~N lines)|apps/web/src/app/[locale]/(space)/(dashboard)/home-page.tsx:136": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge EventsPagination.pageLink, PollsPagination.pageLink (identical, ~18 lines): `apps/web/src/app/[locale]/(space)/(dashboard)/home-page.tsx:136`, `apps/web/src/app/[locale]/(space)/(dashboard)/polls/polls-page.tsx:121`"
+  },
+  "Copied logic in N group (~N lines)|apps/web/src/app/[locale]/(space)/settings/billing/components/plan-card.tsx:25": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between PlanCardDescription, PlanCardHeadingDescription (identical, ~8 lines): `apps/web/src/app/[locale]/(space)/settings/billing/components/plan-card.tsx:78`, `apps/web/src/app/[locale]/(space)/settings/billing/components/plan-card.tsx:25`"
+  },
+  "Copied logic in N group (~N lines)|apps/web/src/app/[locale]/e/[id]/components/event-detail.tsx:50": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge BillingPlanHeader, EventDetailContent, PageSectionHeader (identical, ~15 lines): `apps/web/src/app/[locale]/e/[id]/components/event-detail.tsx:50`, `apps/web/src/components/page-layout.tsx:155`, `packages/ui/src/billing-plan.tsx:18`"
+  },
+  "Copied logic in N group (~N lines)|apps/web/src/features/billing/webhook/mutations.ts:564": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between onPaymentMethodAttached, onPaymentMethodUpdated (identical, ~21 lines): `apps/web/src/features/billing/webhook/mutations.ts:564`, `apps/web/src/features/billing/webhook/mutations.ts:598`"
+  },
+  "Copied logic in N group (~N lines)|apps/web/src/features/calendars/client.tsx:15": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge connectToCalendar, connectToConferencing (identical, ~12 lines): `apps/web/src/features/calendars/client.tsx:15`, `apps/web/src/features/conferencing/client.tsx:5`"
+  },
+  "Copied logic in N group (~N lines)|apps/web/src/features/poll/components/event-card.tsx:38": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge IconDescription, VoteOption (identical, ~14 lines): `apps/web/src/features/poll/components/event-card.tsx:38`, `apps/web/src/features/poll/components/vote-options.tsx:7`"
+  },
+  "Copied logic in N group (~N lines)|apps/web/src/features/poll/components/polls-list.tsx:416": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge EventsListSkeleton, PollsListSkeleton (identical, ~16 lines): `apps/web/src/features/poll/components/polls-list.tsx:416`, `apps/web/src/features/scheduled-event/components/events-list.tsx:163`"
+  },
+  "Copied logic in N group (~N lines)|apps/web/src/features/scheduled-event/data.ts:331": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between getCanceledEvents, getPastEvents, getUnconfirmedEvents, getUpcomingEvents (88% similar, ~128 lines): `apps/web/src/features/scheduled-event/data.ts:467`, `apps/web/src/features/scheduled-event/data.ts:377`, `apps/web/src/features/scheduled-event/data.ts:423`, `apps/web/src/features/scheduled-event/data.ts:331`"
+  },
+  "Copied logic in N group (~N lines)|apps/web/src/features/space/mutations.ts:108": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between updateSpaceHideAttribution, updateSpaceShared, updateSpaceShowBranding (identical, ~24 lines): `apps/web/src/features/space/mutations.ts:95`, `apps/web/src/features/space/mutations.ts:108`, `apps/web/src/features/space/mutations.ts:82`"
+  },
+  "Copied logic in N group (~N lines)|apps/web/src/features/space/utils.ts:104": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between isSpaceAttributionHidden, isSpaceBrandingActive (identical, ~13 lines): `apps/web/src/features/space/utils.ts:104`, `apps/web/src/features/space/utils.ts:85`"
+  },
+  "Copied logic in N group (~N lines)|apps/web/src/lib/cache/index.ts:15": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of parseDurationMs (identical, ~7 lines): `apps/web/src/lib/cache/index.ts:15`, `apps/web/src/lib/rate-limit/index.ts:19`"
+  },
+  "Copied logic in N group (~N lines)|apps/web/src/lib/oauth/providers/google.ts:117": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge GoogleOAuthClient.exchangeCode, GoogleOAuthClient.refreshAccessToken, MicrosoftOAuthClient.exchangeCode, WebexOAuthClient.exchangeCode, WebexOAuthClient.refreshAccessToken, ZoomOAuthClient.exchangeCode, ZoomOAuthClient.refreshAccessToken (87% similar, ~82 lines): `apps/web/src/lib/oauth/providers/google.ts:74`, `apps/web/src/lib/oauth/providers/google.ts:117`, `apps/web/src/lib/oauth/providers/microsoft.ts:85`, `apps/web/src/lib/oauth/providers/webex.ts:64`, `apps/web/src/lib/oauth/providers/webex.ts:100`, `apps/web/src/lib/oauth/providers/zoom.ts:62`, `apps/web/src/lib/oauth/providers/zoom.ts:98`"
+  },
+  "Copied logic in N group (~N lines)|apps/web/src/lib/oauth/providers/google.ts:74": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge GoogleOAuthClient.exchangeCode, WebexOAuthClient.exchangeCode, ZoomOAuthClient.exchangeCode (identical, ~26 lines): `apps/web/src/lib/oauth/providers/google.ts:74`, `apps/web/src/lib/oauth/providers/webex.ts:64`, `apps/web/src/lib/oauth/providers/zoom.ts:62`"
+  },
+  "Copied logic in N group (~N lines)|apps/web/src/lib/oauth/providers/webex.ts:100": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge WebexOAuthClient.refreshAccessToken, ZoomOAuthClient.refreshAccessToken (identical, ~16 lines): `apps/web/src/lib/oauth/providers/webex.ts:100`, `apps/web/src/lib/oauth/providers/zoom.ts:98`"
+  },
+  "Copied logic in N group (~N lines)|apps/web/src/lib/oauth/providers/webex.ts:54": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge WebexOAuthClient.getAuthorizationUrl, ZoomOAuthClient.getAuthorizationUrl (identical, ~9 lines): `apps/web/src/lib/oauth/providers/webex.ts:54`, `apps/web/src/lib/oauth/providers/zoom.ts:52`"
+  },
+  "Copied logic in N group (~N lines)|packages/posthog/src/scripts/backfill-space-type.ts:50": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of apiRequest (identical, ~36 lines): `packages/posthog/src/scripts/backfill-space-type.ts:50`, `packages/posthog/src/scripts/purge-guest-profiles.ts:81`"
+  },
+  "Copied logic in N group (~N lines)|packages/posthog/src/scripts/backfill-space-type.ts:87": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of hogqlQuery (identical, ~8 lines): `packages/posthog/src/scripts/backfill-space-type.ts:87`, `packages/posthog/src/scripts/purge-guest-profiles.ts:118`"
+  },
+  "Copied logic in N group (~N lines)|packages/ui/src/event-calendar/event-calendar-lib.tsx:138": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between eventsOverlap, rangesIntersect (identical, ~6 lines): `packages/ui/src/event-calendar/event-calendar-lib.tsx:145`, `packages/ui/src/event-calendar/event-calendar-lib.tsx:138`"
+  },
+  "Copied logic in N group (~N lines)|packages/ui/src/event-calendar/event-calendar-resource-view.tsx:111": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge EventCalendarResourceView.scrollTo, EventCalendarTimeGrid.scrollTo (identical, ~6 lines): `packages/ui/src/event-calendar/event-calendar-resource-view.tsx:111`, `packages/ui/src/event-calendar/event-calendar-time-grid.tsx:137`"
+  },
+  "Copied logic in N group (~N lines)|packages/ui/src/event-calendar/event-calendar-resource-view.tsx:134": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge EventCalendarResourceView.syncScrollbarGutter, EventCalendarTimeGrid.syncScrollbarGutter (identical, ~6 lines): `packages/ui/src/event-calendar/event-calendar-resource-view.tsx:134`, `packages/ui/src/event-calendar/event-calendar-time-grid.tsx:160`"
+  },
+  "Databases published on every interface (docker-compose)|docker-compose.yml:6": {
+   "check": "Databases published on every interface (docker-compose)",
+   "severity": "Medium",
+   "tier": "hints",
+   "location": "`docker-compose.yml:6` - \"5450:5432\"  (PostgreSQL on every interface)"
+  },
+  "Endpoints that change data without an auth check (N)|apps/web/src/app/api/integrations/[...connection]/route.ts:71": {
+   "check": "Endpoints that change data without an auth check (N)",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`ANY /api/integrations/[...connection]` (`apps/web/src/app/api/integrations/[...connection]/route.ts:71`) → changes data in `saveOAuthCredentials` (`credential.create, credential.findUnique`)"
+  },
+  "File or program operations inside loops in N place|apps/landing/src/app/sitemap.ts:75": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`apps/landing/src/app/sitemap.ts:75` Sitemap — `const translatedLocales = getPostLocales(post.slug);`"
+  },
+  "File or program operations inside loops in N place|apps/landing/src/lib/api.ts:90": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`apps/landing/src/lib/api.ts:90` createPostsApi.getAllPosts — `.map((slug) => getPostBySlug(slug, fields, locale))`"
+  },
+  "File or program operations inside loops in N place|packages/translations/src/check.ts:123": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`packages/translations/src/check.ts:123` checkLocales — `const source = readFileSync(postPath({ repoRoot, slug }), \"utf8\");`"
+  },
+  "File or program operations inside loops in N place|packages/translations/src/check.ts:43": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`packages/translations/src/check.ts:43` checkLocales — `en = strings(readObject(enPath));`"
+  },
+  "File or program operations inside loops in N place|packages/translations/src/check.ts:53": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`packages/translations/src/check.ts:53` checkLocales — `for (const locale of listLocales({ repoRoot, root })) {`"
+  },
+  "File or program operations inside loops in N place|packages/translations/src/posts.ts:156": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`packages/translations/src/posts.ts:156` runPosts — `const plan = planPosts({ repoRoot, locale });`"
+  },
+  "File or program operations inside loops in N place|packages/translations/src/posts.ts:160": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`packages/translations/src/posts.ts:160` runPosts — `readFileSync(postPath({ repoRoot, slug }), \"utf8\"),`"
+  },
+  "File or program operations inside loops in N place|packages/translations/src/posts.ts:167": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`packages/translations/src/posts.ts:167` runPosts — `lock: readLock({ repoRoot, locale }),`"
+  },
+  "File or program operations inside loops in N place|packages/translations/src/posts.ts:203": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`packages/translations/src/posts.ts:203` runPosts.worker — `...(existsSync(file) && { previous: readFileSync(file, \"utf8\") }),`"
+  },
+  "File or program operations inside loops in N place|packages/translations/src/posts.ts:211": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`packages/translations/src/posts.ts:211` runPosts.worker — `writeFileSync(file, result.content);`"
+  },
+  "File or program operations inside loops in N place|packages/translations/src/posts.ts:255": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`packages/translations/src/posts.ts:255` runPosts — ``writeFileSync(file, `${JSON.stringify(newLock, null, 2)}\\n`);``"
+  },
+  "File or program operations inside loops in N place|packages/translations/src/posts.ts:91": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`packages/translations/src/posts.ts:91` planPosts — `const source = readFileSync(postPath({ repoRoot, slug }), \"utf8\");`"
+  },
+  "File or program operations inside loops in N place|packages/translations/src/run.ts:245": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`packages/translations/src/run.ts:245` run.worker — `results[index] = await runFile({`"
+  },
+  "Import loops (N)|packages/ui/src/event-calendar/event-calendar-agenda-view.tsx": {
+   "check": "Import loops (N)",
+   "severity": "High",
+   "tier": "findings",
+   "location": "packages/ui/src/event-calendar/event-calendar-agenda-view.tsx → packages/ui/src/event-calendar/event-calendar.tsx → packages/ui/src/event-calendar/event-calendar-content.tsx → packages/ui/src/event-calendar/event-calendar-agenda-view.tsx (8 files in the loop)"
+  },
+  "Important code no test reaches (N function)|apps/landing/src/app/[locale]/opengraph-image.tsx:25": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/landing/src/app/[locale]/opengraph-image.tsx:25` loadCjkFont: does I/O (fetch) — `async function loadCjkFont(text: string, weight: 400 | 700) {`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/app/[locale]/control-panel/users/page.tsx:30": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/app/[locale]/control-panel/users/page.tsx:30` loadData: does I/O (user.findMany) — `async function loadData({`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/app/api/middleware/api-key.ts:32": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/app/api/middleware/api-key.ts:32` verifyToken: does I/O (spaceApiKey.findMany, spaceApiKey.update) — `verifyToken: async (rawKey, c) => {`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/app/api/updates/route.ts:144": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/app/api/updates/route.ts:144` GET: does I/O (registeredInstance.upsert) — `export async function GET(request: NextRequest) {`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/app/api/updates/route.ts:40": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/app/api/updates/route.ts:40` fetchReleaseChannels: does I/O (fetch) — `async function fetchReleaseChannels(): Promise<ReleaseChannels | null> {`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/app/api/updates/route.ts:84": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/app/api/updates/route.ts:84` fetchSecurityAdvisories: does I/O (fetch) — `async function fetchSecurityAdvisories(): Promise<SecurityAdvisory[] | null> {`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/components/page-layout.tsx:122": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/components/page-layout.tsx:122` PageSectionGroup, called from 10 files — `export function PageSectionGroup({ children }: { children?: React.ReactNode }) {`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/components/page-layout.tsx:140": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/components/page-layout.tsx:140` PageSection, called from 17 files — `export function PageSection({`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/components/page-layout.tsx:155": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/components/page-layout.tsx:155` PageSectionHeader, called from 13 files — `export function PageSectionHeader({`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/components/page-layout.tsx:165": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/components/page-layout.tsx:165` PageSectionTitle, called from 13 files — `export function PageSectionTitle({`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/components/page-layout.tsx:179": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/components/page-layout.tsx:179` PageSectionDescription, called from 11 files — `export function PageSectionDescription({`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/components/page-layout.tsx:198": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/components/page-layout.tsx:198` PageSectionContent, called from 16 files — `export function PageSectionContent({`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/components/settings-layout.tsx:57": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/components/settings-layout.tsx:57` SettingsPageDescription, called from 16 files — `export function SettingsPageDescription({`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/features/api-keys/data.ts:8": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/features/api-keys/data.ts:8` getSpaceApiKeys: does I/O (spaceApiKey.findMany) — `export function getSpaceApiKeys({ spaceId }: { spaceId: AuthorizedSpaceId }) {`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/features/calendars/data.ts:33": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/features/calendars/data.ts:33` getDefaultCalendar: does I/O (user.findUnique) — `export const getDefaultCalendar = async (userId: string) => {`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/features/calendars/data.ts:5": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/features/calendars/data.ts:5` getCalendars: does I/O (calendarConnection.findMany) — `export const getCalendars = async (userId: string) => {`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/features/conferencing/data.ts:87": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/features/conferencing/data.ts:87` getConferencingConnectionForProvider: does I/O (conferencingConnection.findFirst) — `export const getConferencingConnectionForProvider = async ({`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/features/conferencing/service.ts:298": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/features/conferencing/service.ts:298` createZoomMeeting: does I/O (fetch) — `async function createZoomMeeting({`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/features/conferencing/service.ts:342": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/features/conferencing/service.ts:342` createWebexMeeting: does I/O (fetch) — `async function createWebexMeeting({`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/features/conferencing/service.ts:385": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/features/conferencing/service.ts:385` createTeamsMeeting: does I/O (fetch) — `async function createTeamsMeeting({`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/features/event-types/data.ts:46": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/features/event-types/data.ts:46` getEventTypes: does I/O (eventType.findMany) — `export async function getEventTypes(`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/features/instance-settings/data.ts:80": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/features/instance-settings/data.ts:80` isRegistrationOpen: does I/O (instanceSettings.findUnique) — `export async function isRegistrationOpen() {`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/features/licensing/data.ts:12": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/features/licensing/data.ts:12` getInstanceLicense: does I/O (instanceLicense.findFirst) — `export function getInstanceLicense() {`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/features/poll/invite/data.ts:11": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/features/poll/invite/data.ts:11` listPollInvites: does I/O (pollInvite.findMany) — `export async function listPollInvites({ pollId }: { pollId: string }) {`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/features/scheduled-event/data.ts:594": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/features/scheduled-event/data.ts:594` searchScheduledEvents: does I/O (scheduledEvent.findMany) — `export async function searchScheduledEvents({`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/features/space/member/data.ts:224": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/features/space/member/data.ts:224` searchSpaceMembers: does I/O (spaceMember.findMany) — `export async function searchSpaceMembers({`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/features/webhook/service.ts:235": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/features/webhook/service.ts:235` try: does I/O (fetch) — `try: (signal) =>`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/lib/auth.ts:732": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/auth.ts:732` before: does I/O (user.findUnique) — `before: async (session) => {`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/lib/auth.ts:744": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/auth.ts:744` after: does I/O (user.update) — `after: async (session) => {`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/lib/auth.ts:774": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/auth.ts:774` after: does I/O (user.update) — `after: async (session) => {`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/lib/cache/index.ts:53": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/cache/index.ts:53` createCache: does I/O (client.get, client.set) — `export function createCache<T>({`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/lib/oauth/providers/microsoft.ts:99": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/oauth/providers/microsoft.ts:99` MicrosoftOAuthClient.getUserInfo: does I/O (fetch) — `async getUserInfo(tokens: OAut… Promise<UserInfo> {`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/lib/oauth/providers/webex.ts:78": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/oauth/providers/webex.ts:78` WebexOAuthClient.getUserInfo: does I/O (fetch) — `async getUserInfo(tokens: OAut… Promise<UserInfo> {`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/lib/oauth/providers/zoom.ts:76": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/oauth/providers/zoom.ts:76` ZoomOAuthClient.getUserInfo: does I/O (fetch) — `async getUserInfo(tokens: OAut… Promise<UserInfo> {`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/lib/safe-action/server.ts:28": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/safe-action/server.ts:28` createRateLimitMiddleware, called from 9 files — `export const createRateLimitMiddleware = ({`"
+  },
+  "Important code no test reaches (N function)|apps/web/src/lib/storage/upload-client.ts:3": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/storage/upload-client.ts:3` uploadAsset: does I/O (fetch) — `export async function uploadAsset({`"
+  },
+  "Important code no test reaches (N function)|packages/database/prisma/seed/personas/helpers.ts:244": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`packages/database/prisma/seed/personas/helpers.ts:244` logo: does I/O (readFileSync), called from 5 files — `export function logo(name: string) {`"
+  },
+  "Important code no test reaches (N function)|packages/translations/src/cli.ts:19": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`packages/translations/src/cli.ts:19` readEnvFile: does I/O (readFileSync) — `const readEnvFile = () => {`"
+  },
+  "Important code no test reaches (N function)|packages/translations/src/cli.ts:75": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`packages/translations/src/cli.ts:75` complete: does I/O (completions.create) — `const complete: Complete = async (params) => {`"
+  },
+  "Important code no test reaches (N function)|packages/ui/src/field.tsx:135": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`packages/ui/src/field.tsx:135` FieldTitle, called from 10 files — `function FieldTitle({ className, ...props }: React.ComponentProps<\"div\">) {`"
+  },
+  "Module-level mutable state (N place)|apps/web/src/app/api/v1/[...route]/route.ts:410": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/app/api/v1/[...route]/route.ts:410` let openApiSpec: Awaited<ReturnType<typeof buildOpenApiSpec>> | undefined;"
+  },
+  "Module-level mutable state (N place)|apps/web/src/components/router-loading-indicator.tsx:9": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/components/router-loading-indicator.tsx:9` let pendingCount = 0;"
+  },
+  "Module-level mutable state (N place)|apps/web/src/features/billing/nonprofit/mutations.ts:13": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/features/billing/nonprofit/mutations.ts:13` let couponPromise: Promise<string> | undefined;"
+  },
+  "Module-level mutable state (N place)|apps/web/src/features/billing/service.ts:8": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/features/billing/service.ts:8` let stripeClient: Stripe | undefined;"
+  },
+  "Module-level mutable state (N place)|apps/web/src/features/webhook/service.ts:156": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/features/webhook/service.ts:156` let guardedDispatcher: Dispatcher | null = null;"
+  },
+  "Module-level mutable state (N place)|apps/web/src/lib/posthog.ts:9": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/posthog.ts:9` let instance: PostHog | undefined;"
+  },
+  "Module-level mutable state (N place)|apps/web/src/lib/query-client.ts:7": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/query-client.ts:7` let browserQueryClient: QueryClient | undefined;"
+  },
+  "Module-level mutable state (N place)|packages/database/prisma/seed.ts:20": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`packages/database/prisma/seed.ts:20` let idCounter = 0; *(script)*"
+  },
+  "Module-level mutable state (N place)|packages/emails/src/transport.ts:10": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`packages/emails/src/transport.ts:10` let cachedTransport: Transporter | undefined;"
+  },
+  "Module-level mutable state (N place)|packages/posthog/src/client.ts:11": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`packages/posthog/src/client.ts:11` let initialized = false;"
+  },
+  "Module-level mutable state (N place)|packages/posthog/src/client.ts:12": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`packages/posthog/src/client.ts:12` let syncedDistinctId: string | null | undefined;"
+  },
+  "Module-level mutable state (N place)|packages/posthog/src/client.ts:13": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`packages/posthog/src/client.ts:13` let lastPathname: string | undefined;"
+  },
+  "Module-level mutable state (N place)|packages/ui/src/event-calendar/event-calendar-dnd.tsx:71": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`packages/ui/src/event-calendar/event-calendar-dnd.tsx:71` let lastGestureEndedAt = 0;"
+  },
+  "Module-level mutable state (N place)|packages/ui/src/event-calendar/event-calendar-dnd.tsx:83": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`packages/ui/src/event-calendar/event-calendar-dnd.tsx:83` let lastChipPressAt = 0;"
+  },
+  "Module-level mutable state (N place)|scripts/check-feature-cycles.mjs:84": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`scripts/check-feature-cycles.mjs:84` let index = 0; *(script)*"
+  },
+  "Module-level mutable state (N place)|scripts/check-user-cascade-relations.mjs:234": {
+   "check": "Module-level mutable state (N place)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`scripts/check-user-cascade-relations.mjs:234` let failed = false; *(script)*"
+  },
+  "N error silently swallowed|apps/web/src/app/[locale]/(space)/settings/api-keys/components/create-api-key-button.tsx:165": {
+   "check": "N error silently swallowed",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`apps/web/src/app/[locale]/(space)/settings/api-keys/components/create-api-key-button.tsx:165` } catch {}"
+  },
+  "N error silently swallowed|apps/web/src/app/[locale]/(space)/settings/general/components/collaboration-section.tsx:81": {
+   "check": "N error silently swallowed",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`apps/web/src/app/[locale]/(space)/settings/general/components/collaboration-section.tsx:81` } catch {}"
+  },
+  "N error silently swallowed|apps/web/src/app/[locale]/(space)/settings/general/components/custom-branding-section.tsx:82": {
+   "check": "N error silently swallowed",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`apps/web/src/app/[locale]/(space)/settings/general/components/custom-branding-section.tsx:82` } catch {}"
+  },
+  "N error silently swallowed|apps/web/src/app/[locale]/(space)/settings/general/components/custom-branding-section.tsx:90": {
+   "check": "N error silently swallowed",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`apps/web/src/app/[locale]/(space)/settings/general/components/custom-branding-section.tsx:90` } catch {}"
+  },
+  "N error silently swallowed|apps/web/src/app/[locale]/(space)/settings/general/components/space-settings-form.tsx:129": {
+   "check": "N error silently swallowed",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`apps/web/src/app/[locale]/(space)/settings/general/components/space-settings-form.tsx:129` } catch {}"
+  },
+  "N error silently swallowed|apps/web/src/app/[locale]/(space)/settings/general/components/space-settings-form.tsx:97": {
+   "check": "N error silently swallowed",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`apps/web/src/app/[locale]/(space)/settings/general/components/space-settings-form.tsx:97` } catch {}"
+  },
+  "N error silently swallowed|apps/web/src/app/[locale]/(space)/settings/profile/components/delete-account-dialog.tsx:130": {
+   "check": "N error silently swallowed",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`apps/web/src/app/[locale]/(space)/settings/profile/components/delete-account-dialog.tsx:130` .catch(() => {})"
+  },
+  "N error silently swallowed|apps/web/src/app/[locale]/(space)/settings/security/components/setup-password-dialog.tsx:75": {
+   "check": "N error silently swallowed",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`apps/web/src/app/[locale]/(space)/settings/security/components/setup-password-dialog.tsx:75` } catch {}"
+  },
+  "N error silently swallowed|apps/web/src/app/[locale]/invite/[urlId]/page.tsx:60": {
+   "check": "N error silently swallowed",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`apps/web/src/app/[locale]/invite/[urlId]/page.tsx:60` promise.catch(() => {});"
+  },
+  "N error silently swallowed|apps/web/src/app/[locale]/setup/components/setup-form.tsx:173": {
+   "check": "N error silently swallowed",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`apps/web/src/app/[locale]/setup/components/setup-form.tsx:173` } catch {}"
+  },
+  "N error silently swallowed|apps/web/src/lib/asset-load-report.ts:91": {
+   "check": "N error silently swallowed",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/asset-load-report.ts:91` }).catch(() => {});"
+  },
+  "N error silently swallowed|apps/web/src/lib/chunk-registration-log.ts:53": {
+   "check": "N error silently swallowed",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/chunk-registration-log.ts:53` } catch {}"
+  },
+  "N error silently swallowed|packages/posthog/src/client.ts:31": {
+   "check": "N error silently swallowed",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`packages/posthog/src/client.ts:31` } catch {}"
+  },
+  "Network calls without a timeout|apps/landing/src/app/[locale]/opengraph-image.tsx:27": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/landing/src/app/[locale]/opengraph-image.tsx:27` const cssResponse = await fetch(cssUrl);"
+  },
+  "Network calls without a timeout|apps/web/src/lib/oauth/oauth2.ts:158": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/oauth/oauth2.ts:158` const response = await fetch(endpoint, { method: \"POST\", headers, body });"
+  },
+  "Network calls without a timeout|apps/web/src/lib/oauth/providers/microsoft.ts:101": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/oauth/providers/microsoft.ts:101` const res = await fetch("
+  },
+  "Network calls without a timeout|apps/web/src/lib/oauth/providers/zoom.ts:78": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/oauth/providers/zoom.ts:78` const res = await fetch(\"https://api.zoom.us/v2/users/me\", {"
+  },
+  "Network calls without a timeout|apps/web/src/lib/storage/upload-client.ts:10": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/storage/upload-client.ts:10` const response = await fetch(url, {"
+  },
+  "Personal data sent to analytics or crash reporting|apps/web/src/features/user/client.tsx:38": {
+   "check": "Personal data sent to analytics or crash reporting",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`apps/web/src/features/user/client.tsx:38` posthog.setPersonProperties({ name, email, locale });"
+  },
+  "Queries or requests inside loops (N) in N place|apps/web/src/app/api/house-keeping/[...method]/route.ts:123": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/app/api/house-keeping/[...method]/route.ts:123` removeDeletedUsers: removeDeletedUsers calls findUsersScheduledForRemoval() inside a loop (line 123), and that reaches user.findMany() — `const users = await findUsersScheduledForRemoval({`"
+  },
+  "Queries or requests inside loops (N) in N place|apps/web/src/app/api/house-keeping/[...method]/route.ts:135": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/app/api/house-keeping/[...method]/route.ts:135` removeDeletedUsers: removeDeletedUsers calls cancelUserSubscriptions() inside a loop (line 135), and that reaches subscription.findMany() — `await cancelUserSubscriptions({ userId: user.id });`"
+  },
+  "Queries or requests inside loops (N) in N place|apps/web/src/app/api/house-keeping/[...method]/route.ts:141": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/app/api/house-keeping/[...method]/route.ts:141` removeDeletedUsers: removeDeletedUsers calls deletePostHogPerson() inside a loop (line 141), and that reaches fetch() — `await deletePostHogPerson({ distinctId: user.id });`"
+  },
+  "Queries or requests inside loops (N) in N place|apps/web/src/app/api/updates/route.ts:49": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/app/api/updates/route.ts:49` fetchReleaseChannels: fetchReleaseChannels calls fetch() inside a loop (line 49) — `const res = await fetch(`"
+  },
+  "Queries or requests inside loops (N) in N place|apps/web/src/app/api/updates/route.ts:93": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/app/api/updates/route.ts:93` fetchSecurityAdvisories: fetchSecurityAdvisories calls fetch() inside a loop (line 93) — `const res = await fetch(url, {`"
+  },
+  "Queries or requests inside loops (N) in N place|apps/web/src/features/poll/mutations.ts:466": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/features/poll/mutations.ts:466` removeDeletedPolls: removeDeletedPolls calls poll.findMany() inside a loop (line 466) — `const batch = await prisma.poll.findMany({`"
+  },
+  "Queries or requests inside loops (N) in N place|apps/web/src/features/user/mutations.ts:232": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/features/user/mutations.ts:232` deleteOrphanedAnonymousUsers: deleteOrphanedAnonymousUsers calls user.findMany() inside a loop (line 232) — `const batch = await prisma.user.findMany({`"
+  },
+  "Queries or requests inside loops (N) in N place|apps/web/src/lib/chunk-recovery.ts:123": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/chunk-recovery.ts:123` refetchStaticAssets: refetchStaticAssets calls fetch() inside a loop (line 123) — `fetch(url, {`"
+  },
+  "Raw HTML injected into pages|apps/landing/src/components/json-ld.tsx:7": {
+   "check": "Raw HTML injected into pages",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`apps/landing/src/components/json-ld.tsx:7` dangerouslySetInnerHTML={{  (no endpoint reaches it)"
+  },
+  "Raw HTML injected into pages|apps/web/src/app/[locale]/layout.tsx:89": {
+   "check": "Raw HTML injected into pages",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`apps/web/src/app/[locale]/layout.tsx:89` dangerouslySetInnerHTML={{ __html: chunkRegistrationLogScript }}  (no endpoint reaches it)"
+  },
+  "Raw HTML injected into pages|apps/web/src/app/[locale]/layout.tsx:94": {
+   "check": "Raw HTML injected into pages",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`apps/web/src/app/[locale]/layout.tsx:94` dangerouslySetInnerHTML={{  (no endpoint reaches it)"
+  },
+  "Unused code (N function)|apps/web/src/app/[locale]/e/[id]/components/event-header.tsx:50": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/app/[locale]/e/[id]/components/event-header.tsx:50` EventStatus — `export function EventStatus({`"
+  },
+  "Unused code (N function)|apps/web/src/components/page-icons.tsx:102": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/components/page-icons.tsx:102` PreferencesPageIcon — `export function PreferencesPageIcon(props: PageIconVariantProps) {`"
+  },
+  "Unused code (N function)|apps/web/src/components/page-icons.tsx:56": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/components/page-icons.tsx:56` AccountPageIcon — `export function AccountPageIcon() {`"
+  },
+  "Unused code (N function)|apps/web/src/components/page-icons.tsx:63": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/components/page-icons.tsx:63` SpacesPageIcon — `export function SpacesPageIcon() {`"
+  },
+  "Unused code (N function)|apps/web/src/components/page-icons.tsx:71": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/components/page-icons.tsx:71` TeamsPageIcon — `export function TeamsPageIcon() {`"
+  },
+  "Unused code (N function)|apps/web/src/components/page-icons.tsx:78": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/components/page-icons.tsx:78` HomePageIcon — `export function HomePageIcon(props: PageIconVariantProps) {`"
+  },
+  "Unused code (N function)|apps/web/src/components/page-icons.tsx:94": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/components/page-icons.tsx:94` ProfilePageIcon — `export function ProfilePageIcon(props: PageIconVariantProps) {`"
+  },
+  "Unused code (N function)|apps/web/src/components/page-layout.tsx:64": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/components/page-layout.tsx:64` PageHeaderActions — `export function PageHeaderActions({`"
+  },
+  "Unused code (N function)|apps/web/src/features/licensing/data.ts:53": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/features/licensing/data.ts:53` getUserLimit — `export const getUserLimit = async () => {`"
+  },
+  "Unused code (N function)|apps/web/src/features/moderation/mutations.ts:258": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/features/moderation/mutations.ts:258` isModerationEnabled — `export function isModerationEnabled(): boolean {`"
+  },
+  "Unused code (N function)|apps/web/src/features/poll/components/event-meta.tsx:49": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/features/poll/components/event-meta.tsx:49` EventMetaHost — `export function EventMetaHost({`"
+  },
+  "Unused code (N function)|apps/web/src/features/poll/components/event-meta.tsx:63": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/features/poll/components/event-meta.tsx:63` EventMetaHostName — `export function EventMetaHostName({`"
+  },
+  "Unused code (N function)|apps/web/src/features/poll/components/visibility.tsx:49": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/features/poll/components/visibility.tsx:49` VisibilityProvider — `export const VisibilityProvider = ({ children }: React.PropsWithChildren) => {`"
+  },
+  "Unused code (N function)|apps/web/src/features/poll/components/vote-breakdown-dialog.tsx:57": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/features/poll/components/vote-breakdown-dialog.tsx:57` VoteBreakdownDialog — `export function VoteBreakdownDialog({`"
+  },
+  "Unused code (N function)|apps/web/src/features/poll/components/voting-footer.tsx:37": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/features/poll/components/voting-footer.tsx:37` useSelectionCount — `export function useSelectionCount() {`"
+  },
+  "Unused code (N function)|apps/web/src/features/poll/invite/components/ballot-pill.tsx:15": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/features/poll/invite/components/ballot-pill.tsx:15` BallotPill — `export function BallotPill({`"
+  },
+  "Unused code (N function)|apps/web/src/features/space/components/space-tier.tsx:16": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/features/space/components/space-tier.tsx:16` SpaceTierIcon — `export const SpaceTierIcon = ({ tier }: { tier: SpaceTier }) => {`"
+  },
+  "Unused code (N function)|apps/web/src/features/user/mutations.ts:10": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/features/user/mutations.ts:10` createUser — `export async function createUser({`"
+  },
+  "Unused code (N function)|apps/web/src/features/webhook/data.ts:69": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/features/webhook/data.ts:69` countSpaceWebhooks — `export function countSpaceWebhooks({ spaceId }: { spaceId: string }) {`"
+  },
+  "Unused code (N function)|apps/web/src/lib/auth.ts:894": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/auth.ts:894` getUserIdIfLoggedIn — `export const getUserIdIfLoggedIn = async () => {`"
+  },
+  "Unused code (N function)|apps/web/src/lib/session.ts:30": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/session.ts:30` createToken — `export const createToken = async <T extends Record<string, unknown>>(`"
+  },
+  "Unused code (N function)|apps/web/src/lib/translation-dom-guard.ts:42": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/translation-dom-guard.ts:42` installTranslationDomGuard.removeChild — `proto.removeChild = function removeChild<T extends Node>(`"
+  },
+  "Unused code (N function)|apps/web/src/lib/translation-dom-guard.ts:58": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`apps/web/src/lib/translation-dom-guard.ts:58` installTranslationDomGuard.insertBefore — `proto.insertBefore = function insertBefore<T extends Node>(`"
+  },
+  "Unused code (N function)|packages/billing/src/lib/stripe.ts:224": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`packages/billing/src/lib/stripe.ts:224` getApiPollAddonPricing — `export async function getApiPollAddonPricing({ stripe }: { stripe: Stripe }) {`"
+  },
+  "Unused code (N function)|packages/emails/src/components/styled-components.tsx:122": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`packages/emails/src/components/styled-components.tsx:122` SubHeadingText — `export const SubHeadingText = (props: TextProps) => {`"
+  },
+  "Unused code (N function)|packages/emails/src/components/styled-components.tsx:44": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`packages/emails/src/components/styled-components.tsx:44` Domain — `export const Domain = ({ chrome }: { chrome: EmailChrome }) => {`"
+  },
+  "Writes inside loops in N place|apps/web/src/app/api/house-keeping/[...method]/route.ts:143": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`apps/web/src/app/api/house-keeping/[...method]/route.ts:143` removeDeletedUsers — `await hardDeleteUser({ userId: user.id });`"
+  },
+  "Writes inside loops in N place|apps/web/src/features/conferencing/mutations.ts:62": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`apps/web/src/features/conferencing/mutations.ts:62` createConferencingConnection — `await removeConferencingConnection(previous);`"
+  }
+ }
+}

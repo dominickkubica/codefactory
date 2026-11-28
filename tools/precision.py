@@ -127,10 +127,12 @@ def sample(args) -> int:
     labels, now = load(), reported()
     by_check: dict[str, list[str]] = defaultdict(list)
     for k, hit in now.items():
-        if hit["repo"] not in VULNERABLE_BY_DESIGN and (not args.checks or hit["check"].startswith(tuple(args.checks.split("|")))):
+        if hit["repo"] not in VULNERABLE_BY_DESIGN and (
+            not args.checks or hit["check"].startswith(tuple(args.checks.split("|")))
+        ):
             by_check[hit["check"]].append(k)
     added = 0
-    for check, keys in sorted(by_check.items()):
+    for _check, keys in sorted(by_check.items()):
         have = [k for k in keys if k in labels and labels[k].get("round", 1) == args.round]
         want = args.per_check - len(have)
         if want <= 0:
@@ -312,8 +314,8 @@ def report(args) -> int:
         name = f"{r['check']} *(hint)*" if r["hint"] else r["check"]
         if r["hint"]:
             now, ci = "–", ""
-        table.append(f"| {name} | {was} | {now} | {ci} | {r['n'] if not r['hint'] else '–'} | {r['fixed'] if not r['hint'] else '–'} "
-                     f"| {r['lost'] if not r['hint'] else '–'} |")
+        labeled, fixed_n, lost_n = ("–", "–", "–") if r["hint"] else (r["n"], r["fixed"], r["lost"])
+        table.append(f"| {name} | {was} | {now} | {ci} | {labeled} | {fixed_n} | {lost_n} |")
     rounds = sorted({v.get("round", 1) for v in load().values() if v["label"] in ("true", "false")} - {1})
     history = []
     for rnd in rounds:  # every location of the round was reported when it was drawn: its labels are the measurement
@@ -353,7 +355,8 @@ def report(args) -> int:
         return 1
     head, rest = text.split(start, 1)
     ACCURACY.write_text(head + start + "\n" + "\n".join(table) + "\n" + end + rest.split(end, 1)[1], encoding="utf-8")
-    print(f"docs/ACCURACY.md: first {k0}/{n0} = {k0 / n0:.0%}; now {k}/{n} = {k / n:.0%}; {fixed} wrong removed, {lost} right lost")
+    summary = f"first {k0}/{n0} = {k0 / n0:.0%}; now {k}/{n} = {k / n:.0%}; {fixed} wrong removed, {lost} right lost"
+    print(f"docs/ACCURACY.md: {summary}")
     return 0
 
 
@@ -380,9 +383,14 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("repos", help="owner/repo,owner/repo")
     c.add_argument("--no-run", action="store_true")
     args = p.parse_args(argv)
-    return {"check": check, "sample": sample, "batch": batch, "merge": merge, "score": lambda a: (score(a), 0)[1], "report": report}[args.cmd](
-        args
-    )
+    return {
+        "check": check,
+        "sample": sample,
+        "batch": batch,
+        "merge": merge,
+        "score": lambda a: (score(a), 0)[1],
+        "report": report,
+    }[args.cmd](args)
 
 
 if __name__ == "__main__":

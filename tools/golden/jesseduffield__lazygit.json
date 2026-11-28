@@ -1,0 +1,342 @@
+{
+ "repo": "jesseduffield/lazygit",
+ "commit": "10f045b8f93232a03e8522f924e65681b0b210d8",
+ "locations": {
+  "Container runs as root|Dockerfile:12": {
+   "check": "Container runs as root",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`Dockerfile:12` no USER after alpine:3.19 — `FROM alpine:3.19`"
+  },
+  "Copied logic in N group (~N lines)|pkg/gui/controllers/diff_paths.go:159": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "Merge 2 copies of repoRelativePath (identical, ~7 lines): `pkg/gui/controllers/diff_paths.go:159`, `pkg/gui/controllers/helpers/diff_line_plain_text.go:167`"
+  },
+  "HTTP servers without timeouts (Go)|pkg/app/entry_point.go:170": {
+   "check": "HTTP servers without timeouts (Go)",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`pkg/app/entry_point.go:170` if err := http.ListenAndServe(\"localhost:6060\", nil); err != nil {"
+  },
+  "HTTP servers without timeouts (Go)|pkg/integration/components/random.go:403": {
+   "check": "HTTP servers without timeouts (Go)",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`pkg/integration/components/random.go:403` http.ListenAndServe(fmt.Sprintf(\":%d\", port), nil)"
+  },
+  "Network calls without a timeout|pkg/updates/updates.go:273": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`pkg/updates/updates.go:273` resp, err := http.Get(rawUrl)"
+  },
+  "Network calls without a timeout|pkg/updates/updates.go:326": {
+   "check": "Network calls without a timeout",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`pkg/updates/updates.go:326` resp, err := http.Head(rawUrl)"
+  },
+  "Shell commands built at runtime|pkg/integration/clients/tui.go:126": {
+   "check": "Shell commands built at runtime",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`pkg/integration/clients/tui.go:126` cmd := exec.Command(\"sh\", \"-c\", fmt.Sprintf(\"code -r pkg/integration/tests/%s.go\", currentTest.Name()))  (no endpoint reaches it)"
+  },
+  "Shell commands built at runtime|pkg/integration/clients/tui.go:140": {
+   "check": "Shell commands built at runtime",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`pkg/integration/clients/tui.go:140` cmd := exec.Command(\"sh\", \"-c\", fmt.Sprintf(\"code test/_results/%s\", currentTest.Name()))  (no endpoint reaches it)"
+  },
+  "Untrusted text run as a shell command in CI|.github/workflows/ci.yml:196": {
+   "check": "Untrusted text run as a shell command in CI",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`.github/workflows/ci.yml:196` ./scripts/check_for_fixups.sh ${{ github.event.pull_request.base.ref }}"
+  },
+  "Unused code (N function)|vendor/github.com/creack/pty/ioctl.go:13": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/github.com/creack/pty/ioctl.go:13` ioctlNonblock — `func ioctlNonblock(f *os.File, cmd, ptr uintptr) error {`"
+  },
+  "Unused code (N function)|vendor/github.com/creack/pty/ioctl_bsd.go:26": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/github.com/creack/pty/ioctl_bsd.go:26` _IO — `func _IO(group byte, ioctl_num uintptr) uintptr {`"
+  },
+  "Unused code (N function)|vendor/github.com/creack/pty/ioctl_bsd.go:30": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/github.com/creack/pty/ioctl_bsd.go:30` _IOR — `func _IOR(group byte, ioctl_num uintptr, param_len uintptr) uintptr {`"
+  },
+  "Unused code (N function)|vendor/github.com/creack/pty/ioctl_bsd.go:38": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/github.com/creack/pty/ioctl_bsd.go:38` _IOWR — `func _IOWR(group byte, ioctl_num uintptr, param_len uintptr) uintptr {`"
+  },
+  "Unused code (N function)|vendor/github.com/integrii/flaggy/flag.go:577": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/github.com/integrii/flaggy/flag.go:577` collectAllNestedFlags — `func collectAllNestedFlags(sc *Subcommand) []*Flag {`"
+  },
+  "Unused code (N function)|vendor/github.com/kr/logfmt/unquote.go:31": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/github.com/kr/logfmt/unquote.go:31` unquote — `func unquote(s []byte) (t string, ok bool) {`"
+  },
+  "Unused code (N function)|vendor/github.com/sasha-s/go-deadlock/sync_mutex_go118.go:59": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/github.com/sasha-s/go-deadlock/sync_mutex_go118.go:59` newStandardMutex — `func newStandardMutex() MutexImpl {`"
+  },
+  "Unused code (N function)|vendor/github.com/sasha-s/go-deadlock/sync_mutex_go118.go:63": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/github.com/sasha-s/go-deadlock/sync_mutex_go118.go:63` newStandardRWMutex — `func newStandardRWMutex() RWMutexImpl {`"
+  },
+  "Unused code (N function)|vendor/github.com/sasha-s/go-deadlock/sync_mutex_legacy.go:62": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/github.com/sasha-s/go-deadlock/sync_mutex_legacy.go:62` newStandardMutex — `func newStandardMutex() MutexImpl {`"
+  },
+  "Unused code (N function)|vendor/github.com/sasha-s/go-deadlock/sync_mutex_legacy.go:66": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/github.com/sasha-s/go-deadlock/sync_mutex_legacy.go:66` newStandardRWMutex — `func newStandardRWMutex() RWMutexImpl {`"
+  },
+  "Unused code (N function)|vendor/github.com/sasha-s/go-deadlock/synctest_mutex.go:220": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/github.com/sasha-s/go-deadlock/synctest_mutex.go:220` newChannelMutex — `func newChannelMutex() MutexImpl {`"
+  },
+  "Unused code (N function)|vendor/github.com/sasha-s/go-deadlock/synctest_mutex.go:226": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/github.com/sasha-s/go-deadlock/synctest_mutex.go:226` newChannelRWMutex — `func newChannelRWMutex() RWMutexImpl {`"
+  },
+  "Unused code (N function)|vendor/github.com/stretchr/testify/internal/difflib/difflib.go:573": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/github.com/stretchr/testify/internal/difflib/difflib.go:573` formatRangeContext — `func formatRangeContext(start, stop int) string {`"
+  },
+  "Unused code (N function)|vendor/go.yaml.in/yaml/v3/apic.go:152": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/go.yaml.in/yaml/v3/apic.go:152` yaml_emitter_set_encoding — `func yaml_emitter_set_encoding(emitter *yaml_emitter_t, encoding yaml_encoding_t) {`"
+  },
+  "Unused code (N function)|vendor/go.yaml.in/yaml/v3/apic.go:160": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/go.yaml.in/yaml/v3/apic.go:160` yaml_emitter_set_canonical — `func yaml_emitter_set_canonical(emitter *yaml_emitter_t, canonical bool) {`"
+  },
+  "Unused code (N function)|vendor/go.yaml.in/yaml/v3/apic.go:165": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/go.yaml.in/yaml/v3/apic.go:165` yaml_emitter_set_indent — `func yaml_emitter_set_indent(emitter *yaml_emitter_t, indent int) {`"
+  },
+  "Unused code (N function)|vendor/go.yaml.in/yaml/v3/apic.go:173": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/go.yaml.in/yaml/v3/apic.go:173` yaml_emitter_set_width — `func yaml_emitter_set_width(emitter *yaml_emitter_t, width int) {`"
+  },
+  "Unused code (N function)|vendor/go.yaml.in/yaml/v3/apic.go:186": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/go.yaml.in/yaml/v3/apic.go:186` yaml_emitter_set_break — `func yaml_emitter_set_break(emitter *yaml_emitter_t, line_break yaml_break_t) {`"
+  },
+  "Unused code (N function)|vendor/go.yaml.in/yaml/v3/apic.go:97": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/go.yaml.in/yaml/v3/apic.go:97` yaml_parser_set_encoding — `func yaml_parser_set_encoding(parser *yaml_parser_t, encoding yaml_encoding_t) {`"
+  },
+  "Unused code (N function)|vendor/go.yaml.in/yaml/v3/decode.go:548": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/go.yaml.in/yaml/v3/decode.go:548` resetMap — `func resetMap(out reflect.Value) {`"
+  },
+  "Unused code (N function)|vendor/go.yaml.in/yaml/v3/emitterc.go:877": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/go.yaml.in/yaml/v3/emitterc.go:877` yaml_emitter_silent_nil_event — `func yaml_emitter_silent_nil_event(emitter *yaml_emitter_t, event *yaml_event_t) bool {`"
+  },
+  "Unused code (N function)|vendor/go.yaml.in/yaml/v3/scannerc.go:602": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/go.yaml.in/yaml/v3/scannerc.go:602` yaml_parser_scan — `func yaml_parser_scan(parser *yaml_parser_t, token *yaml_token_t) bool {`"
+  },
+  "Unused code (N function)|vendor/go.yaml.in/yaml/v3/yamlprivateh.go:151": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/go.yaml.in/yaml/v3/yamlprivateh.go:151` is_spacez — `func is_spacez(b []byte, i int) bool {`"
+  },
+  "Unused code (N function)|vendor/golang.org/x/sys/plan9/syscall_plan9.go:55": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/golang.org/x/sys/plan9/syscall_plan9.go:55` errstr — `func errstr() string {`"
+  },
+  "Unused code (N function)|vendor/golang.org/x/sys/unix/bpxsvc_zos.go:607": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/golang.org/x/sys/unix/bpxsvc_zos.go:607` copyU8 — `func copyU8(val uint8, dest []uint8) int {`"
+  },
+  "Unused code (N function)|vendor/golang.org/x/sys/unix/bpxsvc_zos.go:615": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/golang.org/x/sys/unix/bpxsvc_zos.go:615` copyU8Arr — `func copyU8Arr(src, dest []uint8) int {`"
+  },
+  "Unused code (N function)|vendor/golang.org/x/sys/unix/bpxsvc_zos.go:625": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/golang.org/x/sys/unix/bpxsvc_zos.go:625` copyU16 — `func copyU16(val uint16, dest []uint16) int {`"
+  },
+  "Unused code (N function)|vendor/golang.org/x/sys/unix/bpxsvc_zos.go:633": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/golang.org/x/sys/unix/bpxsvc_zos.go:633` copyU32 — `func copyU32(val uint32, dest []uint32) int {`"
+  },
+  "Unused code (N function)|vendor/golang.org/x/sys/unix/bpxsvc_zos.go:641": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/golang.org/x/sys/unix/bpxsvc_zos.go:641` copyU32Arr — `func copyU32Arr(src, dest []uint32) int {`"
+  },
+  "Unused code (N function)|vendor/golang.org/x/sys/unix/bpxsvc_zos.go:651": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/golang.org/x/sys/unix/bpxsvc_zos.go:651` copyU64 — `func copyU64(val uint64, dest []uint64) int {`"
+  },
+  "Unused code (N function)|vendor/golang.org/x/sys/unix/syscall_zos_s390x.go:169": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/golang.org/x/sys/unix/syscall_zos_s390x.go:169` isValidLeFunc — `func isValidLeFunc(f uintptr) error {`"
+  },
+  "Unused code (N function)|vendor/golang.org/x/sys/unix/syscall_zos_s390x.go:210": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/golang.org/x/sys/unix/syscall_zos_s390x.go:210` zosLeVersion — `func zosLeVersion() (version, release uint32) {`"
+  },
+  "Unused code (N function)|vendor/golang.org/x/sys/unix/syscall_zos_s390x.go:3047": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/golang.org/x/sys/unix/syscall_zos_s390x.go:3047` fdToPath — `func fdToPath(dirfd int) (path string, err error) {`"
+  },
+  "Unused code (N function)|vendor/golang.org/x/text/cases/icu.go:27": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/golang.org/x/text/cases/icu.go:27` doICU — `func doICU(tag, caser, input string) string {`"
+  },
+  "Unused code (N function)|vendor/golang.org/x/text/internal/language/compact/language.go:122": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/golang.org/x/text/internal/language/compact/language.go:122` nextToken — `func nextToken(s string) (t, tail string) {`"
+  },
+  "Unused code (N function)|vendor/golang.org/x/text/internal/language/lookup.go:29": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/golang.org/x/text/internal/language/lookup.go:29` searchUint — `func searchUint(imap []uint16, key uint16) int {`"
+  },
+  "Unused code (N function)|vendor/golang.org/x/text/unicode/norm/composition.go:386": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/golang.org/x/text/unicode/norm/composition.go:386` isHangulWithoutJamoT — `func isHangulWithoutJamoT(b []byte) bool {`"
+  },
+  "Unused code (N function)|vendor/gopkg.in/yaml.v3/apic.go:152": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/gopkg.in/yaml.v3/apic.go:152` yaml_emitter_set_encoding — `func yaml_emitter_set_encoding(emitter *yaml_emitter_t, encoding yaml_encoding_t) {`"
+  },
+  "Unused code (N function)|vendor/gopkg.in/yaml.v3/apic.go:160": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/gopkg.in/yaml.v3/apic.go:160` yaml_emitter_set_canonical — `func yaml_emitter_set_canonical(emitter *yaml_emitter_t, canonical bool) {`"
+  },
+  "Unused code (N function)|vendor/gopkg.in/yaml.v3/apic.go:165": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/gopkg.in/yaml.v3/apic.go:165` yaml_emitter_set_indent — `func yaml_emitter_set_indent(emitter *yaml_emitter_t, indent int) {`"
+  },
+  "Unused code (N function)|vendor/gopkg.in/yaml.v3/apic.go:173": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/gopkg.in/yaml.v3/apic.go:173` yaml_emitter_set_width — `func yaml_emitter_set_width(emitter *yaml_emitter_t, width int) {`"
+  },
+  "Unused code (N function)|vendor/gopkg.in/yaml.v3/apic.go:186": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/gopkg.in/yaml.v3/apic.go:186` yaml_emitter_set_break — `func yaml_emitter_set_break(emitter *yaml_emitter_t, line_break yaml_break_t) {`"
+  },
+  "Unused code (N function)|vendor/gopkg.in/yaml.v3/apic.go:97": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/gopkg.in/yaml.v3/apic.go:97` yaml_parser_set_encoding — `func yaml_parser_set_encoding(parser *yaml_parser_t, encoding yaml_encoding_t) {`"
+  },
+  "Unused code (N function)|vendor/gopkg.in/yaml.v3/decode.go:548": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/gopkg.in/yaml.v3/decode.go:548` resetMap — `func resetMap(out reflect.Value) {`"
+  },
+  "Unused code (N function)|vendor/gopkg.in/yaml.v3/emitterc.go:850": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/gopkg.in/yaml.v3/emitterc.go:850` yaml_emitter_silent_nil_event — `func yaml_emitter_silent_nil_event(emitter *yaml_emitter_t, event *yaml_event_t) bool {`"
+  },
+  "Unused code (N function)|vendor/gopkg.in/yaml.v3/scannerc.go:602": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/gopkg.in/yaml.v3/scannerc.go:602` yaml_parser_scan — `func yaml_parser_scan(parser *yaml_parser_t, token *yaml_token_t) bool {`"
+  },
+  "Unused code (N function)|vendor/gopkg.in/yaml.v3/yamlprivateh.go:151": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/gopkg.in/yaml.v3/yamlprivateh.go:151` is_spacez — `func is_spacez(b []byte, i int) bool {`"
+  }
+ }
+}

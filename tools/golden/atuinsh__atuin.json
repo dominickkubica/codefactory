@@ -1,0 +1,1560 @@
+{
+ "repo": "atuinsh/atuin",
+ "commit": "21cf3b8ea96aff478baab9a3f211b9859878c15d",
+ "locations": {
+  "Copied logic in N group (~N lines)|crates/atuin-ai/src/commands/session.rs:1669": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 3 copies of handle (identical, ~12 lines): `crates/atuin-ai/src/commands/session.rs:1669`, `crates/atuin-ai/src/resume_tui/fake.rs:84`, `crates/atuin-client/src/ai_session/database.rs:2513`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-ai/src/resume_tui/keymap.rs:53": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of Keymap.has_sequence_starting_with (identical, ~6 lines): `crates/atuin-ai/src/resume_tui/keymap.rs:53`, `crates/atuin/src/command/client/search/keybindings/keymap.rs:95`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-client/src/auth.rs:386": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge HubAuthClient.change_password, HubAuthClient.delete_account (85% similar, ~64 lines): `crates/atuin-client/src/auth.rs:386`, `crates/atuin-client/src/auth.rs:453`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-client/src/database.rs:526": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge Database.delete, Database.save, Database.update, Sqlite.save (88% similar, ~38 lines): `crates/atuin-client/src/database.rs:526`, `crates/atuin-kv/src/database.rs:92`, `crates/atuin-kv/src/database.rs:83`, `crates/atuin-scripts/src/database.rs:182`, `crates/atuin-scripts/src/database.rs:80`, `crates/atuin-scripts/src/database.rs:227`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-client/src/history/store.rs:246": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge AliasStore.new, HistoryStore.new, ScriptStore.new, VarStore.new (identical, ~21 lines): `crates/atuin-client/src/history/store.rs:246`, `crates/atuin-dotfiles/src/store.rs:128`, `crates/atuin-dotfiles/src/store/var.rs:106`, `crates/atuin-scripts/src/store.rs:25`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-client/src/import/mod.rs:83": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between get_histdir_path, get_histfile_path (identical, ~6 lines): `crates/atuin-client/src/import/mod.rs:90`, `crates/atuin-client/src/import/mod.rs:83`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-client/src/import/nu_histdb.rs:66": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of hist_from_db (identical, ~7 lines): `crates/atuin-client/src/import/nu_histdb.rs:66`, `crates/atuin-client/src/import/zsh_histdb.rs:77`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-client/src/import/replxx.rs:19": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of default_histpath (92% similar, ~20 lines): `crates/atuin-client/src/import/replxx.rs:19`, `crates/atuin-client/src/import/zsh.rs:27`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-client/src/meta.rs:170": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Share one body between last_sync, last_version_check (identical, ~6 lines): `crates/atuin-client/src/meta.rs:170`, `crates/atuin-client/src/meta.rs:181`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-client/src/tui/key.rs:307": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge Action.deserialize, ConditionExpr.deserialize, KeyInput.deserialize, NonNulStr.deserialize, OwnedDbUrl.deserialize (90% similar, ~16 lines): `crates/atuin-client/src/tui/key.rs:307`, `crates/atuin-common/src/db/mod.rs:289`, `crates/atuin-common/src/string/non_nul_str.rs:100`, `crates/atuin/src/command/client/search/keybindings/actions.rs:255`, `crates/atuin/src/command/client/search/keybindings/conditions.rs:367`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-common/res/harnesstools/opencode/atuin.ts:65": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of atuin (identical, ~29 lines): `crates/atuin-common/res/harnesstools/opencode/atuin.ts:65`, `crates/atuin-common/res/harnesstools/opencode/atuin.v2.ts:83`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-common/res/harnesstools/opencode/atuin.ts:79": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of atuin.settle (identical, ~6 lines): `crates/atuin-common/res/harnesstools/opencode/atuin.ts:79`, `crates/atuin-common/res/harnesstools/opencode/atuin.v2.ts:97`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-common/res/harnesstools/opencode/atuin.ts:95": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of startHistory (identical, ~21 lines): `crates/atuin-common/res/harnesstools/opencode/atuin.ts:95`, `crates/atuin-common/res/harnesstools/opencode/atuin.v2.ts:113`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-common/src/harnesstools/ccode/rehydrate.rs:296": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of Writer.parent (identical, ~26 lines): `crates/atuin-common/src/harnesstools/ccode/rehydrate.rs:296`, `crates/atuin-common/src/harnesstools/pi/rehydrate.rs:407`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-common/src/harnesstools/ccode/rehydrate.rs:458": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of joined_text (identical, ~10 lines): `crates/atuin-common/src/harnesstools/ccode/rehydrate.rs:458`, `crates/atuin-common/src/harnesstools/copilot/rehydrate.rs:443`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-common/src/harnesstools/ccode/rehydrate.rs:73": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 4 copies of rehydrate (90% similar, ~18 lines): `crates/atuin-common/src/harnesstools/ccode/rehydrate.rs:73`, `crates/atuin-common/src/harnesstools/copilot/rehydrate.rs:77`, `crates/atuin-common/src/harnesstools/grok/rehydrate.rs:65`, `crates/atuin-common/src/harnesstools/kiro/rehydrate.rs:144`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-common/src/harnesstools/ccode/session.rs:83": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge CcodeSessions.existing, KiroSessions.existing (95% similar, ~29 lines): `crates/atuin-common/src/harnesstools/ccode/session.rs:83`, `crates/atuin-common/src/harnesstools/kiro/session.rs:239`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-common/src/harnesstools/continuation/tools.rs:1197": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge atuin_path_is_set_unless_set_by_hand, classify_renders, descriptions_wrap_to_the_terminal, handles_multibyte_characters, notes_name_the_call_and_its_key_input, one_sided_trims_handle_multibyte_characters, resolves_inherited_claude_hook_inside_grok, results_carried_into_hermes_take_its_shapes, set_a_documented_key, set_adds_a_missing_key_without_touching_existing_content, set_preserves_formatting_when_overwriting (91% similar, ~74 lines): `crates/atuin-common/src/harnesstools/continuation/tools.rs:1197`, `crates/atuin-common/src/harnesstools/note.rs:299`, `crates/atuin-common/src/harnesstools/plugin.rs:785`, `crates/atuin-common/src/string/trim.rs:155`, `crates/atuin-common/src/string/trim.rs:214`, `crates/atuin/src/command/client/ai_sessions.rs:413`, `crates/atuin/src/command/client/config.rs:740`, `crates/atuin/src/command/client/config.rs:697`, `crates/atuin/src/command/client/config.rs:627`, `crates/atuin/src/command/client/hook.rs:201`, `crates/atuin/src/command/client/search/syntax.rs:200`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-common/src/harnesstools/copilot/rehydrate.rs:110": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of log (identical, ~8 lines): `crates/atuin-common/src/harnesstools/copilot/rehydrate.rs:110`, `crates/atuin-common/src/harnesstools/kiro/rehydrate.rs:275`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-common/src/harnesstools/sync/amp.rs:22": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge Amp.append, Hermes.append (identical, ~9 lines): `crates/atuin-common/src/harnesstools/sync/amp.rs:22`, `crates/atuin-common/src/harnesstools/sync/hermes.rs:78`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-common/src/harnesstools/sync/amp.rs:32": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge Amp.replace, Hermes.replace, Opencode.replace, Vibe.replace (identical, ~30 lines): `crates/atuin-common/src/harnesstools/sync/amp.rs:32`, `crates/atuin-common/src/harnesstools/sync/hermes.rs:88`, `crates/atuin-common/src/harnesstools/sync/opencode.rs:82`, `crates/atuin-common/src/harnesstools/sync/vibe.rs:148`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-common/src/harnesstools/sync/ccode.rs:503": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 3 copies of append_to (96% similar, ~59 lines): `crates/atuin-common/src/harnesstools/sync/ccode.rs:503`, `crates/atuin-common/src/harnesstools/sync/copilot.rs:161`, `crates/atuin-common/src/harnesstools/sync/kiro.rs:146`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-common/src/harnesstools/sync/ccode.rs:589": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 3 copies of joined (identical, ~22 lines): `crates/atuin-common/src/harnesstools/sync/ccode.rs:589`, `crates/atuin-common/src/harnesstools/sync/copilot.rs:226`, `crates/atuin-common/src/harnesstools/sync/kiro.rs:232`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-common/src/harnesstools/sync/ccode.rs:613": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 3 copies of replace_to (92% similar, ~71 lines): `crates/atuin-common/src/harnesstools/sync/ccode.rs:613`, `crates/atuin-common/src/harnesstools/sync/copilot.rs:241`, `crates/atuin-common/src/harnesstools/sync/kiro.rs:247`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-common/src/harnesstools/sync/ccode.rs:76": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge Ccode.append, Copilot.append (identical, ~12 lines): `crates/atuin-common/src/harnesstools/sync/ccode.rs:76`, `crates/atuin-common/src/harnesstools/sync/copilot.rs:54`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-common/src/harnesstools/sync/ccode.rs:89": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge Ccode.replace, Copilot.replace (identical, ~13 lines): `crates/atuin-common/src/harnesstools/sync/ccode.rs:89`, `crates/atuin-common/src/harnesstools/sync/copilot.rs:67`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-common/src/harnesstools/sync/copilot.rs:123": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of tip_of (identical, ~27 lines): `crates/atuin-common/src/harnesstools/sync/copilot.rs:123`, `crates/atuin-common/src/harnesstools/sync/kiro.rs:116`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-common/src/harnesstools/sync/copilot.rs:194": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 2 copies of extend (87% similar, ~29 lines): `crates/atuin-common/src/harnesstools/sync/copilot.rs:194`, `crates/atuin-common/src/harnesstools/sync/kiro.rs:201`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-daemon/src/octavo/client/nop.rs:23": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge NopOctavoClient.make_private, NopOctavoClient.thread_shares, RecordingOctavoClient.make_private, RecordingOctavoClient.thread_shares (identical, ~18 lines): `crates/atuin-daemon/src/octavo/client/nop.rs:30`, `crates/atuin-daemon/src/octavo/client/nop.rs:23`, `crates/atuin-daemon/src/octavo/client/recording.rs:49`, `crates/atuin-daemon/src/octavo/client/recording.rs:42`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-daemon/src/octavo/client/nop.rs:41": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge NopOctavoClient.add_labels, RecordingOctavoClient.add_labels (identical, ~7 lines): `crates/atuin-daemon/src/octavo/client/nop.rs:41`, `crates/atuin-daemon/src/octavo/client/recording.rs:60`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-dotfiles/src/shell/bash.rs:22": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge cached_aliases, cached_vars (90% similar, ~99 lines): `crates/atuin-dotfiles/src/shell/bash.rs:8`, `crates/atuin-dotfiles/src/shell/bash.rs:22`, `crates/atuin-dotfiles/src/shell/fish.rs:9`, `crates/atuin-dotfiles/src/shell/fish.rs:23`, `crates/atuin-dotfiles/src/shell/powershell.rs:9`, `crates/atuin-dotfiles/src/shell/powershell.rs:23`, `crates/atuin-dotfiles/src/shell/xonsh.rs:8`, `crates/atuin-dotfiles/src/shell/xonsh.rs:22`, `crates/atuin-dotfiles/src/shell/zsh.rs:8`, `crates/atuin-dotfiles/src/shell/zsh.rs:22`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-dotfiles/src/shell/bash.rs:44": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 5 copies of alias_config (91% similar, ~52 lines): `crates/atuin-dotfiles/src/shell/bash.rs:44`, `crates/atuin-dotfiles/src/shell/fish.rs:45`, `crates/atuin-dotfiles/src/shell/powershell.rs:45`, `crates/atuin-dotfiles/src/shell/xonsh.rs:44`, `crates/atuin-dotfiles/src/shell/zsh.rs:44`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-dotfiles/src/shell/bash.rs:60": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 5 copies of var_config (91% similar, ~52 lines): `crates/atuin-dotfiles/src/shell/bash.rs:60`, `crates/atuin-dotfiles/src/shell/fish.rs:61`, `crates/atuin-dotfiles/src/shell/powershell.rs:61`, `crates/atuin-dotfiles/src/shell/xonsh.rs:60`, `crates/atuin-dotfiles/src/shell/zsh.rs:60`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-dotfiles/src/shell/bash.rs:8": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge 3 copies of cached_aliases (identical, ~22 lines): `crates/atuin-dotfiles/src/shell/bash.rs:8`, `crates/atuin-dotfiles/src/shell/fish.rs:9`, `crates/atuin-dotfiles/src/shell/zsh.rs:8`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-dotfiles/src/store.rs:214": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge AliasStore.delete, AliasStore.set, VarStore.delete, VarStore.set (92% similar, ~94 lines): `crates/atuin-dotfiles/src/store.rs:251`, `crates/atuin-dotfiles/src/store.rs:214`, `crates/atuin-dotfiles/src/store/var.rs:298`, `crates/atuin-dotfiles/src/store/var.rs:263`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-dotfiles/src/store.rs:285": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge AliasStore.aliases, VarStore.vars (90% similar, ~43 lines): `crates/atuin-dotfiles/src/store.rs:285`, `crates/atuin-dotfiles/src/store/var.rs:329`"
+  },
+  "Copied logic in N group (~N lines)|crates/atuin-kv/src/store.rs:88": {
+   "check": "Copied logic in N group (~N lines)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "Merge KvStore.push_record, ScriptStore.push_record (85% similar, ~22 lines): `crates/atuin-kv/src/store.rs:88`, `crates/atuin-scripts/src/store.rs:33`"
+  },
+  "Credentials committed in source|crates/atuin-common/src/secrets.rs:1030": {
+   "check": "Credentials committed in source",
+   "severity": "Critical",
+   "tier": "hints",
+   "location": "`crates/atuin-common/src/secrets.rs:1030` #[case::bare_credential(\"ghp_…\", true)]"
+  },
+  "Credentials committed in source|crates/atuin-common/src/secrets.rs:1061": {
+   "check": "Credentials committed in source",
+   "severity": "Critical",
+   "tier": "hints",
+   "location": "`crates/atuin-common/src/secrets.rs:1061` \"export TOKEN=ghp_… # for ci\","
+  },
+  "Credentials committed in source|crates/atuin-common/src/secrets.rs:1066": {
+   "check": "Credentials committed in source",
+   "severity": "Critical",
+   "tier": "hints",
+   "location": "`crates/atuin-common/src/secrets.rs:1066` \"café ☕ ghp_… ☕ café\","
+  },
+  "Credentials committed in source|crates/atuin-common/src/secrets.rs:1070": {
+   "check": "Credentials committed in source",
+   "severity": "Critical",
+   "tier": "hints",
+   "location": "`crates/atuin-common/src/secrets.rs:1070` \"ghp_… is the token\","
+  },
+  "Credentials committed in source|crates/atuin-common/src/secrets.rs:1687": {
+   "check": "Credentials committed in source",
+   "severity": "Critical",
+   "tier": "hints",
+   "location": "`crates/atuin-common/src/secrets.rs:1687` \"ACME-123456 ghp_…\","
+  },
+  "Credentials committed in source|crates/atuin-common/src/secrets.rs:224": {
+   "check": "Credentials committed in source",
+   "severity": "Critical",
+   "tier": "hints",
+   "location": "`crates/atuin-common/src/secrets.rs:224` input: \"ghp_…\","
+  },
+  "Credentials committed in source|crates/atuin-common/src/secrets.rs:324": {
+   "check": "Credentials committed in source",
+   "severity": "Critical",
+   "tier": "hints",
+   "location": "`crates/atuin-common/src/secrets.rs:324` input: \"xoxb…\","
+  },
+  "Credentials committed in source|crates/atuin-common/src/secrets.rs:334": {
+   "check": "Credentials committed in source",
+   "severity": "Critical",
+   "tier": "hints",
+   "location": "`crates/atuin-common/src/secrets.rs:334` input: \"xoxp…\","
+  },
+  "Credentials committed in source|crates/atuin-daemon/src/session_capture/tools.rs:1025": {
+   "check": "Credentials committed in source",
+   "severity": "Critical",
+   "tier": "hints",
+   "location": "`crates/atuin-daemon/src/session_capture/tools.rs:1025` let token = \"ghp_…\";"
+  },
+  "Credentials committed in source|crates/atuin-daemon/src/session_capture/tools.rs:669": {
+   "check": "Credentials committed in source",
+   "severity": "Critical",
+   "tier": "hints",
+   "location": "`crates/atuin-daemon/src/session_capture/tools.rs:669` let token = \"ghp_…\";"
+  },
+  "Credentials committed in source|crates/atuin-daemon/src/session_capture/tools.rs:681": {
+   "check": "Credentials committed in source",
+   "severity": "Critical",
+   "tier": "hints",
+   "location": "`crates/atuin-daemon/src/session_capture/tools.rs:681` let token = \"ghp_…\";"
+  },
+  "Credentials committed in source|crates/atuin-daemon/src/session_capture/tools.rs:784": {
+   "check": "Credentials committed in source",
+   "severity": "Critical",
+   "tier": "hints",
+   "location": "`crates/atuin-daemon/src/session_capture/tools.rs:784` let token = \"ghp_…\";"
+  },
+  "Endpoints that change data without an auth check (N)|crates/atuin-server/src/router.rs:126": {
+   "check": "Endpoints that change data without an auth check (N)",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`DELETE /account` (`crates/atuin-server/src/router.rs:126`) → changes data in `CodexSession.start` (`self.pool.run`)"
+  },
+  "Endpoints that change data without an auth check (N)|crates/atuin-server/src/router.rs:131": {
+   "check": "Endpoints that change data without an auth check (N)",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`POST /api/v0/record` (`crates/atuin-server/src/router.rs:131`) → changes data in `CodexSession.start` (`self.pool.run`)"
+  },
+  "Endpoints that change data without an auth check (N)|crates/atuin-server/src/router.rs:134": {
+   "check": "Endpoints that change data without an auth check (N)",
+   "severity": "High",
+   "tier": "hints",
+   "location": "`DELETE /api/v0/store` (`crates/atuin-server/src/router.rs:134`) → changes data in `CodexSession.start` (`self.pool.run`)"
+  },
+  "File or program operations inside loops in N place|crates/atuin-common/res/harnesstools/hermes/__init__.py:144": {
+   "check": "File or program operations inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-common/res/harnesstools/hermes/__init__.py:144` _send_events — `_send(event)`"
+  },
+  "Important code no test reaches (N function)|.nvim.lua:29": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`.nvim.lua:29` in_project: does I/O (vim.api.nvim_buf_get_name) — `local function in_project(buf)`"
+  },
+  "Important code no test reaches (N function)|.nvim.lua:40": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`.nvim.lua:40` apply: does I/O (vim.api.nvim_set_option_value) — `local function apply(buf)`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-ai/src/commands.rs:84": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-ai/src/commands.rs:84` run: does I/O (session::run) — `pub async fn run(command: Command, settings: Settings) -> eyre::Result<()> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-ai/src/commands/session.rs:326": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-ai/src/commands/session.rs:326` list: does I/O (crate::tools::session::list_sessions) — `async fn list(client: &mut AiClient, style: Style) -> Result<()> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-client/src/ai_session/database/watermark.rs:157": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/ai_session/database/watermark.rs:157` AiSessionDatabase.forget_reproject_watermark: does I/O (db::query, self.db.pool) — `pub async fn forget_reproject_watermark(`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-client/src/distro.rs:20": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/distro.rs:20` detect_from_os_release: does I/O (std::fs::read_to_string) — `fn detect_from_os_release() -> Option<String> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-client/src/distro.rs:30": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/distro.rs:30` detect_from_debian_version: does I/O (std::fs::read_to_string) — `fn detect_from_debian_version() -> Option<String> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-client/src/distro.rs:34": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/distro.rs:34` detect_from_centos_release: does I/O (std::fs::read_to_string) — `fn detect_from_centos_release() -> Option<String> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-client/src/distro.rs:38": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/distro.rs:38` detect_from_redhat_release: does I/O (std::fs::read_to_string) — `fn detect_from_redhat_release() -> Option<String> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-client/src/distro.rs:42": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/distro.rs:42` detect_from_fedora_release: does I/O (std::fs::read_to_string) — `fn detect_from_fedora_release() -> Option<String> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-client/src/distro.rs:46": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/distro.rs:46` detect_from_arch_release: does I/O (std::fs::read_to_string) — `fn detect_from_arch_release() -> Option<String> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-client/src/distro.rs:53": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/distro.rs:53` detect_from_alpine_release: does I/O (std::fs::read_to_string) — `fn detect_from_alpine_release() -> Option<String> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-client/src/distro.rs:57": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/distro.rs:57` detect_from_suse_release: does I/O (std::fs::read_to_string) — `fn detect_from_suse_release() -> Option<String> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-client/src/hub.rs:310": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/hub.rs:310` submit_mcp_feedback: does I/O (reqwest::Client::new) — `pub async fn submit_mcp_feedback(settings: &Settings, feedback: &serde_json::Value) -> Result<()> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-client/src/record/sqlite_store.rs:393": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/record/sqlite_store.rs:393` SqliteStore.len_all: does I/O (db::query_as) — `pub async fn len_all(&self) -> Result<u64> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-common/src/db/mod.rs:422": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/db/mod.rs:422` add_columns: does I/O (sqlx::query) — `async fn add_columns(conn: &mut PoolConnection<Sqlite>, columns: &[&str]) {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-common/src/harnesstools/amp/mod.rs:53": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/amp/mod.rs:53` Amp.install_hooks: does I/O (tokio::fs::read_to_string) — `async fn install_hooks(&self) -> Result<PathBuf, InstallHookError> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-common/src/harnesstools/codex/hook_trust.rs:35": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/codex/hook_trust.rs:35` config: does I/O (tokio::fs::read_to_string) — `pub(super) async fn config(home: &Path) -> Result<Config, InstallHookError> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-common/src/harnesstools/codex/hook_trust.rs:59": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/codex/hook_trust.rs:59` trust: does I/O (tokio::fs::read_to_string) — `pub(super) async fn trust(`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-common/src/harnesstools/codex/hook_trust.rs:91": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/codex/hook_trust.rs:91` untrust: does I/O (tokio::fs::read_to_string) — `pub(super) async fn untrust(`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-common/src/harnesstools/codex/mod.rs:81": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/codex/mod.rs:81` Codex.resume_plan: does I/O (session::resume_id) — `fn resume_plan(&self, target: &ResumeTarget) -> Result<ResumePlan, ResumeError> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-common/src/harnesstools/hermes/hooks.rs:54": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/hermes/hooks.rs:54` install_with: does I/O (tokio::fs::read_to_string) — `async fn install_with(`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-common/src/harnesstools/hermes/session.rs:159": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/hermes/session.rs:159` store_modified: does I/O (db.with_file_name) — `fn store_modified(db: &Path) -> Option<SystemTime> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-common/src/harnesstools/kiro/hooks.rs:26": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/kiro/hooks.rs:26` install: does I/O (tokio::fs::read_to_string) — `pub async fn install(home: &Path, executable: &Path) -> Result<PathBuf, InstallHookError> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-common/src/harnesstools/opencode/mod.rs:73": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/opencode/mod.rs:73` Opencode.install_hooks: does I/O (tokio::fs::read_to_string) — `async fn install_hooks(&self) -> Result<PathBuf, InstallHookError> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-common/src/harnesstools/pi/mod.rs:100": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/pi/mod.rs:100` Pi.install_hooks: does I/O (tokio::fs::read_to_string) — `async fn install_hooks(&self) -> Result<PathBuf, InstallHookError> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-common/src/harnesstools/plugin.rs:404": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/plugin.rs:404` Own.wrote_atuin: does I/O (std::fs::read_to_string) — `fn wrote_atuin(&self) -> Option<String> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-common/src/os/linux/cgroup/cgroupv1.rs:14": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/os/linux/cgroup/cgroupv1.rs:14` CgroupV1.active_process: does I/O (std::fs::read_to_string) — `pub fn active_process(controller: &str) -> io::Result<Option<Self>> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-common/src/os/linux/cgroup/cgroupv2.rs:11": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/os/linux/cgroup/cgroupv2.rs:11` CgroupV2.active_process: does I/O (std::fs::read_to_string) — `pub fn active_process() -> io::Result<Option<Self>> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-daemon/src/octavo/mod.rs:212": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-daemon/src/octavo/mod.rs:212` Octavo.recording: does I/O (client.into) — `pub fn recording(client: RecordingOctavoClient) -> Self {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-daemon/src/output_capture/persistence/blob/fjall/mod.rs:168": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-daemon/src/output_capture/persistence/blob/fjall/mod.rs:168` FjallStorageInner.all_ids: does I/O (tx.blocking_send) — `fn all_ids(&self) -> ChunkedStream<Result<HistoryId, GetOutputError>> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-daemon/src/output_capture/persistence/blob/fjall/mod.rs:365": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-daemon/src/output_capture/persistence/blob/fjall/mod.rs:365` FjallBlobStore.corrupt: does I/O (self.inner.db.write_tx, tx.commit) — `pub(in crate::output_capture::persistence) fn corrupt(&self, id: HistoryId) {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-daemon/src/output_capture/persistence/blob/fjall/mod.rs:57": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-daemon/src/output_capture/persistence/blob/fjall/mod.rs:57` FjallStorageInner.capture: does I/O (db.write_tx, tx.commit) — `async fn capture(&self, id: HistoryId, capture: CommandCapture) -> Result<(), CaptureError> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-daemon/src/output_capture/persistence/index/schema/v2.rs:134": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-daemon/src/output_capture/persistence/index/schema/v2.rs:134` Schema.highlight: does I/O (db.pool, db::query) — `async fn highlight(`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-daemon/src/output_capture/persistence/index/schema/v2.rs:188": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-daemon/src/output_capture/persistence/index/schema/v2.rs:188` Schema.indexed_ids: does I/O (db::query) — `async fn indexed_ids(db: &Sqlite) -> ChunkedStream<Result<HistoryId, IndexError>> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-dotfiles/src/shell/bash.rs:22": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-dotfiles/src/shell/bash.rs:22` cached_vars: does I/O (tokio::fs::read_to_string) — `async fn cached_vars(path: PathBuf, store: &VarStore) -> String {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-dotfiles/src/shell/bash.rs:8": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-dotfiles/src/shell/bash.rs:8` cached_aliases: does I/O (tokio::fs::read_to_string) — `async fn cached_aliases(path: PathBuf, store: &AliasStore) -> String {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-dotfiles/src/shell/fish.rs:23": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-dotfiles/src/shell/fish.rs:23` cached_vars: does I/O (tokio::fs::read_to_string) — `async fn cached_vars(path: PathBuf, store: &VarStore) -> String {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-dotfiles/src/shell/fish.rs:9": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-dotfiles/src/shell/fish.rs:9` cached_aliases: does I/O (tokio::fs::read_to_string) — `async fn cached_aliases(path: PathBuf, store: &AliasStore) -> String {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-dotfiles/src/shell/powershell.rs:23": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-dotfiles/src/shell/powershell.rs:23` cached_vars: does I/O (tokio::fs::read_to_string) — `async fn cached_vars(path: PathBuf, store: &VarStore) -> String {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-dotfiles/src/shell/powershell.rs:9": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-dotfiles/src/shell/powershell.rs:9` cached_aliases: does I/O (tokio::fs::read_to_string) — `async fn cached_aliases(path: PathBuf, store: &AliasStore) -> String {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-dotfiles/src/shell/xonsh.rs:22": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-dotfiles/src/shell/xonsh.rs:22` cached_vars: does I/O (tokio::fs::read_to_string) — `async fn cached_vars(path: PathBuf, store: &VarStore) -> String {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-dotfiles/src/shell/xonsh.rs:8": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-dotfiles/src/shell/xonsh.rs:8` cached_aliases: does I/O (tokio::fs::read_to_string) — `async fn cached_aliases(path: PathBuf, store: &AliasStore) -> String {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-dotfiles/src/shell/zsh.rs:22": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-dotfiles/src/shell/zsh.rs:22` cached_vars: does I/O (tokio::fs::read_to_string) — `async fn cached_vars(path: PathBuf, store: &VarStore) -> String {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-dotfiles/src/shell/zsh.rs:8": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-dotfiles/src/shell/zsh.rs:8` cached_aliases: does I/O (tokio::fs::read_to_string) — `async fn cached_aliases(path: PathBuf, store: &AliasStore) -> String {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-octavo/src/queue/mod.rs:349": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-octavo/src/queue/mod.rs:349` UploadQueue.backlog: does I/O (db::query_as) — `pub async fn backlog(&self, user: &UserId) -> Result<Backlog, QueueError> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-octavo/src/queue/shares.rs:308": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-octavo/src/queue/shares.rs:308` QueuedThread.make_private: does I/O (db::query) — `pub async fn make_private(&self) -> Result<(), QueueError> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-octavo/src/queue/shares.rs:474": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-octavo/src/queue/shares.rs:474` QueuedThread.settle: does I/O (db::query) — `async fn settle(`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-octavo/src/queue/shares.rs:775": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-octavo/src/queue/shares.rs:775` SentRevoke.settle: does I/O (db::query) — `pub async fn settle(self) -> Result<(), QueueError> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-server/src/db/mod.rs:339": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-server/src/db/mod.rs:339` Database.get_user_session: does I/O (db::query_as) — `async fn get_user_session(&self, u: &User) -> DbResult<Session> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-server/src/db/mod.rs:501": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-server/src/db/mod.rs:501` T.get_user_session: does I/O (Database::get_user_session) — `async fn get_user_session(&self, u: &User) -> DbResult<Session> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-server/src/router.rs:32": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-server/src/router.rs:32` UserAuth.from_request_parts: does I/O (state.database.get_session_user) — `async fn from_request_parts(`"
+  },
+  "Important code no test reaches (N function)|crates/atuin/src/command/client/account.rs:48": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/account.rs:48` PasswordArg.resolve: does I/O (stdin.read_to_string) — `pub fn resolve(arg: Option<&Self>, mut stdin: impl Read) -> Result<Option<SecretString>> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin/src/command/client/search/engines/daemon.rs:233": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/search/engines/daemon.rs:233` Search.get_highlight_indices: does I/O (super::db::get_highlight_indices_fulltext) — `fn get_highlight_indices(&self, command: &str, search_input: &str) -> Vec<usize> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin/src/command/client/sync/status.rs:12": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/sync/status.rs:12` run: does I/O (api_client::Client::new) — `pub async fn run(settings: &Arc<Settings>) -> Result<()> {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin/src/sync.rs:18": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin/src/sync.rs:18` build: does I/O (atuin_kv::database::Database::new, atuin_scripts::database::Database::new) — `pub async fn build(`"
+  },
+  "Kubernetes Secrets committed with their values|k8s/secrets.yaml:4": {
+   "check": "Kubernetes Secrets committed with their values",
+   "severity": "High",
+   "tier": "findings",
+   "location": "`k8s/secrets.yaml:4` Secret atuin-secrets with its values in the repository — `name: atuin-secrets`"
+  },
+  "Pods using the node's network, processes or files (Kubernetes)|k8s/atuin.yaml:128": {
+   "check": "Pods using the node's network, processes or files (Kubernetes)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`k8s/atuin.yaml:128` hostPath:"
+  },
+  "Queries or requests inside loops (N) in N place|crates/atuin-ai/src/resume_tui/worker.rs:154": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-ai/src/resume_tui/worker.rs:154` transcripts: transcripts calls requests.recv() inside a loop (line 154) — `None => match requests.recv().await {`"
+  },
+  "Queries or requests inside loops (N) in N place|crates/atuin-ai/src/resume_tui/worker.rs:159": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-ai/src/resume_tui/worker.rs:159` transcripts: transcripts calls requests.try_recv() inside a loop (line 159) — `while let Ok(newer) = requests.try_recv() {`"
+  },
+  "Queries or requests inside loops (N) in N place|crates/atuin-ai/src/resume_tui/worker.rs:189": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-ai/src/resume_tui/worker.rs:189` searches: searches calls requests.recv() inside a loop (line 189) — `while let Some(mut request) = requests.recv().await {`"
+  },
+  "Queries or requests inside loops (N) in N place|crates/atuin-ai/src/resume_tui/worker.rs:191": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-ai/src/resume_tui/worker.rs:191` searches: searches calls requests.try_recv() inside a loop (line 191) — `while let Ok(next) = requests.try_recv() {`"
+  },
+  "Queries or requests inside loops (N) in N place|crates/atuin-ai/src/resume_tui/worker.rs:300": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-ai/src/resume_tui/worker.rs:300` details: details calls requests.try_recv() inside a loop (line 300) — `match requests.try_recv() {`"
+  },
+  "Queries or requests inside loops (N) in N place|crates/atuin-ai/src/resume_tui/worker.rs:315": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-ai/src/resume_tui/worker.rs:315` details: details calls requests.recv() inside a loop (line 315) — `match requests.recv().await {`"
+  },
+  "Queries or requests inside loops (N) in N place|crates/atuin-common/src/harnesstools/sync/grok.rs:109": {
+   "check": "Queries or requests inside loops (N) in N place",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/sync/grok.rs:109` Transcript.read: Transcript.read calls compacted_beside() inside a loop (line 109), and that reaches requests.sort_by() — `for lines in compacted_beside(path) {`"
+  },
+  "Unused code (N function)|crates/atuin-ai/src/commands/resume.rs:1003": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-ai/src/commands/resume.rs:1003` a_session_that_cant_resume_keeps_its_flags — `fn a_session_that_cant_resume_keeps_its_flags(`"
+  },
+  "Unused code (N function)|crates/atuin-ai/src/resume_tui/panel.rs:419": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-ai/src/resume_tui/panel.rs:419` inspect_breaks_the_tokens_down — `fn inspect_breaks_the_tokens_down(#[case] usage: Usage, #[case] want: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin-client/src/ai_session/database.rs:3638": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/ai_session/database.rs:3638` highlights_mark_what_the_index_matched — `fn highlights_mark_what_the_index_matched(`"
+  },
+  "Unused code (N function)|crates/atuin-client/src/ai_session/database.rs:4668": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/ai_session/database.rs:4668` a_title_matches_the_query_alone — `fn a_title_matches_the_query_alone(`"
+  },
+  "Unused code (N function)|crates/atuin-client/src/ai_session/model.rs:724": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/ai_session/model.rs:724` newer_harnesses_have_newer_versions — `fn newer_harnesses_have_newer_versions(`"
+  },
+  "Unused code (N function)|crates/atuin-client/src/history.rs:1042": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/history.rs:1042` serialize_deserialize_roundtrip — `fn serialize_deserialize_roundtrip(#[case] history: History) {`"
+  },
+  "Unused code (N function)|crates/atuin-client/src/history.rs:906": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/history.rs:906` capture_infers_agent_kind_from_an_explicit_author — `fn capture_infers_agent_kind_from_an_explicit_author(`"
+  },
+  "Unused code (N function)|crates/atuin-client/src/history.rs:970": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/history.rs:970` is_agent_uses_the_username_when_no_kind_was_stated — `fn is_agent_uses_the_username_when_no_kind_was_stated(`"
+  },
+  "Unused code (N function)|crates/atuin-client/src/import/zsh.rs:210": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/import/zsh.rs:210` parse_extended_simple — `fn parse_extended_simple(`"
+  },
+  "Unused code (N function)|crates/atuin-client/src/import/zsh.rs:236": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/import/zsh.rs:236` parse_malformed_extended_lines — `fn parse_malformed_extended_lines(`"
+  },
+  "Unused code (N function)|crates/atuin-client/src/lua_config/header.rs:94": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/lua_config/header.rs:94` a_header_that_says_something_else_is_invalid — `fn a_header_that_says_something_else_is_invalid(#[case] source: &str, #[case] expected: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin-client/src/lua_config/mod.rs:351": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/lua_config/mod.rs:351` a_file_sets_its_config — `fn a_file_sets_its_config(#[case] source: &str, #[case] expected: Option<&[&str]>) {`"
+  },
+  "Unused code (N function)|crates/atuin-client/src/packfile/record.rs:449": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/packfile/record.rs:449` pack_ia_serialization_is_stable — `fn pack_ia_serialization_is_stable(#[case] value: PackIA, #[case] expected: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin-client/src/settings.rs:2307": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/settings.rs:2307` parse_date_reads_dates_in_their_own_offset — `fn parse_date_reads_dates_in_their_own_offset(`"
+  },
+  "Unused code (N function)|crates/atuin-client/src/settings.rs:2471": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/settings.rs:2471` validate_rejects — `fn validate_rejects(#[case] toml: &str, #[case] expected_err: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin-client/src/settings.rs:2893": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/settings.rs:2893` threads_capture_is_read_as_enabled — `fn threads_capture_is_read_as_enabled(#[case] toml: &str, #[case] expected: bool) {`"
+  },
+  "Unused code (N function)|crates/atuin-client/src/settings.rs:3076": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/settings.rs:3076` sync_address_typos_warn_and_valid_values_load — `fn sync_address_typos_warn_and_valid_values_load(`"
+  },
+  "Unused code (N function)|crates/atuin-client/src/settings.rs:3178": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/settings.rs:3178` typos_under_legacy_keys_are_reported_as_written — `fn typos_under_legacy_keys_are_reported_as_written(`"
+  },
+  "Unused code (N function)|crates/atuin-client/src/theme.rs:557": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/theme.rs:557` loads_parents_from_theme_files — `fn loads_parents_from_theme_files(`"
+  },
+  "Unused code (N function)|crates/atuin-client/src/tui/key.rs:452": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-client/src/tui/key.rs:452` from_event_cases — `fn from_event_cases(`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/db/mod.rs:321": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/db/mod.rs:321` db_url_debug_redacts_passwords — `fn db_url_debug_redacts_passwords(#[case] uri: &str, #[case] expected_debug: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/futures/mod.rs:313": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/futures/mod.rs:313` delays_follow_the_schedule — `fn delays_follow_the_schedule(#[case] backoff: Backoff, #[case] secs: &[u64]) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/access.rs:359": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/access.rs:359` what_a_script_runs_is_known_only_read_whole — `fn what_a_script_runs_is_known_only_read_whole(#[case] script: &str, #[case] known: bool) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/ccode/session.rs:1504": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/ccode/session.rs:1504` compaction_lines_are_system — `fn compaction_lines_are_system(#[case] raw: serde_json::Value) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/ccode/session.rs:2228": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/ccode/session.rs:2228` user_text_is_what_the_user_typed — `fn user_text_is_what_the_user_typed(#[case] text: &str, #[case] expected: Vec<Content>) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/codex/hook_trust.rs:194": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/codex/hook_trust.rs:194` hashes_are_codexs — `fn hashes_are_codexs(#[case] event: &str, #[case] command: &str, #[case] expected: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/codex/session.rs:2320": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/codex/session.rs:2320` session_meta_names_its_parent — `fn session_meta_names_its_parent(#[case] payload: serde_json::Value, #[case] kind: ParentKind) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/codex/session.rs:2586": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/codex/session.rs:2586` compacted_summary_is_kept — `fn compacted_summary_is_kept(#[case] payload: serde_json::Value, #[case] summary: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/codex/session.rs:2657": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/codex/session.rs:2657` contextual_user_messages_are_system — `fn contextual_user_messages_are_system(#[case] text: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/codex/session.rs:2791": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/codex/session.rs:2791` a_rollout_name_carries_its_session — `fn a_rollout_name_carries_its_session(#[case] stem: &str, #[case] id: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/codex/session.rs:2806": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/codex/session.rs:2806` a_reverted_rollout_continues_its_history_base — `fn a_reverted_rollout_continues_its_history_base(#[case] base: &str, #[case] parent: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/codex/session.rs:3183": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/codex/session.rs:3183` an_applied_patch_keeps_its_file_changes — `fn an_applied_patch_keeps_its_file_changes(#[case] raw: serde_json::Value, #[case] kept: bool) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/codex/session.rs:3237": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/codex/session.rs:3237` an_agent_message_is_kept_without_its_ciphertext — `fn an_agent_message_is_kept_without_its_ciphertext(`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/hermes/cli.rs:237": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/hermes/cli.rs:237` the_command_line_runs_against_the_same_home — `fn the_command_line_runs_against_the_same_home(#[case] home: &str, #[case] want: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/opencode/rehydrate.rs:1926": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/opencode/rehydrate.rs:1926` a_patch_comes_back_as_the_metadata_opencode_shows — `fn a_patch_comes_back_as_the_metadata_opencode_shows(`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/pi/session.rs:1166": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/pi/session.rs:1166` bash_execution_is_a_user_command_with_its_output — `fn bash_execution_is_a_user_command_with_its_output(`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/pi/session.rs:1262": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/pi/session.rs:1262` the_header_names_the_parent_session — `fn the_header_names_the_parent_session(`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/pi/session.rs:1836": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/pi/session.rs:1836` a_background_job_notice_is_a_user_turn — `fn a_background_job_notice_is_a_user_turn(`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/pi/session.rs:2013": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/pi/session.rs:2013` reads_the_header_line — `fn reads_the_header_line(#[case] body: &[u8], #[case] expected: Header) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/plugin.rs:815": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/plugin.rs:815` modkit_settings_get_atuins_path_and_lose_only_that — `fn modkit_settings_get_atuins_path_and_lose_only_that(`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/plugin.rs:876": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/plugin.rs:876` a_registered_plugin_is_found — `fn a_registered_plugin_is_found(`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/plugin.rs:977": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/plugin.rs:977` opencode_registers_the_plugin_beside_the_rest — `fn opencode_registers_the_plugin_beside_the_rest(`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/session/patch.rs:573": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/session/patch.rs:573` parses_unified_diffs — `fn parses_unified_diffs(#[case] diff: &str, #[case] path: Option<&str>) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/session/patch.rs:619": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/session/patch.rs:619` an_added_files_path — `fn an_added_files_path(#[case] diff: &str, #[case] path: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/session/patch.rs:661": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/session/patch.rs:661` keeps_a_missing_newline_marker — `fn keeps_a_missing_newline_marker(#[case] diff: &str, #[case] lines: &[&str]) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/harnesstools/session/patch.rs:780": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/harnesstools/session/patch.rs:780` a_patch_between_two_contents_holds_whole_lines — `fn a_patch_between_two_contents_holds_whole_lines(`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/path/display_rich.rs:197": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/path/display_rich.rs:197` relative_to_rendering — `fn relative_to_rendering(`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/path/display_rich.rs:223": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/path/display_rich.rs:223` tilde_rendering — `fn tilde_rendering(#[case] path: PathBuf, #[case] home: PathBuf, #[case] expected: String) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/path/display_rich.rs:260": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/path/display_rich.rs:260` composes_with_trailing_slash — `fn composes_with_trailing_slash(`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/secrets.rs:1154": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/secrets.rs:1154` redacts — `fn redacts(#[case] input: &str, #[case] expected: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/secrets.rs:1484": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/secrets.rs:1484` window_gap_and_quote_bounds — `fn window_gap_and_quote_bounds(#[case] input: &str, #[case] expected: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/string/align.rs:71": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/string/align.rs:71` pads_per_table — `fn pads_per_table(`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/string/ellipsis.rs:445": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/string/ellipsis.rs:445` truncates_per_table — `fn truncates_per_table(`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/string/ellipsis.rs:516": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/string/ellipsis.rs:516` pad_ellipsize_table — `fn pad_ellipsize_table(`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/string/mod.rs:290": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/string/mod.rs:290` replace_within_changes_only_the_context — `fn replace_within_changes_only_the_context(#[case] s: &str, #[case] want: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/time/date_time.rs:112": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/time/date_time.rs:112` datetime_formats_render_as_documented — `fn datetime_formats_render_as_documented(`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/units/percent.rs:66": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/units/percent.rs:66` mul — `fn mul(self, rhs: Percent) -> Self {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/units/percent.rs:87": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/units/percent.rs:87` mul — `fn mul(self, rhs: Percent) -> Self {`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/utils.rs:477": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/utils.rs:477` only_a_linked_worktree_resolves_to_its_main_repository — `fn only_a_linked_worktree_resolves_to_its_main_repository(`"
+  },
+  "Unused code (N function)|crates/atuin-common/src/utils.rs:541": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/utils.rs:541` dumb_random_test — `fn dumb_random_test<const N: usize>(#[values([(); 8], [(); 16], [(); 32])] _n: [(); N]) {`"
+  },
+  "Unused code (N function)|crates/atuin-daemon/src/grpc/history/pb.rs:801": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-daemon/src/grpc/history/pb.rs:801` command_output_lines_survive_the_chunk_round_trip — `fn command_output_lines_survive_the_chunk_round_trip(`"
+  },
+  "Unused code (N function)|crates/atuin-daemon/src/search/index/shared.rs:743": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-daemon/src/search/index/shared.rs:743` fill_counts_entries_added_meanwhile_once — `async fn fill_counts_entries_added_meanwhile_once() {`"
+  },
+  "Unused code (N function)|crates/atuin-daemon/src/search/index/shared.rs:967": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-daemon/src/search/index/shared.rs:967` syncs_and_adds_take_turns — `async fn syncs_and_adds_take_turns(#[future(awt)] db: Sqlite) {`"
+  },
+  "Unused code (N function)|crates/atuin-daemon/src/service/run_mode.rs:104": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-daemon/src/service/run_mode.rs:104` a_launchd_job_is_left_to_the_command_that_restarts_it — `fn a_launchd_job_is_left_to_the_command_that_restarts_it(`"
+  },
+  "Unused code (N function)|crates/atuin-daemon/src/session_capture/message_enricher.rs:1278": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-daemon/src/session_capture/message_enricher.rs:1278` a_read_from_the_start_keeps_the_stored_parent — `fn a_read_from_the_start_keeps_the_stored_parent(`"
+  },
+  "Unused code (N function)|crates/atuin-daemon/src/session_capture/message_enricher.rs:604": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-daemon/src/session_capture/message_enricher.rs:604` rows_project_the_session_that_meta_used_to_read — `fn rows_project_the_session_that_meta_used_to_read(`"
+  },
+  "Unused code (N function)|crates/atuin-daemon/src/session_capture/message_enricher.rs:654": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-daemon/src/session_capture/message_enricher.rs:654` titles_are_ranked_by_source — `fn titles_are_ranked_by_source(`"
+  },
+  "Unused code (N function)|crates/atuin-daemon/src/session_capture/recovery.rs:684": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-daemon/src/session_capture/recovery.rs:684` named_interleavings — `fn named_interleavings(#[case] events: &[Event], #[case] expected: StoreState) {`"
+  },
+  "Unused code (N function)|crates/atuin-daemon/src/session_capture/tools.rs:767": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-daemon/src/session_capture/tools.rs:767` an_unended_private_key_before_a_cut_is_not_kept — `fn an_unended_private_key_before_a_cut_is_not_kept(#[case] value: Value) {`"
+  },
+  "Unused code (N function)|crates/atuin-daemon/src/session_capture/tools.rs:933": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-daemon/src/session_capture/tools.rs:933` a_credential_files_writes_are_withheld — `fn a_credential_files_writes_are_withheld(#[case] mut input: Value, #[case] want: Value) {`"
+  },
+  "Unused code (N function)|crates/atuin-domain/src/record/mod.rs:755": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-domain/src/record/mod.rs:755` additional_data_serialization_is_stable — `fn additional_data_serialization_is_stable(`"
+  },
+  "Unused code (N function)|crates/atuin-domain/src/secret.rs:38": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-domain/src/secret.rs:38` secret_fields_serialize_in_plaintext_but_debug_redacted — `fn secret_fields_serialize_in_plaintext_but_debug_redacted(`"
+  },
+  "Unused code (N function)|crates/atuin-octavo/src/pb/threads.rs:734": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-octavo/src/pb/threads.rs:734` sends_what_octavo_takes_of_a_message — `fn sends_what_octavo_takes_of_a_message(`"
+  },
+  "Unused code (N function)|crates/atuin-octavo/src/pb/threads.rs:780": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-octavo/src/pb/threads.rs:780` maps_each_stop_reason — `fn maps_each_stop_reason(`"
+  },
+  "Unused code (N function)|crates/atuin-octavo/src/shares.rs:293": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-octavo/src/shares.rs:293` a_thread_goes_up_if_the_users_own_lets_it_and_no_project_keeps_it — `fn a_thread_goes_up_if_the_users_own_lets_it_and_no_project_keeps_it(`"
+  },
+  "Unused code (N function)|crates/atuin-pty-proxy/src/capture.rs:387": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-pty-proxy/src/capture.rs:387` captures_a_full_command_cycle — `fn captures_a_full_command_cycle(`"
+  },
+  "Unused code (N function)|crates/atuin-pty-proxy/src/pty_proxy.rs:441": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-pty-proxy/src/pty_proxy.rs:441` init_scripts_maintain_login_status — `fn init_scripts_maintain_login_status(#[case] shell: Shell, #[case] expected: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin-scripts/src/store/record.rs:180": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin-scripts/src/store/record.rs:180` serialize_deserialize — `fn serialize_deserialize(#[case] record: ScriptRecord) {`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/config.rs:627": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/config.rs:627` set_preserves_formatting_when_overwriting — `fn set_preserves_formatting_when_overwriting(`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/config.rs:697": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/config.rs:697` set_adds_a_missing_key_without_touching_existing_content — `fn set_adds_a_missing_key_without_touching_existing_content(`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/config.rs:740": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/config.rs:740` set_a_documented_key — `fn set_a_documented_key(`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/config.rs:835": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/config.rs:835` set_writes — `fn set_writes(`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/config.rs:879": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/config.rs:879` set_rejects — `fn set_rejects(`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/config/comment.rs:381": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/config/comment.rs:381` uncomments — `fn uncomments(#[case] input: &str, #[case] key: &str, #[case] expected: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/config/comment.rs:430": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/config/comment.rs:430` inserts_after_the_comment_block — `fn inserts_after_the_comment_block(#[case] input: &str, #[case] expected: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/hook/event.rs:570": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/hook/event.rs:570` parses_agent_event — `fn parses_agent_event(#[case] input: serde_json::Value, #[case] expected: Option<HookEvent>) {`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/hook/event.rs:706": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/hook/event.rs:706` parses_kiro_event — `fn parses_kiro_event(#[case] input: serde_json::Value, #[case] expected: Option<HookEvent>) {`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/hook/event.rs:919": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/hook/event.rs:919` parses_hermes_event — `fn parses_hermes_event(#[case] input: serde_json::Value, #[case] expected: Option<HookEvent>) {`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/hook/event.rs:946": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/hook/event.rs:946` a_bare_tool_response_says_the_exit_for_kiro_alone — `fn a_bare_tool_response_says_the_exit_for_kiro_alone(`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/search/interactive.rs:2986": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/search/interactive.rs:2986` cd_command_escapes_shell_specific_delimiters — `fn cd_command_escapes_shell_specific_delimiters(`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/search/keybindings/conditions.rs:572": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/search/keybindings/conditions.rs:572` parses_condition — `fn parses_condition(#[case] input: &str, #[case] expected: ConditionExpr) {`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/search/keybindings/conditions.rs:658": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/search/keybindings/conditions.rs:658` displays_condition — `fn displays_condition(#[case] expr: ConditionExpr, #[case] expected: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/setup.rs:2904": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/setup.rs:2904` flags_that_cannot_turn_on_say_what_they_need — `fn flags_that_cannot_turn_on_say_what_they_need(`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/setup.rs:3114": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/setup.rs:3114` config_changes_as_far_as_the_flags_reach — `fn config_changes_as_far_as_the_flags_reach(`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/setup.rs:3311": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/setup.rs:3311` sync_without_the_flag — `fn sync_without_the_flag(`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/setup/hub.rs:353": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/setup/hub.rs:353` other_machines_clause — `fn other_machines_clause(#[case] n: usize, #[case] text: &str) {`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/setup/shell_init.rs:491": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/setup/shell_init.rs:491` init_call_ends_where_the_shell_ends_it — `fn init_call_ends_where_the_shell_ends_it(#[case] line: &str, #[case] expected: Option<&str>) {`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/setup/shell_init/flags.rs:180": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/setup/shell_init/flags.rs:180` flags_are_read_from_whole_words — `fn flags_are_read_from_whole_words(#[case] call: &str, #[case] expected: KeyFlags) {`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/setup/upload.rs:283": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/setup/upload.rs:283` summary_says_how_far_it_got — `fn summary_says_how_far_it_got(`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/setup/users_file.rs:246": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/setup/users_file.rs:246` setup_reads_a_file_of_18_25_as_its_own — `fn setup_reads_a_file_of_18_25_as_its_own(`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/setup/view.rs:2754": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/setup/view.rs:2754` atuin_cloud_shares_threads_as_picked — `fn atuin_cloud_shares_threads_as_picked(`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/setup/view.rs:2946": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/setup/view.rs:2946` the_upload_shows_a_bar_and_why_it_stalled — `fn the_upload_shows_a_bar_and_why_it_stalled(#[case] state: State, #[case] why: Option<&str>) {`"
+  },
+  "Unused code (N function)|crates/atuin/src/command/client/trick_or_treat.rs:381": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/command/client/trick_or_treat.rs:381` treat_says_how_often_and_where_it_ran — `fn treat_says_how_often_and_where_it_ran(`"
+  },
+  "Unused code (N function)|crates/atuin/src/shell/atuin.bash:472": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`crates/atuin/src/shell/atuin.bash:472` ble/complete/auto-complete/source:atuin-history — `function ble/complete/auto-complete/source:atuin-history {`"
+  },
+  "Unused code (N function)|scripts/release.sh:12": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`scripts/release.sh:12` cleanup_on_error *(script)* — `cleanup_on_error() {`"
+  },
+  "Unused code (N function)|vendor/vendor.sh:109": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/vendor.sh:109` cmd_add — `cmd_add() {`"
+  },
+  "Unused code (N function)|vendor/vendor.sh:132": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/vendor.sh:132` cmd_update — `cmd_update() {`"
+  },
+  "Unused code (N function)|vendor/vendor.sh:150": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/vendor.sh:150` cmd_list — `cmd_list() {`"
+  },
+  "Unused code (N function)|vendor/vendor.sh:62": {
+   "check": "Unused code (N function)",
+   "severity": "Low",
+   "tier": "findings",
+   "location": "`vendor/vendor.sh:62` cleanup — `cleanup() {`"
+  },
+  "Writes inside loops in N place|.nvim.lua:55": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`.nvim.lua:55` apply — `vim.api.nvim_set_option_value(\"colorcolumn\", \"+1\", { scope = \"local\", win = win })`"
+  },
+  "Writes inside loops in N place|crates/atuin-ai/src/resume_tui/rebuild.rs:86": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-ai/src/resume_tui/rebuild.rs:86` watch — `tx.send_if_modified(|was| {`"
+  },
+  "Writes inside loops in N place|crates/atuin-ai/src/resume_tui/terminal.rs:66": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-ai/src/resume_tui/terminal.rs:66` Events.new — `if tx.send(event).is_err() || failed {`"
+  },
+  "Writes inside loops in N place|crates/atuin-ai/src/resume_tui/worker.rs:202": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-ai/src/resume_tui/worker.rs:202` searches — `if responses.send(response).is_err() {`"
+  },
+  "Writes inside loops in N place|crates/atuin-ai/src/resume_tui/worker.rs:309": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-ai/src/resume_tui/worker.rs:309` details — `if responses.send(Response::Abandoned(session)).is_err() {`"
+  },
+  "Writes inside loops in N place|crates/atuin-client/src/record/sqlite_store.rs:708": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-client/src/record/sqlite_store.rs:708` SqliteStore.purge — `self.delete(record.id).await?;`"
+  },
+  "Writes inside loops in N place|crates/atuin-client/src/record/sync/mod.rs:418": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-client/src/record/sync/mod.rs:418` Keyed.sync_upload — `client.post_records(&page).await.map_err(|e| {`"
+  },
+  "Writes inside loops in N place|crates/atuin-client/src/record/sync/mod.rs:688": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-client/src/record/sync/mod.rs:688` Keyed.sync_remote — `uploaded += self.sync_upload(&series, local, remote).await?;`"
+  },
+  "Writes inside loops in N place|crates/atuin-client/src/settings/watcher.rs:224": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-client/src/settings/watcher.rs:224` SettingsWatcher.debounce_loop — `if tx.send(Arc::new(settings)).is_err() {`"
+  },
+  "Writes inside loops in N place|crates/atuin-common/src/fs/tree_watcher/stat.rs:32": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-common/src/fs/tree_watcher/stat.rs:32` StatPoller.poll — `for (path, fingerprint) in self.stat(hot).await {`"
+  },
+  "Writes inside loops in N place|crates/atuin-common/src/harnesstools/opencode/session.rs:1621": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-common/src/harnesstools/opencode/session.rs:1621` OpencodeSession.changed_after — `let updated = self.reads.updated(&self.id).await;`"
+  },
+  "Writes inside loops in N place|crates/atuin-common/src/harnesstools/pi/session.rs:262": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-common/src/harnesstools/pi/session.rs:262` PiListener.await_session — `match pool.run(move || header_for(&at, only)).await.ok()? {`"
+  },
+  "Writes inside loops in N place|crates/atuin-common/src/harnesstools/vibe/session.rs:474": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-common/src/harnesstools/vibe/session.rs:474` Identity.of — `store_dir(root, source).is_some_and(|found| found.file_name() == dir.file_name())`"
+  },
+  "Writes inside loops in N place|crates/atuin-daemon/src/components/search.rs:354": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-daemon/src/components/search.rs:354` SearchGrpcService.search — `let history_ids = this`"
+  },
+  "Writes inside loops in N place|crates/atuin-daemon/src/components/search.rs:363": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-daemon/src/components/search.rs:363` SearchGrpcService.search — `if tx`"
+  },
+  "Writes inside loops in N place|crates/atuin-daemon/src/components/search.rs:448": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-daemon/src/components/search.rs:448` SearchGrpcService.search_command_output — `let matches = self`"
+  },
+  "Writes inside loops in N place|crates/atuin-daemon/src/octavo/client/active/engine.rs:271": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-daemon/src/octavo/client/active/engine.rs:271` EngineInner.send_forever — `let next = match self.send_live(woken).await {`"
+  },
+  "Writes inside loops in N place|crates/atuin-daemon/src/octavo/client/active/engine.rs:757": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-daemon/src/octavo/client/active/engine.rs:757` EngineInner.backfill — `mark_off(&self.queue, user).await;`"
+  },
+  "Writes inside loops in N place|crates/atuin-daemon/src/octavo/client/active/gate.rs:101": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-daemon/src/octavo/client/active/gate.rs:101` Revokes.send — `mark_off(self.queue, user).await;`"
+  },
+  "Writes inside loops in N place|crates/atuin-daemon/src/octavo/client/active/gate.rs:44": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-daemon/src/octavo/client/active/gate.rs:44` Closes.send — `mark_off(self.queue, user).await;`"
+  },
+  "Writes inside loops in N place|crates/atuin-daemon/src/octavo/client/active/gate.rs:88": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-daemon/src/octavo/client/active/gate.rs:88` Revokes.send — `match revoke.send().await {`"
+  },
+  "Writes inside loops in N place|crates/atuin-daemon/src/output_capture/persistence/blob/fjall/mod.rs:147": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-daemon/src/output_capture/persistence/blob/fjall/mod.rs:147` FjallStorageInner.remove — `tx.remove(&keyspace, key);`"
+  },
+  "Writes inside loops in N place|crates/atuin-daemon/src/output_capture/persistence/blob/fjall/mod.rs:308": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-daemon/src/output_capture/persistence/blob/fjall/mod.rs:308` Flusher.spawn — `tokio::task::spawn_blocking(move || db.persist(PersistMode::SyncAll))`"
+  },
+  "Writes inside loops in N place|crates/atuin-daemon/src/session_capture/tools.rs:547": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-daemon/src/session_capture/tools.rs:547` withhold_written — `text.lines().filter(|line| line.trim_start().starts_with(\"*** \")).collect();`"
+  },
+  "Writes inside loops in N place|crates/atuin-kv/src/store.rs:156": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-kv/src/store.rs:156` KvStore.build — `self.kv_db.delete(kv.namespace.as_str(), kv.key.as_str()).await?;`"
+  },
+  "Writes inside loops in N place|crates/atuin-octavo/src/queue/shares.rs:700": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-octavo/src/queue/shares.rs:700` PendingRevoke.send — `self.save_page_token(Some(&next)).await?;`"
+  },
+  "Writes inside loops in N place|crates/atuin-pty-proxy/src/foreground.rs:165": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-pty-proxy/src/foreground.rs:165` ForegroundUpdater.new — `&& leaders.send(Some(leader)).is_err()`"
+  },
+  "Writes inside loops in N place|crates/atuin-pty-proxy/src/screen.rs:185": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-pty-proxy/src/screen.rs:185` SocketServer.serve — `if msg_tx.send(Msg::ScreenRequest(reply_tx)).await.is_err() {`"
+  },
+  "Writes inside loops in N place|crates/atuin/src/command/client/account/login.rs:265": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin/src/command/client/account/login.rs:265` Cmd.prompt_and_store_key — `Ok(key) => return store_key(settings, store, &key).await,`"
+  },
+  "Writes inside loops in N place|crates/atuin/src/command/client/account/login.rs:378": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin/src/command/client/account/login.rs:378` verify_key_against_remote — `None => return store_key(settings, store, &key).await,`"
+  },
+  "Writes inside loops in N place|crates/atuin/src/command/client/account/login.rs:381": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin/src/command/client/account/login.rs:381` verify_key_against_remote — `return Err(logout_wrong_key(settings).await.into());`"
+  },
+  "Writes inside loops in N place|crates/atuin/src/command/client/ai_sessions.rs:112": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin/src/command/client/ai_sessions.rs:112` read_answer — `match typed.press(key?) {`"
+  }
+ }
+}

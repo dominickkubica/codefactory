@@ -41,10 +41,15 @@ HERE = ROOT / "tools" / "golden"
 LOCAL = HERE / "local.txt"
 REASONS = HERE / "reasons.jsonl"
 WORK = Path(os.environ.get("CODEFACTORY_GOLDEN", Path.home() / ".cache" / "codefactory-golden"))
-# a spread of languages and kinds, each analyzed in under a minute: Python + TypeScript, Go + Vue, Ruby (Rails), Rust,
-# Python + Vue, Next.js, a Python library
+# a spread of languages and kinds (Python + TypeScript, Go + Vue, Rails, Rust, Python + Vue, Next.js, a Python library),
+# then chosen so every labeled check has locations here (a greedy cover of the corpus, fastest first): a change to a
+# check nothing here reports would pass the diff unseen. Left out for time: superset and bitwarden/server (over two
+# minutes each, one check apiece: privileged compose containers, pull_request_target workflows).
 CORPUS = ["fastapi/full-stack-fastapi-template", "filebrowser/filebrowser", "maybe-finance/maybe",
-          "dani-garcia/vaultwarden", "mealie-recipes/mealie", "shadcn-ui/taxonomy", "celery/celery"]  # fmt: skip
+          "dani-garcia/vaultwarden", "mealie-recipes/mealie", "shadcn-ui/taxonomy", "celery/celery",
+          "calcom/cal.com", "immich-app/immich", "mastodon/mastodon-ios", "sissbruecker/linkding",
+          "jesseduffield/lazygit", "atuinsh/atuin", "junegunn/fzf", "jekyll/jekyll", "logto-io/logto",
+          "wallabag/wallabag", "makeplane/plane", "louislam/uptime-kuma", "lukevella/rallly"]  # fmt: skip
 
 
 def golden() -> dict[str, dict]:
