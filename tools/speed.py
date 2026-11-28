@@ -38,10 +38,14 @@ CEILING = 120.0  # seconds: no repository may take longer, cold, on one core's w
 QUICK = ["shadcn-ui/taxonomy", "fastapi/full-stack-fastapi-template", "filebrowser/filebrowser", "maybe-finance/maybe"]
 FULL = QUICK + ["mealie-recipes/mealie", "excalidraw/excalidraw", "dani-garcia/vaultwarden", "django/django",
                 "invoiceninja/invoiceninja", "teableio/teable"]  # fmt: skip
-# one cold analysis: no cache read or written, timings and peak memory out
+# one cold analysis: no cache read or written (the graph's, nor the per-file ones in .codefactory/: the source checks'
+# hit theirs whenever codefactory's code hadn't changed since the last run, 1.5 s instead of 10 on teable), timings
+# and peak memory out
 RUN = """
 import json, resource, sys, time
 from pathlib import Path
+import codefactory.paths
+codefactory.paths._cache_dir = lambda root: None
 from codefactory.cli import load_graph
 from codefactory.export import audit
 from codefactory.timing import report

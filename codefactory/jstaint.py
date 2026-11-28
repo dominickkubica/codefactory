@@ -179,6 +179,7 @@ class Unit:
     inline: bool = False  # passed as an argument (a handler, a callback): never called by name
     cls: str = ""  # the class a method belongs to
     source_names: dict[str, str] = field(default_factory=dict)  # names a parameter binds to request data: tRPC `input`
+    body: list = field(default_factory=list)  # its own nodes the analysis reads (READ), nested functions' left out
 
 
 @dataclass
@@ -285,45 +286,68 @@ def units_of(file: str, tree, src: bytes) -> list[Unit]:
     next_api = bool(NEXT_API.search(file))
 
     out.append(Unit(file, "<top level>", root, [], 1))
+    open_: list[tuple[int, int]] = []  # (end byte, unit index) of the functions around the one being read
 
-    def visit(n, parent: int):
-        if n.type in FUNCS:
-            inline = n.parent is not None and n.parent.type == "arguments"
-            name = "" if inline else _fn_name(n, src)
-            if True:
-                ps = _params(n, src)
-                u = Unit(file, name or "<callback>", n, [names for names, _ in ps], n.start_point[0] + 1,
-                         parent=parent, inline=inline or not name)  # fmt: skip
-                if inline and (route := _route_of(n.parent.parent, src)):
-                    u.entry = route
-                if n.type == "method_definition":  # Nest: @Post("x") create(@Body() dto) — decorated parameters
-                    for i, (_, p) in enumerate(ps):
-                        decs = _decorators(p, src)
-                        if any(
-                            re.match(r"@(\w+)", d) and re.match(r"@(\w+)", d).group(1) in NEST_SOURCES for d in decs
-                        ) and not any(SAFE_PIPES.search(d) for d in decs):
-                            u.sources.add(i)
-                    if u.sources:
-                        u.entry = _nest_route(n, src)
-                if next_route and name in HTTP_VERBS:
-                    u.entry = f"{name} {_next_path(file)}"
-                    if len(ps) > 1:
-                        u.sources.add(1)  # { params }
-                if next_api and _is_default_export(n):
-                    u.entry = f"ROUTE {_next_path(file)}"
-                if n.type == "method_definition":
-                    u.cls = _class_name(n, src)
-                if ps and (trpc := _trpc_input(n, ps[0][1], file, src)):
-                    u.source_names = {name: "input" for name in trpc}
-                    key = _procedure_key(n, src) if inline else ""
-                    u.entry = u.entry or (f"tRPC {key}" if key else "a tRPC procedure")
-                out.append(u)
-                parent = len(out) - 1
-        for c in n.children:
-            visit(c, parent)
-
-    visit(root, 0)
+    for n in _nodes(tree):
+        while open_ and open_[-1][0] < n.end_byte:
+            open_.pop()
+        parent = open_[-1][1] if open_ else 0
+        if n.type not in FUNCS:
+            out[parent].body.append(n)
+            continue
+        inline = n.parent is not None and n.parent.type == "arguments"
+        name = "" if inline else _fn_name(n, src)
+        ps = _params(n, src)
+        u = Unit(file, name or "<callback>", n, [names for names, _ in ps], n.start_point[0] + 1,
+                 parent=parent, inline=inline or not name)  # fmt: skip
+        if inline and (route := _route_of(n.parent.parent, src)):
+            u.entry = route
+        if n.type == "method_definition":  # Nest: @Post("x") create(@Body() dto) — decorated parameters
+            for i, (_, p) in enumerate(ps):
+                decs = _decorators(p, src)
+                if any(re.match(r"@(\w+)", d) and re.match(r"@(\w+)", d).group(1) in NEST_SOURCES for d in decs) and not any(
+                    SAFE_PIPES.search(d) for d in decs
+                ):
+                    u.sources.add(i)
+            if u.sources:
+                u.entry = _nest_route(n, src)
+        if next_route and name in HTTP_VERBS:
+            u.entry = f"{name} {_next_path(file)}"
+            if len(ps) > 1:
+                u.sources.add(1)  # { params }
+        if next_api and _is_default_export(n):
+            u.entry = f"ROUTE {_next_path(file)}"
+        if n.type == "method_definition":
+            u.cls = _class_name(n, src)
+        if ps and (trpc := _trpc_input(n, ps[0][1], file, src)):
+            u.source_names = {name: "input" for name in trpc}
+            key = _procedure_key(n, src) if inline else ""
+            u.entry = u.entry or (f"tRPC {key}" if key else "a tRPC procedure")
+        out.append(u)
+        open_.append((n.end_byte, len(out) - 1))
     return out
+
+
+# the node types a unit's analysis reads (what `_Function` loops over in its body); anything else in a body is skipped
+READ = ("expression_statement", "variable_declarator", "assignment_expression", "augmented_assignment_expression",
+        "for_in_statement", "if_statement", "call_expression", "new_expression", "jsx_attribute", "return_statement")  # fmt: skip
+_QUERIES: dict = {}
+
+
+def _nodes(tree) -> list:
+    """Every function node and every READ node, in source order, the outer of two nodes first: one native query
+    instead of a walk in Python (building a Python object per node of the tree was most of this module's time)."""
+    from tree_sitter import Query, QueryCursor
+
+    lang = tree.language
+    if lang not in _QUERIES:
+        kinds = sorted(k for k in (*FUNCS, *READ) if lang.id_for_node_kind(k, True))
+        _QUERIES[lang] = Query(lang, " ".join(f"({k}) @n" for k in kinds))
+    found = QueryCursor(_QUERIES[lang]).captures(tree.root_node).get("n", [])
+    # (a statement and its expression can span the same bytes: the statement holds it; a function never holds a
+    # READ node of its own span)
+    rank = {"expression_statement": 0}
+    return sorted(found, key=lambda n: (n.start_byte, -n.end_byte, 2 if n.type in FUNCS else rank.get(n.type, 1)))
 
 
 def _class_name(method, src: bytes) -> str:
@@ -412,27 +436,6 @@ def _nest_route(method, src: bytes) -> str:
     return "a Nest handler"
 
 
-def _own_body(unit: Unit) -> list:
-    """Every node in the unit, nested functions left out (they're units of their own)."""
-    out = []
-    stack = list(unit.node.children)
-    while stack:
-        n = stack.pop()
-        if n.type in FUNCS:
-            continue
-        if n.type in ("class_declaration", "class") and unit.name == "<top level>":
-            # methods are units; field initializers stay
-            stack.extend(c for c in n.children if c.type != "class_body")
-            body = n.child_by_field_name("body")
-            if body is not None:
-                stack.extend(c for c in body.children if c.type != "method_definition")
-            continue
-        out.append(n)
-        stack.extend(n.children)
-    out.sort(key=lambda n: n.start_byte)
-    return out
-
-
 class _Function:
     def __init__(self, unit: Unit, src: bytes, callees: dict[str, Summary], imports: dict[str, str]):
         self.u, self.src, self.callees, self.imports = unit, src, callees, imports
@@ -448,7 +451,7 @@ class _Function:
         self.callbacks: dict[int, set] = {}  # per callback this unit hands a list's items to (by start byte)
         self.guard: set[str] = set()  # what an `if` around the sink being checked has validated
         self.env: dict[str, set] = {}
-        self.body = _own_body(unit)
+        self.body = unit.body
         self.clean_after = self._replaced_unless_valid()
         self.guarded = self._guards()
         self.line = 0
