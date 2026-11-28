@@ -256,14 +256,35 @@ their own entrypoint; a module's unexported JavaScript helper is only called fro
 Pwned Passwords API takes; `RSA/ECB` names no block mode. Then both versions analyzed the same 30 commits
 (`tools/heldout.py`), and a sample drawn from the union, without saying which version reported what, was labeled.
 
-Of the 17 locations the fixes removed, **16 were wrong**; of the 7 they added back, 4 were right. On new code they
-are accurate, and narrow: 24 of about 5,600 counted locations changed. Counted precision on the sample went from
-**121 of 173 (70%, 63–76%) to 124 of 168 (74%, 67–80%)**; weighted by how many locations each check reports, from
-68% to 69%. The checks that hold up on unfamiliar code: network timeouts (12 of 12), module state (12 of 12),
-shell commands (7 of 7), import and dependency loops (16 of 19), copied logic (9 of 12). The ones that don't, and are
-next: queries inside loops (6 of 12), unused and untested code (15 of 24), containers running as root (7 of 12, the
-misses mostly images that switch user in their own entrypoint or process manager), and among the hints, endpoints
-without an auth check (0 of 12), data flow (0 of 12) and plain-HTTP URLs (1 of 12).
+**Corrected.** The first measurement of this round was wrong: `tools/heldout.py` ran `python -c` from the
+repository folder, and Python imports from the current folder ahead of `PYTHONPATH`, so both "versions" ran the
+working tree as it was at the time, and the "before" run already held some of the fixes. The tool now runs from an
+empty folder and checks which codefactory it imported (`export_with` in `tools/corpus.py`, tested against a planted
+difference). Re-run with 0.23.0 before and the round-8 fixes after, and re-labeled where new locations appeared:
+
+Of the 30 locations the fixes removed, **29 were wrong**; of the 5 they added back, 3 were right. On new code they
+are accurate and narrow: 35 of about 5,600 counted locations changed. Counted precision went from **69% to 70%**,
+estimated per check from the unchanged and the changed locations separately and weighted by how many each version
+reports (the sample over-represents the changed ones on purpose, so the raw "as sampled" figures, 66% and 74%,
+overstate the gain). The checks that hold up on unfamiliar code: network timeouts (12 of 12), module state (12 of
+12), shell commands (7 of 7), import and dependency loops (16 of 19), copied logic (9 of 12). The ones that don't:
+queries inside loops (6 of 12), unused and untested code (15 of 24), containers running as root (7 of 12), and among
+the hints endpoints without an auth check (0 of 12), data flow (0 of 12) and plain-HTTP URLs (1 of 12).
+
+### Round 9: loops in seven languages, unused code, containers
+
+Thirty more repositories (`# Round 9`), frozen before the round's fixes and measured the same way, 29 compared
+(invoiceninja timed out in the old version, so it is left out of both). The fixes: what a for-each loop iterates and
+the receiver of `.map`/`.each` run once, not per item (Ruby, Go, Java, Kotlin, PHP, Rust, C#); unused code skips
+vendored libraries, recognizes Rust tests under any number of attributes and handlers passed as `handler::<T>`, and
+Stimulus lifecycle methods; uWSGI's `uid` and `exec su` drop root.
+
+They changed 296 locations. Of the removals labeled, **40 of 46 were wrong** (unused code 13 of 13, queries inside
+loops 17 of 17; writes inside loops, a hint, 10 of 15). The additions were mostly wrong: **3 of 18 right**, nearly
+all in one repository (kestra), where loops that had been read as queries inside loops are now read as writes inside
+loops, a hint, over in-memory Java streams; that is the next thing to fix. Counted precision went from **69% to 70%**
+(stratified as above). That is the honest figure for unfamiliar code now: about 70% of counted locations right, the
+gains so far accurate but small next to the checks still below it.
 
 Every change is now also checked against golden snapshots (`tools/golden.py`): every finding on nine pinned
 repositories, diffed after each change, with any removal needing a reason. On this round it caught a rule that
@@ -362,6 +383,16 @@ the reader. Per check:
 | Module-level mutable state | the module-level value is reassigned or mutated after import | it's never changed after it's set up, or it's a type or constant |
 | Import loops | every edge of the loop is an import that runs when the module loads | an edge is type-only (`import type`, `TYPE_CHECKING`) or inside a function, or the loop doesn't exist |
 | Unused code | nothing calls or refers to the function | it's called, exported as public API of a library, invoked by a framework (route, hook, override, decorator, reflection) or used by a test |
+
+Settled after round 8, before round 9 was labeled (labelers asked; the answer applies from round 9 on):
+
+- **Vendored and bundled code** (a library copied into `vendor/`, a bundled build): wrong, for every check that asks the
+  project to change code. It isn't the project's to fix; a credential leaked in it is still right.
+- **A number in SQL** (`-item.id`, a value parsed as an integer): wrong. It can't carry SQL.
+- **A container that switches user before its program runs** (gosu, su-exec, `su user -c`, uwsgi `uid`, supervisord
+  `user=`, or a base image that sets a non-root USER): wrong.
+- **Loops:** a dependency loop (Java, Kotlin, C#) is right when the classes reference each other; an import loop is
+  right only when every edge runs when the module loads (not a type-only `use` or `import type`).
 | Important code no test reaches | no test calls it directly or through its callers | a test reaches it |
 | Copied logic | the bodies are the same logic and could share one function | the similarity is only shape (boilerplate, generated code, different behavior) |
 | Endpoints that change data without an auth check | the endpoint changes data and no authentication applies to it | auth applies (middleware, guard, decorator, base class), or it's public by design and checks something else (sign-in, a signed webhook) |
