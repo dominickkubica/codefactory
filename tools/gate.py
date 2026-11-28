@@ -158,8 +158,11 @@ def _ref_cache(ref: str, repo: str) -> Path:
     return CACHE / "gate-ref" / sha / f"{repo.replace('/', '__')}@{head[:12] or 'nogit'}.json"
 
 
-def corpus_kept(ref: str, repos: list[str], jobs: int) -> bool:
-    """Whole-repository analysis with both versions: no labeled-right location the ref reports may go missing."""
+def corpus_kept(ref: str, repos: list[str], jobs: int, retry: bool = True) -> bool:
+    """Whole-repository analysis with both versions: no labeled-right location the ref reports may go missing. A
+    repository that loses some is analyzed again alone, with all the memory: several large ones side by side can leave
+    one's type checker short (twenty, beside three others, fell back to the general analyzer and lost 10), and that's
+    the machine, not the change. What it loses alone fails the gate."""
     from concurrent.futures import ThreadPoolExecutor
 
     share_memory(jobs)
@@ -228,6 +231,19 @@ def corpus_kept(ref: str, repos: list[str], jobs: int) -> bool:
         reason = why[(v["repo"], v["check"], v["location"])]
         print(f"      lost on purpose: {v['repo'][:22]} {v['location'][:70]}  [{reason[:80]}]")
     failed = sorted(set(failed) | {r for (_, r), locs in found.items() if locs is None})
+    if retry and jobs > 1 and (lost or failed):
+        again = sorted({v["repo"] for v in lost} | set(failed))
+        print(f"      {len(lost)} lost, {len(failed)} failed beside the others: {', '.join(again)} again, alone", flush=True)
+        held = os.environ.pop("CODEFACTORY_TS_HEAP_MB", None)
+        share_memory(1)
+        try:
+            alone = corpus_kept(ref, again, 1, retry=False)
+        finally:
+            os.environ.pop("CODEFACTORY_TS_HEAP_MB", None)
+            if held is not None:
+                os.environ["CODEFACTORY_TS_HEAP_MB"] = held
+        print(f"{'ok  ' if alone else 'FAIL'}  corpus: {len(repos)} repositories, {n} labeled-right locations the ref reports")
+        return alone
     note = f"; analysis failed: {', '.join(failed)}" if failed else ""
     mark = "ok  " if not lost and not failed else "FAIL"
     print(f"{mark}  corpus: {len(repos)} repositories, {n} labeled-right locations the ref reports, {len(lost)} lost{note}")
