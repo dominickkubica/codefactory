@@ -28,7 +28,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 HERE = ROOT / "tools" / "corpus"
 CACHE = Path(os.environ.get("CODEFACTORY_CORPUS", Path.home() / ".cache" / "codefactory-corpus"))
-LIMIT = 900  # seconds per repository
+LIMIT = 900  # seconds per repository: past this, a run is killed and reports nothing
+SLOW = 120  # seconds: a repository slower than this is listed at the end of every run, to be looked at
 # `codefactory export PATH --json -o OUT`, also writing what `codefactory profile PATH --json` prints
 EXPORT = """
 import json, sys
@@ -53,8 +54,30 @@ def export_with(code: Path, repo_path: Path, out: Path, prof: Path, timeout: flo
              f"{str(Path(code).resolve())!r}), codefactory.__file__\n")  # fmt: skip
     env = {**os.environ, "PYTHONPATH": str(code)}
     with tempfile.TemporaryDirectory() as empty:
-        return subprocess.run([sys.executable, "-c", check + EXPORT, str(repo_path), str(out), str(prof)],
-                              capture_output=True, text=True, timeout=timeout, env=env, cwd=empty)  # fmt: skip
+        # its own process group, so a timeout ends the TypeScript analyzer's Node processes too: killing only Python
+        # left them running for half an hour, holding a core and gigabytes each (invoiceninja, round 9)
+        proc = subprocess.Popen([sys.executable, "-c", check + EXPORT, str(repo_path), str(out), str(prof)],
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env, cwd=empty,
+                                start_new_session=os.name != "nt")  # fmt: skip
+        try:
+            stdout, stderr = proc.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            kill_group(proc)
+            raise
+        return subprocess.CompletedProcess(proc.args, proc.returncode, stdout, stderr)
+
+
+def kill_group(proc: subprocess.Popen) -> None:
+    import signal
+
+    try:
+        if os.name != "nt":
+            os.killpg(proc.pid, signal.SIGKILL)
+        else:
+            proc.kill()
+    except (ProcessLookupError, PermissionError):
+        pass
+    proc.communicate()
 
 
 def repos() -> list[str]:
@@ -124,6 +147,8 @@ def analyze(repo: str) -> dict:
         "counts": counts,
         "serious": [f"{f['severity']}: {f['title']}" for f in data["findings"] if f["severity"] in ("Critical", "High")],
         **({"notes": found} if (found := notes(done.stderr)) else {}),  # (only when there are some, as older entries)
+        # the slowest phases, so a slow repository says where its time went (rule 11)
+        **({"phases": dict(list(timings.items())[:6])} if (timings := profile.get("timings")) else {}),
     }
 
 
@@ -172,6 +197,12 @@ def run(args) -> int:
             save("results.json", results)  # after each, so an interrupted run keeps what it did
     bad = [r for r in wanted if results[r]["status"] != "ok"]
     print(f"done: {len(wanted) - len(bad)} ok, {len(bad)} not ({', '.join(bad) or 'none'})")
+    slow = sorted((r for r in wanted if results[r].get("seconds", 0) > SLOW), key=lambda r: -results[r]["seconds"])
+    if slow or any(results[r]["status"] == "timeout" for r in wanted):  # (rule 11: loud, every time, until fixed)
+        print(f"\n** over {SLOW:.0f} s or timed out: investigate before anything else (CONTRIBUTING.md, rule 11) **")
+        for r in slow + [r for r in wanted if results[r]["status"] == "timeout"]:
+            phases = ", ".join(f"{k} {v:.0f}" for k, v in results[r].get("phases", {}).items() if k != "build")
+            print(f"  {r:45} {results[r].get('seconds', LIMIT):6.0f} s  {results[r]['status']:8} {phases}")
     return 1 if bad else 0
 
 

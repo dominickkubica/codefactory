@@ -10,3 +10,4 @@ factory.html
 .claude/worktrees/
 tools/golden/local.txt
 tools/golden/local/
+tools/speed/local.json

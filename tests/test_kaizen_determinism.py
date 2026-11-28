@@ -84,7 +84,31 @@ def _export(root: Path, seed: str) -> dict:
     return data
 
 
+GRAPH = """
+import json, sys
+from pathlib import Path
+from codefactory.cli import build
+print(json.dumps(build(Path(sys.argv[1]), cache=False).to_dict()))
+"""
+
+
+def _graph(root: Path, seed: str) -> str:
+    env = {**os.environ, "PYTHONHASHSEED": seed, "CODEFACTORY_JOBS": "1", "PYTHONPATH": str(ROOT)}
+    return subprocess.run([sys.executable, "-c", GRAPH, str(root)], cwd=ROOT, env=env, check=True, capture_output=True,
+                          text=True).stdout  # fmt: skip
+
+
 class DeterminismTest(unittest.TestCase):
+    def test_two_hash_seeds_build_the_same_graph(self):
+        # (the edges were built from sets: the same code gave them in a different order each run, so no two graphs or
+        # caches compared byte for byte)
+        root = _fixture()
+        for name in ("alpha", "bravo", "charlie", "delta", "echo"):  # one module importing several: a set, once
+            (root / f"{name}.py").write_text(f"def {name}():\n    return 1\n", encoding="utf-8")
+        (root / "hub.py").write_text("import alpha\nimport bravo\nimport charlie\nimport delta\nimport echo\n",
+                                     encoding="utf-8")  # fmt: skip
+        self.assertEqual(_graph(root, "1"), _graph(root, "2"))
+
     def test_two_hash_seeds_export_the_same_audit(self):
         root = _fixture()
         first, second = _export(root, "1"), _export(root, "2")

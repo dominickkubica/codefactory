@@ -5,7 +5,8 @@
 2. Right findings kept: every location labeled right in `tools/corpus/labels.json` for a source-text check that the
    code at REF (default `origin/main`) reports, the working tree must still report. Both versions scan the same files
    of the corpus checkouts, so nothing else (a stale export, a run interrupted halfway) can move the result.
-3. `tools/check.py`: lint, format, the tests on every Python and configuration CI runs, `codefactory check .`.
+3. Speed (`tools/speed.py check --set quick`): cold runs on a few repositories against their recorded budgets.
+4. `tools/check.py`: lint, format, the tests on every Python and configuration CI runs, `codefactory check .`.
 
 It stops at the first step that fails. Graph checks (loops, unused and untested code, import loops) need whole-repository
 analysis: `--corpus owner/repo,...` (or `--corpus "labeled:PREFIX|PREFIX"`, every repository with labels for checks starting so)
@@ -193,6 +194,8 @@ def main(argv: list[str] | None = None) -> int:
         else:
             repos = spec.split(",")
         ok = corpus_kept(args.against, repos, args.jobs)
+    if ok:  # (rule 11: slower is a regression like any other)
+        ok = step("speed (quick set)", [sys.executable, "tools/speed.py", "check", "--set", "quick"])
     if ok and not args.skip_ci:
         ok = step("tools/check.py", [sys.executable, "tools/check.py"])
     return 0 if ok else 1

@@ -18,7 +18,7 @@ pip install ruff
 ## Before every push
 
 ```bash
-python tools/gate.py          # golden diff, right findings kept, then tools/check.py
+python tools/gate.py          # golden diff, right findings kept, speed budgets, then tools/check.py
 python tools/gate.py --skip-ci  # the first two only, for a quick loop while working
 python tools/gate.py --corpus "labeled:Unused code|Queries or requests"  # a graph check changed: whole-repo analysis
 ```
@@ -99,6 +99,10 @@ through.
    and nothing half-written by a running job (`results.json` mid-run) is committed.
 10. **Nothing from a private repository lands here.** Local golden repositories (`golden.py pin`) keep their
     snapshots in the gitignored `tools/golden/local/`; findings from them are described, never pasted.
+11. **Slow is a bug, and a timeout is an outage.** A run that times out reports nothing, so it silently drops out of
+    every measurement; one was noted and passed over for weeks while two repositories ran a machine out of memory on
+    compiled bundles. Every phase is timed (`CODEFACTORY_TIMINGS=1`; `tools/speed.py`); a timeout or a run over its
+    budget is investigated and fixed before other work, and the gate fails on a speed regression.
 
 ## Standards
 

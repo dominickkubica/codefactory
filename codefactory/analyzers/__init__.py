@@ -8,6 +8,7 @@ typescript package isn't installed.
 from __future__ import annotations
 
 import sys
+from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 
 from ..graph import Graph
@@ -28,6 +29,25 @@ def analyze(root: Path, ignore: list[str], languages: list[str] | None = None, c
     INCOMPLETE.clear()
     g = Graph(root=str(root), language="")
     wanted = languages or list(LANGUAGES)
+    # the TypeScript analyzer is a Node process of its own: start it first, so it runs while Python is analyzed on the
+    # other cores (a Django or FastAPI app with a TypeScript front end waited for one, then the other); the results
+    # are merged in the same order as before
+    pool = ThreadPoolExecutor(max_workers=1) if "typescript" in wanted else None
+
+    def timed_typescript() -> Graph:
+        with phase("build.typescript"):
+            return analyze_typescript(root, ignore, cache=cache)
+
+    ts_future = pool.submit(timed_typescript) if pool else None
+    try:
+        return _analyze(root, ignore, languages, cache, wanted, ts_future, g)
+    finally:
+        if pool:
+            pool.shutdown(wait=True)
+
+
+def _analyze(root: Path, ignore: list[str], languages: list[str] | None, cache: bool, wanted: list[str],
+             ts_future: Future | None, g: Graph) -> Graph:  # fmt: skip
     js_fallback = False
     for lang in wanted:
         if lang == "python":
@@ -35,8 +55,7 @@ def analyze(root: Path, ignore: list[str], languages: list[str] | None = None, c
                 part = analyze_python(root, ignore, cache=cache)
         elif lang == "typescript":
             try:
-                with phase("build.typescript"):
-                    part = analyze_typescript(root, ignore, cache=cache)
+                part = ts_future.result()
             except TypeScriptUnavailable as e:
                 if languages and "other" not in languages:  # asked for explicitly: that's an error
                     raise SystemExit(f"codefactory: {e}") from None
@@ -58,6 +77,9 @@ def analyze(root: Path, ignore: list[str], languages: list[str] | None = None, c
         if part.files:
             g.merge(part)
     _unique_ids(g)
+    # (in a fixed order: some analyzers build their edges from sets, and string hashing differs per process, so the
+    # same code gave the same edges in a different order each run and no two exports could be compared byte for byte)
+    g.edges.sort(key=lambda e: (e.src, e.dst, e.kind))
     return g
 
 
