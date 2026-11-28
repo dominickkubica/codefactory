@@ -165,3 +165,35 @@ Radarr/Radarr
 mastodon/mastodon-ios
 mihonapp/mihon
 hexpm/hexpm
+# Round 9: held out. Frozen before the round-9 fixes (queries in loops, unused and untested code, containers as root)
+# and not read while making them; the fixes come from rounds 1-8
+miniflux/v2
+mattermost/focalboard
+kestra-io/kestra
+nocodb/nocodb
+wger-project/wger
+TandoorRecipes/recipes
+grafana/oncall
+AppFlowy-IO/AppFlowy-Cloud
+pterodactyl/panel
+invoiceninja/invoiceninja
+monicahq/chandler
+Kozea/Radicale
+jellyfin/jellyfin-web
+gitroomhq/postiz-app
+calcom/cal.diy
+sonic-pi-net/sonic-pi
+ToolJet/ToolJet
+twentyhq/twenty
+hcengineering/platform
+open-webui/open-webui
+langgenius/dify
+Budibase/budibase
+Lightning-AI/litgpt
+microsoft/markitdown
+openai/openai-agents-python
+fastapi-users/fastapi-users
+labstack/echo
+go-chi/chi
+ory/kratos
+spree/spree
