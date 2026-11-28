@@ -36,9 +36,9 @@ from .trace import find_function, shortest_path, trace
 from .viewer import render_html
 
 
-def build(root: Path, languages: list[str] | None = None, cache: bool = True) -> Graph:
+def build(root: Path, languages: list[str] | None = None, cache: bool = True, review_follows: bool = False) -> Graph:
     cfg = load_config(root)
-    g = analyze(root, cfg.ignore, languages, cache)
+    g = analyze(root, cfg.ignore, languages, cache, review_follows)
     assign_layers(g, cfg)
     with phase("build.flags"):
         run_flags(g, cfg)
@@ -63,8 +63,9 @@ def build(root: Path, languages: list[str] | None = None, cache: bool = True) ->
     return g
 
 
-def load_graph(path: Path, languages: list[str] | None = None, cache: bool = True) -> dict:
-    """A graph from a saved .json, or by analyzing a folder (reusing .codefactory/graph.json while no source changed)."""
+def load_graph(path: Path, languages: list[str] | None = None, cache: bool = True, review: bool = False) -> dict:
+    """A graph from a saved .json, or by analyzing a folder (reusing .codefactory/graph.json while no source changed).
+    `review`: a review of the folder follows, so work of its that needs no graph starts alongside the analysis (warm.py)."""
     if path.is_file() and path.suffix == ".json":
         return json.loads(path.read_text(encoding="utf-8"))
     if not path.is_dir():
@@ -79,7 +80,7 @@ def load_graph(path: Path, languages: list[str] | None = None, cache: bool = Tru
         if hit is not None:
             return _scoped(hit, root)
     with phase("build"):
-        graph = build(root, languages, cache).to_dict()
+        graph = build(root, languages, cache, review).to_dict()
     from .analyzers import INCOMPLETE
 
     if cache and not languages and not INCOMPLETE:  # (a result missing a language isn't kept: see analyzers)
@@ -572,7 +573,7 @@ def cmd_export(a) -> int:
     path = Path(a.path)
     if not path.is_dir():
         raise SystemExit("codefactory: export needs the repository folder (it reads manifests, CI files and source text)")
-    text = export(load_graph(path, a.lang, not a.no_cache), path.resolve(), a.json, a.online)
+    text = export(load_graph(path, a.lang, not a.no_cache, review=True), path.resolve(), a.json, a.online)
     out = a.output or stamped("audit", "json" if a.json else "md")
     if out == "-":
         print(text, end="")
@@ -593,7 +594,7 @@ def cmd_review(a) -> int:
     path = Path(a.path)
     if not path.is_dir():
         raise SystemExit("codefactory: review needs the repository folder (it reads manifests, CI files and source text)")
-    text = review_markdown(load_graph(path, a.lang, not a.no_cache), path.resolve(), a.for_ai, a.online)
+    text = review_markdown(load_graph(path, a.lang, not a.no_cache, review=True), path.resolve(), a.for_ai, a.online)
     # someone at a terminal gets a file (a whole report scrolling past is no use); a pipe, or a tool like Claude Code
     # reading the output, still gets the text
     out = a.output or (stamped("review") if sys.stdout.isatty() else "-")

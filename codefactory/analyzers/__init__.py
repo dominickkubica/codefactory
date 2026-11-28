@@ -25,7 +25,8 @@ LANGUAGES = ("python", "typescript", "other")
 INCOMPLETE: list[str] = []
 
 
-def analyze(root: Path, ignore: list[str], languages: list[str] | None = None, cache: bool = True) -> Graph:
+def analyze(root: Path, ignore: list[str], languages: list[str] | None = None, cache: bool = True,
+            review_follows: bool = False) -> Graph:  # fmt: skip
     INCOMPLETE.clear()
     g = Graph(root=str(root), language="")
     wanted = languages or list(LANGUAGES)
@@ -40,20 +41,24 @@ def analyze(root: Path, ignore: list[str], languages: list[str] | None = None, c
 
     ts_future = pool.submit(timed_typescript) if pool else None
     try:
-        return _analyze(root, ignore, languages, cache, wanted, ts_future, g)
+        return _analyze(root, ignore, languages, cache, wanted, ts_future, g, review_follows)
     finally:
         if pool:
             pool.shutdown(wait=True)
 
 
 def _analyze(root: Path, ignore: list[str], languages: list[str] | None, cache: bool, wanted: list[str],
-             ts_future: Future | None, g: Graph) -> Graph:  # fmt: skip
+             ts_future: Future | None, g: Graph, review_follows: bool = False) -> Graph:  # fmt: skip
     js_fallback = False
     for lang in wanted:
         if lang == "python":
             with phase("build.python"):
                 part = analyze_python(root, ignore, cache=cache)
         elif lang == "typescript":
+            if review_follows:  # while the type checker runs, the review's work that needs no graph (warm.py)
+                from .. import warm
+
+                warm.start(root)
             try:
                 part = ts_future.result()
             except TypeScriptUnavailable as e:

@@ -121,33 +121,64 @@ def _argument_text(line: str, call: re.Match) -> str:
     return re.sub(r"""(["'`])(?:(?!\1).)*\1""", values_only, text)
 
 
-def personal_data(root: Path, files: list[str], out: dict[str, Check]) -> None:
+# root -> file -> (its text, its hits): read ahead (warm.py), used where the file's text is still the same
+_READY: dict[str, dict[str, tuple[str, list]]] = {}
+
+
+def _read(root: Path, fid: str) -> str | None:
+    if not fid.endswith(SRC_EXT) or is_test(fid):
+        return None
+    try:
+        return (root / fid).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+
+
+def prepare(root: Path, files: list[str]) -> None:
+    """personal_data's per-file work, ahead of the review (warm.py: while the type checker runs)."""
+    ready = {}
     for fid in files:
-        if not fid.endswith(SRC_EXT) or is_test(fid):
+        if (text := _read(root, fid)) is not None:
+            ready[fid] = (text, _personal_hits(fid, text))
+    _READY[str(root.resolve())] = ready
+
+
+def personal_data(root: Path, files: list[str], out: dict[str, Check]) -> None:
+    from . import warm
+
+    warm.wait(root, "privacy")
+    ready = _READY.pop(str(Path(root).resolve()), {})
+    for fid in files:
+        if (text := _read(root, fid)) is None:
             continue
-        try:
-            text = (root / fid).read_text(encoding="utf-8", errors="replace")
-        except OSError:
+        r = ready.get(fid)
+        for key, i, line, word in r[1] if r is not None and r[0] == text else _personal_hits(fid, text):
+            out[key].hits.append(Evidence(fid, i, line))
+            out[key].data[f"{fid}:{i}"] = word
+
+
+def _personal_hits(fid: str, text: str) -> list[tuple[str, int, str, str]]:
+    """(check, line number, line, the personal-data word) for each line of one file that sends a person's data on."""
+    hits: list[tuple[str, int, str, str]] = []
+    if not PERSONAL.search(text) or not ANY_SINK.search(text):
+        return hits
+    prose = _docstring_lines(text) if fid.endswith(".py") else set()  # a docstring's example isn't the code
+    # a CLI or seed script printing to the terminal of whoever runs it: the operator sees their own input
+    terminal = is_script(fid) or re.search(r"(?:^|/)(?:cli|commands?|seeds?|seeders?|console)(?:/|$)", fid)
+    mobile = fid.endswith((".swift", ".m", ".mm", ".kt", ".dart")) or "/android/" in fid or "/ios/" in fid
+    for i, line in enumerate(text.splitlines(), 1):
+        if len(line) > 1000 or line.lstrip().startswith(("#", "//", "*")) or not ANY_SINK.search(line) or i in prose:
             continue
-        if not PERSONAL.search(text) or not ANY_SINK.search(text):
-            continue
-        prose = _docstring_lines(text) if fid.endswith(".py") else set()  # a docstring's example isn't the code
-        # a CLI or seed script printing to the terminal of whoever runs it: the operator sees their own input
-        terminal = is_script(fid) or re.search(r"(?:^|/)(?:cli|commands?|seeds?|seeders?|console)(?:/|$)", fid)
-        mobile = fid.endswith((".swift", ".m", ".mm", ".kt", ".dart")) or "/android/" in fid or "/ios/" in fid
-        for i, line in enumerate(text.splitlines(), 1):
-            if len(line) > 1000 or line.lstrip().startswith(("#", "//", "*")) or not ANY_SINK.search(line) or i in prose:
-                continue
-            for key, pat in (("privacy_analytics", ANALYTICS), ("privacy_log", LOG), ("privacy_storage", STORE)):
-                m = pat.search(line)
-                args = _argument_text(line, m) if m else ""
-                word = m and next((w for w in PERSONAL.finditer(args) if _personal(w, args, mobile, line)), None)
-                if key == "privacy_log" and word and terminal and re.match(r"console\.|print|puts|IO\.puts|echo", m.group(0)):
-                    break
-                if m and word:
-                    out[key].hits.append(Evidence(fid, i, line.strip()[:140]))
-                    out[key].data[f"{fid}:{i}"] = word.group(0)
-                    break
+        for key, pat in (("privacy_analytics", ANALYTICS), ("privacy_log", LOG), ("privacy_storage", STORE)):
+            m = pat.search(line)
+            args = _argument_text(line, m) if m else ""
+            word = m and next((w for w in PERSONAL.finditer(args) if _personal(w, args, mobile, line)), None)
+            if key == "privacy_log" and word and terminal and re.match(r"console\.|print|puts|IO\.puts|echo", m.group(0)):
+                break
+            if m and word:
+                hits.append((key, i, line.strip()[:140], word.group(0)))
+                break
+    return hits
 
 
 def _personal(word: re.Match, args: str, mobile: bool, line: str = "") -> bool:

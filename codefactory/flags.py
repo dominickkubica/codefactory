@@ -78,38 +78,88 @@ QUOTED_NAME = re.compile(r"""['"`]([A-Za-z_$][\w$]{2,})['"`]""")
 WORD = re.compile(r"[A-Za-z_$][\w$]{2,}")
 
 
-def _mentioned(g: Graph) -> set[str]:
-    """Names used where calls can't be followed: quoted in source (a method looked up by its name, a route handler
-    named in config) or written in a template or component file."""
-    import os
-    from pathlib import Path
+# root -> path -> (its text, the names in it): read ahead (warm.py), used where the file's text is still the same
+_READY: dict[str, dict[str, tuple[str, set[str]]]] = {}
 
-    root = Path(g.root)
-    out: set[str] = set()
-    for f in g.files:
-        try:
-            text = (root / f.id).read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            continue
-        out.update(QUOTED_NAME.findall(text))
-        # imported or re-exported by name (`import { useDeleteEscalation } from "@/lib/…"`: an alias or a route file
-        # the analyzer couldn't resolve still names what it uses), or read as a property (a getter: `this.hash`)
-        for m in IMPORT_LIST.finditer(text):
-            out.update(WORD.findall(m.group(1)))
-        out.update(PROPERTY.findall(text))
+
+def _names_in_source(text: str) -> set[str]:
+    out = set(QUOTED_NAME.findall(text))
+    # imported or re-exported by name (`import { useDeleteEscalation } from "@/lib/…"`: an alias or a route file
+    # the analyzer couldn't resolve still names what it uses), or read as a property (a getter: `this.hash`)
+    for m in IMPORT_LIST.finditer(text):
+        out.update(WORD.findall(m.group(1)))
+    out.update(PROPERTY.findall(text))
+    return out
+
+
+def _view_files(root) -> list[str]:
+    import os
+
     skip = {".git", "node_modules", "vendor", "dist", "build", ".venv", "venv", "__pycache__", "target", ".next"}
-    seen = 0
+    out: list[str] = []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = sorted(d for d in dirnames if d not in skip and not d.startswith("."))
         for name in sorted(filenames):  # (sorted: which files the cap leaves out doesn't follow the file system)
-            if name.endswith(VIEW_FILES) and not name.startswith("codefactory") and seen < 20_000:
-                seen += 1
-                try:
-                    if os.path.getsize(os.path.join(dirpath, name)) < 2_000_000:
-                        with open(os.path.join(dirpath, name), encoding="utf-8", errors="replace") as fh:
-                            out.update(WORD.findall(fh.read()))
-                except OSError:
-                    continue
+            if name.endswith(VIEW_FILES) and not name.startswith("codefactory") and len(out) < 20_000:
+                out.append(os.path.join(dirpath, name))
+    return out
+
+
+def _read_view(path: str) -> str | None:
+    import os
+
+    try:
+        if os.path.getsize(path) < 2_000_000:
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                return fh.read()
+    except OSError:
+        pass
+    return None
+
+
+def _read_source(root, fid: str) -> str | None:
+    from pathlib import Path
+
+    try:
+        return (Path(root) / fid).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+
+
+def prepare_mentions(root, sources: list[str]) -> None:
+    """_mentioned's per-file work, ahead of the flags (warm.py: while the type checker runs)."""
+    ready: dict[str, tuple[str, set[str]]] = {}
+    for fid in sources:
+        if (text := _read_source(root, fid)) is not None:
+            ready[fid] = (text, _names_in_source(text))
+    for path in _view_files(root):
+        if (text := _read_view(path)) is not None:
+            ready["view:" + path] = (text, set(WORD.findall(text)))
+    _READY[str(root)] = ready
+
+
+def _mentioned(g: Graph) -> set[str]:
+    """Names used where calls can't be followed: quoted in source (a method looked up by its name, a route handler
+    named in config) or written in a template or component file."""
+    from pathlib import Path
+
+    from . import warm
+
+    root = Path(g.root)
+    warm.wait(root, "mentions")
+    ready = _READY.pop(str(root.resolve()), {})
+
+    def names(key: str, text: str, find) -> set[str]:
+        r = ready.get(key)
+        return r[1] if r is not None and r[0] == text else find(text)
+
+    out: set[str] = set()
+    for f in g.files:
+        if (text := _read_source(root, f.id)) is not None:
+            out |= names(f.id, text, _names_in_source)
+    for path in _view_files(root):
+        if (text := _read_view(path)) is not None:
+            out |= names("view:" + path, text, lambda t: set(WORD.findall(t)))
     return out
 
 

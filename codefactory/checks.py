@@ -752,24 +752,51 @@ def source_files(root: Path, graph: dict) -> list[str]:
     credential."""
     from .config import load_config
 
-    seen = {f["id"] for f in graph["files"]}
-    skip = set(load_config(root).ignore)
-    out = set(seen)
+    out = {f["id"] for f in graph["files"]} | _on_disk(root, set(load_config(root).ignore))
+    copies = link_copies(root, out)
+    return sorted(f for f in out if not links_outside(root, f) and not is_vendored(f) and f not in copies)
+
+
+def _on_disk(root: Path, skip: set[str]) -> set[str]:
+    out = set()
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in skip and not d.startswith(".") and not d.endswith(".egg-info")]
         for name in filenames:
             if name.endswith(SRC_EXT) and not name.endswith((".min.js", ".d.ts")):
                 out.add(Path(dirpath, name).relative_to(root).as_posix())
-    copies = link_copies(root, out)
-    return sorted(f for f in out if not links_outside(root, f) and not is_vendored(f) and f not in copies)
+    return out
+
+
+NICE = 10  # (the warm-up's processes: behind the type checker's, which the run waits for)
+
+
+def kept_on_disk(root: Path) -> list[str]:
+    """The source files on disk that source_files keeps (without the graph's: see warm.py)."""
+    from .config import load_config
+
+    files = _on_disk(root, set(load_config(root).ignore))
+    copies = link_copies(root, files)
+    return sorted(f for f in files if not links_outside(root, f) and not is_vendored(f) and f not in copies)
+
+
+def warm(root: Path, files: list[str], jobs: int) -> None:
+    """The per-file source checks of these files, ahead of the review (see warm.py)."""
+    _per_file(root, files, jobs, nice=NICE)
+
+
+def _per_file(root: Path, files: list[str], jobs: int | None = None, nice: int = 0) -> dict[str, dict]:
+    from .analyzers import parallel
+
+    items = [(fid, (str(root), fid)) for fid in files if fid.endswith(SRC_EXT)]
+    return parallel.run(root, "checks", items, _scan_one, tool="checks", memo=True, jobs=jobs, nice=nice)
 
 
 def scan_sources(root: Path, files: list[str]) -> dict[str, Check]:
     """Every source file's pattern hits, in parallel and cached per file (see analyzers/parallel)."""
-    from .analyzers import parallel
+    from . import warm
 
-    items = [(fid, (str(root), fid)) for fid in files if fid.endswith(SRC_EXT)]
-    per_file = parallel.run(root, "checks", items, _scan_one, tool="checks")
+    warm.wait(root, "sources")  # (what it checked, this needn't)
+    per_file = _per_file(root, files)
     out = {k: Check(k) for k in CHECK_KEYS}
     for fid in files:
         for key, got in per_file.get(fid, {}).items():

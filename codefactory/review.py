@@ -218,6 +218,17 @@ class _QuotedTexts:
         self.blob = blob
         self.texts = list(dict.fromkeys(re.split(r"[\"'`]", blob)[1:-1]))
         self._holding: dict[str, str] = {}  # literal part -> the quoted stretches holding it (routes share parts: "api")
+        self._segments: dict[str, list[int]] | None = None
+
+    def _with_segment(self, part: str) -> list[int]:
+        """The stretches with `part` between two slashes (or a slash and the end, or a `?`): where a URL holding that
+        literal part must be. One index of every stretch's segments, instead of searching the whole text per part."""
+        if self._segments is None:
+            self._segments = {}
+            for i, t in enumerate(self.texts):
+                for seg in {s.split("?", 1)[0] for s in t.split("/")[1:]}:
+                    self._segments.setdefault(seg, []).append(i)
+        return self._segments.get(part, [])
 
     def has_url(self, path: str) -> bool:
         params = [bool(self.PARAM.fullmatch(p)) for p in path.split("/")]
@@ -226,13 +237,22 @@ class _QuotedTexts:
         if re.search(r"[\"'`]", path):
             return bool(url.search(self.blob))
         literal = [p for p, param in zip(path.split("/"), params, strict=True) if not param]
-        if any(p not in self.blob for p in literal):
+        # (every literal part follows a slash in the URL matched: the first, at least, after the path's leading one)
+        if path.startswith("/") and not any("?" in p for p in literal):
+            if not all(self._with_segment(p) for p in literal[1:]):
+                return False
+        elif any(p not in self.blob for p in literal):
             return False
         key = max(literal, key=len, default="") or ("/" if "/" in path else "")
         # joined with no separator: the empty text between two stretches can't match a URL (it needs a character)
-        if key not in self._holding:
-            self._holding[key] = "".join(f'"{t}"' for t in self.texts if key in t)
-        return bool(url.search(self._holding[key]))
+        by_segment = path.startswith("/") and key != "/" and "?" not in key and key in literal[1:]
+        cached = ("segment " if by_segment else "text ") + key
+        if cached not in self._holding:
+            if by_segment:
+                self._holding[cached] = "".join(f'"{self.texts[i]}"' for i in self._with_segment(key))
+            else:
+                self._holding[cached] = "".join(f'"{t}"' for t in self.texts if key in t)
+        return bool(url.search(self._holding[cached]))
 
 
 def _few_written_out(lines: list[str], at: int, name: str, span: int = 40) -> bool:
