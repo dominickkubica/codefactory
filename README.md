@@ -205,6 +205,12 @@ A changed file re-reads just that file, except TypeScript\*.
 \*The TypeScript type checker needs the whole program, so a TypeScript change re-runs it. Other commands (`flags`,
 `brief`, `context`, `plan`) answer from the cache in well under a second when nothing changed.
 
+On a large TypeScript project the type checker is most of a first run. Its walk is shared between two processes when
+memory allows (each holds the whole program, so this needs about twice the heap), and the review's work that needs no
+graph (the source checks, parsing for data flow, the personal-data scan) runs while it does: a 66 MB TypeScript
+monorepo (teable, 8,900 files) went from 170 s to 115 s for a full first-run review, with the same results. Every run
+is held to a time budget (`tools/speed.py`): no repository in the set may take more than two minutes.
+
 ## Privacy
 
 Everything runs locally and nothing is uploaded. The map is a single HTML file with no network access. The only

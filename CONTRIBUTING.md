@@ -126,6 +126,7 @@ through.
 | `codefactory/flags.py`, `similar.py`, `efficiency.py` | Checks on the graph |
 | `codefactory/checks.py`, `intent.py`, `review.py` | Source-text and repository checks; the review |
 | `codefactory/coverage.py`, `accept.py` | Measured coverage; `codefactory accept` |
+| `codefactory/timing.py`, `warm.py` | Where a run's time goes, phase by phase; the review's work that needs no graph, started while the type checker runs |
 | `codefactory/plan.py`, `brief.py`, `sarif.py`, `trace.py`, `sqlgraph.py` | Outputs |
 | `codefactory/viewer/` | The HTML map: `template.html`, `factory.css`, `factory.js` |
 | `tests/fixtures/shop`, `tsapp`, `polyglot` | Small Python, TypeScript and Go/Java/Ruby apps with planted problems |

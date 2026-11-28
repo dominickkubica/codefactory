@@ -3,6 +3,24 @@
 All notable changes. Versions follow [semantic versioning](https://semver.org); before 1.0, minor versions may
 change command-line output.
 
+## Unreleased
+
+Faster first runs on large TypeScript projects, with the same results (teable, a 66 MB monorepo: 170 s → 115 s).
+
+- **TypeScript in two slices**: when the heap holds two copies of the program, two processes each build it and walk
+  half the files, merged in order (the walk was 78 of 104 s on teable).
+- **The same answer for a call on a union** (`field.convert(x)` with several possible field types, `<Icon />` read
+  from a table of components): the member function first by id. The type checker named whichever type it created
+  first, which moved with the order files were read in; graph edges change, findings on the pinned repositories don't.
+- **Work done while the type checker runs** (`codefactory/warm.py`): the source checks, the data-flow pass's reading
+  and parsing, the personal-data scan and the names the unused-code check looks for. A file changed in between is read
+  again.
+- **Faster data flow** (JavaScript/TypeScript): functions and the statements each one reads come from one tree-sitter
+  query per file instead of a walk in Python (teable: 38 s → 23 s, the same flows on 279,000 functions).
+- **Routes reached by tests**: an index of quoted URLs instead of searching all test code per route (7.6 s → 0.15 s).
+- Tools: speed runs are fully cold (the per-file caches were still read); the gate keeps the old version's corpus
+  results per commit, so each later gate analyzes only with the new code, and names a failed test or analysis at once.
+
 ## 0.23.0 · 2026-11-27
 
 Precision measured on real code, round after round: a corpus of 126 public repositories, held-out samples labeled
