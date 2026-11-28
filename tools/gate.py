@@ -11,7 +11,9 @@
 It stops at the first step that fails. Graph checks (loops, unused and untested code, import loops) need whole-repository
 analysis: `--corpus owner/repo,...` (or `--corpus "labeled:PREFIX|PREFIX"`, every repository with labels for checks starting so)
 adds a step that analyzes each with both versions, into separate folders, and holds every labeled-right location of
-any check to the same rule. Nothing is read from earlier exports, so a run interrupted halfway can't skew it.
+any check to the same rule. Nothing is read from earlier exports, so a run interrupted halfway can't skew it. A
+location right only by accident (its message names the wrong cause) that a fix drops is listed, with why, in
+`tools/corpus/lost_on_purpose.jsonl`.
 """
 
 from __future__ import annotations
@@ -46,6 +48,21 @@ SOURCE_CHECKS = {
     "Tokens or passwords in unencrypted storage": "sensitive_storage",
     "Container runs as root": "docker_root",
 }
+# labeled-right locations a change may lose, each with why (one per line: {"repo", "check", "location", "why"}): a finding
+# right by accident (reported through a wrong call, so its message names the wrong cause) that a fix rightly drops
+ACCEPTED = ROOT / "tools" / "corpus" / "lost_on_purpose.jsonl"
+
+
+def accepted() -> dict[tuple[str, str, str], str]:
+    out = {}
+    if ACCEPTED.exists():
+        for line in ACCEPTED.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                r = json.loads(line)
+                out[(r["repo"], r["check"], r["location"])] = r["why"]
+    return out
+
+
 # run with a given codefactory on sys.path: which of the given locations it reports (key -> bool)
 PROBE = """
 import json, re, sys, codefactory
@@ -131,15 +148,21 @@ def _waiting_rounds() -> set[int]:
 
 
 def _ref_cache(ref: str, repo: str) -> Path:
-    """Where the ref's locations on a repository are kept: a commit's results never change, so the old version runs
-    once per commit and repository, and every gate after that analyzes with the working tree alone (half the time)."""
-    sha = subprocess.run(["git", "-C", str(ROOT), "rev-parse", ref], capture_output=True, text=True, check=True).stdout.strip()
+    """Where the ref's locations on a repository are kept: a version's results never change, so the old version runs
+    once per version of codefactory/ and repository, and every gate after that analyzes with the working tree alone
+    (half the time)."""
+    # (by the analyzer's own code, codefactory/: a commit of docs or tools reuses the results)
+    sha = subprocess.run(["git", "-C", str(ROOT), "rev-parse", f"{ref}:codefactory"], capture_output=True, text=True,
+                         check=True).stdout.strip()  # fmt: skip
     head = subprocess.run(["git", "-C", str(checkout(repo)), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     return CACHE / "gate-ref" / sha / f"{repo.replace('/', '__')}@{head[:12] or 'nogit'}.json"
 
 
-def corpus_kept(ref: str, repos: list[str], jobs: int) -> bool:
-    """Whole-repository analysis with both versions: no labeled-right location the ref reports may go missing."""
+def corpus_kept(ref: str, repos: list[str], jobs: int, retry: bool = True) -> bool:
+    """Whole-repository analysis with both versions: no labeled-right location the ref reports may go missing. A
+    repository that loses some is analyzed again alone, with all the memory: several large ones side by side can leave
+    one's type checker short (twenty, beside three others, fell back to the general analyzer and lost 10), and that's
+    the machine, not the change. What it loses alone fails the gate."""
     from concurrent.futures import ThreadPoolExecutor
 
     share_memory(jobs)
@@ -202,7 +225,25 @@ def corpus_kept(ref: str, repos: list[str], jobs: int) -> bool:
             n += 1
             if spot not in tree_locs:
                 lost.append(v)
+    why = accepted()
+    for v in [v for v in lost if (v["repo"], v["check"], v["location"]) in why]:
+        lost.remove(v)
+        reason = why[(v["repo"], v["check"], v["location"])]
+        print(f"      lost on purpose: {v['repo'][:22]} {v['location'][:70]}  [{reason[:80]}]")
     failed = sorted(set(failed) | {r for (_, r), locs in found.items() if locs is None})
+    if retry and jobs > 1 and (lost or failed):
+        again = sorted({v["repo"] for v in lost} | set(failed))
+        print(f"      {len(lost)} lost, {len(failed)} failed beside the others: {', '.join(again)} again, alone", flush=True)
+        held = os.environ.pop("CODEFACTORY_TS_HEAP_MB", None)
+        share_memory(1)
+        try:
+            alone = corpus_kept(ref, again, 1, retry=False)
+        finally:
+            os.environ.pop("CODEFACTORY_TS_HEAP_MB", None)
+            if held is not None:
+                os.environ["CODEFACTORY_TS_HEAP_MB"] = held
+        print(f"{'ok  ' if alone else 'FAIL'}  corpus: {len(repos)} repositories, {n} labeled-right locations the ref reports")
+        return alone
     note = f"; analysis failed: {', '.join(failed)}" if failed else ""
     mark = "ok  " if not lost and not failed else "FAIL"
     print(f"{mark}  corpus: {len(repos)} repositories, {n} labeled-right locations the ref reports, {len(lost)} lost{note}")

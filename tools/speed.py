@@ -124,8 +124,10 @@ def check(args) -> int:
                 why.append(f"{phase_name} {s:.1f} s against {was:.1f} s")
         if why:
             failed.append(f"{name}: {'; '.join(why)}")
-    busy = os.getloadavg()[0]
-    strict = busy < (os.cpu_count() or 1) * 0.75  # (a busy machine slows every run: then over-budget is a warning)
+    # (a busy machine slows every run: then over-budget is a warning; busy within the last 5 minutes too, which a gate's
+    # golden diff right before leaves behind: gymlift 19 s and options-scanner 17 s just after it, 9.5 s and 5.1 s idle)
+    busy = max(os.getloadavg()[:2])
+    strict = busy < (os.cpu_count() or 1) * 0.75
     for line in failed:
         print(("FAIL  " if strict else "WARN  ") + line)
     if failed and not strict:
