@@ -78,7 +78,11 @@ for (const p of pkgFiles.filter((f) => !hidden(f) && !outside(f))
 // one Program each, in turn, in a child process each (its memory goes when it exits). A group's Program still loads
 // what its files import, so calls into other groups resolve as in one Program; only the group's own files are walked.
 // --group: such a child, its files on stdin.
-const own = process.argv[5] === "--group" ? new Set(JSON.parse(fs.readFileSync(0, "utf8"))) : null;
+let own = process.argv[5] === "--group" ? new Set(JSON.parse(fs.readFileSync(0, "utf8"))) : null;
+// --slice K/N: a child that builds the whole Program, like one run, and walks only the K-th of N runs of its files
+// (in the Program's order, cut by size). The walk is most of the time on a large project (teable: 78 of 104 s), and
+// asks the same checker the same questions, so slices side by side, merged in order, give one run's output.
+const slice = process.argv[5] === "--slice" ? process.argv[6].split("/").map(Number) : null;
 const MB = 1024 * 1024;
 const heapMb = require("v8").getHeapStatistics().heap_size_limit / MB;
 const splitAt = (Number(process.env.CODEFACTORY_TS_SPLIT_MB) || heapMb / 64) * MB; // (one Program: ~40x its source)
@@ -118,10 +122,12 @@ const P_EXPORT = "\u0001", P_MODULE = "\u0002", P_NAMED = "\u0003", P_SEP = "\u0
 // it: the machine's memory was the limit before, and stays it), at least MIN_GROUP_HEAP_MB each, no more of them than
 // cores. Their results are merged in group order, so the output is the same as one at a time.
 const MIN_GROUP_HEAP_MB = 2048;
-function runGroups(groups) {
-  const cores = require("os").availableParallelism?.() ?? require("os").cpus().length;
-  const width = Math.max(1, Math.min(groups.length, cores, Math.floor(heapMb / MIN_GROUP_HEAP_MB),
-    Number(process.env.CODEFACTORY_TS_WIDTH) || Infinity));
+const SLICE_FROM = (Number(process.env.CODEFACTORY_TS_SLICE_MB) || 8) * MB; // (below it the walk takes seconds)
+const cores = require("os").availableParallelism?.() ?? require("os").cpus().length;
+const widthFor = (n, eachMb) => Math.max(1, Math.min(n, cores, Math.floor(heapMb / eachMb),
+  Number(process.env.CODEFACTORY_TS_WIDTH) || Infinity));
+const asGroup = (g) => ({ args: ["--group"], input: JSON.stringify(g), size: g.length });
+function runGroups(groups, width = widthFor(groups.length, MIN_GROUP_HEAP_MB)) {
   // a group that runs out of its share is tried again alone, with all of it, once the rest are done
   return runSome(groups, groups.map((_, i) => i), width).then(async (parts) => {
     for (const i of groups.map((_, k) => k).filter((k) => parts[k] instanceof Error)) {
@@ -141,8 +147,8 @@ function runSome(groups, which, width) {
   return new Promise((resolve) => {
     const start = () => {
       if (next >= which.length) { if (!running) resolve(parts); return; }
-      const i = which[next++], g = groups[i];
-      const child = spawn(process.execPath, [...flags, __filename, root, tsPath, ignoreJson || "[]", "--group"]);
+      const i = which[next++], g = groups[i].args ? groups[i] : asGroup(groups[i]);
+      const child = spawn(process.execPath, [...flags, __filename, root, tsPath, ignoreJson || "[]", ...g.args]);
       running++;
       const out = [], err = [];
       child.stdout.on("data", (b) => out.push(b));
@@ -153,11 +159,11 @@ function runSome(groups, which, width) {
           parts[i] = JSON.parse(Buffer.concat(out).toString("utf8"));
         } else {
           if (width === 1) process.stderr.write(Buffer.concat(err));
-          parts[i] = new Error(`a group of ${g.length} files failed: ${signal || `exit ${status}`}`);
+          parts[i] = new Error(`${g.args[0].slice(2)} ${g.args[1] || `of ${g.size} files`} failed: ${signal || `exit ${status}`}`);
         }
         start();
       });
-      child.stdin.end(JSON.stringify(g));
+      child.stdin.end(g.input || "");
     };
     for (let k = 0; k < width; k++) start();
   });
@@ -230,14 +236,22 @@ function writeJson(out) {
   });
   process.stdout.write(buf + "}");
 }
-if (!own) {
+if (!own && !slice) {
   const sizes = new Map([...all].map((f) => [f, sizeOf(f)]));
-  if ([...sizes.values()].reduce((a, b) => a + b, 0) > splitAt) {
-    runGroups(groupsOf(sizes)).then((parts) => writeJson(splitRun(parts)), (e) => {
-      process.stderr.write(`${e.message}\n`);
-      process.exitCode = 1;
-    });
+  const total = [...sizes.values()].reduce((a, b) => a + b, 0);
+  // slices: each child holds the whole Program and what its walk checks (teable, 66 MB: ~3.5 GB), so only when the
+  // heap holds two of them, and only when the walk saved is worth the Program each builds again. Two: a third saved
+  // 5 s more on teable (74 -> 69 s) for 3 GB more, a fourth was slower (its share of the heap left it collecting)
+  const slices = total > SLICE_FROM ? widthFor(2, Math.max(MIN_GROUP_HEAP_MB, (64 * total) / MB)) : 1;
+  const done = (e) => { process.stderr.write(`${e.message}\n`); process.exitCode = 1; };
+  if (total > splitAt) {
+    runGroups(groupsOf(sizes)).then((parts) => writeJson(splitRun(parts)), done);
     return; // (the module's own function: the rest is one Program's run)
+  }
+  if (slices > 1) {
+    const jobs = [...Array(slices).keys()].map((k) => ({ args: ["--slice", `${k}/${slices}`] }));
+    runGroups(jobs, slices).then((parts) => writeJson(splitRun(parts)), done);
+    return;
   }
 }
 
@@ -378,6 +392,16 @@ const program = ts.createProgram(own ? [...own] : [...all], options, host);
 const checker = program.getTypeChecker();
 // (in a group, `loaded` also holds the other groups' files its own import: their functions are only named)
 const loaded = program.getSourceFiles().filter((sf) => all.has(path.resolve(sf.fileName)));
+if (slice) { // the K-th run of the Program's files, cut where the size passes K/N and (K+1)/N of the whole
+  const [k, n] = slice, size = loaded.map((sf) => sf.text.length), whole = size.reduce((a, b) => a + b, 0);
+  own = new Set();
+  let before = 0;
+  loaded.forEach((sf, i) => {
+    const at = Math.min(n - 1, Math.floor((before * n) / Math.max(1, whole)));
+    if (at === k) own.add(path.resolve(sf.fileName));
+    before += size[i];
+  });
+}
 const mine = (sf) => !own || own.has(path.resolve(sf.fileName));
 const sources = own ? loaded.filter(mine) : loaded;
 const loadedIds = new Set(loaded.map((sf) => rel(sf.fileName)));
@@ -732,12 +756,12 @@ function fnViaRequire(sym, prop) {
 }
 
 function calleeOf(node) {
+  const target = ts.isCallExpression(node) || ts.isNewExpression(node) ? node.expression : node.tagName;
   try {
     const sig = checker.getResolvedSignature(node);
     const f = sig && sig.declaration && fnForDeclaration(sig.declaration);
-    if (f) return f;
+    if (f) return unionPick(target, f);
   } catch { /* fall back to the symbol */ }
-  const target = ts.isCallExpression(node) || ts.isNewExpression(node) ? node.expression : node.tagName;
   const f = fnForSymbol(checker.getSymbolAtLocation(ts.isPropertyAccessExpression(target) ? target.name : target));
   if (f) return f;
   if (ts.isIdentifier(target)) return fnViaRequire(checker.getSymbolAtLocation(target), null);
@@ -750,6 +774,49 @@ function calleeOf(node) {
     if (file) return (exportsOf(file) || new Map()).get(target.name.text) || null;
   }
   return null;
+}
+// A call on a union (`field.convert(x)` with field: SingleSelect | MultipleSelect, `<Icon />` with Icon one of a map's
+// components): the checker answers with one member's function, whichever type it happened to create first, so the
+// answer moved with the order files were checked in. The same one every time: the member function first by id.
+// Functions of one type read from a table (`const Icon = ICONS[kind]; <Icon />`, ICONS[kind](…)) aren't even a union to
+// the checker: identical types reduce to the first created. The same rule: the table's function first by id.
+function unionPick(target, f) {
+  let type;
+  try { type = checker.getTypeAtLocation(target); } catch { return f; }
+  const candidates = [];
+  if (type && type.isUnion()) {
+    for (const t of type.types) {
+      for (const sig of [...t.getCallSignatures(), ...t.getConstructSignatures()]) {
+        const g = sig.declaration && fnForDeclaration(sig.declaration);
+        if (g) candidates.push(g);
+      }
+    }
+  }
+  if (!candidates.includes(f)) candidates.splice(0, candidates.length, ...tableFns(target));
+  if (!candidates.includes(f)) return f;
+  return candidates.reduce((best, g) => (g.id < best.id ? g : best), f);
+}
+function tableFns(target) { // the functions a table read (`TABLE[k]`, or a const holding one) can give
+  let read = target;
+  if (ts.isIdentifier(read)) {
+    const sym = checker.getSymbolAtLocation(read), d = sym && sym.declarations && sym.declarations[0];
+    read = d && ts.isVariableDeclaration(d) && d.initializer;
+    while (read && (ts.isAsExpression(read) || ts.isParenthesizedExpression(read) || ts.isNonNullExpression(read))) read = read.expression;
+  }
+  if (!read || !ts.isElementAccessExpression(read) || !ts.isIdentifier(read.expression)) return [];
+  let sym = checker.getSymbolAtLocation(read.expression);
+  if (sym && sym.flags & ts.SymbolFlags.Alias) { try { sym = checker.getAliasedSymbol(sym); } catch { return []; } }
+  const d = sym && sym.declarations && sym.declarations[0];
+  let table = d && ts.isVariableDeclaration(d) && d.initializer;
+  while (table && (ts.isAsExpression(table) || ts.isSatisfiesExpression(table) || ts.isParenthesizedExpression(table))) table = table.expression;
+  if (!table || !ts.isObjectLiteralExpression(table)) return [];
+  const out = [];
+  for (const prop of table.properties) {
+    const v = ts.isPropertyAssignment(prop) ? prop.initializer : ts.isShorthandPropertyAssignment(prop) ? prop.name : null;
+    const g = !v ? null : fnByNode.get(v) || (ts.isIdentifier(v) ? fnForSymbol(checker.getSymbolAtLocation(v)) : null);
+    if (g) out.push(g);
+  }
+  return out;
 }
 // TABLE[key](…): one of the table's functions runs (the type checker picks just one); link to all of them.
 function linkTable(n, src) {
