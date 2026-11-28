@@ -28,7 +28,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-from corpus import CACHE, EXPORT, HERE, checkout  # noqa: E402
+from corpus import CACHE, HERE, checkout, export_with, share_memory  # noqa: E402
 from precision import MECHANICAL, VULNERABLE_BY_DESIGN, check_of, key, load, save, stable, wilson  # noqa: E402
 
 LIMIT = 900
@@ -62,20 +62,19 @@ def run(args) -> int:
         code = tmp
     out = folder(args.round, args.as_)
     out.mkdir(parents=True, exist_ok=True)
-    env = {**os.environ, "PYTHONPATH": str(code)}
 
     def one(repo: str) -> str:
         path = checkout(repo)
         dest = out / f"{repo.replace('/', '__')}.json"
         prof = out / f"{repo.replace('/', '__')}.profile.json"
         try:
-            done = subprocess.run([sys.executable, "-c", EXPORT, str(path), str(dest), str(prof)],
-                                  capture_output=True, text=True, timeout=LIMIT, env=env)  # fmt: skip
+            done = export_with(code, path, dest, prof, timeout=LIMIT)
         except subprocess.TimeoutExpired:
             return f"{repo}: timeout"
         return f"{repo}: {'ok' if done.returncode == 0 else 'crash ' + done.stderr[-200:]}"
 
     jobs = args.jobs or os.cpu_count() or 2
+    share_memory(jobs)
     with ThreadPoolExecutor(max_workers=jobs) as pool:
         for line in pool.map(one, names):
             print(line, flush=True)
@@ -84,11 +83,19 @@ def run(args) -> int:
     return 0
 
 
+def finished(n: int, version: str) -> set[str]:
+    folder_ = folder(n, version)
+    return {p.name for p in folder_.glob("*.json") if not p.name.endswith(".profile.json")} if folder_.exists() else set()
+
+
 def reported(n: int, version: str) -> dict[str, dict]:
-    """key -> {repo, check, severity, location, counted} for everything this version reported on the round."""
+    """key -> {repo, check, severity, location, counted} for everything this version reported on the round, on the
+    repositories both versions finished: one that timed out before a fix and finishes after it would otherwise add
+    locations to one side only."""
     out = {}
+    both = finished(n, "base") & finished(n, "after")
     for path in sorted(folder(n, version).glob("*.json")):
-        if path.name.endswith(".profile.json"):
+        if path.name not in both:
             continue
         repo = path.stem.replace("__", "/", 1)
         doc = json.loads(path.read_text(encoding="utf-8"))

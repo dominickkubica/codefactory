@@ -34,7 +34,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-from corpus import CACHE, EXPORT, checkout  # noqa: E402
+from corpus import CACHE, checkout, export_with, share_memory  # noqa: E402
 from precision import MECHANICAL, check_of, key  # noqa: E402
 
 HERE = ROOT / "tools" / "golden"
@@ -100,8 +100,7 @@ def analyze(name: str, spec: dict) -> dict[str, dict]:
     path = tree(name, spec)
     WORK.mkdir(parents=True, exist_ok=True)
     out, prof = WORK / f"{name.replace('/', '__')}.export.json", WORK / f"{name.replace('/', '__')}.profile.json"
-    env = {**os.environ, "PYTHONPATH": str(ROOT)}
-    done = subprocess.run([sys.executable, "-c", EXPORT, str(path), str(out), str(prof)], capture_output=True, text=True, env=env)
+    done = export_with(ROOT, path, out, prof, timeout=None)
     if done.returncode != 0:
         raise RuntimeError(f"{name}: {(done.stderr or done.stdout)[-400:]}")
     return locations(json.loads(out.read_text(encoding="utf-8")))
@@ -130,6 +129,7 @@ def run_all(only: list[str] | None) -> dict[str, tuple[dict, dict]]:
     specs = {n: s for n, s in golden().items() if not only or n in only}
     # one at a time on small machines: the TypeScript analyzer's heap is shared out between parallel jobs
     jobs = max(1, min(len(specs), (os.cpu_count() or 2) // 2))
+    share_memory(jobs)
     with ThreadPoolExecutor(max_workers=jobs) as pool:
         results = dict(zip(specs, pool.map(lambda n: analyze(n, specs[n]), specs), strict=True))
     return {n: (specs[n], results[n]) for n in specs}

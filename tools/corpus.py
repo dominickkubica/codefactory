@@ -38,8 +38,23 @@ from codefactory.export import audit
 path, out, prof = map(Path, sys.argv[1:4])
 doc, review = audit(load_graph(path), path.resolve())
 out.write_text(json.dumps(doc, indent=1) + "\\n", encoding="utf-8")
-prof.write_text(json.dumps(review.profile.to_dict(), indent=1), encoding="utf-8")
+from codefactory.timing import report
+prof.write_text(json.dumps({**review.profile.to_dict(), "timings": report()}, indent=1), encoding="utf-8")
 """
+
+
+def export_with(code: Path, repo_path: Path, out: Path, prof: Path, timeout: float | None = LIMIT) -> subprocess.CompletedProcess:
+    """`EXPORT` with the codefactory at `code` (a worktree of some commit, or this checkout), and only that one: run
+    from an empty folder, since `python -c` puts the current folder first on the path, ahead of PYTHONPATH (heldout.py
+    ran the working tree, not the commit asked for, until this), and checked before anything is analyzed."""
+    import tempfile
+
+    check = (f"import codefactory, pathlib; assert pathlib.Path(codefactory.__file__).resolve().is_relative_to("
+             f"{str(Path(code).resolve())!r}), codefactory.__file__\n")  # fmt: skip
+    env = {**os.environ, "PYTHONPATH": str(code)}
+    with tempfile.TemporaryDirectory() as empty:
+        return subprocess.run([sys.executable, "-c", check + EXPORT, str(repo_path), str(out), str(prof)],
+                              capture_output=True, text=True, timeout=timeout, env=env, cwd=empty)  # fmt: skip
 
 
 def repos() -> list[str]:
@@ -84,16 +99,9 @@ def analyze(repo: str) -> dict:
     out.parent.mkdir(parents=True, exist_ok=True)
     prof = out.with_suffix(".profile.json")
     prof.unlink(missing_ok=True)
-    env = {**os.environ, "PYTHONPATH": str(ROOT)}
     try:  # the export and its structured profile from one analysis (a second `codefactory profile` re-analyzed
         # whenever the result couldn't be cached, as when the TypeScript analyzer falls back: n8n, twice)
-        done = subprocess.run(
-            [sys.executable, "-c", EXPORT, str(path), str(out), str(prof)],
-            capture_output=True,
-            text=True,
-            timeout=LIMIT,
-            env=env,
-        )
+        done = export_with(ROOT, path, out, prof)
     except subprocess.TimeoutExpired:
         return {"status": "timeout", "seconds": LIMIT}
     seconds = round(time.time() - started, 1)
@@ -129,6 +137,16 @@ def notes(stderr: str) -> list[str]:
     return out[:8]
 
 
+def share_memory(jobs: int) -> None:
+    """Each parallel job's TypeScript analyzer gets its share of memory: half of it each, at 4 jobs, ran the box out
+    (and heldout.py, which didn't share it, had runs killed for lack of memory)."""
+    try:
+        total = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") // (1024 * 1024)
+        os.environ.setdefault("CODEFACTORY_TS_HEAP_MB", str(max(2048, int(total * 0.8) // max(1, jobs))))
+    except (AttributeError, ValueError, OSError):
+        pass
+
+
 def run(args) -> int:
     CACHE.mkdir(parents=True, exist_ok=True)
     results = load("results.json")
@@ -136,11 +154,7 @@ def run(args) -> int:
     if args.new:
         wanted = [r for r in wanted if r not in results]
     print(f"{len(wanted)} repositories, {args.jobs} at a time", flush=True)
-    try:  # each job's TypeScript analyzer gets its share of memory: half of it each, at 4 jobs, ran the box out
-        total = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") // (1024 * 1024)
-        os.environ.setdefault("CODEFACTORY_TS_HEAP_MB", str(max(2048, int(total * 0.8) // max(1, args.jobs))))
-    except (AttributeError, ValueError, OSError):
-        pass
+    share_memory(args.jobs)
 
     def one(repo: str) -> tuple[str, dict]:
         try:

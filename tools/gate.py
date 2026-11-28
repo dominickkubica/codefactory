@@ -26,7 +26,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-from corpus import CACHE, EXPORT, checkout  # noqa: E402
+from corpus import CACHE, checkout, export_with, share_memory  # noqa: E402
 from golden import locations  # noqa: E402
 from precision import AT, key, load  # noqa: E402
 
@@ -131,6 +131,7 @@ def corpus_kept(ref: str, repos: list[str], jobs: int) -> bool:
     """Whole-repository analysis with both versions: no labeled-right location the ref reports may go missing."""
     from concurrent.futures import ThreadPoolExecutor
 
+    share_memory(jobs)
     with tempfile.TemporaryDirectory() as tmp:
         old = Path(tmp) / "old"
         subprocess.run(["git", "-C", str(ROOT), "worktree", "add", "-q", "--detach", str(old), ref], check=True)
@@ -140,9 +141,7 @@ def corpus_kept(ref: str, repos: list[str], jobs: int) -> bool:
                 version, code, repo = job
                 out = Path(tmp) / version / f"{repo.replace('/', '__')}.json"
                 out.parent.mkdir(exist_ok=True)
-                env = {**os.environ, "PYTHONPATH": str(code)}
-                done = subprocess.run([sys.executable, "-c", EXPORT, str(checkout(repo)), str(out), str(out) + ".profile"],
-                                      capture_output=True, text=True, env=env, cwd=tmp, timeout=1800)  # fmt: skip
+                done = export_with(code, checkout(repo), out, Path(str(out) + ".profile"), timeout=1800)
                 ok = done.returncode == 0 and out.exists()
                 return version, repo, locations(json.loads(out.read_text(encoding="utf-8"))) if ok else None
 
