@@ -70,7 +70,9 @@ print(json.dumps(out))
 
 def step(name: str, command: list[str]) -> bool:
     done = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
-    tail = (done.stdout + done.stderr).strip().splitlines()[-4:]
+    lines = (done.stdout + done.stderr).strip().splitlines()
+    # (the failing tests by name, and the last lines: "FAILED (failures=1)" alone says nothing)
+    tail = [ln for ln in lines if ln.startswith(("FAIL:", "ERROR:"))][:10] + lines[-4:]
     print(f"{'ok  ' if done.returncode == 0 else 'FAIL'}  {name}")
     if done.returncode != 0:
         print("\n".join("      " + t for t in tail))
@@ -128,11 +130,21 @@ def _waiting_rounds() -> set[int]:
     return {n for n in range(1, 100) if done(n, "base") and not done(n, "base") <= done(n, "after")}
 
 
+def _ref_cache(ref: str, repo: str) -> Path:
+    """Where the ref's locations on a repository are kept: a commit's results never change, so the old version runs
+    once per commit and repository, and every gate after that analyzes with the working tree alone (half the time)."""
+    sha = subprocess.run(["git", "-C", str(ROOT), "rev-parse", ref], capture_output=True, text=True, check=True).stdout.strip()
+    head = subprocess.run(["git", "-C", str(checkout(repo)), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    return CACHE / "gate-ref" / sha / f"{repo.replace('/', '__')}@{head[:12] or 'nogit'}.json"
+
+
 def corpus_kept(ref: str, repos: list[str], jobs: int) -> bool:
     """Whole-repository analysis with both versions: no labeled-right location the ref reports may go missing."""
     from concurrent.futures import ThreadPoolExecutor
 
     share_memory(jobs)
+    cached = {r: _ref_cache(ref, r) for r in repos}
+    failing: list[str] = []
     with tempfile.TemporaryDirectory() as tmp:
         old = Path(tmp) / "old"
         subprocess.run(["git", "-C", str(ROOT), "worktree", "add", "-q", "--detach", str(old), ref], check=True)
@@ -144,10 +156,33 @@ def corpus_kept(ref: str, repos: list[str], jobs: int) -> bool:
                 out.parent.mkdir(exist_ok=True)
                 done = export_with(code, checkout(repo), out, Path(str(out) + ".profile"), timeout=1800)
                 ok = done.returncode == 0 and out.exists()
-                return version, repo, locations(json.loads(out.read_text(encoding="utf-8"))) if ok else None
+                if not ok and not failing:  # (the first failure, at once: one cause usually fails them all)
+                    failing.append(repo)
+                    tail = (done.stderr or done.stdout).strip().splitlines()[-3:]
+                    print(f"      {version} failed on {repo}: " + " | ".join(tail)[-300:], flush=True)
+                locs = locations(json.loads(out.read_text(encoding="utf-8"))) if ok else None
+                if version == "ref" and locs is not None:
+                    cached[repo].parent.mkdir(parents=True, exist_ok=True)
+                    cached[repo].write_text(json.dumps(locs), encoding="utf-8")
+                return version, repo, locs
 
-            jobs_list = [(v, c, r) for r in repos for v, c in (("ref", old), ("tree", ROOT))]
-            found: dict[tuple[str, str], dict | None] = {}
+            found: dict[tuple[str, str], dict | None] = {
+                ("ref", r): json.loads(cached[r].read_text(encoding="utf-8")) for r in repos if cached[r].exists()
+            }
+
+            # (slowest first: a big repository started last would run alone at the end)
+            # (a past graph's size stands in for the time: none yet, a guess of small)
+            def weight(r: str) -> int:
+                g = checkout(r) / ".codefactory" / "graph.json"
+                return g.stat().st_size if g.exists() else 0
+
+            jobs_list = [(v, c, r) for r in sorted(repos, key=weight, reverse=True)
+                         for v, c in (("ref", old), ("tree", ROOT)) if (v, r) not in found]  # fmt: skip
+            print(
+                f"      corpus: {len(repos)} repositories, {sum(1 for k in found)} ref results cached, "
+                f"{len(jobs_list)} analyses to run",
+                flush=True,
+            )
             with ThreadPoolExecutor(max_workers=jobs) as pool:
                 for version, repo, locs in pool.map(export, jobs_list):
                     found[(version, repo)] = locs
