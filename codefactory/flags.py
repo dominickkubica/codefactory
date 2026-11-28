@@ -138,6 +138,10 @@ def _rust_attributed(g: Graph, fn, cache: dict) -> bool:
 TOOLING_ANNOTATION = re.compile(r"@(?:\w*Previews?|Test|ParameterizedTest|RepeatedTest|TestFactory|Benchmark)\b")
 
 
+STIMULUS_FILE = re.compile(r"[_-]controller\.[cm]?[jt]s$")
+STIMULUS_HOOK = re.compile(r"initialize|connect|disconnect|\w+(?:Target|Outlet)(?:Connected|Disconnected)|\w+ValueChanged")
+
+
 def _is_entry(fn) -> bool:
     n = fn.name
     return (
@@ -148,6 +152,8 @@ def _is_entry(fn) -> bool:
         or n.startswith("__")
         or n.startswith("test")
         or (fn.kind == "method" and n in FRAMEWORK_METHODS)
+        # a Stimulus controller's lifecycle (`*_controller.js`): Stimulus calls these when the element comes and goes
+        or (fn.kind == "method" and STIMULUS_FILE.search(fn.file) is not None and STIMULUS_HOOK.fullmatch(n) is not None)
         or n in ("setUp", "tearDown", "setUpClass", "tearDownClass")
         or re.match(r"visit_?[A-Z]\w*$", n) is not None  # a visitor's hook: the walker calls it by node type
         or is_test(fn.file)

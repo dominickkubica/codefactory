@@ -830,18 +830,6 @@
    "tier": "findings",
    "location": "`app/javascript/controllers/turbo_frame_timeout_controller.js:16` disconnect — `disconnect() {`"
   },
-  "Unused code (N function)|vendor/javascript/@simonwep--pickr.js:3": {
-   "check": "Unused code (N function)",
-   "severity": "Low",
-   "tier": "findings",
-   "location": "`vendor/javascript/@simonwep--pickr.js:3` E._bindEvents.e — `var t={};!function(u,h){t=h()}(self,(()=>(()=>{var t={d:(u,h)=>{for(var d in h)t.o(h,d)&&!t.o(u,d)&&Object.defineProperty(u,d,{enumerable:!0,get:h[d]})},o:(t…`"
-  },
-  "Unused code (N function)|vendor/javascript/d3-shape.js:3": {
-   "check": "Unused code (N function)",
-   "severity": "Low",
-   "tier": "findings",
-   "location": "`vendor/javascript/d3-shape.js:3` custom.cardinal — `import t from\"d3-path\";var n=\"undefined\"!==typeof globalThis?globalThis:\"undefined\"!==typeof self?self:global;var i={};(function(n,e){e(i,t)})(i,(function(t,…`"
-  },
   "Writes inside loops in N place|app/helpers/settings_helper.rb:20": {
    "check": "Writes inside loops in N place",
    "severity": "Low",

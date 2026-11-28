@@ -368,6 +368,13 @@ def walk(source: bytes, parser, rel: str) -> dict:
                 and (parent.child_by_field_name("function") != node)
             ):  # a name used as a value (a callback, a table entry): keeps that function from looking unused
                 owner["refs"].add(node.text.decode("utf-8", "replace"))
+            elif (
+                parent is not None
+                and parent.type == "generic_function"  # Rust's `handler::<Backend>` passed as a value: `.to(handler::<B>)`
+                and parent.parent is not None
+                and parent.parent.child_by_field_name("function") != parent
+            ):
+                owner["refs"].add(node.text.decode("utf-8", "replace"))
         if fn is not None and not node.named_children:  # leaves: the function's structure, for duplicate detection
             text = node.text.decode("utf-8", "replace")
             if IDENT.search(t):
