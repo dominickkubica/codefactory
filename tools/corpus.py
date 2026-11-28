@@ -37,7 +37,10 @@ from pathlib import Path
 from codefactory.cli import load_graph
 from codefactory.export import audit
 path, out, prof = map(Path, sys.argv[1:4])
-doc, review = audit(load_graph(path, review=True), path.resolve())
+# (review=True: the review's work that needs no graph starts during the build; older versions have no such option)
+import inspect
+ahead = {"review": True} if "review" in inspect.signature(load_graph).parameters else {}
+doc, review = audit(load_graph(path, **ahead), path.resolve())
 out.write_text(json.dumps(doc, indent=1) + "\\n", encoding="utf-8")
 from codefactory.timing import report
 prof.write_text(json.dumps({**review.profile.to_dict(), "timings": report()}, indent=1), encoding="utf-8")

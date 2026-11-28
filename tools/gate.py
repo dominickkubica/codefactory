@@ -142,6 +142,7 @@ def corpus_kept(ref: str, repos: list[str], jobs: int) -> bool:
 
     share_memory(jobs)
     cached = {r: _ref_cache(ref, r) for r in repos}
+    failing: list[str] = []
     with tempfile.TemporaryDirectory() as tmp:
         old = Path(tmp) / "old"
         subprocess.run(["git", "-C", str(ROOT), "worktree", "add", "-q", "--detach", str(old), ref], check=True)
@@ -153,6 +154,10 @@ def corpus_kept(ref: str, repos: list[str], jobs: int) -> bool:
                 out.parent.mkdir(exist_ok=True)
                 done = export_with(code, checkout(repo), out, Path(str(out) + ".profile"), timeout=1800)
                 ok = done.returncode == 0 and out.exists()
+                if not ok and not failing:  # (the first failure, at once: one cause usually fails them all)
+                    failing.append(repo)
+                    tail = (done.stderr or done.stdout).strip().splitlines()[-3:]
+                    print(f"      {version} failed on {repo}: " + " | ".join(tail)[-300:], flush=True)
                 locs = locations(json.loads(out.read_text(encoding="utf-8"))) if ok else None
                 if version == "ref" and locs is not None:
                     cached[repo].parent.mkdir(parents=True, exist_ok=True)
