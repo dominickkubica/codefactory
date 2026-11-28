@@ -109,7 +109,9 @@ WRITE_NAME = re.compile(
     r"(?:^|[._])(?:insert|update|upsert|save|delete|destroy|remove|create|persist|commit|mark|restore|write|store|put|Insert|Update|Upsert|Save|Delete|Destroy|Remove|Create|Persist|Commit|Mark|Restore|Write|Store|Put)"
     r"|(?<=[a-z])(?:Insert|Update|Upsert|Save|Delete|Destroy|Remove|Create|Persist|Commit|Mark|Restore|Write|Store|Put)"
 )
-WRITE_SQL = re.compile(r"INSERT|UPDATE|DELETE|REPLACE|UPSERT|commit|save|put|set|write|create|add|remove|delete", re.I)
+# whole words: SQL text (`execute("INSERT …")`) or a call that's only the verb (`redis.set`), never a part of a longer
+# name (`getInputStream` holds "put", `settings` "set": round 9's wrong "writes" in kestra were reads like these)
+WRITE_SQL = re.compile(r"\b(?:INSERT|UPDATE|DELETE|REPLACE|UPSERT|commit|save|put|set|write|create|add|remove)\b", re.I)
 READ_NAME = re.compile(r"^_?(read|get|load|fetch|list|find|count|select|query|lookup|latest|recent|stored)", re.I)
 
 
