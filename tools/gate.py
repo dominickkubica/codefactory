@@ -11,7 +11,9 @@
 It stops at the first step that fails. Graph checks (loops, unused and untested code, import loops) need whole-repository
 analysis: `--corpus owner/repo,...` (or `--corpus "labeled:PREFIX|PREFIX"`, every repository with labels for checks starting so)
 adds a step that analyzes each with both versions, into separate folders, and holds every labeled-right location of
-any check to the same rule. Nothing is read from earlier exports, so a run interrupted halfway can't skew it.
+any check to the same rule. Nothing is read from earlier exports, so a run interrupted halfway can't skew it. A
+location right only by accident (its message names the wrong cause) that a fix drops is listed, with why, in
+`tools/corpus/lost_on_purpose.jsonl`.
 """
 
 from __future__ import annotations
@@ -46,6 +48,21 @@ SOURCE_CHECKS = {
     "Tokens or passwords in unencrypted storage": "sensitive_storage",
     "Container runs as root": "docker_root",
 }
+# labeled-right locations a change may lose, each with why (one per line: {"repo", "check", "location", "why"}): a finding
+# right by accident (reported through a wrong call, so its message names the wrong cause) that a fix rightly drops
+ACCEPTED = ROOT / "tools" / "corpus" / "lost_on_purpose.jsonl"
+
+
+def accepted() -> dict[tuple[str, str, str], str]:
+    out = {}
+    if ACCEPTED.exists():
+        for line in ACCEPTED.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                r = json.loads(line)
+                out[(r["repo"], r["check"], r["location"])] = r["why"]
+    return out
+
+
 # run with a given codefactory on sys.path: which of the given locations it reports (key -> bool)
 PROBE = """
 import json, re, sys, codefactory
@@ -205,6 +222,11 @@ def corpus_kept(ref: str, repos: list[str], jobs: int) -> bool:
             n += 1
             if spot not in tree_locs:
                 lost.append(v)
+    why = accepted()
+    for v in [v for v in lost if (v["repo"], v["check"], v["location"]) in why]:
+        lost.remove(v)
+        reason = why[(v["repo"], v["check"], v["location"])]
+        print(f"      lost on purpose: {v['repo'][:22]} {v['location'][:70]}  [{reason[:80]}]")
     failed = sorted(set(failed) | {r for (_, r), locs in found.items() if locs is None})
     note = f"; analysis failed: {', '.join(failed)}" if failed else ""
     mark = "ok  " if not lost and not failed else "FAIL"
