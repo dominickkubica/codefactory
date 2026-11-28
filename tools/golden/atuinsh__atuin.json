@@ -294,19 +294,19 @@
    "check": "Endpoints that change data without an auth check (N)",
    "severity": "High",
    "tier": "hints",
-   "location": "`DELETE /account` (`crates/atuin-server/src/router.rs:126`) → changes data in `CodexSession.start` (`self.pool.run`)"
+   "location": "`DELETE /account` (`crates/atuin-server/src/router.rs:126`) → changes data in `checkpoint_offset` (`pool.run`)"
   },
   "Endpoints that change data without an auth check (N)|crates/atuin-server/src/router.rs:131": {
    "check": "Endpoints that change data without an auth check (N)",
    "severity": "High",
    "tier": "hints",
-   "location": "`POST /api/v0/record` (`crates/atuin-server/src/router.rs:131`) → changes data in `CodexSession.start` (`self.pool.run`)"
+   "location": "`POST /api/v0/record` (`crates/atuin-server/src/router.rs:131`) → changes data in `checkpoint_offset` (`pool.run`)"
   },
   "Endpoints that change data without an auth check (N)|crates/atuin-server/src/router.rs:134": {
    "check": "Endpoints that change data without an auth check (N)",
    "severity": "High",
    "tier": "hints",
-   "location": "`DELETE /api/v0/store` (`crates/atuin-server/src/router.rs:134`) → changes data in `CodexSession.start` (`self.pool.run`)"
+   "location": "`DELETE /api/v0/store` (`crates/atuin-server/src/router.rs:134`) → changes data in `checkpoint_offset` (`pool.run`)"
   },
   "File or program operations inside loops in N place|crates/atuin-common/res/harnesstools/hermes/__init__.py:144": {
    "check": "File or program operations inside loops in N place",
@@ -409,6 +409,12 @@
    "severity": "Medium",
    "tier": "findings",
    "location": "`crates/atuin-common/src/db/mod.rs:422` add_columns: does I/O (sqlx::query) — `async fn add_columns(conn: &mut PoolConnection<Sqlite>, columns: &[&str]) {`"
+  },
+  "Important code no test reaches (N function)|crates/atuin-common/src/db/mod.rs:60": {
+   "check": "Important code no test reaches (N function)",
+   "severity": "Medium",
+   "tier": "findings",
+   "location": "`crates/atuin-common/src/db/mod.rs:60` query: does I/O (sqlx::query) — `pub fn query<'a, DB>(sql: impl SqlSafeStr) -> Query<'a, DB, <DB as Database>::Arguments>`"
   },
   "Important code no test reaches (N function)|crates/atuin-common/src/harnesstools/amp/mod.rs:53": {
    "check": "Important code no test reaches (N function)",
@@ -812,6 +818,12 @@
    "tier": "hints",
    "location": "`crates/atuin-daemon/src/octavo/client/active/engine.rs:271` EngineInner.send_forever — `let next = match self.send_live(woken).await {`"
   },
+  "Writes inside loops in N place|crates/atuin-daemon/src/octavo/client/active/engine.rs:581": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-daemon/src/octavo/client/active/engine.rs:581` EngineInner.held_shares — `match self.starts.shares(&thread, until).await {`"
+  },
   "Writes inside loops in N place|crates/atuin-daemon/src/octavo/client/active/engine.rs:757": {
    "check": "Writes inside loops in N place",
    "severity": "Low",
@@ -835,6 +847,12 @@
    "severity": "Low",
    "tier": "hints",
    "location": "`crates/atuin-daemon/src/octavo/client/active/gate.rs:88` Revokes.send — `match revoke.send().await {`"
+  },
+  "Writes inside loops in N place|crates/atuin-daemon/src/octavo/client/active/starts.rs:146": {
+   "check": "Writes inside loops in N place",
+   "severity": "Low",
+   "tier": "hints",
+   "location": "`crates/atuin-daemon/src/octavo/client/active/starts.rs:146` Starts.sort — `let thread = self.goes(rows, &message.session, messages).await;`"
   },
   "Writes inside loops in N place|crates/atuin-daemon/src/output_capture/persistence/blob/fjall/mod.rs:147": {
    "check": "Writes inside loops in N place",
