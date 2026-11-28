@@ -270,8 +270,11 @@ def _resolve_import(source: str, idx: dict[str, list[str]], lang: str, go_mods: 
                 if len(idx[key]) == 1 or (loose and len(idx[key]) <= 3):
                     return idx[key]
                 break  # several files end the same way: don't guess which one
-            # (not PHP: `use Predis\Command\Redis\FLUSHDB` names a class, and a `Redis/` folder here isn't it)
-            if key + "/" in idx and lang != "php":  # a package (Go, Java): the folder stands for its files; link to one
+            # (not PHP: `use Predis\Command\Redis\FLUSHDB` names a class, and a `Redis/` folder here isn't it; nor, for a
+            # dotted package name, by its last part alone: `org.junit.jupiter.api.Tag` isn't whatever this repository
+            # keeps in an `api/` folder. A Go import's last part is its folder's name: `example.com/shop/store` is store/)
+            dotted = lang in ("java", "kotlin", "scala", "csharp")
+            if key + "/" in idx and lang != "php" and not (last and dotted):  # a package: its folder stands for its files
                 files = [f for f in idx[key + "/"] if not _is_test(f)]
                 if not files:
                     continue
