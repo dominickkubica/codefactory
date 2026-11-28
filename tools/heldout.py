@@ -84,11 +84,19 @@ def run(args) -> int:
     return 0
 
 
+def finished(n: int, version: str) -> set[str]:
+    folder_ = folder(n, version)
+    return {p.name for p in folder_.glob("*.json") if not p.name.endswith(".profile.json")} if folder_.exists() else set()
+
+
 def reported(n: int, version: str) -> dict[str, dict]:
-    """key -> {repo, check, severity, location, counted} for everything this version reported on the round."""
+    """key -> {repo, check, severity, location, counted} for everything this version reported on the round, on the
+    repositories both versions finished: one that timed out before a fix and finishes after it would otherwise add
+    locations to one side only."""
     out = {}
+    both = finished(n, "base") & finished(n, "after")
     for path in sorted(folder(n, version).glob("*.json")):
-        if path.name.endswith(".profile.json"):
+        if path.name not in both:
             continue
         repo = path.stem.replace("__", "/", 1)
         doc = json.loads(path.read_text(encoding="utf-8"))
